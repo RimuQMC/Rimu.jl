@@ -49,7 +49,7 @@ function ExtendedHubbardMom1D(
     end
     kr = range(start; step = step, length = M)
     ks = SVector{M}(kr)
-    kes = SVector{M}(dispersion.(T , kr .+ boundary_condition))
+    kes = SVector{M}(dispersion.(T , kr .+ (boundary_condition/M)))
     return ExtendedHubbardMom1D{typeof(U),M,typeof(address),U,V,T,boundary_condition}(address, ks, kes)
 end
 
