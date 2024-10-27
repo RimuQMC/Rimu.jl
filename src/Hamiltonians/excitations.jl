@@ -142,19 +142,6 @@ end
 The diagonal part of nearest neighbour term [`momentum_transfer_excitation`](@ref) in [`ExtendedHubbardMom1D`](@ref).
 Where `step` is the separation of single-particle momenta in the momentum grid.
 """
-function extended_momentum_transfer_diagonal(map::FermiOccupiedModeMap,step::Float64)
-    onproduct = 0
-    for i in 1:length(map)
-        occ_i = map[i].occnum
-        onproduct += occ_i * (occ_i - 1)
-        for j in 1:i-1
-            occ_j = map[j].occnum
-            onproduct += 2*occ_i * occ_j * (1 - cos((map[j].mode - map[i].mode)*step))
-        end
-    end
-    return float(onproduct)
-end
-
 function extended_momentum_transfer_diagonal(map::OccupiedModeMap, step)
     onproduct = 0
     for i in 1:length(map)
@@ -163,6 +150,19 @@ function extended_momentum_transfer_diagonal(map::OccupiedModeMap, step)
         for j in 1:i-1
             occ_j = map[j].occnum
             onproduct += 2 * occ_i * occ_j * (1 + cos((map[j].mode - map[i].mode)*step))
+        end
+    end
+    return float(onproduct)
+end
+
+function extended_momentum_transfer_diagonal(map::FermiOccupiedModeMap,step)
+    onproduct = 0
+    for i in 1:length(map)
+        occ_i = map[i].occnum
+        onproduct += occ_i * (occ_i - 1)
+        for j in 1:i-1
+            occ_j = map[j].occnum
+            onproduct += 2*occ_i * occ_j * (1 - cos((map[j].mode - map[i].mode)*step))
         end
     end
     return float(onproduct)
