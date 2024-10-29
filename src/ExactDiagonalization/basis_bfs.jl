@@ -1,9 +1,21 @@
 const SubVector{T} = SubArray{T,1,Vector{T},Tuple{UnitRange{Int64}},true}
 """
-    UniformSplit(array, min_batch_size, max_tasks)
+    UniformSplit(array::Vector, min_chunk_size, max_chunks)
 
-Split the array into up to `max_tasks` subarrays, with each at least `min_batch_size` long.
-Used to divide work among tasks in [`TODO: pick a good name`](@ref).
+Split the array into at most `max_chunks` subarrays, with each at least `min_chunk_size` long.
+
+```jldoctest
+julia> UniformSplit(collect(1:10), 3, 3)
+3-element UniformSplit{Int64}:
+ [1, 2, 3, 4]
+ [5, 6, 7, 8]
+ [9, 10]
+
+julia> UniformSplit(collect(1:10), 5, 3)
+2-element UniformSplit{Int64}:
+ [1, 2, 3, 4, 5]
+ [6, 7, 8, 9, 10]
+```
 """
 struct UniformSplit{T} <: AbstractVector{SubVector{T}}
     array::Vector{T}
@@ -31,6 +43,11 @@ function Base.getindex(split::UniformSplit, i)
     return view(split.array, index_start:index_end)
 end
 
+"""
+    struct BasisBuilder
+
+Used with [`basis_bfs`](@ref) to build a basis from an operator.
+"""
 struct BasisBuilder{A}
     frontier::Set{A}
 
@@ -59,6 +76,11 @@ function (bb::BasisBuilder)(operator, ks, seen)
     end
 end
 
+"""
+    struct MatrixBuilder
+
+Used with [`basis_bfs`](@ref) to build a sparse matrix from an operator.
+"""
 struct MatrixBuilder{A,T,I}
     js::Vector{I}
     is::Vector{A}
@@ -218,18 +240,18 @@ function basis_bfs(
             break
         end
 
+        # Split the workload into chunks and spawn a task for each. These now run
+        # asynchronously while the main thread continues.
         split_frontier = UniformSplit(curr_frontier, min_batch_size, max_tasks)
         tasks = map(enumerate(split_frontier)) do (i, sub_frontier)
             Threads.@spawn builders[$i]($operator, $sub_frontier, seen)
         end
 
-        empty!(last_seen)
-
-        # Collect results from each task.
+        # Procesess the tasks in order they were spawned. This is fine as we've used more
+        # tasks than threads.
         for (task, builder) in zip(tasks, builders)
             wait(task)
 
-            # update frontier
             result = builder.frontier
             for k in result
                 if k ∉ last_seen
@@ -250,6 +272,7 @@ function basis_bfs(
         union!(seen, last_seen)
         curr_frontier, next_frontier = next_frontier, curr_frontier
         empty!(next_frontier)
+        empty!(last_seen)
     end
 
     return finalize_accumulator!(result_accumulator, basis, sort; sort_kwargs...)

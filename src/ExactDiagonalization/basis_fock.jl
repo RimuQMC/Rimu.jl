@@ -18,6 +18,13 @@ end
 ###
 ### BoseFS
 ###
+# Algorithm:
+# Given an address type of N particles in M modes,
+# For all n_1 ∈ (0 ... N)
+# - put n_1 particles in the first mode
+# - recursively call the function to put the remaining (N-n_1) particles into (M-1) modes.
+# The recursion is parallelised through spawning tasks.
+
 # this is equivalent to `dimension(BoseFS{n,m})`, but does not return a `BigInt`.
 _bose_dimension(n, m) = binomial(n + m - 1, n)
 
@@ -28,26 +35,26 @@ function build_basis(::Type{<:BoseFS{N,M}}) where {N,M}
     return result
 end
 
-# Multithreaded version - attempts to spawn `tasks` tasks.
+# Multithreaded version - attempts to spawn `n_tasks` tasks.
 @inline function _bose_basis!(
-    result::Vector, postfix, index, remaining_n, ::Val{M}, tasks::Int
+    result::Vector, postfix, index, remaining_n, ::Val{M}, n_tasks::Int
 ) where {M}
     @sync if M < 5 || remaining_n ≤ 1 || tasks ≤ 0
         _bose_basis!(result, postfix, index, remaining_n, Val(M))
     else
-        tasks ÷= 2
+        n_tasks ÷= 2
         Threads.@spawn begin
-            _bose_basis!(result, $(0, postfix...), $index, $remaining_n, Val(M - 1), $tasks)
+            _bose_basis!(result, $(0, postfix...), $index, $remaining_n, Val(M-1), $n_tasks)
         end
         index += _bose_dimension(remaining_n, M - 1)
         Threads.@spawn begin
             _bose_basis!(
-                result, $(1, postfix...), $index, $(remaining_n - 1), Val(M - 1), $tasks
+                result, $(1, postfix...), $index, $(remaining_n - 1), Val(M-1), $n_tasks
             )
         end
         index += _bose_dimension(remaining_n - 1, M - 1)
         for n in 2:remaining_n
-            _bose_basis!(result, (n, postfix...), index, remaining_n - n, Val(M - 1))
+            _bose_basis!(result, (n, postfix...), index, remaining_n - n, Val(M-1))
             index += _bose_dimension(remaining_n - n, M - 1)
         end
     end
@@ -78,6 +85,8 @@ end
 ###
 ### FermiFS
 ###
+# The algorithm is similar to the BoseFS one.
+
 # this is equivalent to `dimension(FermiFS{n,m})`, but does not return a `BigInt`.
 _fermi_dimension(n, m) = binomial(m, n)
 
