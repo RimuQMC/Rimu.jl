@@ -5,6 +5,8 @@ const SubVector{T} = SubArray{T,1,Vector{T},Tuple{UnitRange{Int64}},true}
 Split the array into at most `max_chunks` subarrays, with each at least `min_chunk_size` long.
 
 ```jldoctest
+julia> using Rimu.ExactDiagonalization: UniformSplit
+
 julia> UniformSplit(collect(1:10), 3, 3)
 3-element UniformSplit{Int64}:
  [1, 2, 3, 4]
