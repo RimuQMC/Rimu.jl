@@ -39,7 +39,7 @@ end
 @inline function _bose_basis!(
     result::Vector, postfix, index, remaining_n, ::Val{M}, n_tasks::Int
 ) where {M}
-    @sync if M < 5 || remaining_n ≤ 1 || tasks ≤ 0
+    @sync if M < 5 || remaining_n ≤ 1 || n_tasks ≤ 0
         _bose_basis!(result, postfix, index, remaining_n, Val(M))
     else
         n_tasks ÷= 2
@@ -97,19 +97,19 @@ function build_basis(::Type{<:FermiFS{N,M}}) where {N,M}
     return result
 end
 
-# Multithreaded version - attempts to spawn `tasks` tasks.
+# Multithreaded version - attempts to spawn `n_tasks` tasks.
 @inline function _fermi_basis!(
-    result::Vector, postfix, index, remaining_n, ::Val{M}, tasks
+    result::Vector, postfix, index, remaining_n, ::Val{M}, n_tasks
 ) where {M}
-    @sync if M < 5 || remaining_n ≤ M || remaining_n == 1 || tasks ≤ 0
+    @sync if M < 5 || remaining_n ≤ M || remaining_n == 1 || n_tasks ≤ 0
         _fermi_basis!(result, postfix, index, remaining_n, Val(M))
     else
-        tasks ÷= 2
+        n_tasks ÷= 2
         Threads.@spawn begin
-            _fermi_basis!(result, $(0, postfix...), $index, $remaining_n, Val(M - 1), $tasks)
+            _fermi_basis!(result, $(0, postfix...), $index, $remaining_n, Val(M-1), $n_tasks)
         end
         index += _fermi_dimension(remaining_n, M - 1)
-        _fermi_basis!(result, (1, postfix...), index, remaining_n - 1, Val(M - 1), tasks)
+        _fermi_basis!(result, (1, postfix...), index, remaining_n - 1, Val(M - 1), n_tasks)
     end
 end
 
