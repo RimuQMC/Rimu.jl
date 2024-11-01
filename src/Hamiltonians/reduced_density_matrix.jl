@@ -180,11 +180,11 @@ function ele_ReducedDensityMatrix(matrix_element, left, right, M, ::Val{n}) wher
     t1=0
     t2=0
     for ij in Iterators.product(ntuple(q1->(n-q1+1:M),Val(n))...)
-        if all(ntuple(q1->ij[q1+1]<ij[q1],n-1))
+        if all(ntuple(q1->ij[q1+1]<ij[q1],Val(n-1)))
             t1+=1
             t2=0
             for kl in Iterators.product(ntuple(q2->(n-q2+1:M),Val(n))...)
-                if all(ntuple(q1->kl[q1+1]<kl[q1],n-1))
+                if all(ntuple(q1->kl[q1+1]<kl[q1],Val(n-1)))
                     t2+=1
                     matrix_element[t1,t2] += sum(pairs(right)) do (k,v)
                         xs=find_mode(k,reverse(ij))
