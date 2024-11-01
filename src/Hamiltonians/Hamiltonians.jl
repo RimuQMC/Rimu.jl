@@ -1,4 +1,4 @@
-uced"""
+"""
 The module `Rimu.Hamiltonians` defines types and functions for working with
 Hamiltonians.
 
