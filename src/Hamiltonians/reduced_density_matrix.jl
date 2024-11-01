@@ -153,22 +153,22 @@ function ReducedDensityMatrix(addr::SingleComponentFockAddress; n = 1)
     M = num_modes(addr)
     return ReducedDensityMatrix{Float64}(M,n)
 end
-function Base.show(io::IO, g2::ReducedDensityMatrix)
-    print(io, "ReducedDensityMatrix(num_modes = $(g2.M), n=$(g2.n))")
+function Base.show(io::IO, op::ReducedDensityMatrix)
+    print(io, "ReducedDensityMatrix(num_modes = $(op.M), n=$(op.n))")
 end
 
 LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 
 function Interfaces.allows_address_type(
-    g2::ReducedDensityMatrix, A::Type{<:AbstractDVec}
+    op::ReducedDensityMatrix, A::Type{<:AbstractDVec}
 )
-    result = g2.M == num_modes(A)
+    result = op.M == num_modes(A)
     return result
 end
 
-function Interfaces.dot_from_right(left::AbstractDVec, g2::ReducedDensityMatrix, right::AbstractDVec)
+function Interfaces.dot_from_right(left::AbstractDVec, op::ReducedDensityMatrix, right::AbstractDVec)
     M = num_modes(keytype(left))
-    n = g2.n
+    n = op.n
     dim = binomial(M,n)
     ρ = zeros(valtype(right),(dim,dim))
     ele_ReducedDensityMatrix(ρ, left, right, M, Val(n))
