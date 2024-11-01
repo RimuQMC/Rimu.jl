@@ -827,19 +827,6 @@ function LinearAlgebra.dot(
     return dot_from_right(target, op, source)
 end
 
-function Interfaces.dot_from_right(target, op, source::PDVec)
-    T = typeof(zero(valtype(target)) * zero(valtype(source)) * zero(eltype(op)))
-
-    result = sum(pairs(source); init=zero(T)) do (k, v)
-        res = conj(target[k]) * diagonal_element(op, k) * v
-        for (k_off, v_off) in offdiagonals(op, k)
-            res += conj(target[k_off]) * v_off * v
-        end
-        res
-    end
-    return result::T
-end
-
 function LinearAlgebra.dot(t::PDVec, ops::Tuple, source::PDVec, w=nothing)
     if is_distributed(t) && any(LOStructure(op) ≢ IsDiagonal() for op in ops)
         if isnothing(w)
