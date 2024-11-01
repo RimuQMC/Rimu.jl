@@ -1898,7 +1898,7 @@ end
     addr = near_uniform(FermiFS{2,4})
     dvec_f = PDVec(addr => 0.5, FermiFS{2,4}(0,0,1,1)=>0.5)
     dvec_b = PDVec(BoseFS{4,4}(0,0,2,2) => 0.5, BoseFS{4,4}(2,2,0,0)=>0.5)
-    Op = reduceddensitymatrix(addr, n=1)
+    Op = ReducedDensityMatrix(addr, n=1)
     @test dot(dvec_f, C, dvec_f) == 0.25*Matrix(I, 4, 4)
     @test dot(dvec_b, C, dvec_b) == 0.5*Matrix(I, 4, 4)
     @test LOStructure(op) isa IsHermitian
