@@ -121,3 +121,84 @@ function get_offdiagonal(
     address, value = excitation(addr, dst, src)
     return address, value
 end
+
+"""
+    reduceddensitymatrix(addr::SingleComponentFockAddress; n = 1, ele_type = Float64) <: AbstractOperator
+
+Represent the n-particle reduced density matrix:
+
+```math
+ρ̂^{(n)}_{j_1,...,j_1,k_1,...,k_n} =  \\prod_{i}^{n} â^†_{j_i} \\prod_{i}^{n} â_{n+1-k}
+```
+
+Where `j_i` and `k_i` (all `<: Int`) specify the single particle sites on a lattice. Also, ``ele_type`` specifies
+the type of each element in the reduced density matrix.
+Additionally, the indices run in the following manners:
+
+```math
+j_n> ... > j_{i+1} > j_{i} > ... > j_1 and k_n> ... > k_{i+1} > k_{i} > ... > k_1
+```
+
+# See also
+
+* [`single_particle_density`](@ref)
+* [`SingleParticleDensity`](@ref)
+* [`SingleParticleExcitation`](@ref)
+* [`TwoParticleExcitation`](@ref)
+"""
+struct reduceddensitymatrix{TT} <: AbstractOperator{TT}
+    M::Int
+    n::Int
+end
+function reduceddensitymatrix(addr::SingleComponentFockAddress; n = 1, ele_type = Float64)
+    M = num_modes(addr)
+    return reduceddensitymatrix{ele_type}(M,n)
+end
+function Base.show(io::IO, g2::reduceddensitymatrix)
+    print(io, "reduceddensitymatrix(num_modes = $(g2.M), n=$(g2.n))")
+end
+
+LOStructure(::Type{<:reduceddensitymatrix}) = IsHermitian()
+
+function Interfaces.allows_address_type(
+    g2::reduceddensitymatrix, A::Type{<:AbstractDVec}
+)
+    result = g2.M == num_modes(A)
+    return result
+end
+
+function Interfaces.dot_from_right(left::AbstractDVec, g2::reduceddensitymatrix, right::AbstractDVec)
+    M = num_modes(keytype(left))
+    n = g2.n
+    dim = binomial(M,n)
+    ρ = zeros(valtype(right),(dim,dim))
+    ρ .+= ele_reduceddensitymatrix(ρ, left, right, M, Val(n))
+    return (ρ.+ρ')./2
+end
+
+function ele_reduceddensitymatrix(matrix_element, left, right, M, ::Val{n}) where {n}
+    t1=0
+    t2=0
+    for ij in Iterators.product(ntuple(q1->(n-q1+1:M),Val(n))...)
+        if all(ntuple(q1->ij[q1+1]<ij[q1],n-1))
+            t1+=1
+            t2=0
+            for kl in Iterators.product(ntuple(q2->(n-q2+1:M),Val(n))...)
+                if all(ntuple(q1->kl[q1+1]<kl[q1],n-1))
+                    t2+=1
+                    matrix_element[t1,t2] += sum(pairs(right)) do (k,v)
+                        xs=find_mode(k,reverse(ij))
+                        ys=find_mode(k,kl)
+                        if  all(x -> x.occnum == 0, xs) ||  all(y -> y.occnum == 1, ys)
+                            nv, α = excitation(k,xs,ys)
+                            conj(left[nv]) * v * α
+                        else
+                            0.0
+                        end 
+                    end
+                end
+            end
+        end
+    end
+    return matrix_element
+end
