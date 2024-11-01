@@ -301,14 +301,15 @@ function LinearAlgebra.dot(::LOStructure, w, op::AbstractOperator, v)
 end
 
 # docstring in Interfaces
-function Interfaces.dot_from_right(w, op, v::AbstractDVec)
-    T = typeof(zero(valtype(w)) * zero(eltype(op)) * zero(valtype(v)))
-    result = zero(T)
-    for (key, val) in pairs(v)
-        result += conj(w[key]) * diagonal_element(op, key) * val
-        for (add, elem) in offdiagonals(op, key)
-            result += conj(w[add]) * elem * val
+function Interfaces.dot_from_right(target, op, source::AbstractDVec)
+    T = typeof(zero(valtype(target)) * zero(valtype(source)) * zero(eltype(op)))
+
+    result = sum(pairs(source); init=zero(T)) do (k, v)
+        res = conj(target[k]) * diagonal_element(op, k) * v
+        for (k_off, v_off) in offdiagonals(op, k)
+            res += conj(target[k_off]) * v_off * v
         end
+        res
     end
-    return result
+    return result::T
 end
