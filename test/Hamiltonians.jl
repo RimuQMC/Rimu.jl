@@ -1893,3 +1893,12 @@ end
         @test round.(eigvals(Matrix(HM_b)), digits=8) ⊆ round.(eigvals(Matrix(HR_b)), digits=8)
     end
 end
+
+@testset "ReducedDensityMatrix" begin
+    addr = near_uniform(FermiFS{2,4})
+    dvec = PDVec(addr => 0.5, FermiFS{2,4}(0,0,1,1)=>0.5)
+    Op = reduceddensitymatrix(addr, n=1)
+    @test dot(dvec, C, dvec) == 0.25*Matrix(I, 4, 4)
+    @test LOStructure(op) isa IsHermitian
+end
+    
