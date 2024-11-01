@@ -123,7 +123,7 @@ function get_offdiagonal(
 end
 
 """
-    reduceddensitymatrix(addr::SingleComponentFockAddress; n = 1, ele_type = Float64) <: AbstractOperator
+    ReducedDensityMatrix(addr::SingleComponentFockAddress; n = 1, ele_type = Float64) <: AbstractOperator
 
 Represent the n-particle reduced density matrix:
 
@@ -146,37 +146,37 @@ j_n> ... > j_{i+1} > j_{i} > ... > j_1 and k_n> ... > k_{i+1} > k_{i} > ... > k_
 * [`SingleParticleExcitation`](@ref)
 * [`TwoParticleExcitation`](@ref)
 """
-struct reduceddensitymatrix{TT} <: AbstractOperator{TT}
+struct ReducedDensityMatrix{TT} <: AbstractOperator{TT}
     M::Int
     n::Int
 end
-function reduceddensitymatrix(addr::SingleComponentFockAddress; n = 1, ele_type = Float64)
+function ReducedDensityMatrix(addr::SingleComponentFockAddress; n = 1, ele_type = Float64)
     M = num_modes(addr)
-    return reduceddensitymatrix{ele_type}(M,n)
+    return ReducedDensityMatrix{ele_type}(M,n)
 end
-function Base.show(io::IO, g2::reduceddensitymatrix)
-    print(io, "reduceddensitymatrix(num_modes = $(g2.M), n=$(g2.n))")
+function Base.show(io::IO, g2::ReducedDensityMatrix)
+    print(io, "ReducedDensityMatrix(num_modes = $(g2.M), n=$(g2.n))")
 end
 
-LOStructure(::Type{<:reduceddensitymatrix}) = IsHermitian()
+LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 
 function Interfaces.allows_address_type(
-    g2::reduceddensitymatrix, A::Type{<:AbstractDVec}
+    g2::ReducedDensityMatrix, A::Type{<:AbstractDVec}
 )
     result = g2.M == num_modes(A)
     return result
 end
 
-function Interfaces.dot_from_right(left::AbstractDVec, g2::reduceddensitymatrix, right::AbstractDVec)
+function Interfaces.dot_from_right(left::AbstractDVec, g2::ReducedDensityMatrix, right::AbstractDVec)
     M = num_modes(keytype(left))
     n = g2.n
     dim = binomial(M,n)
     ρ = zeros(valtype(right),(dim,dim))
-    ρ .+= ele_reduceddensitymatrix(ρ, left, right, M, Val(n))
+    ρ .+= ele_ReducedDensityMatrix(ρ, left, right, M, Val(n))
     return (ρ.+ρ')./2
 end
 
-function ele_reduceddensitymatrix(matrix_element, left, right, M, ::Val{n}) where {n}
+function ele_ReducedDensityMatrix(matrix_element, left, right, M, ::Val{n}) where {n}
     t1=0
     t2=0
     for ij in Iterators.product(ntuple(q1->(n-q1+1:M),Val(n))...)
