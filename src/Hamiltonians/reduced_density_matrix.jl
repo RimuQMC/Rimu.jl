@@ -123,7 +123,7 @@ function get_offdiagonal(
 end
 
 """
-    ReducedDensityMatrix(addr::SingleComponentFockAddress; n = 1, ele_type = Float64) <: AbstractOperator
+    ReducedDensityMatrix(addr::SingleComponentFockAddress; n = 1) <: AbstractOperator
 
 Represent the n-particle reduced density matrix:
 
@@ -131,8 +131,7 @@ Represent the n-particle reduced density matrix:
 ρ̂^{(n)}_{j_1,...,j_1,k_1,...,k_n} =  \\prod_{i}^{n} â^†_{j_i} \\prod_{i}^{n} â_{n+1-k}
 ```
 
-Where `j_i` and `k_i` (all `<: Int`) specify the single particle sites on a lattice. Also, ``ele_type`` specifies
-the type of each element in the reduced density matrix.
+Where `j_i` and `k_i` (all `<: Int`) specify the single particle sites on a lattice.
 Additionally, the indices run in the following manners:
 
 ```math
