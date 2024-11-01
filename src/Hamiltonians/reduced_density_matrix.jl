@@ -172,7 +172,7 @@ function Interfaces.dot_from_right(left::AbstractDVec, g2::ReducedDensityMatrix,
     n = g2.n
     dim = binomial(M,n)
     ρ = zeros(valtype(right),(dim,dim))
-    ρ .+= ele_ReducedDensityMatrix(ρ, left, right, M, Val(n))
+    ele_ReducedDensityMatrix(ρ, left, right, M, Val(n))
     return (ρ.+ρ')./2
 end
 
@@ -189,7 +189,8 @@ function ele_ReducedDensityMatrix(matrix_element, left, right, M, ::Val{n}) wher
                     matrix_element[t1,t2] += sum(pairs(right)) do (k,v)
                         xs=find_mode(k,reverse(ij))
                         ys=find_mode(k,kl)
-                        if  all(x -> x.occnum == 0, xs) ||  all(y -> y.occnum == 1, ys)
+                        if  (all(x -> x.occnum == 0, xs) ||  all(y -> y.occnum == 1, ys)
+                             || xs[1] isa BoseFSIndex)
                             nv, α = excitation(k,xs,ys)
                             conj(left[nv]) * v * α
                         else
