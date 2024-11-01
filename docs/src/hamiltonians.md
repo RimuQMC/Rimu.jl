@@ -89,6 +89,7 @@ StringCorrelator
 DensityMatrixDiagonal
 SingleParticleExcitation
 TwoParticleExcitation
+ReducedDensityMatrix
 Momentum
 AxialAngularMomentumHO
 ```
