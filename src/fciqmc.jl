@@ -144,13 +144,13 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
     tnorm, len = walkernumber_and_length(v)
 
     # Updates
-    time_step = update_time_step(time_step_strategy, time_step, tnorm)
-
-    shift_stats, proceed = update_shift_parameters!(
-        shift_strategy, shift_parameters, tnorm, v, pv, step, report
-    )
+    new_time_step = update_time_step(time_step_strategy, time_step, tnorm)
 
     @pack! s_state = v, pv, wm
+
+    shift_stats, proceed = update_shift_parameters!(
+        shift_strategy, shift_parameters, new_time_step, tnorm, s_state, step
+    )
     ### TO HERE
 
     if step % reporting_interval(state.reporting_strategy) == 0
