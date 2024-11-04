@@ -94,10 +94,6 @@ end
 function step_stats(::IsDeterministic)
     return (:exact_steps,), MultiScalar(0,)
 end
-function apply_column!(::IsDeterministic, w, op::AbstractMatrix, add, val, boost=1)
-    w .+= op[:, add] .* val
-    return (1,)
-end
 function apply_column!(::IsDeterministic, w, op, add, val, boost=1)
     diagonal_step!(w, op, add, val)
     spawn!(Exact(), w, op, add, val)
