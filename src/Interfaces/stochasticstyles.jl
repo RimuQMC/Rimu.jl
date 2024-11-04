@@ -126,6 +126,12 @@ end
 Return a tuple of stat names (`Symbol` or `String`) and a tuple of zeros of the same
 length. These will be reported as columns in the `DataFrame` returned by
 [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem).
+The names should be unique and not contain spaces or special characters.
+
+For a `StochasticStyle`, the first three stats are the number of
+clones, deaths, and zombies.
+
+See also [`StochasticStyle`](@ref), [`CompressionStrategy`](@ref).
 """
 step_stats(v) = step_stats(StochasticStyle(v))
 
