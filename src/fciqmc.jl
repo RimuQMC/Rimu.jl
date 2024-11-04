@@ -140,11 +140,15 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
     # pv was mutated and now contains the new vector.
     v, pv = (pv, v)
 
+    deaths, clones, zombies = step_stat_values[1:3] # stats from the StochasticStyle
+
     # Stats:
     tnorm, len = walkernumber_and_length(v)
 
     # Updates
-    new_time_step = update_time_step(time_step_strategy, time_step, tnorm)
+    new_time_step = update_time_step(
+        time_step_strategy, time_step, deaths, clones, zombies, tnorm, len
+    )
 
     @pack! s_state = v, pv, wm
 

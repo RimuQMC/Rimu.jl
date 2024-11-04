@@ -70,7 +70,7 @@ export ReportingStrategy, ReportDFAndInfo, ReportToFile
 export ReplicaStrategy, NoStats, AllOverlaps
 export PostStepStrategy, Projector, ProjectedEnergy, SignCoherence, WalkerLoneliness, Timer,
     SingleParticleDensity, single_particle_density
-export TimeStepStrategy, ConstantTimeStep, OvershootControl
+export TimeStepStrategy, ConstantTimeStep, AdaptiveTimeStep
 export localpart, walkernumber
 export smart_logger, default_logger
 export ProjectorMonteCarloProblem, SimulationPlan, state_vectors

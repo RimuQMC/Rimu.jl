@@ -220,3 +220,11 @@ using Rimu: num_replicas, num_spectral_states
     @test solve!(sm; last_step=300, reporting_strategy=ReportDFAndInfo()) === sm
     @test size(sm.df)[1] == 200 # the report was not emptied
 end
+
+@testset "AdaptiveTimeStep" begin
+    h = HubbardReal1D(BoseFS(1, 3))
+    p = ProjectorMonteCarloProblem(h; time_step_strategy=AdaptiveTimeStep())
+    sm = solve(p)
+    @test sm.success == true
+    @test "time_step" in names(sm.df)
+end
