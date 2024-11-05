@@ -15,6 +15,44 @@ function exact_energy(ham)
 end
 
 """
+    test_observable_interface(obs, addr)
+
+This function tests the interface of an observable `obs` at address `addr` by checking that
+all required methods are defined.
+"""
+function test_observable_interface(obs, addr)
+    @testset "Observable interface: $(nameof(typeof(obs)))" begin
+        @testset "three way dot" begin # this works with vector valued operators
+            v = DVec(addr => scalartype(obs)(2))
+            @test dot(v, obs, v) isa eltype(obs)
+            @test dot(v, obs, v) ≈ Interfaces.dot_from_right(v, obs, v)
+        end
+        @testset "LOStructure" begin
+            @test LOStructure(obs) isa LOStructure
+            if LOStructure(obs) isa IsHermitian
+                @test obs' === obs
+            elseif  LOStructure(obs) isa IsDiagonal
+                @test num_offdiagonals(obs, addr) == 0
+                if scalartype(obs) <: Real
+                    @test obs' === obs
+                end
+            elseif LOStructure(obs) isa AdjointKnown
+                @test begin obs'; true; end # make sure no error is thrown
+            else
+                @test_throws ArgumentError obs'
+            end
+        end
+        @testset "allows_address_type" begin
+            @test allows_address_type(obs, addr)
+        end
+        @testset "show" begin
+            # Check that the result of show can be pasted into the REPL
+            @test eval(Meta.parse(repr(obs))) == obs
+        end
+    end
+end
+
+"""
     test_operator_interface(op, addr; test_spawning=true)
 
 This function tests the interface of an operator `op` at address `addr` by checking that all
@@ -25,6 +63,8 @@ If `test_spawning` is `true`, tests are performed that require `offdiagonals` to
 function. Otherwise, the spawning tests are skipped.
 """
 function test_operator_interface(op, addr; test_spawning=true)
+    test_observable_interface(op, addr)
+
     @testset "Operator interface: $(nameof(typeof(op)))" begin
         @testset "diagonal_element" begin
             @test diagonal_element(op, addr) isa eltype(op)
@@ -48,37 +88,14 @@ function test_operator_interface(op, addr; test_spawning=true)
                 end
             end
         end
-        @testset "three way dot" begin # this works with vector valued operators
+        @testset "mul!" begin # this works with vector valued operators
             v = DVec(addr => scalartype(op)(2))
-            @test dot(v, op, v) isa eltype(op)
             w = empty(v, eltype(op); style=IsDeterministic{scalartype(op)}())
             mul!(w, op, v) # operator vector product
             @test dot(v, op, v) ≈ Interfaces.dot_from_right(v, op, v) ≈ dot(v, w)
         end
-        @testset "LOStructure" begin
-            @test LOStructure(op) isa LOStructure
-            if LOStructure(op) isa IsHermitian
-                @test op' === op
-            elseif  LOStructure(op) isa IsDiagonal
-                @test num_offdiagonals(op, addr) == 0
-                if scalartype(op) <: Real
-                    @test op' === op
-                end
-            elseif LOStructure(op) isa AdjointKnown
-                @test begin op'; true; end # make sure no error is thrown
-            else
-                @test_throws ArgumentError op'
-            end
-        end
         @testset "dimension" begin
             @test dimension(addr) ≥ dimension(op, addr)
-        end
-        @testset "allows_address_type" begin
-            @test allows_address_type(op, addr)
-        end
-        @testset "show" begin
-            # Check that the result of show can be pasted into the REPL
-            @test eval(Meta.parse(repr(op))) == op
         end
     end
 end
