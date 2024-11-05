@@ -39,7 +39,7 @@ underlying scalar type use [`scalartype`](@ref).
 
 Part of the [`AbstractObservable`](@ref) interface.
 !!! note
-    New types should only implement the method with the argument in the type domain.
+    New types do not have to implement this method explicitly. An implementation is provided based on the [`AbstractObservable`](@ref)'s type parameter.
 """
 Base.eltype(::Type{<:AbstractObservable{T}}) where {T} = T # could be vector value
 
@@ -50,7 +50,7 @@ the element type of the operator returned by [`eltype`](@ref), which can be a ve
 
 Part of the [`AbstractObservable`](@ref) interface.
 !!! note
-    New types should only implement the method with the argument in the type domain.
+    New types do not have to implement this method explicitly. An implementation is provided based on the [`AbstractObservable`](@ref)'s type parameter.
 """
 VectorInterface.scalartype(::Type{<:AbstractObservable{T}}) where {T} = eltype(T)
 
