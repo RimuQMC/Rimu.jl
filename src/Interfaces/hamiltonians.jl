@@ -15,7 +15,8 @@ product [`dot(x, op, y)`](@ref LinearAlgebra.dot) with two vectors of type
 by the [`scalartype`](@ref) function.
 
 The `AbstractObservable` type is useful for defining observables that can be calculated in
-the context of a [`ProjectorMonteCarloProblem`](@ref) using [`AllOverlaps`](@ref).
+the context of a [`ProjectorMonteCarloProblem`](@ref) using
+[`AllOverlaps`](@ref Main.Hamiltonians).
 
 # Interface
 
