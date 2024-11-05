@@ -128,7 +128,7 @@ end
 Represent the n-particle reduced density matrix:
 
 ```math
-ρ̂^{(n)}_{j_1,...,j_1,k_1,...,k_n} =  \\prod_{i}^{n} â^†_{j_i} \\prod_{i}^{n} â_{n+1-k}
+ρ̂^{(n)}_{j_1,...,j_1,k_1,...,k_n} =  \\prod_{i}^{n} â^†_{j_i} \\prod_{l}^{n} â_{k_{n+1-l}}
 ```
 
 Where `j_i` and `k_i` (all `<: Int`) specify the single particle sites on a lattice.
