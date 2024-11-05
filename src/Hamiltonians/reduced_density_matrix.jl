@@ -162,8 +162,7 @@ LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 function Interfaces.allows_address_type(
     op::ReducedDensityMatrix, A::Type{<:AbstractDVec}
 )
-    result = op.M == num_modes(A)
-    return result
+    return op.M == num_modes(A)
 end
 
 function Interfaces.dot_from_right(left::AbstractDVec, op::ReducedDensityMatrix, right::AbstractDVec)
