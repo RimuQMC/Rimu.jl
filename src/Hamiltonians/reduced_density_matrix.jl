@@ -145,13 +145,13 @@ j_n> ... > j_{i+1} > j_{i} > ... > j_1 and k_n> ... > k_{i+1} > k_{i} > ... > k_
 * [`SingleParticleExcitation`](@ref)
 * [`TwoParticleExcitation`](@ref)
 """
-struct ReducedDensityMatrix{TT} <: AbstractOperator{TT}
+struct ReducedDensityMatrix <: AbstractOperator{Matrix{Float64}}
     M::Int
     n::Int
 end
 function ReducedDensityMatrix(addr::SingleComponentFockAddress; n = 1)
     M = num_modes(addr)
-    return ReducedDensityMatrix{Float64}(M,n)
+    return ReducedDensityMatrix(M,n)
 end
 function Base.show(io::IO, op::ReducedDensityMatrix)
     print(io, "ReducedDensityMatrix(num_modes = $(op.M), n=$(op.n))")
