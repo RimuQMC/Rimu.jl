@@ -14,11 +14,16 @@ all components is computed.
 
 * [`single_particle_density`](@ref)
 * [`SingleParticleDensity`](@ref)
+* [`SingleParticleExcitation`](@ref)
 """
 struct DensityMatrixDiagonal{C} <: AbstractHamiltonian{Float64}
     mode::Int
 end
 DensityMatrixDiagonal(mode; component=0) = DensityMatrixDiagonal{component}(mode)
+
+function allows_address_type(dmd::DensityMatrixDiagonal{C}, ::Type{A}) where {C, A}
+    return C ≤ num_components(A) && dmd.mode ≤ num_modes(A)
+end
 
 function diagonal_element(dmd::DensityMatrixDiagonal{1}, add::SingleComponentFockAddress)
     return float(find_mode(add, dmd.mode).occnum)

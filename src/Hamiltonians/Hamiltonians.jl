@@ -39,6 +39,8 @@ Other
 - [`G2RealSpace`](@ref)
 - [`G2MomCorrelator`](@ref)
 - [`DensityMatrixDiagonal`](@ref)
+- [`SingleParticleExcitation`](@ref)
+- [`TwoParticleExcitation`](@ref)
 - [`Momentum`](@ref)
 - [`AxialAngularMomentumHO`](@ref)
 
@@ -64,7 +66,7 @@ using TupleTools: TupleTools
 using ..BitStringAddresses
 using ..Interfaces
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
-    offdiagonals, random_offdiagonal, LOStructure, allowed_address_type
+    offdiagonals, random_offdiagonal, LOStructure, allows_address_type
 
 export dimension, rayleigh_quotient, momentum
 
@@ -83,6 +85,7 @@ export FroehlichPolaron
 export ParticleNumberOperator
 
 export G2MomCorrelator, G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
+export SingleParticleExcitation, TwoParticleExcitation
 export StringCorrelator
 
 export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
@@ -116,9 +119,9 @@ include("TRSymmetry.jl")
 include("Stoquastic.jl")
 
 include("Transcorrelated1D.jl")
-
 include("correlation_functions.jl")
 include("DensityMatrixDiagonal.jl")
+include("reduced_density_matrix.jl")
 include("Momentum.jl")
 include("particle_number.jl")
 
