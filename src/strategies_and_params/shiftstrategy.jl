@@ -29,7 +29,7 @@ abstract type ShiftStrategy end
 Default mutable struct for storing the shift parameters.
 
 See [`ShiftStrategy`](@ref), [`initialise_shift_parameters`](@ref),
-[`update_shift_paramters`](@ref).
+[`update_shift_paramters!`](@ref).
 """
 mutable struct DefaultShiftParameters{S, N}
     shift::S # for current time step
