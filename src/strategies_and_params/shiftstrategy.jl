@@ -35,7 +35,7 @@ mutable struct DefaultShiftParameters{S, N}
     shift::S # for current time step
     pnorm::N # norm from previous time step
     time_step::Float64
-    boost::Float64 # boost factor
+    boost::Float64 # boost factor for spawning
     counter::Int
     shift_mode::Bool
 end
@@ -44,7 +44,7 @@ end
     initialise_shift_parameters(
         s::ShiftStrategy, shift, norm, time_step, boost=1.0, counter=0, shift_mode=false
     ) -> DefaultShiftParameters
-Initiatlise a struct to store the shift parameters.
+Initialise a struct to store the shift parameters.
 
 See [`ShiftStrategy`](@ref), [`update_shift_parameters!`](@ref),
 [`DefaultShiftParameters`](@ref).
