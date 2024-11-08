@@ -1,7 +1,8 @@
 """
     ShiftStrategy
 Abstract type for defining the strategy for controlling the norm, potentially by updating
-the `shift`. Passed as a parameter to [`ProjectorMonteCarloProblem`](@ref) or to [`FCIQMC`](@ref).
+the `shift`. Passed as a parameter to [`ProjectorMonteCarloProblem`](@ref) or to
+[`FCIQMC`](@ref).
 
 ## Implemented strategies:
 
@@ -27,27 +28,34 @@ abstract type ShiftStrategy end
     DefaultShiftParameters
 Default mutable struct for storing the shift parameters.
 
-See [`ShiftStrategy`](@ref), [`initialise_shift_parameters`](@ref).
+See [`ShiftStrategy`](@ref), [`initialise_shift_parameters`](@ref),
+[`update_shift_paramters`](@ref).
 """
 mutable struct DefaultShiftParameters{S, N}
     shift::S # for current time step
     pnorm::N # norm from previous time step
     time_step::Float64
+    boost::Float64 # boost factor
     counter::Int
     shift_mode::Bool
 end
 
 """
-    initialise_shift_parameters(s::ShiftStrategy, shift, norm, time_step, counter=0, shift_mode=false)
+    initialise_shift_parameters(
+        s::ShiftStrategy, shift, norm, time_step, boost=1.0, counter=0, shift_mode=false
+    ) -> DefaultShiftParameters
 Initiatlise a struct to store the shift parameters.
 
-See [`ShiftStrategy`](@ref), [`update_shift_parameters!`](@ref), [`DefaultShiftParameters`](@ref).
+See [`ShiftStrategy`](@ref), [`update_shift_parameters!`](@ref),
+[`DefaultShiftParameters`](@ref).
 """
 function initialise_shift_parameters(
     ::ShiftStrategy, shift, norm, time_step,
-    counter=0, shift_mode=false
+    boost=1.0, counter=0, shift_mode=false
 )
-    return DefaultShiftParameters(shift, norm, time_step, counter, shift_mode)
+    return DefaultShiftParameters(
+        shift, norm, Float64(time_step), Float64(boost), counter, shift_mode
+    )
 end
 
 """
@@ -63,7 +71,8 @@ Update the `shift_parameters` according to strategy `s`. See [`ShiftStrategy`](@
 Returns a named tuple of the shift statistics and a boolean `proceed` indicating whether
 the simulation should proceed.
 
-See [`initialise_shift_parameters`](@ref), [`ShiftStrategy`](@ref).
+See [`initialise_shift_parameters`](@ref), [`ShiftStrategy`](@ref),
+[`DefaultShiftParameters`](@ref).
 """
 update_shift_parameters!
 

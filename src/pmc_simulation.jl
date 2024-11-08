@@ -86,12 +86,12 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     @assert vectors isa SMatrix{n_spectral,n_replicas}
 
     # set up initial_shift_parameters
-    shift, time_step = nothing, nothing
-
     shift_parameters = if initial_shift_parameters isa Union{NamedTuple, DefaultShiftParameters}
         # we have previously stored shift and time_step
-        @unpack shift, time_step = initial_shift_parameters
-        set_up_initial_shift_parameters(algorithm, hamiltonian, vectors, shift, time_step)
+        @unpack shift, time_step, boost = initial_shift_parameters
+        set_up_initial_shift_parameters(
+            algorithm, hamiltonian, vectors, shift, time_step, boost
+        )
     else
         SMatrix{n_spectral,n_replicas}(initial_shift_parameters...)
     end
