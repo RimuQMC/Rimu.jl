@@ -48,10 +48,10 @@ function AdaptiveTimeStep(; damp_zombies=0.9, grow=1.01)
     return AdaptiveTimeStep(damp_zombies, grow)
 end
 
-function update_time_step(::AdaptiveTimeStep, time_step, _, _, zombies, _...)
+function update_time_step(s::AdaptiveTimeStep, time_step, _, _, zombies, _...)
     if  zombies > 0
-        return time_step * damp_zombies^zombies # decrease time step
+        return time_step * s.damp_zombies^zombies # decrease time step
     else
-        return time_step * grow # increase time step
+        return time_step * s.grow # increase time step
     end
 end
