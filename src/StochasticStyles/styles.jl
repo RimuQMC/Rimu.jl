@@ -14,14 +14,14 @@ IsStochasticInteger() =  IsStochasticInteger{Int}()
 function step_stats(::IsStochasticInteger{T}) where {T}
     z = zero(T)
     return (
-        (:spawn_attempts, :spawns, :deaths, :clones, :zombies),
-        MultiScalar(0, z, z, z, z),
+        (:clones, :deaths, :zombies, :spawn_attempts, :spawns),
+        MultiScalar(z, z, z, 0, z),
     )
 end
 function apply_column!(::IsStochasticInteger, w, op, add, val::Real, boost=1)
     clones, deaths, zombies = diagonal_step!(w, op, add, val)
     attempts, spawns = spawn!(WithReplacement(), w, op, add, val, boost)
-    return (attempts, spawns, deaths, clones, zombies)
+    return (clones, deaths, zombies, attempts, spawns)
 end
 
 """
@@ -43,7 +43,7 @@ IsStochastic2Pop() = IsStochastic2Pop{Complex{Int}}()
 function step_stats(::IsStochastic2Pop{T}) where {T}
     z = zero(T)
     return (
-        (:spawns, :deaths, :clones, :zombies),
+        (:clones, :deaths, :zombies, :spawns),
         MultiScalar(z, z, z, z)
     )
 end
@@ -59,7 +59,7 @@ function apply_column!(::IsStochastic2Pop, w, op, add, val, boost=1)
 
     clones, deaths, zombies = diagonal_step!(w, op, add, val)
 
-    return (spawns, deaths, clones, zombies)
+    return (clones, deaths, zombies, spawns)
 end
 
 const FloatOrComplexFloat = Union{AbstractFloat, Complex{<:AbstractFloat}}
@@ -91,17 +91,17 @@ function Base.show(io::IO, s::IsDeterministic{T}) where {T}
     end
 end
 
-function step_stats(::IsDeterministic)
-    return (:exact_steps,), MultiScalar(0,)
-end
-function apply_column!(::IsDeterministic, w, op::AbstractMatrix, add, val, boost=1)
-    w .+= op[:, add] .* val
-    return (1,)
+function step_stats(::IsDeterministic{T}) where {T}
+    z = zero(T)
+    return (
+        (:clones, :deaths, :zombies, :exact_steps,),
+        MultiScalar(z, z, z, 0)
+    )
 end
 function apply_column!(::IsDeterministic, w, op, add, val, boost=1)
-    diagonal_step!(w, op, add, val)
+    clones, deaths, zombies = diagonal_step!(w, op, add, val)
     spawn!(Exact(), w, op, add, val)
-    return (1,)
+    return (clones, deaths, zombies, 1)
 end
 
 """
@@ -121,12 +121,16 @@ IsStochasticWithThreshold(args...) = IsStochasticWithThreshold{Float64}(args...)
 IsStochasticWithThreshold{T}(t=1.0) where {T} = IsStochasticWithThreshold{T}(T(t))
 
 function step_stats(::IsStochasticWithThreshold{T}) where {T}
-    return ((:spawn_attempts, :spawns), MultiScalar(0, zero(T)))
+    z = zero(T)
+    return (
+        (:clones, :deaths, :zombies, :spawn_attempts, :spawns),
+        MultiScalar(z, z, z, 0, z)
+    )
 end
 function apply_column!(s::IsStochasticWithThreshold, w, op, add, val, boost=1)
-    diagonal_step!(w, op, add, val, s.threshold)
+    clones, deaths, zombies = diagonal_step!(w, op, add, val, s.threshold)
     attempts, spawns = spawn!(WithReplacement(s.threshold), w, op, add, val, boost)
-    return (attempts, spawns)
+    return (clones, deaths, zombies, attempts, spawns)
 end
 
 """
@@ -203,14 +207,14 @@ CompressionStrategy(s::IsDynamicSemistochastic) = s.compression
 function step_stats(::IsDynamicSemistochastic{T}) where {T}
     z = zero(T)
     return (
-        (:exact_steps, :inexact_steps, :spawn_attempts, :spawns),
-        MultiScalar(0, 0, 0, z),
+        (:clones, :deaths, :zombies, :exact_steps, :inexact_steps, :spawn_attempts, :spawns),
+        MultiScalar(z, z, z, 0, 0, 0, z),
     )
 end
 function apply_column!(s::IsDynamicSemistochastic, w, op, add, val, boost=1)
-    diagonal_step!(w, op, add, val, s.proj_threshold)
+    clones, deaths, zombies = diagonal_step!(w, op, add, val, s.proj_threshold)
     exact, inexact, attempts, spawns = spawn!(s.spawning, w, op, add, val, boost)
-    return (exact, inexact, attempts, spawns)
+    return (clones, deaths, zombies, exact, inexact, attempts, spawns)
 end
 
 default_style(::Type{T}) where {T<:Integer} = IsStochasticInteger{T}()

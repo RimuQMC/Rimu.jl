@@ -31,20 +31,6 @@ end
     deposit!(vec, 1, 2, 1 => 2)
     deposit!(vec, 4, -2, 1 => 2)
     @test vec == [3, 2, 3, 2, 5]
-
-    @test StochasticStyle(vec) == IsStochasticInteger{Int64}()
-    @test StochasticStyle(Float32.(vec)) == IsDeterministic{Float32}()
-
-    names, values = step_stats(vec)
-    @test names == (:spawn_attempts, :spawns, :deaths, :clones, :zombies)
-    @test values == Rimu.MultiScalar((0, 0, 0, 0, 0))
-
-    w = [1.0, 2.0, 3.0]
-
-    @test apply_column!(w, matrix, 1, 2) == (1, )
-    @test w[1] == 1.0 + 2 * matrix[1, 1]
-    @test w[2] == 2.0 + 2 * matrix[2, 1]
-    @test w[3] == 3.0 + 2 * matrix[3, 1]
 end
 
 @testset "projected_deposit!" begin

@@ -28,7 +28,7 @@ end
 Set up the initial shift parameters for the [`FCIQMC`](@ref) algorithm.
 """
 function set_up_initial_shift_parameters(algorithm::FCIQMC, hamiltonian,
-    starting_vectors::SMatrix{S,R}, shift, time_step
+    starting_vectors::SMatrix{S,R}, shift, time_step, boost
 ) where {S,R}
     shift_strategy = algorithm.shift_strategy
 
@@ -42,7 +42,7 @@ function set_up_initial_shift_parameters(algorithm::FCIQMC, hamiltonian,
         throw(ArgumentError("The number of shifts must match the number of starting vectors."))
     end
     initial_shift_parameters = Tuple(map(zip(starting_vectors, initial_shifts)) do (sv, s)
-        initialise_shift_parameters(shift_strategy, s, walkernumber(sv), time_step)
+        initialise_shift_parameters(shift_strategy, s, walkernumber(sv), time_step, boost)
     end)
     @assert length(initial_shift_parameters) == S * R
     return SMatrix{S,R}(initial_shift_parameters)
@@ -127,7 +127,7 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
 
     @unpack reporting_strategy = state
     @unpack hamiltonian, v, pv, wm, id, shift_parameters = s_state
-    @unpack shift, pnorm, time_step = shift_parameters
+    @unpack shift, pnorm, time_step, boost = shift_parameters
     @unpack shift_strategy, time_step_strategy = algorithm
     step = state.step[]
 
@@ -136,21 +136,27 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
     transition_op = FirstOrderTransitionOperator(shift_parameters, hamiltonian)
 
     # Step
-    step_stat_names, step_stat_values, wm, pv = apply_operator!(wm, pv, v, transition_op)
+    step_stat_names, step_stat_values, wm, pv = apply_operator!(
+        wm, pv, v, transition_op, boost
+    )
     # pv was mutated and now contains the new vector.
     v, pv = (pv, v)
+
+    deaths, clones, zombies = step_stat_values[1:3] # stats from the StochasticStyle
 
     # Stats:
     tnorm, len = walkernumber_and_length(v)
 
     # Updates
-    time_step = update_time_step(time_step_strategy, time_step, tnorm)
-
-    shift_stats, proceed = update_shift_parameters!(
-        shift_strategy, shift_parameters, tnorm, v, pv, step, report
+    new_time_step = update_time_step(
+        time_step_strategy, time_step, deaths, clones, zombies, tnorm, len
     )
 
     @pack! s_state = v, pv, wm
+
+    shift_stats, proceed = update_shift_parameters!(
+        shift_strategy, shift_parameters, new_time_step, tnorm, s_state, step
+    )
     ### TO HERE
 
     if step % reporting_interval(state.reporting_strategy) == 0

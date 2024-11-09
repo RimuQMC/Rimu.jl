@@ -66,7 +66,7 @@ julia> simulation.success[]
 true
 
 julia> size(DataFrame(simulation))
-(100, 9)
+(100, 12)
 ```
 
 # Further keyword arguments:
@@ -76,6 +76,7 @@ julia> size(DataFrame(simulation))
     duration of the simulation. Takes precedence over `last_step` and `walltime`.
 - `ζ = 0.08`: Damping parameter for the shift update.
 - `ξ = ζ^2/4`: Forcing parameter for the shift update.
+- `boost = 1.0`: Boost factor for the spawning process.
 - `shift_strategy = DoubleLogUpdate(; target_walkers, ζ, ξ)`: How to update the `shift`,
     see [`ShiftStrategy`](@ref).
 - `time_step_strategy = ConstantTimeStep()`: Adjust time step or not, see
@@ -146,6 +147,7 @@ function ProjectorMonteCarloProblem(
     initiator = false,
     threading = nothing,
     time_step = 0.01,
+    boost = 1.0,
     starting_step = 0,
     last_step = 100,
     walltime = Inf,
@@ -199,7 +201,7 @@ function ProjectorMonteCarloProblem(
     # here we just store the initial shift and time_step if initial_shift_parameters is not
     # provided
     if isnothing(initial_shift_parameters)
-        initial_shift_parameters = (; shift, time_step)
+        initial_shift_parameters = (; shift, time_step, boost)
     end
 
     shift_strategy = algorithm.shift_strategy

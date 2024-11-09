@@ -1,5 +1,5 @@
 """
-    StochasticStyle(v)
+    StochasticStyle(v::AbstractDVec)
 
 Abstract type. When called as a function it returns the native style of the
 generalised vector `v` that determines how simulations are to proceed.
@@ -34,11 +34,10 @@ and optionally
 * [`CompressionStrategy(::StochasticStyle)`](@ref) for vector compression after
   annihilations,
 
-See also [`StochasticStyles`](@ref Main.StochasticStyles), [`Interfaces`](@ref).
+See also [`StochasticStyles`](@ref Main.StochasticStyles), [`Interfaces`](@ref),
+[`AbstractDVec`](@ref).
 """
 abstract type StochasticStyle{T} end
-
-StochasticStyle(::AbstractVector{T}) where T = default_style(T)
 
 Base.eltype(::Type{<:StochasticStyle{T}}) where {T} = T
 VectorInterface.scalartype(::Type{<:StochasticStyle{T}}) where {T} = T
@@ -127,6 +126,12 @@ end
 Return a tuple of stat names (`Symbol` or `String`) and a tuple of zeros of the same
 length. These will be reported as columns in the `DataFrame` returned by
 [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem).
+The names should be unique and not contain spaces or special characters.
+
+For a `StochasticStyle`, the first three stats are the number of
+clones, deaths, and zombies.
+
+See also [`StochasticStyle`](@ref), [`CompressionStrategy`](@ref).
 """
 step_stats(v) = step_stats(StochasticStyle(v))
 
