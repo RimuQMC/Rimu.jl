@@ -160,7 +160,6 @@ function Interfaces.dot_from_right(
     dim = binomial(num_modes(keytype(left)), N)
     ρ = sum(ReducedDensityMatrixCalculcator{N}(left, dim), pairs(right))
     return (ρ .+ ρ') ./ 2
-end
 
 # This struct used to calculate matrix elements of `ReducedDensityMatrix`
 # It was introduced because passing a function to `sum` in `dot_from_right` was causing
