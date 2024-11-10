@@ -145,59 +145,47 @@ j_n> ... > j_{i+1} > j_{i} > ... > j_1 and k_n> ... > k_{i+1} > k_{i} > ... > k_
 * [`SingleParticleExcitation`](@ref)
 * [`TwoParticleExcitation`](@ref)
 """
-struct ReducedDensityMatrix <: AbstractOperator{Matrix{Float64}}
-    M::Int
-    n::Int
-end
-function ReducedDensityMatrix(addr::SingleComponentFockAddress; n = 1)
-    M = num_modes(addr)
-    return ReducedDensityMatrix(M,n)
-end
-function Base.show(io::IO, op::ReducedDensityMatrix)
-    print(io, "ReducedDensityMatrix(num_modes = $(op.M), n=$(op.n))")
+struct ReducedDensityMatrix{N} <: AbstractOperator{Matrix{Float64}} end
+ReducedDensityMatrix(N) = ReducedDensityMatrix{N}()
+ReducedDensityMatrix(;n=1) = ReducedDensityMatrix{n}()
+function Base.show(io::IO, op::ReducedDensityMatrix{N}) where {N}
+    print(io, "ReducedDensityMatrix($N)")
 end
 
 LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 
-function Interfaces.allows_address_type(
-    op::ReducedDensityMatrix, A::Type{<:AbstractDVec}
-)
-    return op.M == num_modes(A)
+function Interfaces.dot_from_right(
+    left::AbstractDVec, op::ReducedDensityMatrix{N}, right::AbstractDVec
+) where {N}
+    dim = binomial(num_modes(keytype(left)), N)
+    ρ = sum(ReducedDensityMatrixCalculcator{N}(left, dim), pairs(right))
+    return (ρ .+ ρ') ./ 2
+
+# This struct used to calculate matrix elements of `ReducedDensityMatrix`
+# It was introduced because passing a function to `sum` in `dot_from_right` was causing
+# type instabilites.
+struct ReducedDensityMatrixCalculcator{N,D}
+    left::D
+    dim::Int
+
+    ReducedDensityMatrixCalculcator{N}(left, dim) where {N} = new{N,typeof(left)}(left, dim)
 end
 
-function Interfaces.dot_from_right(left::AbstractDVec, op::ReducedDensityMatrix, right::AbstractDVec)
-    M = num_modes(keytype(left))
-    n = op.n
-    dim = binomial(M,n)
-    ρ = zeros(valtype(right),(dim,dim))
-    ele_ReducedDensityMatrix(ρ, left, right, M, Val(n))
-    return (ρ.+ρ')./2
-end
+function (calc::ReducedDensityMatrixCalculcator{N})(pair) where {N}
+    addr_right, val_right = pair
+    left = calc.left
+    dim = calc.dim
 
-function ele_ReducedDensityMatrix(matrix_element, left, right, M, ::Val{n}) where {n}
-    t1=0
-    t2=0
-    for ij in Iterators.product(ntuple(q1->(n-q1+1:M),Val(n))...)
-        if all(ntuple(q1->ij[q1+1]<ij[q1],Val(n-1)))
-            t1+=1
-            t2=0
-            for kl in Iterators.product(ntuple(q2->(n-q2+1:M),Val(n))...)
-                if all(ntuple(q1->kl[q1+1]<kl[q1],Val(n-1)))
-                    t2+=1
-                    matrix_element[t1,t2] += sum(pairs(right)) do (k,v)
-                        xs=find_mode(k,reverse(ij))
-                        ys=find_mode(k,kl)
-                        if  (all(x -> x.occnum == 0, xs) ||  all(y -> y.occnum == 1, ys)
-                             || xs[1] isa BoseFSIndex)
-                            nv, α = excitation(k,xs,ys)
-                            conj(left[nv]) * v * α
-                        else
-                            0.0
-                        end 
-                    end
-                end
-            end
+    T = promote_type(Float64, valtype(left), typeof(val_right))
+    result = zeros(T, (dim, dim))
+    for j in axes(result, 2)
+        dsts = find_mode(addr_right, vertices(j, Val(N)))
+        for i in axes(result, 1)
+            srcs = reverse(find_mode(addr_right, vertices(i, Val(N))))
+
+            addr_left, elem = excitation(addr_right, dsts, srcs)
+            @inbounds result[i, j] += T(conj(left[addr_left]) * elem * val_right)
         end
     end
-    return matrix_element
+    return result
 end
