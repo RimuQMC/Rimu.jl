@@ -123,7 +123,7 @@ function get_offdiagonal(
 end
 
 """
-    ReducedDensityMatrix(P = 1) <: AbstractObservable{Float64}
+    ReducedDensityMatrix(P = 1) <: AbstractOperator{Float64}
 
 Represent the P-particle reduced density matrix:
 
@@ -184,7 +184,7 @@ julia> dot(dvec_f,Op2,dvec_f)
 * [`SingleParticleExcitation`](@ref)
 * [`TwoParticleExcitation`](@ref)
 """
-struct ReducedDensityMatrix{TT, P} <: AbstractObservable{Matrix{TT}} end
+struct ReducedDensityMatrix{TT, P} <: AbstractOperator{Matrix{TT}} end
 ReducedDensityMatrix(P; ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
 ReducedDensityMatrix(;P = 1, ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
 function Base.show(io::IO, op::ReducedDensityMatrix{P}) where {P}
