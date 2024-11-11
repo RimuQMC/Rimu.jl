@@ -185,10 +185,10 @@ julia> dot(dvec_f,Op2,dvec_f)
 * [`TwoParticleExcitation`](@ref)
 """
 struct ReducedDensityMatrix{TT, P} <: AbstractOperator{Matrix{TT}} end
-ReducedDensityMatrix(P; ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
-ReducedDensityMatrix(;P = 1, ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
+ReducedDensityMatrix(P::Int; ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
+ReducedDensityMatrix(;P::Int = 1, ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
 function Base.show(io::IO, op::ReducedDensityMatrix{P}) where {P}
-    print(io, "ReducedDensityMatrix($P)")
+    print(io, "ReducedDensityMatrix(P = $P)")
 end
 
 LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
