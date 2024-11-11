@@ -123,7 +123,7 @@ function get_offdiagonal(
 end
 
 """
-    ReducedDensityMatrix(P = 1) <: AbstractOperator{Float64}
+    ReducedDensityMatrix(P) <: AbstractOperator{Float64}
 
 Represent the P-particle reduced density matrix:
 
@@ -166,8 +166,8 @@ ERROR: ArgumentError: ReducedDensityMatrix(<:BoseFS, P > 1) is not measurable
 
 julia> dvec_f = PDVec(FermiFS{2,4}(1,1,0,0)=>0.5, FermiFS{2,4}(0,1,1,0)=>0.5)
 2-element PDVec: style = IsDeterministic{Float64}()
-  fs"|↑↑⋅⋅⟩" => 0.5
   fs"|⋅↑↑⋅⟩" => 0.5
+  fs"|↑↑⋅⋅⟩" => 0.5
 
 julia> dot(dvec_f,Op2,dvec_f)
 6×6 Matrix{Float64}:
