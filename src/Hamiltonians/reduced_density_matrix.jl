@@ -123,55 +123,101 @@ function get_offdiagonal(
 end
 
 """
-    ReducedDensityMatrix(addr::SingleComponentFockAddress; n = 1) <: AbstractOperator
+    ReducedDensityMatrix(P = 1) <: AbstractObservable{Float64}
 
-Represent the n-particle reduced density matrix:
-
-```math
-ρ̂^{(n)}_{j_1,...,j_1,k_1,...,k_n} =  \\prod_{i}^{n} â^†_{j_i} \\prod_{l}^{n} â_{k_{n+1-l}}
-```
-
-Where `j_i` and `k_i` (all `<: Int`) specify the single particle sites on a lattice.
-Additionally, the indices run in the following manners:
+Represent the P-particle reduced density matrix:
 
 ```math
-j_n> ... > j_{i+1} > j_{i} > ... > j_1 and k_n> ... > k_{i+1} > k_{i} > ... > k_1
+\\hat{ρ}^{(n)}_{j_1,...,j_1,k_1,...,k_n} =  \\prod_{i}^{n} â^†_{j_i} \\prod_{l}^{n} â_{k_{n+1-l}}
 ```
 
+The indices `j_i` and `k_i` (all `<: Int`) represent the single particle sites on a lattice. 
+These indices are chosen in a specific pattern to ensure that unique elements of the 
+reduced density matrix are calculated. This calculation will provide sufficient information 
+for interpreting the largest eigenvalue. Additionally, the indices follow specific patterns 
+as they run in the following manner:
+
+```math
+j_n > ... > j_{i+1} > j_{i} > ... > j_1 \\And k_n> ... > k_{i+1} > k_{i} > ... > k_1
+```
+This specific pattern has a drawback: for n > 1, addr cannot be of <:BoseFS.
+
+# Examples
+
+```jldoctest
+julia> dvec_b = PDVec(BoseFS{2,2}(1,1)=>0.5, BoseFS{2,2}(2,0)=>0.5)
+2-element PDVec: style = IsDeterministic{Float64}()
+  fs"|2 0⟩" => 0.5
+  fs"|1 1⟩" => 0.5
+
+julia> Op1 = ReducedDensityMatrix(P = 1)
+ReducedDensityMatrix(1)
+
+julia> dot(dvec_b,Op1,dvec_b)
+2×2 Matrix{Float64}:
+ 0.75      0.353553
+ 0.353553  0.25
+
+julia> Op2 = ReducedDensityMatrix(P = 2)
+ReducedDensityMatrix(2)
+
+julia> dot(dvec_b,Op2,dvec_b)
+ERROR: ArgumentError: ReducedDensityMatrix(<:BoseFS, p>1) is not measurable
+
+julia> dvec_f = PDVec(FermiFS{2,4}(1,1,0,0)=>0.5, FermiFS{2,4}(0,1,1,0)=>0.5)
+2-element PDVec: style = IsDeterministic{Float64}()
+  fs"|↑↑⋅⋅⟩" => 0.5
+  fs"|⋅↑↑⋅⟩" => 0.5
+
+julia> dot(dvec_f,Op2,dvec_f)
+6×6 Matrix{Float64}:
+ 0.25  0.0  0.25  0.0  0.0  0.0
+ 0.0   0.0  0.0   0.0  0.0  0.0
+ 0.25  0.0  0.25  0.0  0.0  0.0
+ 0.0   0.0  0.0   0.0  0.0  0.0
+ 0.0   0.0  0.0   0.0  0.0  0.0
+ 0.0   0.0  0.0   0.0  0.0  0.0
+```
 # See also
-
 * [`single_particle_density`](@ref)
 * [`SingleParticleDensity`](@ref)
 * [`SingleParticleExcitation`](@ref)
 * [`TwoParticleExcitation`](@ref)
 """
-struct ReducedDensityMatrix{N} <: AbstractOperator{Matrix{Float64}} end
-ReducedDensityMatrix(N) = ReducedDensityMatrix{N}()
-ReducedDensityMatrix(;n=1) = ReducedDensityMatrix{n}()
-function Base.show(io::IO, op::ReducedDensityMatrix{N}) where {N}
-    print(io, "ReducedDensityMatrix($N)")
+struct ReducedDensityMatrix{TT, P} <: AbstractObservable{Matrix{TT}} end
+ReducedDensityMatrix(P; ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
+ReducedDensityMatrix(;P = 1, ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
+function Base.show(io::IO, op::ReducedDensityMatrix{P}) where {P}
+    print(io, "ReducedDensityMatrix($P)")
 end
 
 LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 
 function Interfaces.dot_from_right(
-    left::AbstractDVec, op::ReducedDensityMatrix{N}, right::AbstractDVec
-) where {N}
-    dim = binomial(num_modes(keytype(left)), N)
-    ρ = sum(ReducedDensityMatrixCalculcator{N}(left, dim), pairs(right))
+    left::AbstractDVec, op::ReducedDensityMatrix{P}, right::AbstractDVec
+) where {P}
+    if all(keytype(left) <: BoseFS, P>1)
+         ArgumentError("ReducedDensityMatrix(<:BoseFS, p>1) is not measurable")
+    end
+    dim = binomial(num_modes(keytype(left)), P)
+    ρ = sum(ReducedDensityMatrixCalculcator{P}(left, dim), pairs(right))
     return (ρ .+ ρ') ./ 2
-
+end
 # This struct used to calculate matrix elements of `ReducedDensityMatrix`
 # It was introduced because passing a function to `sum` in `dot_from_right` was causing
 # type instabilites.
-struct ReducedDensityMatrixCalculcator{N,D}
+"""
+    ReducedDensityMatrixCalculator{P}(left, dim)
+Compute matrix elements of `ReducedDensityMatrix`.
+"""
+struct ReducedDensityMatrixCalculcator{P,D}
     left::D
     dim::Int
 
-    ReducedDensityMatrixCalculcator{N}(left, dim) where {N} = new{N,typeof(left)}(left, dim)
+    ReducedDensityMatrixCalculcator{P}(left, dim) where {P} = new{P,typeof(left)}(left, dim)
 end
 
-function (calc::ReducedDensityMatrixCalculcator{N})(pair) where {N}
+function (calc::ReducedDensityMatrixCalculcator{P})(pair) where {P}
     addr_right, val_right = pair
     left = calc.left
     dim = calc.dim
@@ -179,9 +225,9 @@ function (calc::ReducedDensityMatrixCalculcator{N})(pair) where {N}
     T = promote_type(Float64, valtype(left), typeof(val_right))
     result = zeros(T, (dim, dim))
     for j in axes(result, 2)
-        dsts = find_mode(addr_right, vertices(j, Val(N)))
+        dsts = find_mode(addr_right, vertices(j, Val(P)))
         for i in axes(result, 1)
-            srcs = reverse(find_mode(addr_right, vertices(i, Val(N))))
+            srcs = reverse(find_mode(addr_right, vertices(i, Val(P))))
 
             addr_left, elem = excitation(addr_right, dsts, srcs)
             @inbounds result[i, j] += T(conj(left[addr_left]) * elem * val_right)
