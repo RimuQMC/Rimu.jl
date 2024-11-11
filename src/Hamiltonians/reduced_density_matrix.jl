@@ -196,7 +196,7 @@ LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 function Interfaces.dot_from_right(
     left::AbstractDVec, op::ReducedDensityMatrix{P}, right::AbstractDVec
 ) where {P}
-    if all((keytype(left) <: BoseFS, P > 1))
+    if all((keytype(left) <: BoseFS, P != 1.0))
          throw(ArgumentError("ReducedDensityMatrix(<:BoseFS, P > 1) is not measurable"))
     end
     dim = binomial(num_modes(keytype(left)), P)
