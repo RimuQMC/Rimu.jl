@@ -162,7 +162,7 @@ julia> Op2 = ReducedDensityMatrix(P = 2)
 ReducedDensityMatrix(2)
 
 julia> dot(dvec_b,Op2,dvec_b)
-ERROR: ArgumentError: ReducedDensityMatrix(<:BoseFS, p>1) is not measurable
+ERROR: ArgumentError: ReducedDensityMatrix(<:BoseFS, P > 1) is not measurable
 
 julia> dvec_f = PDVec(FermiFS{2,4}(1,1,0,0)=>0.5, FermiFS{2,4}(0,1,1,0)=>0.5)
 2-element PDVec: style = IsDeterministic{Float64}()
@@ -196,8 +196,8 @@ LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 function Interfaces.dot_from_right(
     left::AbstractDVec, op::ReducedDensityMatrix{P}, right::AbstractDVec
 ) where {P}
-    if (keytype(left) <: BoseFS && isless(convert(typeof(P),1),P))
-         ArgumentError("ReducedDensityMatrix(<:BoseFS, p > 1) is not measurable")
+    if all((keytype(left) <: BoseFS, P > 1))
+         throw(ArgumentError("ReducedDensityMatrix(<:BoseFS, P > 1) is not measurable"))
     end
     dim = binomial(num_modes(keytype(left)), P)
     ρ = sum(ReducedDensityMatrixCalculcator{P}(left, dim), pairs(right))
