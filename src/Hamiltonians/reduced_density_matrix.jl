@@ -123,7 +123,7 @@ function get_offdiagonal(
 end
 
 """
-    ReducedDensityMatrix(P) <: AbstractOperator{Float64}
+    ReducedDensityMatrix(P; ele_type = Float64) <: AbstractOperator{Matrix{ele_type}}
 
 Represent the P-particle reduced density matrix:
 
