@@ -150,7 +150,7 @@ julia> dvec_b = PDVec(BoseFS{2,2}(1,1)=>0.5, BoseFS{2,2}(2,0)=>0.5)
   fs"|2 0⟩" => 0.5
   fs"|1 1⟩" => 0.5
 
-julia> Op1 = ReducedDensityMatrix(P = 1)
+julia> Op1 = ReducedDensityMatrix(1)
 ReducedDensityMatrix(1)
 
 julia> dot(dvec_b,Op1,dvec_b)
@@ -158,7 +158,7 @@ julia> dot(dvec_b,Op1,dvec_b)
  0.75      0.353553
  0.353553  0.25
 
-julia> Op2 = ReducedDensityMatrix(P = 2)
+julia> Op2 = ReducedDensityMatrix(2)
 ReducedDensityMatrix(2)
 
 julia> dot(dvec_b,Op2,dvec_b)
@@ -188,7 +188,7 @@ struct ReducedDensityMatrix{TT, P} <: AbstractOperator{Matrix{TT}} end
 ReducedDensityMatrix(P::Int; ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
 ReducedDensityMatrix(;P::Int = 1, ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
 function Base.show(io::IO, op::ReducedDensityMatrix{<:Any, P}) where {P}
-    print(io, "ReducedDensityMatrix(P = $P)")
+    print(io, "ReducedDensityMatrix($P)")
 end
 
 LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
