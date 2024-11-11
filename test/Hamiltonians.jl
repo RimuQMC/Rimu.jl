@@ -1895,12 +1895,12 @@ end
 end
 
 @testset "ReducedDensityMatrix" begin
-    addr = near_uniform(FermiFS{2,4})
-    dvec_f = PDVec(addr => 0.5, FermiFS{2,4}(0,0,1,1)=>0.5)
+    dvec_f = PDVec(FermiFS{2,4}(1,1,0,0) => 0.5, FermiFS{2,4}(0,0,1,1)=>0.5)
     dvec_b = PDVec(BoseFS{4,4}(0,0,2,2) => 0.5, BoseFS{4,4}(2,2,0,0)=>0.5)
-    op = ReducedDensityMatrix(addr, n=1)
+    op1 = ReducedDensityMatrix(P=1)
     @test dot(dvec_f, op, dvec_f) == 0.25.*Matrix(I, 4, 4)
     @test dot(dvec_b, op, dvec_b) == 0.5.*Matrix(I, 4, 4)
+    @test_throws ArgumentError dot(dvec_b, ReducedDensityMatrix(P=2), dvec_b)
     @test LOStructure(op) isa IsHermitian
 end
     
