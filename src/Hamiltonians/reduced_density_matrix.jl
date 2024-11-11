@@ -187,14 +187,14 @@ julia> dot(dvec_f,Op2,dvec_f)
 struct ReducedDensityMatrix{TT, P} <: AbstractOperator{Matrix{TT}} end
 ReducedDensityMatrix(P::Int; ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
 ReducedDensityMatrix(;P::Int = 1, ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
-function Base.show(io::IO, op::ReducedDensityMatrix{P}) where {P}
+function Base.show(io::IO, op::ReducedDensityMatrix{<:Any, P}) where {P}
     print(io, "ReducedDensityMatrix(P = $P)")
 end
 
 LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 
 function Interfaces.dot_from_right(
-    left::AbstractDVec, op::ReducedDensityMatrix{P}, right::AbstractDVec
+    left::AbstractDVec, op::ReducedDensityMatrix{<:Any, P}, right::AbstractDVec
 ) where {P}
     if all((keytype(left) <: BoseFS, P > 1))
          throw(ArgumentError("ReducedDensityMatrix(<:BoseFS, P > 1) is not measurable"))
