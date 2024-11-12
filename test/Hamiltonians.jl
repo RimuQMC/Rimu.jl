@@ -1897,15 +1897,24 @@ end
 @testset "ReducedDensityMatrix" begin
     dvec_f = PDVec(FermiFS{2,4}(1,1,0,0) => 0.5, FermiFS{2,4}(0,0,1,1)=>0.5)
     dvec_b = PDVec(BoseFS{4,4}(0,0,2,2) => 0.5, BoseFS{4,4}(2,2,0,0)=>0.5)
-    op = ReducedDensityMatrix(P=1)
+    op = ReducedDensityMatrix(1)
     spd_b = zeros(4,4)
     spd_f = zeros(4,4)
     for i in 1:4, j in 1:4
         spd_b[i,j] = dot(dvec_b, SingleParticleExcitation(i, j), dvec_b)
         spd_f[i,j] = dot(dvec_f, SingleParticleExcitation(i, j), dvec_f)
     end
+    tpd_f = zeros(6,6)
+    t1 = 0; t2 = 0
+    for i in 1:4, j in i+1:4;
+        t1 += 1; t2 = 0;
+        for k in 1:4, l in k+1:4 
+            t2+=1; tpd_f[t1,t2] = dot(dvec_f, TwoParticleExcitation(i, j, k, l), dvec_f);
+        end
+    end
     @test dot(dvec_f, op, dvec_f) == spd_f
     @test dot(dvec_b, op, dvec_b) == spd_b
+    @test dot(dvec_f, ReducedDensityMatrix(2), dvec_f) == tpd_f
     @test_throws ArgumentError dot(dvec_b, ReducedDensityMatrix(P=2), dvec_b)
     @test LOStructure(op) isa IsHermitian
 end
