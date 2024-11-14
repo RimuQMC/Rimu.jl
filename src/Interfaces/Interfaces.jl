@@ -48,7 +48,7 @@ export
     CompressionStrategy, NoCompression, compress!
 export
     AbstractDVec, deposit!, storage, localpart, freeze, working_memory,
-    apply_operator!, sort_into_targets!
+    apply_operator!, sort_into_targets!, sum_mutating!
 export
     AbstractHamiltonian, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
     random_offdiagonal, starting_address, allows_address_type,

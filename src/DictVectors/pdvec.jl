@@ -513,9 +513,9 @@ function Base.iterate(t::PDVecIterator, (segment_id, state))
 end
 
 """
-    mapreduce(f, op, keys(::PDVec); init)
-    mapreduce(f, op, values(::PDVec); init)
-    mapreduce(f, op, pairs(::PDVec); init)
+    mapreduce(f, op, keys(::PDVec); [init])
+    mapreduce(f, op, values(::PDVec); [init])
+    mapreduce(f, op, pairs(::PDVec); [init])
 
 Perform a parallel reduction operation on [`PDVec`](@ref)s. MPI-compatible. Is used in the
 definition of various functions from Base such as `reduce`, `sum`, `prod`, etc.
@@ -529,6 +529,17 @@ function Base.mapreduce(f::F, op::O, t::PDVecIterator; kwargs...) where {F,O}
         mapreduce(f, op, t.selector(segment))
     end
     return merge_remote_reductions(t.vector.communicator, op, result)
+end
+
+
+function Interfaces.sum_mutating!(accu, f!, iterator::PDVecIterator; kwargs...)
+    interim_result = Folds.mapreduce(
+        +, Iterators.filter(!isempty, iterator.vector.segments); kwargs...
+    ) do segment
+        sum_mutating!(zero(accu), f!, iterator.selector(segment))
+    end
+    add!(accu, merge_remote_reductions(iterator.vector.communicator, +, interim_result))
+    return accu
 end
 
 """

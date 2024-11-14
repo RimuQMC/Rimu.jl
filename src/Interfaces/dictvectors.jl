@@ -150,3 +150,22 @@ according to thread- or MPI-level parallelism.
 Returns the new `target` and `source`, as the sorting process may involve swapping them.
 """
 sort_into_targets!(dv::T, wm::T, stats) where {T} = wm, dv, stats
+
+"""
+    sum_mutating!(accumulator, [f! = add!], iterator)
+
+Add the sum of elements in `iterator` to `accumulator`, storing the result in `accumulator`.
+If `f!` is provided, it must accept two arguments, the first being the
+accumulator and the second the element of the iterator. Otherwise, `add!` is used.
+
+`sum_mutating!` can be used to perform a parallel reduction operation on [`PDVec`](@ref)s
+for vector-valued results while minimizing allocations. This is MPI parallelized.
+
+See also [`mapreduce`](@ref).
+"""
+sum_mutating!(accu, iterator; kwargs...) = sum_mutating!(accu, add!, iterator; kwargs...)
+
+function sum_mutating!(accu, f!, iterator; kwargs...)
+    sum(x -> f!(accu, x), iterator)
+    return accu
+end

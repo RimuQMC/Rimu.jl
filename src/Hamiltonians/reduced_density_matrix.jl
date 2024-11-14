@@ -131,10 +131,10 @@ Represent the P-particle reduced density matrix:
 \\hat{ρ}^{(n)}_{j_1,...,j_1,k_1,...,k_n} =  \\prod_{i}^{n} â^†_{j_i} \\prod_{l}^{n} â_{k_{n+1-l}}
 ```
 
-The indices `j_i` and `k_i` (all `<: Int`) represent the single particle sites on a lattice. 
-These indices are chosen in a specific pattern to ensure that unique elements of the 
-reduced density matrix are calculated. This calculation will provide sufficient information 
-for interpreting the largest eigenvalue. Additionally, the indices follow specific patterns 
+The indices `j_i` and `k_i` (all `<: Int`) represent the single particle sites on a lattice.
+These indices are chosen in a specific pattern to ensure that unique elements of the
+reduced density matrix are calculated. This calculation will provide sufficient information
+for interpreting the largest eigenvalue. Additionally, the indices follow specific patterns
 as they run in the following manner:
 
 ```math
@@ -200,30 +200,38 @@ function Interfaces.dot_from_right(
          throw(ArgumentError("ReducedDensityMatrix(<:BoseFS, P > 1) is not measurable"))
     end
     dim = binomial(num_modes(keytype(left)), P)
-    ρ = sum(ReducedDensityMatrixCalculcator{P}(left, dim), pairs(right))
+    T = promote_type(Float64, valtype(left), valtype(right))
+    ρ = sum_mutating!(
+        zeros(T, (dim, dim)),
+        ReducedDensityMatrixCalculcator!{P}(left, dim),
+        pairs(right)
+    )
     return (ρ .+ ρ') ./ 2
 end
 # This struct used to calculate matrix elements of `ReducedDensityMatrix`
 # It was introduced because passing a function to `sum` in `dot_from_right` was causing
 # type instabilites.
 """
-    ReducedDensityMatrixCalculator{P}(left, dim)
-Compute matrix elements of `ReducedDensityMatrix`.
+    calc! = ReducedDensityMatrixCalculator!{P}(left, dim)
+Instantiate a `ReducedDensityMatrixCalculator!{P}` object to calculate matrix elements of
+`ReducedDensityMatrix`.
+
+    calc!(rdm, pair)
+
+Add the contribution of `pair` to the reduced density matrix to `rdm`.
 """
-struct ReducedDensityMatrixCalculcator{P,D}
+struct ReducedDensityMatrixCalculcator!{P,D}
     left::D
     dim::Int
 
-    ReducedDensityMatrixCalculcator{P}(left, dim) where {P} = new{P,typeof(left)}(left, dim)
+    ReducedDensityMatrixCalculcator!{P}(left, dim) where {P} = new{P,typeof(left)}(left, dim)
 end
 
-function (calc::ReducedDensityMatrixCalculcator{P})(pair) where {P}
+function (calc!::ReducedDensityMatrixCalculcator!{P})(result, pair) where {P}
     addr_right, val_right = pair
-    left = calc.left
-    dim = calc.dim
+    left = calc!.left
+    T = eltype(result)
 
-    T = promote_type(Float64, valtype(left), typeof(val_right))
-    result = zeros(T, (dim, dim))
     for j in axes(result, 2)
         dsts = find_mode(addr_right, vertices(j, Val(P)))
         for i in axes(result, 1)
