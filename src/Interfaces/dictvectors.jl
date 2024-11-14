@@ -166,6 +166,8 @@ See also [`mapreduce`](@ref).
 sum_mutating!(accu, iterator; kwargs...) = sum_mutating!(accu, add!, iterator; kwargs...)
 
 function sum_mutating!(accu, f!, iterator; kwargs...)
-    sum(x -> f!(accu, x), iterator)
+    for x in iterator
+        f!(accu, x; kwargs...)
+    end
     return accu
 end
