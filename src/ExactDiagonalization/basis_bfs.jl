@@ -3,20 +3,22 @@ const SubVector{T} = SubArray{T,1,Vector{T},Tuple{UnitRange{Int64}},true}
     UniformSplit(array::Vector, min_chunk_size, max_chunks)
 
 Split the array into at most `max_chunks` subarrays, with each at least `min_chunk_size` long.
+If the number of elements in `array` is not divisible by the determined chunk size, the leftover elements are placed in the last chunk.
 
 ```jldoctest
 julia> using Rimu.ExactDiagonalization: UniformSplit
 
 julia> UniformSplit(collect(1:10), 3, 3)
 3-element UniformSplit{Int64}:
- [1, 2, 3, 4]
- [5, 6, 7, 8]
- [9, 10]
 
-julia> UniformSplit(collect(1:10), 5, 3)
+ [1, 2, 3]
+ [4, 5, 6]
+ [7, 8, 9, 10]
+
+julia> UniformSplit(collect(1:13), 5, 3)
 2-element UniformSplit{Int64}:
- [1, 2, 3, 4, 5]
- [6, 7, 8, 9, 10]
+ [1, 2, 3, 4, 5, 6]
+ [7, 8, 9, 10, 11, 12, 13]
 ```
 """
 struct UniformSplit{T} <: AbstractVector{SubVector{T}}
@@ -25,8 +27,13 @@ struct UniformSplit{T} <: AbstractVector{SubVector{T}}
     chunk_size::Int
 
     function UniformSplit(array::Vector{T}, min_chunk_size, max_chunks) where {T}
-        chunk_size = max(min_chunk_size, cld(length(array), max_chunks))
-        n_chunks = cld(length(array), chunk_size)
+        chunk_size = fld(length(array), max_chunks)
+        if min_chunk_size > chunk_size
+            n_chunks = max(fld(length(array), min_chunk_size), 1)
+            chunk_size = fld(length(array), n_chunks)
+        else
+            n_chunks = max(fld(length(array), chunk_size), 1)
+        end
         return new{T}(array, n_chunks, chunk_size)
     end
 end
