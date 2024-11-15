@@ -533,13 +533,21 @@ end
 
 
 function Interfaces.sum_mutating!(accu, f!, iterator::PDVecIterator; kwargs...)
+    interim_result = _sum_non_mutating(accu, f!, iterator; kwargs...)
+    add!(accu, interim_result)
+    return accu
+end
+# I'm not sure why this function barrier is necessary, but it saves 10% cpu time (or 60ms)
+# in a benchmark with a PDVec of length 12870.
+function _sum_non_mutating(accu, f!, iterator::PDVecIterator; kwargs...)
     interim_result = Folds.mapreduce(
         +, Iterators.filter(!isempty, iterator.vector.segments); kwargs...
     ) do segment
+        # each segment/thread gets is own copy of the accumulator such that thread can work,
+        # on it independently. Later these are merged
         sum_mutating!(zero(accu), f!, iterator.selector(segment))
     end
-    add!(accu, merge_remote_reductions(iterator.vector.communicator, +, interim_result))
-    return accu
+    return merge_remote_reductions(iterator.vector.communicator, +, interim_result)
 end
 
 """
