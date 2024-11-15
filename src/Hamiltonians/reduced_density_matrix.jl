@@ -15,7 +15,7 @@ where `i <: Int` and `j <: Int` specify the mode numbers.
 * [`SingleParticleDensity`](@ref)
 * [`TwoParticleExcitation`](@ref)
 """
-struct SingleParticleExcitation{I,J} <: AbstractOperator{Float64}
+struct SingleParticleExcitation{I,J} <: AbstractObservable{Float64}
 end
 
 SingleParticleExcitation(I::Int,J::Int) = SingleParticleExcitation{I,J}()
