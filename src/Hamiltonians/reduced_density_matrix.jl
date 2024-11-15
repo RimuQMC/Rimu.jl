@@ -123,29 +123,34 @@ function get_offdiagonal(
 end
 
 """
-    ReducedDensityMatrix(P; ele_type = Float64) <: AbstractOperator{Matrix{ele_type}}
+    ReducedDensityMatrix(p; ELTYPE = Float64) <: AbstractOperator{Matrix{ELTYPE}}
 
-Represent the P-particle reduced density matrix:
-
-```math
-\\hat{ρ}^{(n)}_{j_1,...,j_1,k_1,...,k_n} =  \\prod_{i}^{n} â^†_{j_i} \\prod_{l}^{n} â_{k_{n+1-l}}
-```
-
-The indices `j_i` and `k_i` (all `<: Int`) represent the single particle sites on a lattice.
-These indices are chosen in a specific pattern to ensure that unique elements of the
-reduced density matrix are calculated. This calculation will provide sufficient information
-for interpreting the largest eigenvalue. Additionally, the indices follow specific patterns
-as they run in the following manner:
+A matrix-valued operator that can be used to calculate the `p`-particle reduced density
+matrix. The matrix elements are defined as:
 
 ```math
-j_n > ... > j_{i+1} > j_{i} > ... > j_1 \\And k_n> ... > k_{i+1} > k_{i} > ... > k_1
+\\hat{ρ}^{(p)}_{j_1,...,j_1,k_1,...,k_p} =  \\prod_{i=1}^{p} â^†_{j_i} \\prod_{l=p}^{1} â_{k_{l}}
 ```
-This specific pattern has a drawback: for n > 1, addr cannot be of <:BoseFS.
+
+The integer indices `j_i` and `k_i` represent single particle modes. For efficiency they are
+chosen to be distinct and ordered:
+
+```math
+j_1 < j_2 < \\ldots < j_{p} \\quad \\land \\quad k_1 < k_2 < \\ldots < k_{p}
+```
+`ReducedDensityMatrix` can be used to construct the single-particle reduced density matrix
+(with `p == 1`) for fermionic and bosonic Fock spaces with address types
+[`<: SingleComponentFockAddress`](@ref SingleComponentFockAddress).
+For higher order reduced density matrices with `p > 1` only fermionic Fock addresses
+([`FermiFS`](@ref)) are supported due to the ordering of indices.
+
+`ReducedDensityMatrix` can be used with [`dot`](@ref) or [`AllOverlaps`](@ref) to calculate
+the whole matrix in one go.
 
 # Examples
 
 ```jldoctest
-julia> dvec_b = PDVec(BoseFS{2,2}(1,1)=>0.5, BoseFS{2,2}(2,0)=>0.5)
+julia> dvec_b = PDVec(BoseFS(1,1)=>0.5, BoseFS(2,0)=>0.5)
 2-element PDVec: style = IsDeterministic{Float64}()
   fs"|2 0⟩" => 0.5
   fs"|1 1⟩" => 0.5
@@ -164,7 +169,7 @@ ReducedDensityMatrix(2)
 julia> dot(dvec_b,Op2,dvec_b)
 ERROR: ArgumentError: ReducedDensityMatrix(<:BoseFS, P > 1) is not measurable
 
-julia> dvec_f = PDVec(FermiFS{2,4}(1,1,0,0)=>0.5, FermiFS{2,4}(0,1,1,0)=>0.5)
+julia> dvec_f = PDVec(FermiFS(1,1,0,0)=>0.5, FermiFS(0,1,1,0)=>0.5)
 2-element PDVec: style = IsDeterministic{Float64}()
   fs"|⋅↑↑⋅⟩" => 0.5
   fs"|↑↑⋅⋅⟩" => 0.5
@@ -178,15 +183,12 @@ julia> dot(dvec_f,Op2,dvec_f)
  0.0   0.0  0.0   0.0  0.0  0.0
  0.0   0.0  0.0   0.0  0.0  0.0
 ```
-# See also
-* [`single_particle_density`](@ref)
-* [`SingleParticleDensity`](@ref)
-* [`SingleParticleExcitation`](@ref)
-* [`TwoParticleExcitation`](@ref)
+See also [`single_particle_density`](@ref), [`SingleParticleDensity`](@ref),
+[`SingleParticleExcitation`](@ref), [`TwoParticleExcitation`](@ref).
 """
 struct ReducedDensityMatrix{TT, P} <: AbstractOperator{Matrix{TT}} end
-ReducedDensityMatrix(P::Int; ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
-ReducedDensityMatrix(;P::Int = 1, ele_type = Float64) = ReducedDensityMatrix{ele_type, P}()
+ReducedDensityMatrix(P::Int; ELTYPE = Float64) = ReducedDensityMatrix{ELTYPE, P}()
+ReducedDensityMatrix(;P::Int = 1, ELTYPE = Float64) = ReducedDensityMatrix{ELTYPE, P}()
 function Base.show(io::IO, op::ReducedDensityMatrix{<:Any, P}) where {P}
     print(io, "ReducedDensityMatrix($P)")
 end
@@ -196,8 +198,8 @@ LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 function Interfaces.dot_from_right(
     left::AbstractDVec, op::ReducedDensityMatrix{<:Any, P}, right::AbstractDVec
 ) where {P}
-    if all((keytype(left) <: BoseFS, P > 1))
-         throw(ArgumentError("ReducedDensityMatrix(<:BoseFS, P > 1) is not measurable"))
+    if P > 1 && !(left.address_type <: FermiFS)
+         throw(ArgumentError("ReducedDensityMatrix(p) with `p > 1` requires `FermiFS`` addresses"))
     end
     dim = binomial(num_modes(keytype(left)), P)
     T = promote_type(Float64, valtype(left), valtype(right))
