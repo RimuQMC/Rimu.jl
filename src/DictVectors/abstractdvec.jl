@@ -263,7 +263,7 @@ walkernumber_and_length(v) = walkernumber(v), length(v)
 ###
 ### Vector-operator functions
 ###
-function LinearAlgebra.mul!(w::AbstractDVec, h::AbstractOperator, v::AbstractDVec)
+function LinearAlgebra.mul!(w::AbstractDVec, h::AbstractObservable, v::AbstractDVec)
     empty!(w)
     for (key, val) in pairs(v)
         w[key] += diagonal_element(h, key) * val
@@ -274,7 +274,7 @@ function LinearAlgebra.mul!(w::AbstractDVec, h::AbstractOperator, v::AbstractDVe
     return w
 end
 
-function Base.:*(h::AbstractOperator, v::AbstractDVec)
+function Base.:*(h::AbstractObservable, v::AbstractDVec)
     T = promote_type(scalartype(h), scalartype(v))
     if eltype(h) ≠ scalartype(h)
         throw(ArgumentError("Operators with non-scalar eltype don't support "*
@@ -286,13 +286,13 @@ function Base.:*(h::AbstractOperator, v::AbstractDVec)
 end
 
 # docstring in Interfaces
-function LinearAlgebra.dot(w::AbstractDVec, op::AbstractOperator, v::AbstractDVec)
+function LinearAlgebra.dot(w::AbstractDVec, op::AbstractObservable, v::AbstractDVec)
     return dot(LOStructure(op), w, op, v)
 end
-function LinearAlgebra.dot(::AdjointUnknown, w, op::AbstractOperator, v)
+function LinearAlgebra.dot(::AdjointUnknown, w, op::AbstractObservable, v)
     return dot_from_right(w, op, v)
 end
-function LinearAlgebra.dot(::LOStructure, w, op::AbstractOperator, v)
+function LinearAlgebra.dot(::LOStructure, w, op::AbstractObservable, v)
     if length(w) < length(v)
         return conj(dot_from_right(v, op', w)) # turn args around to execute faster
     else
