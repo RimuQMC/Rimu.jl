@@ -153,8 +153,8 @@ julia> dvec_b = PDVec(BoseFS{2,2}(1,1)=>0.5, BoseFS{2,2}(2,0)=>0.5)
 julia> Op1 = ReducedDensityMatrix(1)
 ReducedDensityMatrix(1)
 
-julia> dot(dvec_b,Op1,dvec_b) |> Matrix
-2×2 Matrix{Float64}:
+julia> dot(dvec_b,Op1,dvec_b)
+2×2 Hermitian{Float64, Matrix{Float64}}:
  0.75      0.353553
  0.353553  0.25
 
@@ -169,8 +169,8 @@ julia> dvec_f = PDVec(FermiFS{2,4}(1,1,0,0)=>0.5, FermiFS{2,4}(0,1,1,0)=>0.5)
   fs"|⋅↑↑⋅⟩" => 0.5
   fs"|↑↑⋅⋅⟩" => 0.5
 
-julia> dot(dvec_f,Op2,dvec_f) |> Matrix
-6×6 Matrix{Float64}:
+julia> dot(dvec_f,Op2,dvec_f)
+6×6 Hermitian{Float64, Matrix{Float64}}:
  0.25  0.0  0.25  0.0  0.0  0.0
  0.0   0.0  0.0   0.0  0.0  0.0
  0.25  0.0  0.25  0.0  0.0  0.0
