@@ -39,7 +39,7 @@ Follow the links for the definitions of the interfaces!
 module Interfaces
 
 using LinearAlgebra: LinearAlgebra, diag
-using VectorInterface: VectorInterface, add, zerovector!, scalartype
+using VectorInterface: VectorInterface, add, add!, zerovector!, scalartype
 
 import OrderedCollections: freeze
 

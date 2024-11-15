@@ -158,9 +158,6 @@ Add the sum of elements in `iterator` to `accumulator`, storing the result in `a
 If `f!` is provided, it must accept two arguments, the first being the
 accumulator and the second the element of the iterator. Otherwise, `add!` is used.
 
-`sum_mutating!` can be used to perform a parallel reduction operation on [`PDVec`](@ref)s
-for vector-valued results while minimizing allocations. This is MPI parallelized.
-
 See also [`mapreduce`](@ref).
 """
 sum_mutating!(accu, iterator; kwargs...) = sum_mutating!(accu, add!, iterator; kwargs...)
