@@ -2,7 +2,60 @@
 ### This file contains abstract types, interfaces and traits.
 ###
 """
-    AbstractOperator{T}
+    AbstractObservable{T}
+
+Most permissive supertype for operators in the type hierarchy:
+
+    AbstractHamiltonian{T} <: AbstractOperator{T} <: AbstractObservable{T}
+
+`AbstractObservable` provides an interface for operators that can appear in a three-way dot
+product [`dot(x, op, y)`](@ref LinearAlgebra.dot) with two vectors of type
+[`AbstractDVec`](@ref). The result is a value of type `T`, which is also returned by the
+[`eltype`](@ref) function. This may be a vector type associated with a scalar type returned
+by the [`scalartype`](@ref) function.
+
+The `AbstractObservable` type is useful for defining observables that can be calculated in
+the context of a [`ProjectorMonteCarloProblem`](@ref) using
+[`AllOverlaps`](@ref Main.Hamiltonians).
+
+# Interface
+
+Basic interface methods to implement:
+- [`Interfaces.dot_from_right(x, op, y)`](@ref)
+- [`allows_address_type(op, type)`](@ref)
+
+Optional additional methods to implement:
+- [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
+- [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
+
+See also [`AbstractOperator`](@ref), [`AbstractHamiltonian`](@ref), [`Interfaces`](@ref).
+"""
+abstract type AbstractObservable{T} end
+
+"""
+    eltype(op::AbstractObservable)
+Return the type of the elements of the operator. This can be a vector value. For the
+underlying scalar type use [`scalartype`](@ref).
+
+Part of the [`AbstractObservable`](@ref) interface.
+!!! note
+    New types do not have to implement this method explicitly. An implementation is provided based on the [`AbstractObservable`](@ref)'s type parameter.
+"""
+Base.eltype(::Type{<:AbstractObservable{T}}) where {T} = T # could be vector value
+
+"""
+    scalartype(op::AbstractObservable)
+Return the type of the underlying scalar field of the operator. This may be different from
+the element type of the operator returned by [`eltype`](@ref), which can be a vector value.
+
+Part of the [`AbstractObservable`](@ref) interface.
+!!! note
+    New types do not have to implement this method explicitly. An implementation is provided based on the [`AbstractObservable`](@ref)'s type parameter.
+"""
+VectorInterface.scalartype(::Type{<:AbstractObservable{T}}) where {T} = eltype(T)
+
+"""
+    AbstractOperator{T} <: AbstractObservable{T}
 
 Supertype that provides an interface for linear operators over a linear space with elements
 of type `T` (returned by [`eltype`](@ref)) and general (custom type) indices called
@@ -22,12 +75,18 @@ Hamiltonians, but that can be used in the context of a [`ProjectorMonteCarloProb
 as observable operators in a [`ReplicaStrategy`](@ref Rimu.ReplicaStrategy), e.g. for
 defining correlation functions. In contrast to [`AbstractHamiltonian`](@ref)s,
 `AbstractOperator`s do not need to have a [`starting_address`](@ref). Moreover, the
-`eltype` of an `AbstractOperator` can be a vector value.
+`eltype` of an `AbstractOperator` can be a vector value whereas
+[`AbstractHamiltonian`](@ref)s requre a scalar `eltype`.
+
+    AbstractHamiltonian{T} <: AbstractOperator{T} <: AbstractObservable{T}
+
+The `AbstractOperator` type is part of the [`AbstractObservable`](@ref) hierarchy. It is
+more restrictive than `AbstractObservable` in that it requires the interface for the
+generation of diagonal and off-diagonal elements.
 
 For concrete implementations see [`Hamiltonians`](@ref Main.Hamiltonians). In order to
 implement a Hamiltonian for use in [`ProjectorMonteCarloProblem`](@ref) or
-[`ExactDiagonalizationProblem`](@ref) use the type [`AbstractHamiltonian`](@ref) instead,
-which is a subtype of `AbstractOperator`.
+[`ExactDiagonalizationProblem`](@ref) use the type [`AbstractHamiltonian`](@ref) instead.
 
 # Interface
 
@@ -48,29 +107,7 @@ for [`Interfaces.dot_from_right(x, op, y)`](@ref) and [`LinearAlgebra.mul!(y, op
 
 See also [`AbstractHamiltonian`](@ref), [`Interfaces`](@ref).
 """
-abstract type AbstractOperator{T} end
-
-"""
-    eltype(op::AbstractOperator)
-Return the type of the elements of the operator. This can be a vector value. For the
-underlying scalar type use [`scalartype`](@ref).
-
-Part of the [`AbstractOperator`](@ref) interface.
-!!! note
-    New types should only implement the method with the argument in the type domain.
-"""
-Base.eltype(::Type{<:AbstractOperator{T}}) where {T} = T # could be vector value
-
-"""
-    scalartype(op::AbstractOperator)
-Return the type of the underlying scalar field of the operator. This may be different from
-the element type of the operator returned by [`eltype`](@ref), which can be a vector value.
-
-Part of the [`AbstractOperator`](@ref) interface.
-!!! note
-    New types should only implement the method with the argument in the type domain.
-"""
-VectorInterface.scalartype(::Type{<:AbstractOperator{T}}) where T = eltype(T)
+abstract type AbstractOperator{T} <: AbstractObservable{T} end
 
 @doc """
     LinearAlgebra.mul!(w::AbstractDVec, op::AbstractOperator, v::AbstractDVec)
@@ -87,14 +124,14 @@ to access the elements of the operator. The function can be overloaded for custo
 LinearAlgebra.mul!
 
 @doc """
-    dot(w, op::AbstractOperator, v)
+    dot(w, op::AbstractObservable, v)
 
 Evaluate `w⋅op(v)` minimizing memory allocations.
 """
 LinearAlgebra.dot
 
 @doc """
-    dot_from_right(w, op::AbstractOperator, v)
+    dot_from_right(w, op::AbstractObservable, v)
 
 Internal function evaluates the 3-argument `dot()` function in order from right
 to left.
@@ -159,7 +196,7 @@ Alternatively to the above, [`offdiagonals`](@ref) can be implemented instead of
 when iterating [`offdiagonals`](@ref).
 
 See also [`Hamiltonians`](@ref Main.Hamiltonians), [`Interfaces`](@ref),
-[`AbstractOperator`](@ref).
+[`AbstractOperator`](@ref), [`AbstractObservable`](@ref).
 """
 abstract type AbstractHamiltonian{T} <: AbstractOperator{T} end
 
