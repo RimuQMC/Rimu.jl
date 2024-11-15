@@ -1,5 +1,5 @@
 """
-    SingleParticleExcitation(i, j) <: AbstractHamiltonian
+    SingleParticleExcitation(i, j) <: AbstractOperator
 
 Represent the ``{i,j}`` element of the single-particle reduced density matrix:
 
@@ -15,7 +15,7 @@ where `i <: Int` and `j <: Int` specify the mode numbers.
 * [`SingleParticleDensity`](@ref)
 * [`TwoParticleExcitation`](@ref)
 """
-struct SingleParticleExcitation{I,J} <: AbstractObservable{Float64}
+struct SingleParticleExcitation{I,J} <: AbstractOperator{Float64}
 end
 
 SingleParticleExcitation(I::Int,J::Int) = SingleParticleExcitation{I,J}()
@@ -60,7 +60,7 @@ function get_offdiagonal(
 end
 
 """
-    TwoParticleExcitation(i, j, k, l) <: AbstractHamiltonian
+    TwoParticleExcitation(i, j, k, l) <: AbstractOperator
 
 Represent the ``{ij, kl}`` element of the two-particle reduced density matrix:
 
@@ -123,7 +123,7 @@ function get_offdiagonal(
 end
 
 """
-    ReducedDensityMatrix(p; ELTYPE = Float64) <: AbstractOperator{Matrix{ELTYPE}}
+    ReducedDensityMatrix(p; ELTYPE = Float64) <: AbstractObservable{Matrix{ELTYPE}}
 
 A matrix-valued operator that can be used to calculate the `p`-particle reduced density
 matrix. The matrix elements are defined as:
@@ -186,7 +186,7 @@ julia> dot(dvec_f,Op2,dvec_f)
 See also [`single_particle_density`](@ref), [`SingleParticleDensity`](@ref),
 [`SingleParticleExcitation`](@ref), [`TwoParticleExcitation`](@ref).
 """
-struct ReducedDensityMatrix{TT, P} <: AbstractOperator{Matrix{TT}} end
+struct ReducedDensityMatrix{TT, P} <: AbstractObservable{Matrix{TT}} end
 ReducedDensityMatrix(P::Int; ELTYPE = Float64) = ReducedDensityMatrix{ELTYPE, P}()
 ReducedDensityMatrix(;P::Int = 1, ELTYPE = Float64) = ReducedDensityMatrix{ELTYPE, P}()
 function Base.show(io::IO, op::ReducedDensityMatrix{<:Any, P}) where {P}
