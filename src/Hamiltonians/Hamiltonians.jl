@@ -95,6 +95,14 @@ export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCarte
 export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
+if VERSION < v"1.10"
+    # used for ReducedDensityMatrix
+    function hermitianpart!(A)
+        A .= (A + A') / 2
+        return A
+    end
+end
+
 include("abstract.jl")
 include("offdiagonals.jl")
 include("geometry.jl")
