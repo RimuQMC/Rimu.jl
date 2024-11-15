@@ -301,6 +301,21 @@ end
         dv = DVec(:a => sai)
         @test_throws ArgumentError empty(dv; style=IsDynamicSemistochastic())
     end
+
+    @testset "sum_mutating!" begin
+        ks = 1:10
+        vs = [rand(3, 3) for _ in 1:10]
+        ps = map(Pair, ks, vs)
+
+        u = DVec(Dict(ps))
+        accu = rand(3, 3)
+        @test accu + sum(vs) ≈ sum_mutating!(accu, values(u))
+
+        function f!(a, b)
+            a .+= b.^2
+        end
+        @test sum_mutating!(zeros(3,3), f!, values(u)) ≈ sum(m->m.^2, vs)
+    end
 end
 
 @testset "InitiatorDVec" begin
@@ -447,6 +462,21 @@ using Rimu.DictVectors: num_segments, is_distributed, SegmentedBuffer, replace_c
                 @test dot(pv1, op, pv2, wm) ≈ dot(pv1, op, dv2)
             end
         end
+    end
+
+    @testset "sum_mutating!" begin
+        ks = 1:10
+        vs = [rand(3, 3) for _ in 1:10]
+        ps = map(Pair, ks, vs)
+
+        u = PDVec(Dict(ps))
+        accu = rand(3, 3)
+        @test accu + sum(vs) ≈ sum_mutating!(accu, values(u))
+
+        function f!(a, b)
+            a .+= b .^ 2
+        end
+        @test sum_mutating!(zeros(3, 3), f!, values(u)) ≈ sum(m -> m .^ 2, vs)
     end
 
     @testset "interface tests" begin

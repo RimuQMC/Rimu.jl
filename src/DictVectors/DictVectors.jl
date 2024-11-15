@@ -26,7 +26,7 @@ using ..Interfaces: Interfaces, AbstractDVec, AdjointUnknown,
 using ..StochasticStyles: StochasticStyles, IsDeterministic
 
 import ..Interfaces: deposit!, storage, StochasticStyle, default_style, freeze, localpart,
-    working_memory
+    working_memory, sum_mutating!
 
 export deposit!, storage, walkernumber, walkernumber_and_length, dot_from_right
 export DVec, InitiatorDVec, PDVec, PDWorkingMemory

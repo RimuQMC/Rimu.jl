@@ -513,9 +513,9 @@ function Base.iterate(t::PDVecIterator, (segment_id, state))
 end
 
 """
-    mapreduce(f, op, keys(::PDVec); init)
-    mapreduce(f, op, values(::PDVec); init)
-    mapreduce(f, op, pairs(::PDVec); init)
+    mapreduce(f, op, keys(::PDVec); [init])
+    mapreduce(f, op, values(::PDVec); [init])
+    mapreduce(f, op, pairs(::PDVec); [init])
 
 Perform a parallel reduction operation on [`PDVec`](@ref)s. MPI-compatible. Is used in the
 definition of various functions from Base such as `reduce`, `sum`, `prod`, etc.
@@ -529,6 +529,38 @@ function Base.mapreduce(f::F, op::O, t::PDVecIterator; kwargs...) where {F,O}
         mapreduce(f, op, t.selector(segment))
     end
     return merge_remote_reductions(t.vector.communicator, op, result)
+end
+
+"""
+    sum_mutating!(accumulator, [f! = add!], keys(::PDVec); [init])
+    sum_mutating!(accumulator, [f! = add!], values(::PDVec); [init])
+    sum_mutating!(accumulator, [f! = add!], pairs(::PDVec); [init])
+
+Perform a parallel sum on [`PDVec`](@ref)s for vector-valued results while minimizing
+allocations. The result of the sum will be added to `accumulator` and stored in
+`accumulator`. MPI-compatible. If f! is provided, it must accept two arguments, the first
+being the accumulator and the second the element of the iterator. Otherwise, add! is used.
+
+If provided, `init` must be a neutral element for `+` and of the same type as `accumulator`.
+
+See also [`mapreduce`](@ref).
+"""
+function Interfaces.sum_mutating!(accu, f!, iterator::PDVecIterator; kwargs...)
+    interim_result = _sum_non_mutating(accu, f!, iterator; kwargs...)
+    add!(accu, interim_result)
+    return accu
+end
+# I'm not sure why this function barrier is necessary, but it saves 10% cpu time (or 60ms)
+# in a benchmark with a PDVec of length 12870.
+function _sum_non_mutating(accu, f!, iterator::PDVecIterator; kwargs...)
+    interim_result = Folds.mapreduce(
+        +, Iterators.filter(!isempty, iterator.vector.segments); kwargs...
+    ) do segment
+        # each segment gets is own copy of the accumulator such that each thread can work
+        # on it independently. Later the accumulators are merged.
+        sum_mutating!(zero(accu), f!, iterator.selector(segment))
+    end
+    return merge_remote_reductions(iterator.vector.communicator, +, interim_result)
 end
 
 """
