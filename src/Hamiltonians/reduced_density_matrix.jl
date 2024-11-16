@@ -198,7 +198,7 @@ LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 function Interfaces.dot_from_right(
     left::AbstractDVec, op::ReducedDensityMatrix{<:Any, P}, right::AbstractDVec
 ) where {P}
-    if P > 1 && !(left.address_type <: FermiFS)
+    if P > 1 && !(keytype(left) <: FermiFS && keytype(right) <: FermiFS)
          throw(ArgumentError("ReducedDensityMatrix(p) with `p > 1` requires `FermiFS`` addresses"))
     end
     dim = binomial(num_modes(keytype(left)), P)
