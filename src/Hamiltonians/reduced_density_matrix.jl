@@ -167,7 +167,7 @@ julia> Op2 = ReducedDensityMatrix(2)
 ReducedDensityMatrix(2)
 
 julia> dot(dvec_b,Op2,dvec_b)
-ERROR: ArgumentError: ReducedDensityMatrix(p) with `p > 1` requires `FermiFS`` addresses
+ERROR: ArgumentError: ReducedDensityMatrix(p) with `p > 1` requires `FermiFS` addresses
 
 julia> dvec_f = PDVec(FermiFS(1,1,0,0)=>0.5, FermiFS(0,1,1,0)=>0.5)
 2-element PDVec: style = IsDeterministic{Float64}()
@@ -199,7 +199,7 @@ function Interfaces.dot_from_right(
     left::AbstractDVec, op::ReducedDensityMatrix{<:Any, P}, right::AbstractDVec
 ) where {P}
     if P > 1 && !(keytype(left) <: FermiFS && keytype(right) <: FermiFS)
-         throw(ArgumentError("ReducedDensityMatrix(p) with `p > 1` requires `FermiFS`` addresses"))
+         throw(ArgumentError("ReducedDensityMatrix(p) with `p > 1` requires `FermiFS` addresses"))
     end
     dim = binomial(num_modes(keytype(left)), P)
     T = promote_type(Float64, valtype(left), valtype(right))
