@@ -188,7 +188,6 @@ See also [`single_particle_density`](@ref), [`SingleParticleDensity`](@ref),
 """
 struct ReducedDensityMatrix{TT, P} <: AbstractObservable{Matrix{TT}} end
 ReducedDensityMatrix(P::Int; ELTYPE = Float64) = ReducedDensityMatrix{ELTYPE, P}()
-ReducedDensityMatrix(;P::Int = 1, ELTYPE = Float64) = ReducedDensityMatrix{ELTYPE, P}()
 function Base.show(io::IO, op::ReducedDensityMatrix{<:Any, P}) where {P}
     print(io, "ReducedDensityMatrix($P)")
 end
