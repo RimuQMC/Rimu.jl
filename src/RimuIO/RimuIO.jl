@@ -15,8 +15,9 @@ using StaticArrays: StaticArrays, SVector
 using Rimu.BitStringAddresses: BitStringAddresses, BitString, BoseFS,
     CompositeFS, FermiFS, SortedParticleList,
     num_modes, num_particles
-using Rimu.DictVectors: DictVectors
+using Rimu.DictVectors: PDVec, DVec, target_segment
 using Rimu.Interfaces: Interfaces, localpart, storage
+using Rimu.StochasticStyles: default_style, IsDynamicSemistochastic
 
 
 export save_df, load_df
@@ -66,6 +67,55 @@ function load_df(filename; propagate_metadata = true, add_filename = true)
     end
     add_filename && metadata!(df, "filename", filename) # add filename as metadata
     return df
+end
+
+function save_state(filename, vector; kwargs...)
+    metadata = [string(k) => string(v) for (k, v) in kwargs]
+    Arrow.write(
+        filename, (; keys=collect(keys(vector)), values=collect(values(vector)));
+        compress=:zstd, metadata,
+    )
+end
+
+function load_state(filename; style=nothing, kwargs...)
+    tbl = Arrow.Table(filename)
+    K = eltype(tbl.key)
+    V = eltype(tbl.value)
+    if isnothing(style)
+        if V <: AbstractFloat
+            style = IsDynamicSemistochastic()
+        else
+            style = default_style(V)
+        end
+    end
+    vector = PDVec{K,V}(; style, kwargs...)
+    fill_vector!(vector, tbl.key, tbl.value)
+
+    arrow_meta = Arrow.metadata(tbl)[]
+    if !isnothing(arrow_meta)
+        metadata = NamedTuple(Symbol(k) => eval(Meta.parse(v)) for (k, v) in arrow_meta)
+    else
+        metadata = (;)
+    end
+
+    return vector, metadata
+end
+
+function fill_vector!(vector::PDVec, keys, vals)
+    Threads.@threads for seg_id in eachindex(vector.segments)
+        seg = vector.segments[seg_id]
+        sizehint!(seg, length(keys) ÷ length(vector.segments))
+        for (k, v) in zip(keys, vals)
+            if target_segment(vector, k) == (seg_id, true)
+                seg[k] = v
+            end
+        end
+    end
+end
+function fill_vector!(vector::DVec, keys, vals)
+    for (k, v) in zip(keys, vals)
+        vector[k] = v
+    end
 end
 
 end # module RimuIO
