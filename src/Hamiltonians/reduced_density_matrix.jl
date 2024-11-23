@@ -224,7 +224,7 @@ struct ReducedDensityMatrixCalculcator!{TT,P,D}
     left::D
     dim::Int
 
-    ReducedDensityMatrixCalculcator!{TT,P}(left, dim) where {P} = new{TT,P,typeof(left)}(left, dim)
+    ReducedDensityMatrixCalculcator!{TT,P}(left, dim) where {TT,P} = new{TT,P,typeof(left)}(left, dim)
 end
 
 function (calc!::ReducedDensityMatrixCalculcator!{TT, P})(result, pair) where {TT, P}
