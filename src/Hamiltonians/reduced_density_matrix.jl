@@ -201,9 +201,8 @@ function Interfaces.dot_from_right(
          throw(ArgumentError("ReducedDensityMatrix(p) with `p > 1` requires `FermiFS` addresses"))
     end
     dim = binomial(num_modes(keytype(left)), P)
-    T = promote_type(TT, valtype(left), valtype(right))
     ρ = sum_mutating!(
-        zeros(T, (dim, dim)),
+        zeros(TT, (dim, dim)),
         ReducedDensityMatrixCalculcator!{P}(left, dim),
         pairs(right)
     )
