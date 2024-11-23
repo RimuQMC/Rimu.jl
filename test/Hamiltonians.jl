@@ -1937,7 +1937,7 @@ end
     @test dot(dvec_f, ReducedDensityMatrix(2), dvec_f) == tpd_f
     @test_throws ArgumentError dot(dvec_b, ReducedDensityMatrix(2), dvec_b)
     @test LOStructure(op) isa IsHermitian
-    test_observable_interface(ReducedDensityMatrix(1; ELTYPE = ComplexF32), BoseFS{4,4}(2,2,0,0))
-    test_observable_interface(ReducedDensityMatrix(2; ELTYPE = ComplexF32), FermiFS{2,4}(1,1,0,0))
+    test_observable_interface(ReducedDensityMatrix(1), BoseFS{4,4}(2,2,0,0))
+    test_observable_interface(ReducedDensityMatrix(2), FermiFS{2,4}(1,1,0,0))
 end
     
