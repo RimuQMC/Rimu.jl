@@ -99,7 +99,7 @@ if VERSION < v"1.10"
     # used for ReducedDensityMatrix
     function hermitianpart!(A)
         A .= (A + A') / 2
-        return Hermitian(A)
+        return A
     end
 end
 
