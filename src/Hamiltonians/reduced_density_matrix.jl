@@ -203,7 +203,7 @@ function Interfaces.dot_from_right(
     dim = binomial(num_modes(keytype(left)), P)
     ρ = sum_mutating!(
         zeros(TT, (dim, dim)),
-        ReducedDensityMatrixCalculcator!{P}(left, dim),
+        ReducedDensityMatrixCalculcator!{TT,P}(left, dim),
         pairs(right)
     )
     return hermitianpart!(ρ) # (ρ .+ ρ') ./ 2
@@ -220,17 +220,16 @@ Instantiate a `ReducedDensityMatrixCalculator!{P}` object to calculate matrix el
 
 Add the contribution of `pair` to the reduced density matrix to `rdm`.
 """
-struct ReducedDensityMatrixCalculcator!{P,D}
+struct ReducedDensityMatrixCalculcator!{TT,P,D}
     left::D
     dim::Int
 
-    ReducedDensityMatrixCalculcator!{P}(left, dim) where {P} = new{P,typeof(left)}(left, dim)
+    ReducedDensityMatrixCalculcator!{TT,P}(left, dim) where {P} = new{TT,P,typeof(left)}(left, dim)
 end
 
-function (calc!::ReducedDensityMatrixCalculcator!{P})(result, pair) where {P}
+function (calc!::ReducedDensityMatrixCalculcator!{TT, P})(result, pair) where {TT, P}
     addr_right, val_right = pair
     left = calc!.left
-    T = eltype(result)
 
     for j in axes(result, 2)
         dsts = find_mode(addr_right, vertices(j, Val(P)))
@@ -238,7 +237,7 @@ function (calc!::ReducedDensityMatrixCalculcator!{P})(result, pair) where {P}
             srcs = reverse(find_mode(addr_right, vertices(i, Val(P))))
 
             addr_left, elem = excitation(addr_right, dsts, srcs)
-            @inbounds result[i, j] += T(conj(left[addr_left]) * elem * val_right)
+            @inbounds result[i, j] += TT(conj(left[addr_left]) * elem * val_right)
         end
     end
     return result
