@@ -188,8 +188,8 @@ See also [`single_particle_density`](@ref), [`SingleParticleDensity`](@ref),
 """
 struct ReducedDensityMatrix{TT, P} <: AbstractObservable{Matrix{TT}} end
 ReducedDensityMatrix(P::Int; ELTYPE = Float64) = ReducedDensityMatrix{ELTYPE, P}()
-function Base.show(io::IO, op::ReducedDensityMatrix{<:Any, P}) where {P}
-    print(io, "ReducedDensityMatrix($P)")
+function Base.show(io::IO, op::ReducedDensityMatrix{TT, P}) where {TT, P}
+    print(io, "ReducedDensityMatrix($P; ELTYPE=$(TT))")
 end
 
 LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
