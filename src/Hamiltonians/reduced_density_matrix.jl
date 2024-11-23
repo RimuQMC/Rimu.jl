@@ -195,13 +195,13 @@ end
 LOStructure(::Type{<:ReducedDensityMatrix}) = IsHermitian()
 
 function Interfaces.dot_from_right(
-    left::AbstractDVec, op::ReducedDensityMatrix{<:Any, P}, right::AbstractDVec
-) where {P}
+    left::AbstractDVec, op::ReducedDensityMatrix{TT, P}, right::AbstractDVec
+) where {TT, P}
     if P > 1 && !(keytype(left) <: FermiFS && keytype(right) <: FermiFS)
          throw(ArgumentError("ReducedDensityMatrix(p) with `p > 1` requires `FermiFS` addresses"))
     end
     dim = binomial(num_modes(keytype(left)), P)
-    T = promote_type(Float64, valtype(left), valtype(right))
+    T = promote_type(TT, valtype(left), valtype(right))
     ρ = sum_mutating!(
         zeros(T, (dim, dim)),
         ReducedDensityMatrixCalculcator!{P}(left, dim),
