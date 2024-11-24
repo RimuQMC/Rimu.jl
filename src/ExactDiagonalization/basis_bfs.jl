@@ -46,9 +46,13 @@ function Base.getindex(split::UniformSplit, i)
 end
 
 """
-    struct BasisBuilder
+    bb! = BasisBuilder{A::Type}(; col_hint=0)
+    bb!(operator::AbstractOperator, pairs, seen)
 
-Used with [`basis_bfs`](@ref) to build a basis from an operator.
+Functor used with [`basis_bfs`](@ref) to build a basis of addresses of type `A` from an
+operator. It contains a set of addresses (`bb!.frontier`) that is collected from the
+`offdiagonals` of `operator` with all addresses contained the list of address-value pairs
+`pairs` that are not element of `seen`.
 """
 struct BasisBuilder{A}
     frontier::Set{A}
@@ -79,9 +83,16 @@ function (bb::BasisBuilder)(operator, ks, seen)
 end
 
 """
-    struct MatrixBuilder
+    mb! = MatrixBuilder{A::Type}(; col_hint=0)
+    mb!(operator::AbstractOperator, pairs, seen)
 
-Used with [`basis_bfs`](@ref) to build a sparse matrix from an operator.
+Functor used with [`basis_bfs`](@ref) to build a matrix from an operator. It contains a set
+of addresses (`mb!.frontier`) that is collected from the `offdiagonals` of `operator` with
+all addresses contained the list of address-value pairs `pairs` that are not element of
+`seen`.
+
+It also collects `mb!.is`, `mb!.js`, and `mb!.vs` which are used to build the sparse matrix
+via `sparse!`.
 """
 struct MatrixBuilder{A,T,I}
     js::Vector{I}
@@ -137,6 +148,12 @@ function (builder::MatrixBuilder{<:Any,T})(operator, columns, seen) where {T}
     end
 end
 
+"""
+    struct MatrixBuilderAccumulator
+
+Used in conjunction with [`basis_bfs`](@ref) and [`MatrixBuilder`](@ref). It is used to
+combine the sparse matrix as it is being built by multiple threads.
+"""
 struct MatrixBuilderAccumulator{T,I}
     is::Vector{I}
     js::Vector{I}
@@ -185,6 +202,9 @@ end
     basis_bfs(::Type{Builder}, operator, starting_basis)
 
 Internal function that performs breadth-first search (BFS) on an operator.
+
+`Builder` is either [`MatrixBuilder`](@ref) or [`BasisBuilder`](@ref), which triggers
+building a matrix and basis, or only the basis of addresses, respectively.
 """
 function basis_bfs(
     ::Type{Builder}, operator, basis::Vector{A};
@@ -305,13 +325,15 @@ Does not return the matrix, for that purpose use [`BasisSetRepresentation`](@ref
 Providing an energy cutoff will skip addresses with diagonal elements greater
 than `cutoff`. Alternatively, an arbitrary `filter` function can be used instead.
 Addresses passed as arguments are not filtered.
+
+Providing a `max_depth` will limit the size of the basis by only visiting addresses
+that are connected to the `starting_address` through `max_depth` hops through the
+Hamiltonian. Similarly, providing `stop_after` will stop the bulding process after the basis
+reaches a length of at least `stop_after`.
+
 A maximum basis size `sizelim` can be set which will throw an error if the expected
 dimension of `ham` is larger than `sizelim`. This may be useful when memory may be a
 concern. These options are disabled by default.
-
-Setting `sort` to `true` will sort the basis. Without this argument, the order is random and
-may change between invocations of the function! Any additional keyword arguments are passed
-on to `Base.sort!`.
 
 !!! warning
         The order the basis is returned in is arbitrary and non-deterministic. Use
@@ -330,9 +352,9 @@ end
     ) -> sparse_matrix, basis
     build_sparse_matrix_from_LO(ham, addresses::AbstractVector; kwargs...)
 
-Create a sparse matrix `sparse_matrix` of all reachable matrix elements of a linear operator `ham`
-starting from `address`. Instead of a single address, a vector of `addresses` can be passed.
-The vector `basis` contains the addresses of basis configurations.
+Create a sparse matrix `sparse_matrix` of all reachable matrix elements of a linear operator
+`ham` starting from `address`. Instead of a single address, a vector of `addresses` can be
+passed.  The vector `basis` contains the addresses of basis configurations.
 
 Providing the number `nnzs` of expected calculated matrix elements and `col_hint` for the
 estimated number of nonzero off-diagonal matrix elements in each matrix column may improve
@@ -342,6 +364,11 @@ Providing an energy cutoff will skip the columns and rows with diagonal elements
 than `cutoff`. Alternatively, an arbitrary `filter` function can be used instead. These are
 not enabled by default. To generate the matrix truncated to the subspace spanned by the
 `addresses`, use `filter = Returns(false)`.
+
+Providing a `max_depth` will limit the size of the matrix by only visiting addresses
+that are connected to the `starting_address` through `max_depth` hops through the
+Hamiltonian. Similarly, providing `stop_after` will stop the bulding process after the basis
+reaches a length of at least `stop_after`.
 
 Setting `sort` to `true` will sort the `basis` and order the matrix rows and columns
 accordingly. This is useful when the order of the columns matters, e.g. when comparing
@@ -354,7 +381,7 @@ matrices. Any additional keyword arguments are passed on to `Base.sortperm`.
 See [`BasisSetRepresentation`](@ref).
 """
 function build_sparse_matrix_from_LO(
-    operator, addr=starting_address(operator); sizelim=1e8, kwargs...
+    operator, addr=starting_address(operator); sizelim=1e7, kwargs...
 )
     basis = _address_to_basis(operator, addr)
     T = eltype(operator)
