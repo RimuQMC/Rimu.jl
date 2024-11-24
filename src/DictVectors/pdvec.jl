@@ -531,6 +531,12 @@ function Base.mapreduce(f::F, op::O, t::PDVecIterator; kwargs...) where {F,O}
     return merge_remote_reductions(t.vector.communicator, op, result)
 end
 
+# The following method is required to make `sum` work for PDVecs with MPI on ARM processors.
+# The reason is that `sum` uses a non-default reduction operator, which is not supported by
+# MPI.jl on non-Intel processors. This method is a workaround that uses the default
+# reduction operator.
+Base.sum(f, t::PDVecIterator; kwargs...) = mapreduce(f, +, t; kwargs...)
+
 """
     all(predicate, keys(::PDVec); kwargs...)
     all(predicate, values(::PDVec); kwargs...)
