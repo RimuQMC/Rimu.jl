@@ -10,6 +10,8 @@ All address types except [`OccupationNumberFS`](@ref Main.Rimu.OccupationNumberF
 supported.
 
 Returns a sorted vector of length equal to the [`dimension`](@ref) of `addr`.
+
+See also [`AbstractFockAddress`](@ref).
 """
 function build_basis(addr::AbstractFockAddress)
     return build_basis(typeof(addr))
@@ -161,7 +163,7 @@ end
         @inbounds result[index + k - 1] = T((setindex(rest, 1, k)..., postfix...))
     end
 end
-# Base case for bosons with `reamining_n` particles in 2 modes.
+# Base case for bosons with `remaining_n` particles in 2 modes.
 @inline function _bose_basis_basecase_M2!(
     result::Vector{T}, postfix, index, remaining_n
 ) where {T}
