@@ -37,7 +37,12 @@ function build_basis(::Type{<:BoseFS{N,M}}) where {N,M}
     return result
 end
 
-# Multithreaded version - attempts to spawn `n_tasks` tasks.
+# result: the basis that is eventually returned
+# postfix: partially build ONR
+# index: the position the built address is written to in result
+# remaining_n: the number of particles to be placed in the remaining part of the ONR
+# M: the number of modes in the ONR left to fill
+# n_tasks: number of tasks to spawn to build the basis in parallel
 @inline function _bose_basis!(
     result::Vector, postfix, index, remaining_n, ::Val{M}, n_tasks::Int
 ) where {M}
@@ -99,7 +104,12 @@ function build_basis(::Type{<:FermiFS{N,M}}) where {N,M}
     return result
 end
 
-# Multithreaded version - attempts to spawn `n_tasks` tasks.
+# result: the basis that is eventually returned
+# postfix: partially build ONR
+# index: the position the built address is written to in result
+# remaining_n: the number of particles to be placed in the remaining part of the ONR
+# M: the number of modes in the ONR left to fill
+# n_tasks: number of tasks to spawn to build the basis in parallel
 @inline function _fermi_basis!(
     result::Vector, postfix, index, remaining_n, ::Val{M}, n_tasks
 ) where {M}
