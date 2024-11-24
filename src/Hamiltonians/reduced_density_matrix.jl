@@ -156,7 +156,7 @@ julia> dvec_b = PDVec(BoseFS(1,1)=>0.5, BoseFS(2,0)=>0.5)
   fs"|1 1⟩" => 0.5
 
 julia> Op1 = ReducedDensityMatrix(1)
-ReducedDensityMatrix(1)
+ReducedDensityMatrix(1; ELTYPE=Float64)
 
 julia> dot(dvec_b,Op1,dvec_b)
 2×2 Hermitian{Float64, Matrix{Float64}}:
@@ -164,7 +164,7 @@ julia> dot(dvec_b,Op1,dvec_b)
  0.353553  0.25
 
 julia> Op2 = ReducedDensityMatrix(2)
-ReducedDensityMatrix(2)
+ReducedDensityMatrix(2; ELTYPE=Float64)
 
 julia> dot(dvec_b,Op2,dvec_b)
 ERROR: ArgumentError: ReducedDensityMatrix(p) with `p > 1` requires `FermiFS` addresses
@@ -175,7 +175,7 @@ julia> dvec_f = PDVec(FermiFS(1,1,0,0)=>0.5, FermiFS(0,1,1,0)=>0.5)
   fs"|↑↑⋅⋅⟩" => 0.5
 
 julia> dot(dvec_f,Op2,dvec_f)
-6×6 Hermitian{Float64, Matrix{Float64}}:
+6×6 Matrix{Float64}:
  0.25  0.0  0.25  0.0  0.0  0.0
  0.0   0.0  0.0   0.0  0.0  0.0
  0.25  0.0  0.25  0.0  0.0  0.0
