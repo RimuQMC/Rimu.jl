@@ -21,7 +21,7 @@ mutable struct PMCSimulation
 end
 
 function _set_up_starting_vectors(
-    ham, start_at, n_replicas, n_spectral, style, initiator, threading, copy_vectors
+    ham, start_at, n_replicas, n_spectral, style, initiator, threading, copy_vectors, minimum_size
 )
     if start_at isa AbstractMatrix && size(start_at) == (n_replicas, n_spectral)
         if eltype(start_at) <: Union{AbstractDVec, RMPI.MPIData} # already dvecs
@@ -36,8 +36,7 @@ function _set_up_starting_vectors(
             )
         end
     elseif n_spectral > 1
-        basis = build_basis(ham; minimum_size=n_spectral*5)
-        basis = sort!(basis; by=x -> diagonal_element(ham, x))
+        basis = build_basis(ham; minimum_size)
         trunc = BasisSetRepresentation(ham, basis; filter=Returns(false), sizelim=Inf)
         vecs = eigvecs(Matrix(trunc))
         if threading
@@ -81,7 +80,7 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     @unpack algorithm, hamiltonian, start_at, style, threading, simulation_plan,
         replica_strategy, initial_shift_parameters,
         reporting_strategy, post_step_strategy,
-        maxlength, metadata, initiator, random_seed, spectral_strategy = problem
+        maxlength, metadata, initiator, random_seed, spectral_strategy, minimum_size = problem
 
     reporting_strategy = refine_reporting_strategy(reporting_strategy)
 
@@ -96,7 +95,7 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     start_at = isnothing(start_at) ? starting_address(hamiltonian) : start_at
     vectors = _set_up_starting_vectors(
         hamiltonian, start_at, n_replicas, n_spectral, style, initiator,
-        threading, copy_vectors
+        threading, copy_vectors, minimum_size
     )
     @assert vectors isa SMatrix{n_replicas, n_spectral}
 
