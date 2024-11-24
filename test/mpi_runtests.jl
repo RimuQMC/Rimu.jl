@@ -192,7 +192,7 @@ end
             addr = starting_address(H)
 
             dv = PDVec(addr => 3; initiator_threshold=1)
-            shift_strategy = DoubleLogUpdate(targetwalkers=100)
+            shift_strategy = DoubleLogUpdate(target_walkers=100)
             prob = ProjectorMonteCarloProblem(
                 H; start_at=dv, last_step=5000, shift_strategy
             )
