@@ -40,7 +40,8 @@ jobs:
           # with Pkg.develop(path="."). using Rimu, KrylovKit, StaticArrays at the end
           # ensures everything is precompiled before the MPI job starts.
           julia --color=yes --project=test -e "using Pkg; Pkg.instantiate(); Pkg.develop(path=\".\"); Pkg.add(\"MPI\"); Pkg.build(); using MPI; MPI.install_mpiexecjl(); using Rimu, KrylovKit, StaticArrays"
-          export PATH=$PATH:/home/runner/.julia/bin
+          export PATH=$PATH:/home/runner/.julia/bin # for linux
+          export PATH=$PATH:/Users/runner/.julia/bin # for macos
 
           mpiexecjl -n 2 julia --code-coverage=user --depwarn=yes --project=test test/mpi_runtests.jl
 
