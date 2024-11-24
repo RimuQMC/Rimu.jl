@@ -9,8 +9,7 @@ jobs:
     strategy:
       matrix:
         julia-version: ['1', 'nightly', '1.9']
-        julia-arch: [x64]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
       fail-fast: false
     steps:
       - name: "Checkout"
@@ -19,7 +18,6 @@ jobs:
         uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.julia-version }}
-          arch: ${{ matrix.julia-arch }}
       - name: "Load cache"
         uses: julia-actions/cache@v2
       - name: "Build"
