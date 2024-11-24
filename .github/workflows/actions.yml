@@ -9,10 +9,10 @@ jobs:
     strategy:
       matrix:
         julia-version: ['1', 'nightly', '1.9']
+        os: [ubuntu-latest]
         include:
-          - os: ubuntu-latest
-          - os: macos-latest
-            julia-version: '1'
+          - julia-version: '1'
+            os: macos-latest
       fail-fast: false
     steps:
       - name: "Checkout"
