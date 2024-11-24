@@ -159,7 +159,7 @@ julia> Op1 = ReducedDensityMatrix(1)
 ReducedDensityMatrix(1; ELTYPE=Float64)
 
 julia> dot(dvec_b,Op1,dvec_b)
-2×2 Hermitian{Float64, Matrix{Float64}}:
+2×2 Matrix{Float64}:
  0.75      0.353553
  0.353553  0.25
 
