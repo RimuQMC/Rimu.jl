@@ -55,10 +55,10 @@ end
     bb! = BasisBuilder{A::Type}(; col_hint=0)
     bb!(operator::AbstractOperator, pairs, seen)
 
-Functor used with [`basis_bfs`](@ref) to build a basis of addresses of type `A` from an
-operator. It contains a set of addresses (`bb!.frontier`) that is collected from the
-`offdiagonals` of `operator` with all addresses contained the list of address-value pairs
-`pairs` that are not element of `seen`.
+Functor used with [`basis_breadth_first_search`](@ref) to build a basis of addresses of type
+`A` from an operator. It contains a set of addresses (`bb!.frontier`) that is collected from
+the `offdiagonals` of `operator` with all addresses contained the list of address-value
+pairs `pairs` that are not element of `seen`.
 """
 struct BasisBuilder{A}
     frontier::Set{A}
@@ -92,10 +92,10 @@ end
     mb! = MatrixBuilder{A::Type}(; col_hint=0)
     mb!(operator::AbstractOperator, pairs, seen)
 
-Functor used with [`basis_bfs`](@ref) to build a matrix from an operator. It contains a set
-of addresses (`mb!.frontier`) that is collected from the `offdiagonals` of `operator` with
-all addresses contained the list of address-value pairs `pairs` that are not element of
-`seen`.
+Functor used with [`basis_breadth_first_search`](@ref) to build a matrix from an
+operator. It contains a set of addresses (`mb!.frontier`) that is collected from the
+`offdiagonals` of `operator` with all addresses contained the list of address-value pairs
+`pairs` that are not element of `seen`.
 
 It also collects `mb!.is`, `mb!.js`, and `mb!.vs` which are used to build the sparse matrix
 via `sparse!`.
@@ -157,8 +157,9 @@ end
 """
     struct MatrixBuilderAccumulator
 
-Used in conjunction with [`basis_bfs`](@ref) and [`MatrixBuilder`](@ref). It is used to
-combine the sparse matrix as it is being built by multiple threads.
+Used in conjunction with [`basis_breadth_first_search`](@ref) and
+[`MatrixBuilder`](@ref). It is used to combine the sparse matrix as it is being built by
+multiple threads.
 """
 struct MatrixBuilderAccumulator{T,I}
     is::Vector{I}
@@ -205,14 +206,14 @@ function finalize_accumulator!(
 end
 
 """
-    basis_bfs(::Type{Builder}, operator, starting_basis)
+    basis_breadth_first_search(::Type{Builder}, operator, starting_basis)
 
 Internal function that performs breadth-first search (BFS) on an operator.
 
 `Builder` is either [`MatrixBuilder`](@ref) or [`BasisBuilder`](@ref), which triggers
 building a matrix and basis, or only the basis of addresses, respectively.
 """
-function basis_bfs(
+function basis_breadth_first_search(
     ::Type{Builder}, operator, basis::Vector{A};
     min_batch_size=100,
     max_tasks=4 * Threads.nthreads(),
@@ -348,7 +349,7 @@ concern. These options are disabled by default.
 """
 function build_basis(operator, addr=starting_address(operator); sizelim=Inf, kwargs...)
     basis = _address_to_basis(operator, addr)
-    return basis_bfs(BasisBuilder{eltype(basis)}, operator, basis; sizelim, kwargs...)
+    return basis_breadth_first_search(BasisBuilder{eltype(basis)}, operator, basis; sizelim, kwargs...)
 end
 
 """
@@ -391,7 +392,7 @@ function build_sparse_matrix_from_LO(
 )
     basis = _address_to_basis(operator, addr)
     T = eltype(operator)
-    return basis_bfs(
+    return basis_breadth_first_search(
         MatrixBuilder{eltype(basis),T,Int32}, operator, basis;
         sizelim, kwargs...
     )

@@ -44,7 +44,7 @@ export BasisSetRepresentation, build_basis
 export sparse # from SparseArrays
 
 
-include("basis_bfs.jl")
+include("basis_breadth_first_search.jl")
 include("basis_fock.jl")
 include("basis_set_representation.jl")
 include("algorithms.jl")
