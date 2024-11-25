@@ -10,6 +10,8 @@ All address types except [`OccupationNumberFS`](@ref Main.Rimu.OccupationNumberF
 supported.
 
 Returns a sorted vector of length equal to the [`dimension`](@ref) of `addr`.
+
+See also [`AbstractFockAddress`](@ref).
 """
 function build_basis(addr::AbstractFockAddress)
     return build_basis(typeof(addr))
@@ -35,7 +37,12 @@ function build_basis(::Type{<:BoseFS{N,M}}) where {N,M}
     return result
 end
 
-# Multithreaded version - attempts to spawn `n_tasks` tasks.
+# result: the basis that is eventually returned
+# postfix: partially build ONR
+# index: the position the built address is written to in result
+# remaining_n: the number of particles to be placed in the remaining part of the ONR
+# M: the number of modes in the ONR left to fill
+# n_tasks: number of tasks to spawn to build the basis in parallel
 @inline function _bose_basis!(
     result::Vector, postfix, index, remaining_n, ::Val{M}, n_tasks::Int
 ) where {M}
@@ -97,7 +104,12 @@ function build_basis(::Type{<:FermiFS{N,M}}) where {N,M}
     return result
 end
 
-# Multithreaded version - attempts to spawn `n_tasks` tasks.
+# result: the basis that is eventually returned
+# postfix: partially build ONR
+# index: the position the built address is written to in result
+# remaining_n: the number of particles to be placed in the remaining part of the ONR
+# M: the number of modes in the ONR left to fill
+# n_tasks: number of tasks to spawn to build the basis in parallel
 @inline function _fermi_basis!(
     result::Vector, postfix, index, remaining_n, ::Val{M}, n_tasks
 ) where {M}
@@ -161,7 +173,7 @@ end
         @inbounds result[index + k - 1] = T((setindex(rest, 1, k)..., postfix...))
     end
 end
-# Base case for bosons with `reamining_n` particles in 2 modes.
+# Base case for bosons with `remaining_n` particles in 2 modes.
 @inline function _bose_basis_basecase_M2!(
     result::Vector{T}, postfix, index, remaining_n
 ) where {T}
