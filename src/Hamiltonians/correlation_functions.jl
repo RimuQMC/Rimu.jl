@@ -412,7 +412,7 @@ Superfluid correlations can be extracted from a Monte Carlo calculation by wrapp
 `SuperfluidCorrelator` with [`AllOverlaps`](@ref) and passing into
 [`ProjectorMonteCarloProblem`](@ref) with the `replica` keyword argument. For an example
 with a similar use of [`G2RealCorrelator`](@ref) see
-[G2 Correlator Example](https://joachimbrand.github.io/Rimu.jl/previews/PR227/generated/G2-example.html).
+[G2 Correlator Example](https://RimuQMC.github.io/Rimu.jl/previews/PR227/generated/G2-example.html).
 
 
 See also [`HubbardReal1D`](@ref), [`G2RealCorrelator`](@ref), [`AbstractOperator`](@ref),

@@ -36,7 +36,7 @@ const PACKAGE_VERSION = VersionNumber(TOML.parsefile(pkgdir(Rimu, "Project.toml"
 **Random integrators for many-body quantum systems**
 
 Welcome to `Rimu` version $PACKAGE_VERSION.
-Read the documentation [online](https://joachimbrand.github.io/Rimu.jl/).
+Read the documentation [online](https://RimuQMC.github.io/Rimu.jl/).
 """
 Rimu
 

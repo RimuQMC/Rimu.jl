@@ -6,7 +6,7 @@
 # Rimu provides support for MPI to enable parallel computations on multiple nodes.
 
 # A runnable script for this example is located
-# [here](https://github.com/joachimbrand/Rimu.jl/blob/develop/scripts/BHM-example-mpi.jl).
+# [here](https://github.com/RimuQMC/Rimu.jl/blob/develop/scripts/BHM-example-mpi.jl).
 # Run it with 2 MPI ranks with `mpirun -n 2 julia BHM-example-mpi.jl`.
 
 # We start by importing `Rimu` and `Rimu.RMPI`, which contains MPI-related
