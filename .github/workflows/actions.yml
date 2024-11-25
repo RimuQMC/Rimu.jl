@@ -9,8 +9,10 @@ jobs:
     strategy:
       matrix:
         julia-version: ['1', 'nightly', '1.9']
-        julia-arch: [x64]
         os: [ubuntu-latest]
+        include:
+          - julia-version: '1'
+            os: macos-latest
       fail-fast: false
     steps:
       - name: "Checkout"
@@ -19,7 +21,6 @@ jobs:
         uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.julia-version }}
-          arch: ${{ matrix.julia-arch }}
       - name: "Load cache"
         uses: julia-actions/cache@v2
       - name: "Build"
@@ -39,7 +40,8 @@ jobs:
           # with Pkg.develop(path="."). using Rimu, KrylovKit, StaticArrays at the end
           # ensures everything is precompiled before the MPI job starts.
           julia --color=yes --project=test -e "using Pkg; Pkg.instantiate(); Pkg.develop(path=\".\"); Pkg.add(\"MPI\"); Pkg.build(); using MPI; MPI.install_mpiexecjl(); using Rimu, KrylovKit, StaticArrays"
-          export PATH=$PATH:/home/runner/.julia/bin
+          export PATH=$PATH:/home/runner/.julia/bin # for linux
+          export PATH=$PATH:/Users/runner/.julia/bin # for macos
 
           mpiexecjl -n 2 julia --code-coverage=user --depwarn=yes --project=test test/mpi_runtests.jl
 
