@@ -80,7 +80,7 @@ makedocs(;
 )
 
 deploydocs(
-    repo = "github.com/joachimbrand/Rimu.jl.git",
+    repo = "github.com/rimuqmc/Rimu.jl.git",
     push_preview = true,
 )
 
