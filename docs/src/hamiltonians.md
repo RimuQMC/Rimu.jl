@@ -31,6 +31,7 @@ ExtendedHubbardReal1D
 HubbardMom1D
 BoseHubbardMom1D2C
 HubbardMom1DEP
+ExtendedHubbardMom1D
 ```
 
 ### Harmonic oscillator models
@@ -69,15 +70,18 @@ Stoquastic
 ```
 
 ## Observables
-Observables are [`AbstractOperator`](@ref)s that represent a physical
-observable. Their expectation values can be sampled during a
-[`ProjectorMonteCarloProblem`](@ref) simulation by passing
-them into a suitable [`ReplicaStrategy`](@ref), e.g. 
-[`AllOverlaps`](@ref).  [`AbstractOperator`](@ref) is a supertype of 
-[`AbstractHamiltonian`](@ref) and has less stringent 
-requirements. Some observables are also [`AbstractHamiltonian`](@ref)s.
+`Rimu.jl` offers two other supertypes for operators that are less 
+restrictive than [`AbstractHamiltonian`](@ref). 
+[`AbstractObservable`](@ref) and [`AbstractOperator`](@ref)s both
+can represent a physical observable. Their expectation values can be sampled during a [`ProjectorMonteCarloProblem`](@ref) simulation by 
+passing them into a suitable [`ReplicaStrategy`](@ref), e.g. 
+[`AllOverlaps`](@ref). Some observables are also [`AbstractHamiltonian`](@ref)s. The full type hierarchy is
+```julia
+AbstractHamiltonian{T} <: AbstractOperator{T} <: AbstractObservable{T}
+```
 
 ```@docs
+AbstractObservable
 AbstractOperator
 ParticleNumberOperator
 G2RealCorrelator

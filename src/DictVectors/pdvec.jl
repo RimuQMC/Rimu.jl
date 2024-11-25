@@ -186,7 +186,7 @@ function PDVec{K,V,N}(
 
     # This is a bit clunky. If you modify the communicator by hand, you have to make sure it
     # knows to hold values of type W. When we introduce more communicators, they should
-    # probably be constructed by a function, similar to how it's done in RMPI.
+    # probably be constructed by a function.
     IW = initiator_valtype(irule, W)
     if isnothing(communicator)
         if MPI.Comm_size(MPI.COMM_WORLD) > 1
@@ -530,6 +530,12 @@ function Base.mapreduce(f::F, op::O, t::PDVecIterator; kwargs...) where {F,O}
     end
     return merge_remote_reductions(t.vector.communicator, op, result)
 end
+
+# The following method is required to make `sum` work for PDVecs with MPI on ARM processors.
+# The reason is that `sum` uses a non-default reduction operator, which is not supported by
+# MPI.jl on non-Intel processors. This method is a workaround that uses the default
+# reduction operator.
+Base.sum(f, t::PDVecIterator; kwargs...) = mapreduce(f, +, t; kwargs...)
 
 """
     all(predicate, keys(::PDVec); kwargs...)
