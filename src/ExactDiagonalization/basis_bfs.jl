@@ -10,7 +10,6 @@ julia> using Rimu.ExactDiagonalization: UniformSplit
 
 julia> UniformSplit(collect(1:10), 3, 3)
 3-element UniformSplit{Int64}:
-
  [1, 2, 3]
  [4, 5, 6]
  [7, 8, 9, 10]
