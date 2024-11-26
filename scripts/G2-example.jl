@@ -3,7 +3,7 @@
 # This is an example calculation of the two-body correlation function ``G_2``.
 
 # A runnable script for this example is located
-# [here](https://github.com/joachimbrand/Rimu.jl/blob/develop/scripts/G2-example.jl).
+# [here](https://github.com/RimuQMC/Rimu.jl/blob/develop/scripts/G2-example.jl).
 # Run it with `julia G2-example.jl`.
 
 # First, we load the reqired packages. `Rimu` for FCIQMC calculation, and `DataFrames` for
