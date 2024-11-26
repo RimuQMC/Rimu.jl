@@ -1,8 +1,8 @@
 # Rimu
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://joachimbrand.github.io/Rimu.jl/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://joachimbrand.github.io/Rimu.jl/dev/)
-[![Coverage Status](https://coveralls.io/repos/github/joachimbrand/Rimu.jl/badge.svg)](https://coveralls.io/github/joachimbrand/Rimu.jl)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://RimuQMC.github.io/Rimu.jl/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://RimuQMC.github.io/Rimu.jl/dev/)
+[![Coverage Status](https://coveralls.io/repos/github/RimuQMC/Rimu.jl/badge.svg)](https://coveralls.io/github/RimuQMC/Rimu.jl)
 
 *Random Integrators for many-body quantum systems*
 
@@ -70,4 +70,4 @@ Papers discussing results obtained with `Rimu`:
 - "Polaron-Depleton Transition in the Yrast Excitations of a One-Dimensional Bose Gas with a Mobile Impurity", M. Yang, M. Čufar, E. Pahl, J. Brand, [*Condens. Matter* **7**, 15 (2022)](https://www.mdpi.com/2410-3896/7/1/15).
 - "Magnetic impurity in a one-dimensional few-fermion system", L. Rammelmüller, D. Huber, M. Čufar, J. Brand, A. Volosniev, [arXiv:2204.01606](http://arxiv.org/abs/2204.01606) (2022).
 
-For more information, consult the [documentation](https://joachimbrand.github.io/Rimu.jl/dev/).
+For more information, consult the [documentation](https://RimuQMC.github.io/Rimu.jl/dev/).

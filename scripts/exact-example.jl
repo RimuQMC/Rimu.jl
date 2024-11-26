@@ -6,7 +6,7 @@
 # as well as provide a few tips regarding them.
 
 # A runnable script for this example is located
-# [here](https://github.com/joachimbrand/Rimu.jl/blob/develop/scripts/exact-example.jl).
+# [here](https://github.com/RimuQMC/Rimu.jl/blob/develop/scripts/exact-example.jl).
 # Run it with `julia exact-example.jl`.
 
 # We start by loading Rimu.
