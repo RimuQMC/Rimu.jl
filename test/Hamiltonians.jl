@@ -203,7 +203,7 @@ end
                 FermiFS((1, 1, 1, 1, 0, 0, 0, 0)),
             ); t=[1, 2], u=[0 3; 3 0]
         ),
-        HubbardRealSpace(BoseFS2C((1, 2, 3), (1, 0, 0))),
+        HubbardRealSpace(CompositeFS(BoseFS(1, 2, 3), BoseFS(1, 0, 0))),
         HubbardMom1D(BoseFS2C((1, 2, 3), (1, 0, 0))),
         GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6); g=0.3),
         GutzwillerSampling(HubbardMom1D(BoseFS2C((3, 2, 1), (1, 2, 3)); u=[6 1; 1 1]); g=0.3),
