@@ -5,7 +5,8 @@ Abstract data type for vector-like data structures with sparse storage. While co
 `AbstractDVec`s represent elements of a vector space over a scalar type `V`, they are
 indexed by an arbitrary type `K` (could be non-integers) similar to dictionaries. They
 support the interface from [VectorInterface.jl](https://github.com/Jutho/VectorInterface.jl)
-and are designed to work well for quantum Monte Carlo with [`lomc!`](@ref Main.lomc!) and
+and are designed to work well for quantum Monte Carlo with
+[`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem) and
 for matrix-free linear algebra with [KrylovKit](https://github.com/Jutho/KrylovKit.jl).
 
 Concrete implementations are available as [`PDVec`](@ref Main.DictVectors.PDVec),
@@ -74,8 +75,6 @@ StochasticStyle(::AbstractArray{T}) where {T} = default_style(T)
 
 Create a "frozen" version of `dv` which can no longer be modified or used in the
 conventional manner, but supports faster dot products.
-
-If `dv` is an [`MPIData`](@ref Main.Rimu.RMPI.MPIData), synchronize its contents among the ranks first.
 """
 freeze(v::AbstractVector) = copy(v)
 

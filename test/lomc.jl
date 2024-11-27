@@ -4,7 +4,6 @@ using Rimu.DictVectors: Initiator, SimpleInitiator, CoherentInitiator, NonInitia
 using Rimu.StochasticStyles: IsStochastic2Pop, Bernoulli, WithoutReplacement
 using Rimu.StochasticStyles: ThresholdCompression
 using Rimu.StatsTools
-using Rimu.RMPI
 using Random
 using KrylovKit
 using Suppressor
@@ -47,7 +46,7 @@ Random.seed!(1234)
         state.step[] = 0
         df, state = lomc!(state, df)
         @test size(df, 1) == 200
-        @test df.steps == [1:100; 1:100]
+        @test df.step == [1:100; 1:100]
     end
 
     @testset "Setting dτ and shift" begin
@@ -76,7 +75,7 @@ Random.seed!(1234)
         H = HubbardMom1D(address; u=0.5)
         dv = DVec(address => 1; style=IsStochasticWithThreshold(1.0))
 
-        s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, targetwalkers=100)
+        s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, target_walkers=100)
         v = copy(dv)
         walkers = lomc!(H, v; s_strat, laststep=1000).df.norm
         @test median(walkers) ≈ 100 rtol=0.1
@@ -84,16 +83,16 @@ Random.seed!(1234)
         walkers = lomc!(H, v; s_strat, laststep=1000).df.norm # continuation run
         @test median(walkers) > 10 # essentially just test that it does not error
 
-        s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, targetwalkers=200)
+        s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, target_walkers=200)
         walkers = lomc!(H, copy(dv); s_strat, laststep=1000).df.norm
         @test median(walkers) ≈ 200 rtol=0.1
 
-        s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, targetwalkers=1000)
+        s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, target_walkers=1000)
         walkers = lomc!(H, copy(dv); s_strat, laststep=1000).df.norm
         @test median(walkers) ≈ 1000 rtol=0.1
 
         _, state = @test_logs (:warn, Regex("(Simulation)")) lomc!(H, copy(dv); targetwalkers=500, laststep=0)
-        @test only(state).algorithm.shift_strategy.targetwalkers == 500
+        @test only(state).algorithm.shift_strategy.target_walkers == 500
     end
 
     @testset "Replicas" begin
@@ -156,6 +155,8 @@ Random.seed!(1234)
                 @test num_stats(df) == 3 * binomial(2, 2)
                 df, _ = lomc!(H, dv; replica_strategy=AllOverlaps(7; operator=(G, H)))
                 @test num_stats(df) == 3 * binomial(7, 2)
+                df, _ = lomc!(H, dv; replica_strategy=AllOverlaps(7; operator=[G, H]))
+                @test num_stats(df) == 3 * binomial(7, 2)
 
                 # Transformed operators: (3 + 1) * N choose 2 reports.
                 df, _ = lomc!(G, dv; replica_strategy=AllOverlaps(2; operator=(H, G), transform=G))
@@ -184,13 +185,6 @@ Random.seed!(1234)
             df, _ = lomc!(G, v, replica_strategy=AllOverlaps(2; operator=O))
             @test df.c1_dot_c2 isa Vector{ComplexF64}
             @test df.c1_Op1_c2 isa Vector{ComplexF64}
-
-            # MPIData
-            dv = DVec(address => 1, style=IsDynamicSemistochastic())
-            df, _ = lomc!(H, MPIData(dv); replica_strategy=AllOverlaps(4; operator=H))
-            @test num_stats(df) == 2 * binomial(4, 2)
-            df, _ = lomc!(H, MPIData(dv); replica_strategy=AllOverlaps(5; operator=DensityMatrixDiagonal(1)))
-            @test num_stats(df) == 2 * binomial(5, 2)
         end
     end
 
@@ -232,19 +226,19 @@ Random.seed!(1234)
         H = HubbardReal1D(address; u=20)
 
         # DontUpdate
-        s_strat = DontUpdate(targetwalkers = 100)
+        s_strat = DontUpdate(target_walkers = 100)
         df = lomc!(H; s_strat, laststep=100).df
         @test size(df, 1) < 100 # finish early without error
 
         # LogUpdateAfterTargetWalkers
-        s_strat = LogUpdateAfterTargetWalkers(targetwalkers = 100)
+        s_strat = LogUpdateAfterTargetWalkers(target_walkers = 100)
         df, state  = lomc!(H; s_strat, laststep=100)
         @test size(df, 1) == 100
         @test df.shift_mode[end] # finish in variable shift mode
         @test df.norm[end] > 100
 
         # LogUpdate
-        s_strat = DoubleLogUpdate(targetwalkers=100)
+        s_strat = DoubleLogUpdate(target_walkers=100)
         df, state = lomc!(H; s_strat, laststep=100)
         @test size(df, 1) == 100
 
@@ -256,7 +250,7 @@ Random.seed!(1234)
         @test 500 > df.norm[end] > 100
 
         # DoubleLogUpdateAfterTargetWalkers
-        s_strat = DoubleLogUpdateAfterTargetWalkers(targetwalkers = 100)
+        s_strat = DoubleLogUpdateAfterTargetWalkers(target_walkers = 100)
         df, state  = lomc!(H; s_strat, laststep=100)
         @test size(df, 1) == 100
         @test df.shift_mode[end] # finish in variable shift mode
@@ -264,7 +258,7 @@ Random.seed!(1234)
 
         # test unexported strategies
         # DoubleLogSumUpdate
-        s_strat = Rimu.DoubleLogSumUpdate(targetwalkers = 100)
+        s_strat = Rimu.DoubleLogSumUpdate(target_walkers = 100)
         df, state  = lomc!(H; s_strat, laststep=100)
         @test size(df, 1) == 100
 
@@ -562,8 +556,8 @@ end
         dv_nr = DVec(address => 1; style=IsDynamicSemistochastic(spawning=WithoutReplacement()))
         dv_br = DVec(address => 1; style=IsDynamicSemistochastic(spawning=Bernoulli()))
 
-        s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, targetwalkers=100)
-        s_strat_cx = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, targetwalkers=100 + 100im)
+        s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, target_walkers=100)
+        s_strat_cx = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, target_walkers=100 + 100im)
         df_st = lomc!(H, dv_st; s_strat, laststep=2500).df
         df_th = lomc!(H, dv_th; s_strat, laststep=2500).df
         df_cx = lomc!(H, dv_cx; s_strat=s_strat_cx, laststep=2500).df
@@ -648,7 +642,7 @@ end
             H = HubbardMom1D(address; u=4.0)
             E0 = -9.251592973178997
 
-            s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, targetwalkers=300)
+            s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, target_walkers=300)
             laststep = 6_000
             dτ = 5e-4
             df_no = lomc!(H, copy(dv_no); s_strat, laststep, dτ).df
@@ -684,7 +678,7 @@ end
             H = HubbardMom1D(address)
             E0 = -16.36048582876015
 
-            s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, targetwalkers=3000)
+            s_strat = DoubleLogUpdate(ζ=0.05, ξ=0.05^2/4, target_walkers=3000)
             laststep = 2500
             dτ = 1e-2
             df_no = lomc!(H, copy(dv_no); s_strat, laststep, dτ).df

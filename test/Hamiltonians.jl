@@ -6,6 +6,7 @@ using Test
 using DataFrames
 using Suppressor
 using StaticArrays
+using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
 
 function exact_energy(ham)
     dv = DVec(starting_address(ham) => 1.0)
@@ -14,72 +15,244 @@ function exact_energy(ham)
 end
 
 """
+    test_observable_interface(obs, addr)
+
+This function tests the interface of an observable `obs` at address `addr` by checking that
+all required methods are defined.
+"""
+function test_observable_interface(obs, addr)
+    @testset "Observable interface: $(nameof(typeof(obs)))" begin
+        @testset "three way dot" begin # this works with vector valued operators
+            v = DVec(addr => scalartype(obs)(2))
+            @test dot(v, obs, v) isa eltype(obs)
+            @test dot(v, obs, v) ≈ Interfaces.dot_from_right(v, obs, v)
+        end
+        @testset "LOStructure" begin
+            @test LOStructure(obs) isa LOStructure
+            if LOStructure(obs) isa IsHermitian
+                @test obs' === obs
+            elseif  LOStructure(obs) isa IsDiagonal
+                @test num_offdiagonals(obs, addr) == 0
+                if scalartype(obs) <: Real
+                    @test obs' === obs
+                end
+            elseif LOStructure(obs) isa AdjointKnown
+                @test begin obs'; true; end # make sure no error is thrown
+            else
+                @test_throws ArgumentError obs'
+            end
+        end
+        @testset "allows_address_type" begin
+            @test allows_address_type(obs, addr)
+        end
+        @testset "show" begin
+            # Check that the result of show can be pasted into the REPL
+            @test eval(Meta.parse(repr(obs))) == obs
+        end
+    end
+end
+
+"""
+    test_operator_interface(op, addr; test_spawning=true)
+
+This function tests the interface of an operator `op` at address `addr` by checking that all
+required methods are defined.
+
+If `test_spawning` is `true`, tests are performed that require `offdiagonals` to return an
+`Hamiltonians.AbstractOffDiagonals`, which is a prerequisite for using the `spawn!`
+function. Otherwise, the spawning tests are skipped.
+"""
+function test_operator_interface(op, addr; test_spawning=true)
+    test_observable_interface(op, addr)
+
+    @testset "Operator interface: $(nameof(typeof(op)))" begin
+        @testset "diagonal_element" begin
+            @test diagonal_element(op, addr) isa eltype(op)
+            @test eltype(diagonal_element(op, addr)) == scalartype(op)
+        end
+        @testset "offdiagonals" begin
+            # `get_offdiagonal` is not mandatory and thus not tested
+            ods = offdiagonals(op, addr)
+            vec_ods = collect(ods)
+            eltype(vec_ods) == Tuple{typeof(addr), eltype(op)} == eltype(ods)
+            @test length(vec_ods) ≤ num_offdiagonals(op, addr)
+        end
+        if test_spawning
+            @testset "spawning" begin
+                ods = offdiagonals(op, addr)
+                @test ods isa AbstractOffdiagonals{typeof(addr),eltype(op)}
+                @test ods isa AbstractVector
+                @test size(ods) == (num_offdiagonals(op, addr),)
+                if length(ods) > 0
+                    @test random_offdiagonal(op, addr) isa Tuple{typeof(addr), <:Real, eltype(op)}
+                end
+            end
+        end
+        @testset "mul!" begin # this works with vector valued operators
+            v = DVec(addr => scalartype(op)(2))
+            w = empty(v, eltype(op); style=IsDeterministic{scalartype(op)}())
+            mul!(w, op, v) # operator vector product
+            @test dot(v, op, v) ≈ Interfaces.dot_from_right(v, op, v) ≈ dot(v, w)
+        end
+        @testset "dimension" begin
+            @test dimension(addr) ≥ dimension(op, addr)
+        end
+    end
+end
+
+"""
     test_hamiltonian_interface(H, addr=starting_address(H))
 
 The main purpose of this test function is to check that all required methods are defined.
 """
-function test_hamiltonian_interface(H, addr=starting_address(H))
-    @testset "$(nameof(typeof(H)))" begin
-        @testset "*, mul!, and call" begin
-            v = DVec(addr => eltype(H)(2.0))
-            v′ = H(v)
-            v″ = H * v
-            v‴ = similar(v)
-            H(v‴, v)
-            v⁗ = similar(v)
-            mul!(v⁗, H, v)
-            @test v′ == v″ == v‴ == v⁗
+function test_hamiltonian_interface(H, addr=starting_address(H); test_spawning=true)
+    test_operator_interface(H, addr; test_spawning)
+
+    @testset "Hamiltonians-only tests with $(nameof(typeof(H)))" begin
+        # starting_address is specific to Hamiltonians
+        @test allows_address_type(H, starting_address(H))
+
+        @test dimension(H) ≥ dimension(H, addr)
+
+        # Hamiltonians can only have scalar eltype
+        @test scalartype(H) === eltype(H)
+
+        # Hamiltonian action on a vector
+        v = DVec(addr => scalartype(H)(2))
+        v1 = similar(v)
+        mul!(v1, H, v)
+        v2 = H * v
+        v3 = similar(v)
+        H(v3, v)
+        v4 = H(v)
+        @test v1 == v2 == v3 == v4
+        v5 = DVec(addr => diagonal_element(H, addr))
+        for (addr, val) in offdiagonals(H, addr)
+            v5[addr] += val
         end
-        @testset "diagonal_element" begin
-            if eltype(H) <: Real
-                @test diagonal_element(H, addr) isa Real
-            else
-                @test norm(diagonal_element(H, addr)) ≥ 0
-            end
+        scale!(v5, scalartype(H)(2))
+        v5[addr] = v5[addr] # remove possible 0.0 from the diagonal
+        @test v5 == v1
+
+        if test_spawning && scalartype(H) <: Real
+            # applying an operator on a PDVec uses spawn!, which requires
+            # offdiagonals to be an AbstractVector
+            # currently this only works for real operators as spawn! is not
+            # implemented for complex operators
+            pv = PDVec(addr => scalartype(H)(2))
+            pv1 = H(pv)
+            @test dot(pv1, H, pv) ≈ Interfaces.dot_from_right(pv1, H, pv) ≈ dot(v1, v1)
         end
-        if !(H isa HOCartesianContactInteractions)  # offdiagonals not consistent with interface
-            @testset "hopping" begin
-                h = offdiagonals(H, addr)
-                @test eltype(h) == Tuple{typeof(addr), eltype(H)}
-                @test length(h) == num_offdiagonals(H, addr)
-                for i in 1:length(h)
-                    @test h[i] == get_offdiagonal(H, addr, i)
-                    @test h[i] isa eltype(h)
-                end
-            end
+
+    end
+end
+
+"""
+    test_hamiltonian_structure(H)
+
+Test the `LOStructure` of a small Hamiltonian `H` by instantiating it as a sparse matrix and
+checking whether the structure of the matrix is constistent with the result of
+`LOStructure(H)` and the `eltype` is consistent with `eltype(H)`.
+
+This function is intended to be used for small Hamiltonians where instantiating the matrix
+is quick.
+"""
+function test_hamiltonian_structure(H)
+    d = dimension(H)
+    d > 20 && @warn "This function is intended for small Hamiltonians. The dimension is $d."
+    m = sparse(H)
+    @test eltype(m) === eltype(H)
+    if LOStructure(H) == IsDiagonal()
+        @test isdiag(m)
+    elseif LOStructure(H) == IsHermitian()
+        @test H' == H
+        @test H' === H
+        @test ishermitian(m)
+    elseif LOStructure(H) == AdjointKnown()
+        @test m' == sparse(H')
+    end
+    if !ishermitian(m)
+        @test LOStructure(H) != IsHermitian()
+        if LOStructure(H) == IsDiagonal()
+            @test !isreal(m)
+            @test !(eltype(H) <: Real)
         end
-        @testset "LOStructure" begin
-            @test LOStructure(H) isa LOStructure
-            if LOStructure(H) isa IsHermitian || LOStructure(H) isa IsDiagonal
-                @test H' === H
-            elseif LOStructure(H) isa AdjointKnown
-                @test begin H'; true; end # make sure no error is thrown
-            else
-                @test_throws ErrorException H'
-            end
-        end
-        @testset "dimension" begin
-            @test dimension(H) == dimension(H, starting_address(H))
-            @test dimension(addr) ≥ dimension(H, addr)
-        end
-        @testset "allowed_address_type" begin
-            @test starting_address(H) isa allowed_address_type(H)
-            @test addr isa allowed_address_type(H)
-        end
-        @testset "offdiagonals" begin
-            # `get_offdiagonal` is not mandatory but `offdiagonals` is
-            if length(methods(get_offdiagonal, (typeof(H), typeof(add), Int))) > 0
-                ods = [get_offdiagonal(H, addr, i) for i in 1:num_offdiagonals(H, addr)]
-                @test ods == offdiagonals(H, addr)
-            end
-            number_of_nonzero_offdiagonals = length(DVec(offdiagonals(H, addr)))
-            @test number_of_nonzero_offdiagonals ≤ num_offdiagonals(H, addr)
-            @test number_of_nonzero_offdiagonals ≤ dimension(H, addr)
-        end
-        @testset "show" begin
-            # Check that the result of show can be pasted into the REPL
-            @test eval(Meta.parse(repr(H))) == H
-        end
+    end
+    nothing
+end
+@testset "Hamiltonian interface tests" begin
+    for H in (
+        HubbardReal1D(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0),
+        HubbardReal1DEP(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0, v_ho=3.0),
+        HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
+        HubbardMom1D(OccupationNumberFS(6, 0, 0, 4); t=1.0, u=0.5),
+        HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5 + im),
+        ExtendedHubbardReal1D(BoseFS((1, 0, 0, 0, 1)); u=1.0, v=2.0, t=3.0),
+        ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); u=1 + 0.5im),
+        ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); t=1 + 0.5im),
+        ExtendedHubbardMom1D(BoseFS((1, 0, 0, 0, 1)); u=1.0, v=2.0, t=3.0),
+        ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); u=1 + 0.5im),
+        ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); t=1 + 0.5im),
+        ExtendedHubbardMom1D(OccupationNumberFS(1,2,0,0); u=1.0, v=2.0, t=3.0),
+        ExtendedHubbardMom1D(FermiFS(1,1,0,0); u=1.0, v=2.0, t=3.0),
+        HubbardRealSpace(BoseFS((1, 2, 3)); u=[1], t=[3]),
+        HubbardRealSpace(FermiFS((1, 1, 1, 1, 1, 0, 0, 0)); u=[0], t=[3]),
+        HubbardRealSpace(
+            CompositeFS(
+                FermiFS((1, 1, 1, 1, 1, 0, 0, 0)),
+                FermiFS((1, 1, 1, 1, 0, 0, 0, 0)),
+            ); t=[1, 2], u=[0 3; 3 0]
+        ),
+        HubbardRealSpace(BoseFS2C((1, 2, 3), (1, 0, 0))),
+        HubbardMom1D(BoseFS2C((1, 2, 3), (1, 0, 0))),
+        GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6); g=0.3),
+        GutzwillerSampling(HubbardMom1D(BoseFS2C((3, 2, 1), (1, 2, 3)); u=[6 1; 1 1]); g=0.3),
+        GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6 + 2im); g=0.3),
+        MatrixHamiltonian(Float64[1 2; 2 0]),
+        GutzwillerSampling(MatrixHamiltonian([1.0 2.0; 2.0 0.0]); g=0.3),
+        TransformUndoer(
+            GutzwillerSampling(MatrixHamiltonian([1.0 2.0; 2.0 0.0]); g=0.3)
+        ),
+        Transcorrelated1D(CompositeFS(FermiFS((0, 0, 1, 1, 0)), FermiFS((0, 1, 1, 0, 0))); t=2),
+        Transcorrelated1D(CompositeFS(FermiFS((0, 0, 1, 0)), FermiFS((0, 1, 1, 0))); v=3, v_ho=1),
+        HubbardMom1DEP(BoseFS((0, 0, 5, 0, 0))),
+        HubbardMom1DEP(CompositeFS(FermiFS((0, 1, 1, 0, 0)), FermiFS((0, 0, 1, 0, 0))), v_ho=5),
+        ParitySymmetry(HubbardRealSpace(CompositeFS(BoseFS((1, 2, 0)), FermiFS((0, 1, 0))))),
+        TimeReversalSymmetry(HubbardMom1D(FermiFS2C((1, 0, 1), (0, 1, 1)))),
+        TimeReversalSymmetry(HubbardMom1D(BoseFS2C((0, 1, 1), (1, 0, 1)))),
+        Stoquastic(HubbardMom1D(BoseFS((0, 5, 0)))),
+        momentum(HubbardMom1D(BoseFS((0, 5, 0)))),
+        HOCartesianContactInteractions(BoseFS((2, 0, 0, 0))),
+        HOCartesianEnergyConservedPerDim(BoseFS((2, 0, 0, 0))),
+        HOCartesianCentralImpurity(BoseFS((1, 0, 0, 0, 0))),
+        FroehlichPolaron(OccupationNumberFS(1, 1, 1)),
+        FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
+        momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
+    )
+        # test_hamiltonian_interface(H; test_spawning=false)
+        test_hamiltonian_interface(H; test_spawning=!(H isa HOCartesianContactInteractions))
+    end
+end
+
+@testset "Operator interface test" begin
+    # this is only needed for AbstractOperators that are not AbstractHamiltonians
+    # and are not tested in the Hamiltonian interface tests
+    for (op, addr) in [
+        (G2RealSpace(CubicGrid((2, 2), (true, true)), 1, 1), BoseFS{10,4}(1, 2, 3, 4)),
+        (G2RealSpace(CubicGrid(4); sum_components=true),
+            CompositeFS(BoseFS(4, 1 => 1), BoseFS(4, 1 => 1), BoseFS(4, 1 => 1))),
+        (ParticleNumberOperator(), BoseFS(1, 2, 3)),
+        (ParticleNumberOperator(), FermiFS2C((1, 0, 1), (0, 1, 1))),
+        (G2RealCorrelator(3), FermiFS2C((1, 0, 1, 1), (0, 1, 1, 0))),
+        (G2MomCorrelator(3), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
+        (SuperfluidCorrelator(3), BoseFS(1, 2, 3, 1)),
+        (StringCorrelator(3), BoseFS(1, 0, 3, 1)),
+        (DensityMatrixDiagonal(3), FermiFS(1, 0, 1)),
+        (SingleParticleExcitation(2, 3), BoseFS(1, 2, 3, 4)),
+        (TwoParticleExcitation(3, 2, 1, 4), BoseFS(1, 2, 3, 4)),
+        (Momentum(1), BoseFS(1, 2, 3, 4)),
+    ]
+        test_operator_interface(op, addr)
     end
 end
 
@@ -201,61 +374,6 @@ using Rimu.Hamiltonians: Directions, Displacements
         @test collect(Displacements(CubicGrid(2,3); center=true)) == [
             [0,-1], [1,-1], [0,0], [1,0], [0,1], [1,1]
         ]
-    end
-end
-
-@testset "Interface tests" begin
-    for H in (
-        HubbardReal1D(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0),
-        HubbardReal1DEP(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0, v_ho=3.0),
-        HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
-        HubbardMom1D(OccupationNumberFS(6, 0, 0, 4); t=1.0, u=0.5),
-        HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5 + im),
-        ExtendedHubbardReal1D(BoseFS((1,0,0,0,1)); u=1.0, v=2.0, t=3.0),
-        HubbardRealSpace(BoseFS((1, 2, 3)); u=[1], t=[3]),
-        HubbardRealSpace(FermiFS((1, 1, 1, 1, 1, 0, 0, 0)); u=[0], t=[3]),
-        HubbardRealSpace(
-            CompositeFS(
-                FermiFS((1, 1, 1, 1, 1, 0, 0, 0)),
-                FermiFS((1, 1, 1, 1, 0, 0, 0, 0)),
-            ); t=[1, 2], u=[0 3; 3 0]
-        ),
-
-        BoseHubbardReal1D2C(BoseFS2C((1,2,3), (1,0,0))),
-        HubbardMom1D(BoseFS2C((1,2,3), (1,0,0))),
-
-        GutzwillerSampling(HubbardReal1D(BoseFS((1,2,3)); u=6); g=0.3),
-        GutzwillerSampling(HubbardMom1D(BoseFS2C((3,2,1), (1,2,3)); u=[6 1; 1 1]); g=0.3),
-        GutzwillerSampling(HubbardReal1D(BoseFS((1,2,3)); u=6 + 2im); g=0.3),
-
-        MatrixHamiltonian(Float64[1 2;2 0]),
-        GutzwillerSampling(MatrixHamiltonian([1.0 2.0;2.0 0.0]); g=0.3),
-        Rimu.Hamiltonians.TransformUndoer(
-            GutzwillerSampling(MatrixHamiltonian([1.0 2.0; 2.0 0.0]); g=0.3)
-        ),
-
-        Transcorrelated1D(CompositeFS(FermiFS((0,0,1,1,0)), FermiFS((0,1,1,0,0))); t=2),
-        Transcorrelated1D(CompositeFS(FermiFS((0,0,1,0)), FermiFS((0,1,1,0))); v=3, v_ho=1),
-
-        HubbardMom1DEP(BoseFS((0,0,5,0,0))),
-        HubbardMom1DEP(CompositeFS(FermiFS((0,1,1,0,0)), FermiFS((0,0,1,0,0))), v_ho=5),
-
-        ParitySymmetry(HubbardRealSpace(CompositeFS(BoseFS((1,2,0)), FermiFS((0,1,0))))),
-        TimeReversalSymmetry(HubbardMom1D(FermiFS2C((1,0,1),(0,1,1)))),
-        TimeReversalSymmetry(HubbardMom1D(BoseFS2C((0,1,1),(1,0,1)))),
-        Stoquastic(HubbardMom1D(BoseFS((0,5,0)))),
-        momentum(HubbardMom1D(BoseFS((0,5,0)))),
-
-        HOCartesianContactInteractions(BoseFS((2,0,0,0))),
-        HOCartesianEnergyConservedPerDim(BoseFS((2,0,0,0))),
-        HOCartesianCentralImpurity(BoseFS((1,0,0,0,0))),
-
-        FroehlichPolaron(OccupationNumberFS(1,1,1)),
-        FroehlichPolaron(OccupationNumberFS(1,1,1); momentum_cutoff = 10.0),
-
-        ParticleNumberOperator(OccupationNumberFS(1, 1, 1))
-    )
-        test_hamiltonian_interface(H)
     end
 end
 
@@ -577,6 +695,7 @@ end
             for H in (
                 HubbardMom1D(BoseFS((2,2,2)), u=6),
                 ExtendedHubbardReal1D(BoseFS((1,1,1,1,1,1,1,1,1,1,1,1)), u=6, t=2.0),
+                ExtendedHubbardMom1D(BoseFS((1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)), u=6, t=2.0),
                 HubbardMom1D(BoseFS2C((1,2,3), (1,0,0)), u=[1 1; 1 2]),
             )
                 # GutzwillerSampling with parameter zero is exactly equal to the original H
@@ -585,7 +704,7 @@ end
                 @test starting_address(G) == addr
                 @test all(x == y for (x, y) in zip(offdiagonals(H, addr), offdiagonals(G, addr)))
                 @test LOStructure(G) isa AdjointKnown
-                @test LOStructure(Rimu.Hamiltonians.TransformUndoer(G,G)) isa AdjointKnown
+                @test LOStructure(TransformUndoer(G,G)) isa AdjointKnown
 
                 @test eval(Meta.parse(repr(G))) == G
                 @test eval(Meta.parse(repr(G'))) == G'
@@ -607,25 +726,30 @@ end
                 HubbardReal1D(BoseFS((2,2,2)), u=6),
                 HubbardMom1D(BoseFS((2,2,2)), u=6),
                 ExtendedHubbardReal1D(BoseFS((1,1,1,1,1,1,1,1,1,1,1,1)), u=6, t=2.0),
+                ExtendedHubbardMom1D(BoseFS((1,1,1,1,1,1,1,1,1,1,1,1)), u=6, t=2.0),
+                # multicomponent not implemented for G2RealCorrelator
             )
                 # energy
                 g = rand()
                 x = rand()
                 G = GutzwillerSampling(H, g)
-                add = starting_address(H)
-                dv = DVec(add => x)
+                address = starting_address(H)
+                dv = DVec(address => x)
                 # transforming the Hamiltonian again should be consistent
-                fsq = Rimu.Hamiltonians.TransformUndoer(G)
-                fHf = Rimu.Hamiltonians.TransformUndoer(G, H)
+                fsq = TransformUndoer(G)
+                fHf = TransformUndoer(G, H)
                 Ebare = dot(dv, H, dv)/dot(dv, dv)
                 Egutz = dot(dv, G, dv)/dot(dv, dv)
                 Etrans = dot(dv, fHf, dv)/dot(dv, fsq, dv)
                 @test Ebare ≈ Egutz ≈ Etrans
 
                 # general operators
-                m = num_modes(add)
+                m = num_modes(address)
                 g2vals = map(d -> dot(dv, G2RealCorrelator(d), dv)/dot(dv, dv), 0:m-1)
-                g2transformed = map(d -> dot(dv, Rimu.Hamiltonians.TransformUndoer(G,G2RealCorrelator(d)), dv)/dot(dv, fsq, dv), 0:m-1)
+                g2transformed = map(
+                    d -> dot(dv, TransformUndoer(G,G2RealCorrelator(d)), dv)/dot(dv, fsq, dv),
+                    0:m-1
+                )
                 @test all(g2vals ≈ g2transformed)
 
                 # type promotion
@@ -686,12 +810,14 @@ end
                 HubbardReal1D(BoseFS((2,2,2)), u=6),
                 HubbardMom1D(BoseFS((2,2,2)), u=6),
                 ExtendedHubbardReal1D(BoseFS((1,1,1,1,1,1,1,1,1,1,1,1)), u=6, t=2.0),
+                ExtendedHubbardMom1D(BoseFS((1,1,1,1,1,1,1,1,1,1,1,1)), u=6, t=2.0),
+                # multicomponent not implemented for G2RealCorrelator
             )
                 # energy
                 x = rand()
                 G = GuidingVectorSampling(H, v, 0.2)
-                add = starting_address(H)
-                dv = DVec(add => x)
+                address = starting_address(H)
+                dv = DVec(address => x)
                 # transforming the Hamiltonian again should be consistent
                 fsq = Rimu.Hamiltonians.TransformUndoer(G)
                 fHf = Rimu.Hamiltonians.TransformUndoer(G, H)
@@ -701,7 +827,7 @@ end
                 @test Ebare ≈ Egutz ≈ Etrans
 
                 # general operators
-                m = num_modes(add)
+                m = num_modes(address)
                 g2vals = map(d -> dot(dv, G2RealCorrelator(d), dv)/dot(dv, dv), 0:m-1)
                 g2transformed = map(d -> dot(dv, Rimu.Hamiltonians.TransformUndoer(G,G2RealCorrelator(d)), dv)/dot(dv, fsq, dv), 0:m-1)
                 @test all(g2vals ≈ g2transformed)
@@ -754,6 +880,7 @@ end
         for H in (
             HubbardMom1D(BoseFS((2,2,2)), u=6),
             ExtendedHubbardReal1D(BoseFS((1,1,1,1,1,1,1,1,1,1,1,1)), u=6, t=2.0),
+            ExtendedHubbardMom1D(BoseFS((1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)), u=6, t=2.0),
             HubbardMom1D(BoseFS2C((1,2,3), (1,0,0))),
         )
             @test_throws ArgumentError Rimu.Hamiltonians.TransformUndoer(H)
@@ -874,6 +1001,10 @@ using Rimu.Hamiltonians: circshift_dot
                 @test eval(Meta.parse(repr(g2_2))) == g2_2
                 @test eval(Meta.parse(repr(g2_3))) == g2_3
 
+                @test scalartype(g2_1) == Float64
+                @test scalartype(g2_2) == Float64
+                @test scalartype(g2_3) == Float64
+
                 @test_throws ArgumentError G2RealSpace(CubicGrid(3), 1, 0)
                 @test_throws ArgumentError G2RealSpace(CubicGrid(2, 2), 0, 0)
                 @test_throws ArgumentError G2RealSpace(CubicGrid(1, 2, 3), -1, 2)
@@ -902,6 +1033,13 @@ using Rimu.Hamiltonians: circshift_dot
 
                 g2_nosum = dot(v, G2RealSpace(CubicGrid(4)), v)
                 @test iszero(g2_nosum)
+            end
+
+            @testset "adjoint" begin
+                G2 = G2RealSpace(CubicGrid(6))
+                @test LOStructure(G2) isa IsDiagonal
+                @test eltype(eltype(G2)) <: Real
+                @test G2' == G2
             end
         end
 
@@ -943,6 +1081,16 @@ using Rimu.Hamiltonians: circshift_dot
             @test g2[:,2,:] ≈ g2[:,3,:]
             @test g2[:,:,2] ≈ g2[:,:,3]
             @test minimum(g2) == first(g2)
+        end
+        @testset "G2 operator vector products" begin
+            addr = BoseFS(2, 0, 1, 1)
+            geom = CubicGrid(2, 2)
+            g2 = G2RealSpace(geom)
+            dv = DVec(addr => 2.0)
+            @test dot(dv, g2, dv) isa SMatrix
+            w = empty(dv, eltype(g2); style=IsDeterministic())
+            mul!(w, g2, dv) # operator vector product
+            @test dot(dv, w) == dot(dv, g2, dv) == conj.(dot(w, dv))
         end
     end
 
@@ -1041,6 +1189,8 @@ using Rimu.Hamiltonians: circshift_dot
         S0 = StringCorrelator(0)
         S1 = StringCorrelator(1)
         S2 = StringCorrelator(2)
+        SI = StringCorrelator(3; address=uniform_state)
+        SC = StringCorrelator(3; type=ComplexF64)
 
         @test num_offdiagonals(S0, localised_state) == 0
 
@@ -1063,11 +1213,13 @@ using Rimu.Hamiltonians: circshift_dot
         # Test return type for integer, and non-integer filling
         @test @inferred diagonal_element(S0, localised_state) isa Float64
         @test @inferred diagonal_element(S1, non_unital_localised_state) isa ComplexF64
+        @test @inferred diagonal_element(SI, uniform_state) isa Float64
+        @test @inferred diagonal_element(SC, uniform_state) isa ComplexF64
 
         # Test show method
         d = 5
         output = @capture_out print(StringCorrelator(d))
-        @test output == "StringCorrelator($d)"
+        @test output == "StringCorrelator($d; type=ComplexF64)"
 
     end
 
@@ -1077,9 +1229,9 @@ using Rimu.Hamiltonians: circshift_dot
         @test diagonal_element(Momentum(1), BoseFS((1,0,0,0))) ≡ -1.0
         @test_throws MethodError diagonal_element(Momentum(2), BoseFS((0,1,0)))
 
-        for add in (BoseFS2C((0,1,2,3,0), (1,2,3,4,5)), FermiFS2C((1,0,0,1), (0,0,1,0)))
-            @test diagonal_element(Momentum(1), add) + diagonal_element(Momentum(2), add) ≡
-                diagonal_element(Momentum(0), add)
+        for address in (BoseFS2C((0,1,2,3,0), (1,2,3,4,5)), FermiFS2C((1,0,0,1), (0,0,1,0)))
+            @test diagonal_element(Momentum(1), address) + diagonal_element(Momentum(2), address) ≡
+                diagonal_element(Momentum(0), address)
         end
 
         @test num_offdiagonals(Momentum(), BoseFS((0,1,0))) == 0
@@ -1091,20 +1243,53 @@ using Rimu.Hamiltonians: circshift_dot
         @test diagonal_element(DensityMatrixDiagonal(5), FermiFS((0,1,0,1,0,1,0))) == 0
         @test diagonal_element(DensityMatrixDiagonal(2; component=1), BoseFS((1,5,1,0))) == 5
 
-        for add in (
+        for address in (
             CompositeFS(BoseFS((1,2,3,4,5)), BoseFS((5,4,3,2,1))),
             BoseFS2C((1,2,3,4,5), (5,4,3,2,1))
             )
             for i in 1:5
-                @test diagonal_element(DensityMatrixDiagonal(i, component=1), add) == i
-                @test diagonal_element(DensityMatrixDiagonal(i, component=2), add) == 6 - i
-                @test diagonal_element(DensityMatrixDiagonal(i), add) == 6
+                @test diagonal_element(DensityMatrixDiagonal(i, component=1), address) == i
+                @test diagonal_element(DensityMatrixDiagonal(i, component=2), address) == 6 - i
+                @test diagonal_element(DensityMatrixDiagonal(i), address) == 6
             end
         end
 
         @test num_offdiagonals(DensityMatrixDiagonal(1), BoseFS((0,1,0))) == 0
         @test LOStructure(DensityMatrixDiagonal(2)) == IsDiagonal()
         @test DensityMatrixDiagonal(15)' === DensityMatrixDiagonal(15)
+    end
+
+    @testset "Reduced Density Matrix" begin
+        addr_bose = BoseFS(6,5,4,3,2,1)
+        addr_fermi = FermiFS(1,0,1,0,1,0)
+        for i in 1:6
+            naddr_fermi1, value_f1 = excitation(addr_fermi,find_mode(addr_fermi,(1,)),find_mode(addr_fermi,(i,)))
+            naddr_fermi2, value_f2 = excitation(addr_fermi,find_mode(addr_fermi,(2,)),find_mode(addr_fermi,(i,)))
+            @test diagonal_element(SingleParticleExcitation(i, i), addr_bose) == 7-i
+            @test diagonal_element(SingleParticleExcitation(i, i), addr_fermi) == i%2
+            @test get_offdiagonal(SingleParticleExcitation(2,i),addr_fermi,1) == (naddr_fermi2,value_f2)
+            if i == 1
+                @test diagonal_element(TwoParticleExcitation(1,i,1,i), addr_bose) == 5*(7-i)
+                @test diagonal_element(TwoParticleExcitation(1,i,1,i), addr_fermi) == 0.0
+                @test get_offdiagonal(SingleParticleExcitation(1,i),addr_fermi,1) == (naddr_fermi1,1)
+            else
+                naddr_bose1, value_b1 = excitation(addr_bose,find_mode(addr_bose,(1,)),find_mode(addr_bose,(i,)))
+                naddr_fermi11, value_f11 = excitation(addr_fermi,find_mode(addr_fermi,(1,2,)),find_mode(addr_fermi,(i,1,)))
+                @test diagonal_element(TwoParticleExcitation(1,i,1,i), addr_bose) == 6*(7-i)
+                @test diagonal_element(TwoParticleExcitation(1,i,1,i), addr_fermi) == i%2
+                @test get_offdiagonal(SingleParticleExcitation(1,i),addr_bose,1) == (naddr_bose1,value_b1)
+                @test get_offdiagonal(SingleParticleExcitation(1,i),addr_fermi,1) == (naddr_fermi1,0.0)
+                @test get_offdiagonal(TwoParticleExcitation(1,2,1,i),addr_fermi,1) == (naddr_fermi11,value_f11)
+                if i!=2
+                    naddr_bose11, value_b11 = excitation(addr_bose,find_mode(addr_bose,(1,2,)),find_mode(addr_bose,(i,1,)))
+                    @test get_offdiagonal(TwoParticleExcitation(1,2,1,i),addr_bose,1) == (naddr_bose11,value_b11)
+                end
+            end
+        end
+        @test num_offdiagonals(SingleParticleExcitation(1,2), addr_bose) == 1
+        @test LOStructure(SingleParticleExcitation(1,2)) == AdjointUnknown()
+        @test num_offdiagonals(TwoParticleExcitation(1,2,2,1), addr_bose) == 0
+        @test LOStructure(TwoParticleExcitation(1,2,2,1)) == AdjointUnknown()
     end
 end
 
@@ -1355,12 +1540,12 @@ end
         even_b = BasisSetRepresentation(ParitySymmetry(ham))
         odd_b = BasisSetRepresentation(ParitySymmetry(ham; odd=true))
 
-        for add in even_b.basis
-            @test add == min(add, reverse(add))
+        for address in even_b.basis
+            @test address == min(address, reverse(address))
         end
-        for add in odd_b.basis
-            @test add == min(add, reverse(add))
-            @test add ≠ reverse(add)
+        for address in odd_b.basis
+            @test address == min(address, reverse(address))
+            @test address ≠ reverse(address)
         end
 
         ham_m = Matrix(ham)
@@ -1658,7 +1843,6 @@ end
         null_addr = BoseFS(prod(S), 1=>0)
         @test isempty(fock_to_cart(null_addr, S))
     end
-
 end
 
 @testset "dimension and multi-component addresses" begin
@@ -1666,4 +1850,64 @@ end
                 FermiFS2C((1,0,1), (0,1,0)), BoseFS2C((1,0,1), (0,1,0))
     ]
     [@test dimension(addr) == dimension(typeof(addr)) for addr in addresses]
+end
+
+@testset "ExtendedHubbardReal1D boundary conditions" begin
+    for H in (
+        ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, boundary_condition=:twisted),
+        ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, boundary_condition=:hard_wall),
+        ExtendedHubbardReal1D(FermiFS((1,0,1,0,1,0,1,0,1,0,1)), v=6, t=2.0, boundary_condition=:twisted),
+        ExtendedHubbardReal1D(FermiFS((1,0,1,0,1,0,1,0,1,0,1)), v=6, t=2.0, boundary_condition=:hard_wall),
+        ExtendedHubbardReal1D(FermiFS((1,0,1,0,1,0,1,0,1,0,1)), v=6, t=2.0, boundary_condition=π),
+        ExtendedHubbardReal1D(BoseFS(1,0,2,1); u=1+0.5im, boundary_condition=:hard_wall))
+
+        addr = starting_address(H)
+        H1 = ExtendedHubbardReal1D(addr, v=6, t=2.0)
+        addr2, me = get_offdiagonal(H1, addr, 2)
+        if H.boundary_condition == :twisted
+            @test get_offdiagonal(H, addr, 2)[2] == - me
+            @test diagonal_element(H, addr) == diagonal_element(H1, addr)
+        elseif H.boundary_condition == :hard_wall
+            @test get_offdiagonal(H, addr, 2)[2] == 0.0
+        elseif H.boundary_condition isa Number
+            @test get_offdiagonal(H, addr, 2)[2] == me*exp(-im*H.boundary_condition)
+            @test diagonal_element(H, addr) == diagonal_element(H1, addr)
+        end
+        @test get_offdiagonal(H, addr, 2)[1] == addr2
+    end
+    @test_throws ArgumentError ExtendedHubbardReal1D(BoseFS(1,1,1,1); boundary_condition=:hrad_wall)
+end
+
+@testset "Small ExtendedHubbardReal1D with complex parameters" begin
+    for H in (
+        ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), boundary_condition=:twisted), # Hermitian
+        ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), boundary_condition=0.5), # Hermitian
+        ExtendedHubbardReal1D(BoseFS(1, 0, 1, 0), v=6, t=2.0+3im), # Hermitian
+        ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), v=6 + 0.5im, t=2.0), # non-Hermitian
+        ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), u=6 + 3im, t=2.0), # non-Hermitian
+        ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), u=6 + 3im, t=0), # diagonal and non-Hermitian
+        ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), t=0), # diagonal and Hermitian
+    )
+        test_hamiltonian_structure(H)
+    end
+    h = ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1); t=0) # diagonal and Hermitian
+    @test LOStructure(h) isa IsDiagonal
+    @test adjoint(h) == h
+    h2 = ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1); u=6 + 3im, t=0)
+    # diagonal and non-Hermitian
+    @test LOStructure(h) isa IsDiagonal
+    @test_throws ArgumentError adjoint(h2)
+end
+
+@testset "Comparison of ExtendedHubbardMom1D with ExtendedHubbardReal1D" begin
+    addr_f = FermiFS{3,6}(0,1,1,1,0,0)
+    addr_b = BoseFS{3,6}(0,0,3,0,0,0)
+    for boundary_condition in ([i*π for i in 0.0:0.2:1.0]...,)
+        HR_f = ExtendedHubbardReal1D(addr_f; boundary_condition)
+        HM_f = ExtendedHubbardMom1D(addr_f; boundary_condition)
+        HR_b = ExtendedHubbardReal1D(addr_b; boundary_condition)
+        HM_b = ExtendedHubbardMom1D(addr_b; boundary_condition)
+        @test round.(eigvals(Matrix(HM_f)), digits=8) ⊆ round.(eigvals(Matrix(HR_f)), digits=8)
+        @test round.(eigvals(Matrix(HM_b)), digits=8) ⊆ round.(eigvals(Matrix(HR_b)), digits=8)
+    end
 end

@@ -6,13 +6,11 @@
 # Rimu provides support for MPI to enable parallel computations on multiple nodes.
 
 # A runnable script for this example is located
-# [here](https://github.com/joachimbrand/Rimu.jl/blob/develop/scripts/BHM-example-mpi.jl).
+# [here](https://github.com/RimuQMC/Rimu.jl/blob/develop/scripts/BHM-example-mpi.jl).
 # Run it with 2 MPI ranks with `mpirun -n 2 julia BHM-example-mpi.jl`.
 
-# We start by importing `Rimu` and `Rimu.RMPI`, which contains MPI-related
-# functionality.
+# We start by importing `Rimu`.
 using Rimu
-using Rimu.RMPI
 
 # Note that it is not necessary to initialise the MPI library, as this is already done
 # automatically when Rimu is loaded.
@@ -57,13 +55,13 @@ problem = ProjectorMonteCarloProblem(H;
     start_at=initial_vector,
     reporting_strategy,
     post_step_strategy=ProjectedEnergy(H, initial_vector),
-    targetwalkers=10_000,
+    target_walkers=10_000,
     time_step=1e-4,
     last_step=10_000
 );
 
-# The [`@mpi_root`](@ref Main.Rimu.RMPI.@mpi_root) macro performs an action on the root rank
-# only, which is useful for printing.
+# The [`@mpi_root`](@ref) macro performs an action on the root rank only, which is useful
+# for printing.
 @mpi_root println("Running FCIQMC with ", mpi_size(), " rank(s).")
 
 # Finally, we can run the computation.

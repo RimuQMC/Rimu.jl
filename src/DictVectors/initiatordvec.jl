@@ -1,7 +1,8 @@
 """
     InitiatorDVec{K,V} <: AbstractDVec{K,V}
 
-Dictionary-based vector-like data structure for use with [`lomc!`](@ref Main.lomc!) and
+Dictionary-based vector-like data structure for use with
+[`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem) and
 [`KrylovKit.jl`](https://github.com/Jutho/KrylovKit.jl). See [`AbstractDVec`](@ref).
 Functionally identical to [`DVec`](@ref), but contains [`InitiatorValue`](@ref)s internally
 in order to facilitate initiator methods. Initiator methods for controlling the Monte Carlo
@@ -119,17 +120,17 @@ function InitiatorDVec(
     return InitiatorDVec(copy(storage(dv)); style, initiator, capacity)
 end
 
-function Base.empty(dvec::InitiatorDVec{K,V}) where {K,V}
-    return InitiatorDVec{K,V}(; style=dvec.style, initiator=dvec.initiator)
+function Base.empty(dvec::InitiatorDVec{K,V}; style=dvec.style) where {K,V}
+    return InitiatorDVec{K,V}(; style, initiator=dvec.initiator)
 end
-function Base.empty(dvec::InitiatorDVec{K,V}, ::Type{V}) where {K,V}
-    return empty(dvec)
+function Base.empty(dvec::InitiatorDVec{K,V}, ::Type{V}; style=dvec.style) where {K,V}
+    return empty(dvec; style)
 end
-function Base.empty(dvec::InitiatorDVec{K}, ::Type{V}) where {K,V}
-    return InitiatorDVec{K,V}(; initiator=dvec.initiator)
+function Base.empty(dvec::InitiatorDVec{K}, ::Type{V}; style=default_style(V)) where {K,V}
+    return InitiatorDVec{K,V}(; style, initiator=dvec.initiator)
 end
-function Base.empty(dvec::InitiatorDVec, ::Type{K}, ::Type{V}) where {K,V}
-    return InitiatorDVec{K,V}(; initiator=dvec.initiator)
+function Base.empty(dvec::InitiatorDVec, ::Type{K}, ::Type{V}; style=default_style(V)) where {K,V}
+    return InitiatorDVec{K,V}(; style, initiator=dvec.initiator)
 end
 
 ###

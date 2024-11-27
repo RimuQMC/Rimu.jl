@@ -3,7 +3,7 @@
 # This is an example calculation of the two-body correlation function ``G_2``.
 
 # A runnable script for this example is located
-# [here](https://github.com/joachimbrand/Rimu.jl/blob/develop/scripts/G2-example.jl).
+# [here](https://github.com/RimuQMC/Rimu.jl/blob/develop/scripts/G2-example.jl).
 # Run it with `julia G2-example.jl`.
 
 # First, we load the reqired packages. `Rimu` for FCIQMC calculation, and `DataFrames` for
@@ -47,26 +47,28 @@ G2list = ((G2RealCorrelator(d) for d in dvals)...,)
 # To obtain an unbiased result, at least two replicas should be used. One can also use more
 # than two to improve the statistics. This is particularly helpful when the walker number is
 # low.
-num_replicas = 3
-replica_strategy = AllOverlaps(num_replicas; operator = G2list)
+n_replicas = 3
+replica_strategy = AllOverlaps(n_replicas; operator=G2list)
 
 # Other FCIQMC parameters and strategies can be set in the same way as before.
 steps_equilibrate = 1_000
 steps_measure = 5_000
-targetwalkers = 100;
-dτ = 0.001
+target_walkers = 100;
+time_step = 0.001
 
 Random.seed!(17); #hide
 
 # Now, we run FCIQMC. Note that passing an initial vector is optional - if we only pass the
 # style, a vector with the appropriate style is created automatically.
-df, state = lomc!(
-    H; style=IsDynamicSemistochastic(),
-    dτ,
-    laststep = steps_equilibrate + steps_measure,
-    targetwalkers,
+problem = ProjectorMonteCarloProblem(H;
+    style=IsDynamicSemistochastic(),
+    time_step,
+    last_step = steps_equilibrate + steps_measure,
+    target_walkers,
     replica_strategy,
-);
+)
+result = solve(problem)
+df = DataFrame(result);
 
 # The output `DataFrame` has FCIQMC statistics for each replica (e.g. shift, norm),
 println(filter(startswith("shift_"), names(df)))
@@ -91,7 +93,7 @@ println(filter(contains("Op"), names(df)))
 # equilibration steps.
 
 # Now, we can calculate the correlation function for each value of ``d``.
-println("Two-body correlator from $num_replicas replicas:")
+println("Two-body correlator from $n_replicas replicas:")
 for d in dvals
     r = rayleigh_replica_estimator(df; op_name = "Op$(d+1)", skip=steps_equilibrate)
     println("   G2($d) = $(r.f) ± $(r.σ_f)")
@@ -103,8 +105,8 @@ end
 
 # Since we ran multiple independent replicas, we also have multiple estimates of the shift
 # energy.
-println("Shift energy from $num_replicas replicas:")
-for i in 1:num_replicas
+println("Shift energy from $n_replicas replicas:")
+for i in 1:n_replicas
     se = shift_estimator(df; shift="shift_$i", skip=steps_equilibrate)
     println("   Replica $i: $(se.mean) ± $(se.err)")
 end

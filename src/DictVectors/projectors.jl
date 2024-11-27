@@ -10,7 +10,7 @@ products. Implemented subtypes:
 - [`Norm2Projector`](@ref)
 - [`Norm1ProjectorPPop`](@ref)
 
-See also [`PostStepStrategy`](@ref Main.PostStepStrategy) for use of projectors in [`lomc!`](@ref Main.lomc!).
+See also [`PostStepStrategy`](@ref Main.PostStepStrategy) for use of projectors in [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem).
 
 ## Interface
 
@@ -33,14 +33,14 @@ dot(UniformProjector(), LO, v) == sum(LO*v)
 ```
 
 See also [`PostStepStrategy`](@ref Main.PostStepStrategy), and [`AbstractProjector`](@ref) for use
-of projectors in [`lomc!`](@ref Main.lomc!).
+of projectors in [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem).
 """
 struct UniformProjector <: AbstractProjector end
 
 VectorInterface.inner(::UniformProjector, y::DVecOrVec) = sum(values(y))
 Base.getindex(::UniformProjector, add) = 1
 
-function VectorInterface.inner(::UniformProjector, op::AbstractHamiltonian, v::AbstractDVec)
+function LinearAlgebra.dot(::UniformProjector, op::AbstractOperator, v::AbstractDVec)
     return sum(pairs(v)) do (key, val)
         diag = diagonal_element(op, key) * val
         offdiag = sum(offdiagonals(op, key)) do (add, elem)
@@ -60,7 +60,7 @@ dot(NormProjector(),x)
 `NormProjector()` thus represents the vector `sign.(x)`.
 
 See also [`PostStepStrategy`](@ref Main.PostStepStrategy), and [`AbstractProjector`](@ref) for use
-of projectors in [`lomc!`](@ref Main.lomc!).
+of projectors in [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem).
 """
 struct NormProjector <: AbstractProjector end
 
@@ -75,7 +75,7 @@ dot(NormProjector(),x)
 ```
 
 See also [`PostStepStrategy`](@ref Main.PostStepStrategy), and [`AbstractProjector`](@ref) for use
-of projectors in [`lomc!`](@ref Main.lomc!).
+of projectors in [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem).
 """
 struct Norm2Projector <: AbstractProjector end
 
@@ -92,7 +92,7 @@ dot(Norm1ProjectorPPop(),x)
 ```
 
 See also [`PostStepStrategy`](@ref Main.PostStepStrategy), and [`AbstractProjector`](@ref) for use
-of projectors in [`lomc!`](@ref Main.lomc!).
+of projectors in [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem).
 """
 struct Norm1ProjectorPPop <: AbstractProjector end
 
@@ -109,7 +109,6 @@ end
 
 # NOTE that this returns a `Float64` opposite to the convention for
 # dot to return the promote_type of the arguments.
-# NOTE: This operation should work for `MPIData` and is MPI synchronizing
 
 """
     PopsProjector() <: AbstractProjector
@@ -121,7 +120,7 @@ dot(PopsProjector(),x)
 ```
 
 See also [`PostStepStrategy`](@ref Main.PostStepStrategy), and [`AbstractProjector`](@ref) for use
-of projectors in [`lomc!`](@ref Main.lomc!).
+of projectors in [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem).
 """
 struct PopsProjector <: AbstractProjector end
 

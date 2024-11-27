@@ -208,7 +208,7 @@ refine_reporting_strategy(reporting_strategy::ReportingStrategy) = reporting_str
      report!(::ReportingStrategy, step, report::Report, nt, id="")
 
 Report `keys` and `values` to `report`, which will be converted to a `DataFrame` before
-[`lomc!`](@ref) exits. Alternatively, a `nt::NamedTuple` can be passed in place of `keys`
+[`ProjectorMonteCarloProblem`](@ref) exits. Alternatively, a `nt::NamedTuple` can be passed in place of `keys`
 and `values`. If `id` is specified, it is appended to all `keys`. This is used to
 differentiate between values reported by different replicas.
 
@@ -242,8 +242,8 @@ reporting_interval(::ReportingStrategy) = 1
 """
     finalize_report!(::ReportingStrategy, report)
 
-Finalize the report. This function is called after all steps in [`lomc!`](@ref) have
-finished.
+Finalize the report. This function is called after all steps in
+[`solve!`](@ref) have finished.
 """
 function finalize_report!(::ReportingStrategy, report)
     report.is_finalized[] = true
@@ -264,7 +264,7 @@ end
 The default [`ReportingStrategy`](@ref). Report every `reporting_interval`th step to a `DataFrame`
 and write info message to `io` every `info_interval`th reported step (unless `writeinfo == false`). The flag
 `writeinfo` is useful for controlling info messages in MPI codes, e.g. by setting
-`writeinfo = `[`is_mpi_root()`](@ref Rimu.RMPI.is_mpi_root).
+`writeinfo = `[`is_mpi_root()`](@ref Rimu.is_mpi_root).
 """
 @with_kw struct ReportDFAndInfo <: ReportingStrategy
     reporting_interval::Int = 1
@@ -303,7 +303,7 @@ The arrow file can be read back in with [`load_df(filename)`](@ref) or
 * `chunk_size = 1000`: the size of each chunk that is written to the file. A `DataFrame` of
   this size is collected in memory and written to disk. When saving, an info message is also
   printed to `io`.
-* `save_if = `[`is_mpi_root()`](@ref Rimu.RMPI.is_mpi_root): if this value is true, save the
+* `save_if = `[`is_mpi_root()`](@ref Rimu.is_mpi_root): if this value is true, save the
   report, otherwise ignore it.
 * `return_df = false`: if this value is true, read the file and return the data frame at the
   end of computation. Otherwise, an empty `DataFrame` is returned.
@@ -328,7 +328,7 @@ function ReportToFile(;
     filename = "out.arrow",
     reporting_interval = 1,
     chunk_size = 1000,
-    save_if = RMPI.is_mpi_root(),
+    save_if = is_mpi_root(),
     return_df = false,
     io = stdout,
     compress = :zstd,

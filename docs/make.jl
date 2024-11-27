@@ -54,6 +54,7 @@ makedocs(;
         "Examples" => EXAMPLES_PAIRS[sortperm(EXAMPLES_NUMS)],
         "User documentation" => [
             "Exact Diagonalization" => "exactdiagonalization.md",
+            "Projector Monte Carlo" => "projectormontecarlo.md",
             "StatsTools" => "statstools.md",
             "Using MPI" => "mpi.md",
         ],
@@ -63,7 +64,6 @@ makedocs(;
             "Dict vectors" => "dictvectors.md",
             "BitString addresses" => "addresses.md",
             "Stochastic styles" => "stochasticstyles.md",
-            "RMPI" => "RMPI.md",
             "I/O" => "rimuio.md",
             "Random numbers" => "randomnumbers.md",
             "Documentation generation" => "documentation.md",
@@ -79,7 +79,7 @@ makedocs(;
 )
 
 deploydocs(
-    repo = "github.com/joachimbrand/Rimu.jl.git",
+    repo = "github.com/RimuQMC/Rimu.jl.git",
     push_preview = true,
 )
 

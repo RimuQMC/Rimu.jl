@@ -35,8 +35,8 @@ function set_up_initial_shift_parameters(algorithm::FCIQMC, hamiltonian,
     if shift === nothing
         initial_shifts = _determine_initial_shift(hamiltonian, starting_vectors)
     elseif shift isa Number
-        initial_shifts = [float(shift) for _ in 1 : S*R] # not great for excited states
-    elseif length(shift) == n_spectral
+        initial_shifts = [float(shift) for _ in 1:(S * R)] # not great for excited states
+    elseif length(shift) == S * R
         initial_shifts = float.(shift)
     else
         throw(ArgumentError("The number of shifts must match the number of starting vectors."))
@@ -61,14 +61,14 @@ function _determine_initial_shift(hamiltonian, starting_vectors)
 end
 
 """
-    FirstOrderTransitionOperator(hamiltonian, shift, dτ) <: AbstractHamiltonian
+    FirstOrderTransitionOperator(hamiltonian, shift, time_step) <: AbstractHamiltonian
     FirstOrderTransitionOperator(sp::DefaultShiftParameters, hamiltonian)
 
 First order transition operator
 ```math
 𝐓 = 1 + dτ(S - 𝐇)
 ```
-where ``𝐇`` is the `hamiltonian` and ``S`` is the `shift`.
+where ``𝐇`` is the `hamiltonian`, ``dτ`` the `time_step` and ``S`` is the `shift`.
 
 ``𝐓`` represents the first order expansion of the exponential evolution operator
 of the imaginary-time Schrödinger equation (Euler step) and repeated application
@@ -78,11 +78,11 @@ transition operator used in [`FCIQMC`](@ref).
 struct FirstOrderTransitionOperator{T,S,H} <: AbstractHamiltonian{T}
     hamiltonian::H
     shift::S
-    dτ::Float64
+    time_step::Float64
 
-    function FirstOrderTransitionOperator(hamiltonian::H, shift::S, dτ) where {H,S}
+    function FirstOrderTransitionOperator(hamiltonian::H, shift::S, time_step) where {H,S}
         T = eltype(hamiltonian)
-        return new{T,S,H}(hamiltonian, shift, Float64(dτ))
+        return new{T,S,H}(hamiltonian, shift, Float64(time_step))
     end
 end
 
@@ -92,23 +92,23 @@ end
 
 function Hamiltonians.diagonal_element(t::FirstOrderTransitionOperator, add)
     diag = diagonal_element(t.hamiltonian, add)
-    return 1 - t.dτ * (diag - t.shift)
+    return 1 - t.time_step * (diag - t.shift)
 end
 
 struct FirstOrderOffdiagonals{
     A,V,O<:AbstractVector{Tuple{A,V}}
 } <: AbstractVector{Tuple{A,V}}
-    dτ::Float64
+    time_step::Float64
     offdiagonals::O
 end
 function Hamiltonians.offdiagonals(t::FirstOrderTransitionOperator, add)
-    return FirstOrderOffdiagonals(t.dτ, offdiagonals(t.hamiltonian, add))
+    return FirstOrderOffdiagonals(t.time_step, offdiagonals(t.hamiltonian, add))
 end
 Base.size(o::FirstOrderOffdiagonals) = size(o.offdiagonals)
 
 function Base.getindex(o::FirstOrderOffdiagonals, i)
     add, val = o.offdiagonals[i]
-    return add, -val * o.dτ
+    return add, -val * o.time_step
 end
 
 """
@@ -140,12 +140,11 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
     # pv was mutated and now contains the new vector.
     v, pv = (pv, v)
 
-    # Stats
-    tnorm = walkernumber(v)
-    len = length(v)
+    # Stats:
+    tnorm, len = walkernumber_and_length(v)
 
     # Updates
-    time_step = update_dτ(time_step_strategy, time_step, tnorm)
+    time_step = update_time_step(time_step_strategy, time_step, tnorm)
 
     shift_stats, proceed = update_shift_parameters!(
         shift_strategy, shift_parameters, tnorm, v, pv, step, report
@@ -159,7 +158,11 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
         post_step_stats = post_step_action(state.post_step_strategy, s_state, step)
 
         # Reporting
-        report!(reporting_strategy, step, report, (; dτ=time_step, len), id)
+        if !(time_step_strategy isa ConstantTimeStep) # report time_step unless it is constant
+            report!(reporting_strategy, step, report, (; time_step), id)
+        end
+
+        report!(reporting_strategy, step, report, (; len), id)
         report!(reporting_strategy, step, report, shift_stats, id) # shift, norm, shift_mode
 
         report!(reporting_strategy, step, report, step_stat_names, step_stat_values, id)

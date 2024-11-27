@@ -2,7 +2,7 @@ using LinearAlgebra
 using Random
 using Rimu
 using Rimu.DictVectors
-using Rimu.StochasticStyles: IsStochastic2Pop
+using Rimu.StochasticStyles: IsStochastic2Pop, StochasticStyle
 using StaticArrays
 using Suppressor
 using Test
@@ -290,6 +290,17 @@ end
         test_dvec_interface(DVec; capacity=200)
     end
 
+    @testset "DVec with StaticArray" begin
+        sa = SA[1.0 2.0; 3.0 4.0]
+        sai = SA[1 2; 3 4]
+        @test DVec(:a => sa) == DVec(:a => sai)
+        @test_throws ArgumentError DVec(:a => sai; style=IsDynamicSemistochastic())
+        dict = Dict(:a => sai)
+        @test_throws ArgumentError DVec(dict; style=IsDynamicSemistochastic())
+        @test DVec(Dict(:a => sa)) == DVec(:a => sa)
+        dv = DVec(:a => sai)
+        @test_throws ArgumentError empty(dv; style=IsDynamicSemistochastic())
+    end
 end
 
 @testset "InitiatorDVec" begin
@@ -299,12 +310,33 @@ end
     end
 end
 
-using Rimu.DictVectors: num_segments, is_distributed
+using Rimu.DictVectors: num_segments, is_distributed, SegmentedBuffer, replace_collections!
 
 @testset "PDVec" begin
     @testset "constructor errors" begin
         @test_throws ArgumentError PDVec(1 => 1; initiator="none")
         @test_throws ArgumentError PDVec(1 => 1; communicator="none")
+    end
+
+    @testset "internals" begin
+        @testset "SegmentedBuffer" begin
+            buf = SegmentedBuffer{Float64}()
+            vecss = (
+                ([1.0,2.0,3.0], [4.0,5.0], [6.0,7.0,8.0,9.0,0.0], Float64[], [10.0]),
+                (Float64[], rand(5), rand(3)),
+                (Float64[],),
+            )
+            for vecs in vecss
+                replace_collections!(buf, vecs)
+
+                @test length(buf) == length(vecs)
+                @test buf.offsets[end] == sum(length, vecs)
+                @test buf.buffer == reduce(vcat, vecs)
+                for (i, v) in enumerate(vecs)
+                    @test buf[i] == v
+                end
+            end
+        end
     end
 
     @testset "operations" begin

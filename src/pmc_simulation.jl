@@ -24,7 +24,7 @@ function _set_up_starting_vectors(
     start_at, n_replicas, n_spectral, style, initiator, threading, copy_vectors
 )
     if start_at isa AbstractMatrix && size(start_at) == (n_replicas, n_spectral)
-        if eltype(start_at) <: Union{AbstractDVec, RMPI.MPIData} # already dvecs
+        if eltype(start_at) <: AbstractDVec # already dvecs
             if copy_vectors
                 return SMatrix{n_spectral, n_replicas}(deepcopy(v) for v in start_at)
             else
@@ -38,7 +38,7 @@ function _set_up_starting_vectors(
     end
     n_spectral == 1 || throw(ArgumentError("The number of spectral states must match the number of starting vectors."))
     if start_at isa AbstractVector && length(start_at) == n_replicas
-        if eltype(start_at) <: Union{AbstractDVec, RMPI.MPIData} # already dvecs
+        if eltype(start_at) <: AbstractDVec # already dvecs
             if copy_vectors
                 return SMatrix{n_spectral, n_replicas}(deepcopy(v) for v in start_at)
             else
@@ -49,7 +49,7 @@ function _set_up_starting_vectors(
                 default_starting_vector(sa; style, initiator, threading) for sa in start_at
             )
         end
-    elseif start_at isa Union{AbstractDVec, RMPI.MPIData}
+    elseif start_at isa AbstractDVec
         if n_replicas == 1 && !copy_vectors
             return SMatrix{n_spectral, n_replicas}(start_at)
         else
@@ -75,7 +75,7 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
 
     # seed the random number generator
     if !isnothing(random_seed)
-        Random.seed!(random_seed + hash(RMPI.mpi_rank()))
+        Random.seed!(random_seed + hash(mpi_rank()))
     end
 
     start_at = isnothing(start_at) ? starting_address(hamiltonian) : start_at
@@ -93,7 +93,7 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
         @unpack shift, time_step = initial_shift_parameters
         set_up_initial_shift_parameters(algorithm, hamiltonian, vectors, shift, time_step)
     else
-        initial_shift_parameters
+        SMatrix{n_spectral,n_replicas}(initial_shift_parameters...)
     end
     @assert shift_parameters isa SMatrix{n_spectral,n_replicas}
 
@@ -253,7 +253,7 @@ function CommonSolve.step!(sm::PMCSimulation)
 
     # report step number
     if step[] % reporting_interval(reporting_strategy) == 0
-        report!(reporting_strategy, step[], report, :steps, step[])
+        report!(reporting_strategy, step[], report, :step, step[])
     end
 
     proceed = true

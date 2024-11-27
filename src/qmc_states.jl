@@ -72,8 +72,8 @@ end
 Returns an estimate of the expected number of walkers as an integer.
 """
 function _n_walkers(v, shift_strategy)
-    n = if hasfield(typeof(shift_strategy), :targetwalkers)
-        shift_strategy.targetwalkers
+    n = if hasfield(typeof(shift_strategy), :target_walkers)
+        shift_strategy.target_walkers
     else # e.g. for LogUpdate()
         walkernumber(v)
     end
@@ -219,13 +219,12 @@ function default_starting_vector(fdv::Union{FrozenDVec,Pair};
     style = IsDynamicSemistochastic(),
     threading = nothing,
     initiator = NonInitiator(),
-    mpi = RMPI.mpi_size() > 1,
 )
     threading === nothing && (threading = Threads.nthreads() > 1)
-    return _setup_dvec(fdv, style, initiator, threading, mpi)
+    return _setup_dvec(fdv, style, initiator, threading)
 end
 
-function _setup_dvec(fdv::Union{FrozenDVec,Pair}, style, initiator, threading, mpi)
+function _setup_dvec(fdv::Union{FrozenDVec,Pair}, style, initiator, threading)
     # we are allocating new memory
     if threading
         return PDVec(fdv; style, initiator)
@@ -234,9 +233,6 @@ function _setup_dvec(fdv::Union{FrozenDVec,Pair}, style, initiator, threading, m
         v = DVec(fdv; style)
     else
         v = InitiatorDVec(fdv; style, initiator)
-    end
-    if mpi
-        return RMPI.MPIData(v)
     end
     return v
 end
