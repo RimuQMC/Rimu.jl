@@ -52,8 +52,10 @@ the [`FCIQMC`](@ref) algorithm.
 - `n_replicas = 1`: Number of synchronised independent simulations.
 - `replica_strategy = NoStats(n_replicas)`: Which results to report from replica
   simulations, see [`ReplicaStrategy`](@ref).
-- `spectral_strategy = GramSchmidt()`: The [`SpectralStrategy`](@ref) used for simulations
-  of spectral states.
+- `n_spectral = 1`: Number of targeted spectral states. Set `n_spectral > 1` to find excited
+  states.
+- `spectral_strategy = GramSchmidt(n_spectral)`: The [`SpectralStrategy`](@ref) used for 
+  orthogonalizing spectral states.
 
 # Example
 
@@ -167,7 +169,8 @@ function ProjectorMonteCarloProblem(
     initial_shift_parameters=nothing,
     reporting_strategy = ReportDFAndInfo(),
     post_step_strategy = (),
-    spectral_strategy = GramSchmidt(),
+    n_spectral = 1,
+    spectral_strategy = GramSchmidt(n_spectral),
     minimum_size = 2*num_spectral_states(spectral_strategy),
     maxlength = nothing,
     metadata = nothing,
