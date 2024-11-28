@@ -184,6 +184,12 @@ function ProjectorMonteCarloProblem(
 
     n_replicas = num_replicas(replica_strategy) # replica_strategy may override n_replicas
 
+    n_spectral = num_spectral_states(spectral_strategy) # spectral_strategy may override n_spectral
+
+    if replica_strategy == AllOverlaps(n_replicas) && n_spectral > 1
+        throw(ArgumentError("AllOverlaps is not implemented for more than one spectral state."))
+    end
+
     if random_seed == true
         random_seed = rand(RandomDevice(),UInt64)
     elseif random_seed == false
@@ -229,7 +235,7 @@ function ProjectorMonteCarloProblem(
         post_step_strategy = (post_step_strategy,)
     end
 
-    return ProjectorMonteCarloProblem{n_replicas,num_spectral_states(spectral_strategy)}(
+    return ProjectorMonteCarloProblem{n_replicas,n_spectral}(
         algorithm,
         hamiltonian,
         start_at, # starting_vectors,
