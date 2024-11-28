@@ -34,8 +34,10 @@ See [`BasisSetRepresentation`](@ref) for more information.
     sparse matrices and `10^5` for dense matrices.
 - `cutoff`: A cutoff value for the basis set representation.
 - `filter`: A filter function for the basis set representation.
-- `nnzs = 0`: The number of non-zero elements in the basis set representation. Setting a
-    non-zero value can speed up the computation.
+- `max_depth = Inf`: Limit the depth when building the matrix.
+- `stop_after = Inf`: Stop building the matrix after this size is reached.
+- `nnzs = 0`: A hint for the number of non-zero elements in the basis set representation.
+  Setting a non-zero value can speed up the computation.
 - `col_hint = 0`: A hint for the number of columns in the basis set representation.
 - `sort = false`: Whether to sort the basis set representation.
 
