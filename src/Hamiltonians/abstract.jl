@@ -1,5 +1,5 @@
 """
-    check_address_type(h::AbstractOperator, addr_or_type)
+    check_address_type(h::AbstractObservable, addr_or_type)
 Throw an `ArgumentError` if `addr_or_type` is not compatible with `h`, otherwise return
 `true`. Acceptable arguments are either an address or an address type, or a tuple or
 array thereof.
@@ -13,18 +13,18 @@ See also [`allows_address_type`](@ref).
     return true
 end
 @inline check_address_type(h, addr) = check_address_type(h, typeof(addr))
-@inline function check_address_type(h::AbstractOperator, v::Union{AbstractArray,Tuple})
+@inline function check_address_type(h::AbstractObservable, v::Union{AbstractArray,Tuple})
     all(check_address_type(h, a) for a in v)
 end
 
-(h::AbstractOperator)(v) = h * v
-(h::AbstractOperator)(w, v) = mul!(w, h, v)
+(h::AbstractObservable)(v) = h * v
+(h::AbstractObservable)(w, v) = mul!(w, h, v)
 
 BitStringAddresses.num_modes(h::AbstractHamiltonian) = num_modes(starting_address(h))
 
 """
     dimension(h::AbstractHamiltonian, addr=starting_address(h))
-    dimension(h::AbstractOperator, addr)
+    dimension(h::AbstractObservable, addr)
     dimension(addr::AbstractFockAddress)
     dimension(::Type{<:AbstractFockAddress})
 
@@ -66,7 +66,7 @@ When extending [`AbstractFockAddress`](@ref), define a method for
 `dimension(::Type{MyNewFockAddress})`.
 """
 dimension(h::AbstractHamiltonian) = dimension(h, starting_address(h))
-dimension(::AbstractOperator, addr) = dimension(addr)
+dimension(::AbstractObservable, addr) = dimension(addr)
 dimension(addr::AbstractFockAddress) = dimension(typeof(addr))
 dimension(::T) where {T<:Number} = typemax(T) # e.g. integer addresses
 
@@ -95,10 +95,10 @@ function dimension(::Type{T}, h, addr=starting_address(h)) where {T}
 end
 dimension(::Type{T}, addr::AbstractFockAddress) where {T} = T(dimension(addr))
 
-Base.isreal(h::AbstractOperator) = eltype(h) <: Real
-LinearAlgebra.isdiag(h::AbstractOperator) = LOStructure(h) ≡ IsDiagonal()
-LinearAlgebra.ishermitian(h::AbstractOperator) = LOStructure(h) ≡ IsHermitian()
-LinearAlgebra.issymmetric(h::AbstractOperator) = ishermitian(h) && isreal(h)
+Base.isreal(h::AbstractObservable) = eltype(h) <: Real
+LinearAlgebra.isdiag(h::AbstractObservable) = LOStructure(h) ≡ IsDiagonal()
+LinearAlgebra.ishermitian(h::AbstractObservable) = LOStructure(h) ≡ IsHermitian()
+LinearAlgebra.issymmetric(h::AbstractObservable) = ishermitian(h) && isreal(h)
 
 BitStringAddresses.near_uniform(h::AbstractHamiltonian) = near_uniform(typeof(starting_address(h)))
 
@@ -211,7 +211,7 @@ Part of the [`AbstractHamiltonian`](@ref) interface.
 """
 momentum
 
-function Base.getindex(ham::AbstractOperator{T}, address1, address2) where {T}
+function Base.getindex(ham::AbstractObservable{T}, address1, address2) where {T}
     # calculate the matrix element when only two bitstring addresses are given
     # this is NOT used for the QMC algorithm and is currently not used either
     # for building the matrix for conventional diagonalisation.
@@ -227,17 +227,17 @@ function Base.getindex(ham::AbstractOperator{T}, address1, address2) where {T}
     return res
 end
 
-LinearAlgebra.adjoint(op::AbstractOperator) = adjoint(LOStructure(op), op)
+LinearAlgebra.adjoint(op::AbstractObservable) = adjoint(LOStructure(op), op)
 
 """
-    adjoint(::LOStructure, op::AbstractOperator)
+    adjoint(::LOStructure, op::AbstractObservable)
 
-Represent the adjoint of an [`AbstractOperator`](@ref). Extend this method to define
+Represent the adjoint of an [`AbstractObservable`](@ref). Extend this method to define
 custom adjoints.
 """
 function LinearAlgebra.adjoint(::S, op) where {S<:LOStructure}
     throw(ArgumentError(
-        "`adjoint()` is not defined for `AbstractOperator`s with `LOStructure` `$(S)`. "*
+        "`adjoint()` is not defined for `AbstractObservable`s with `LOStructure` `$(S)`. "*
         " Is your Hamiltonian hermitian?"
     ))
 end
@@ -252,7 +252,7 @@ function LinearAlgebra.adjoint(::IsDiagonal, op)
 end
 
 """
-    TransformUndoer(transform::AbstractHamiltonian, op::AbstractOperator) <: AbstractHamiltonian
+    TransformUndoer(transform::AbstractHamiltonian, op::AbstractObservable) <: AbstractHamiltonian
 
 Create a new operator for the purpose of calculating overlaps of transformed
 vectors, which are defined by some transformation `transform`. The new operator should
@@ -280,7 +280,7 @@ to represent ``f^{-1} A f^{-1}``.
 * [`GuidingVectorSampling`](@ref)
 """
 struct TransformUndoer{
-    T,K<:AbstractHamiltonian,O<:Union{AbstractOperator,Nothing}
+    T,K<:AbstractHamiltonian,O<:Union{AbstractObservable,Nothing}
 } <: AbstractHamiltonian{T}
     transform::K
     op::O

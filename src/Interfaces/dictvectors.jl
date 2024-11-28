@@ -148,3 +148,21 @@ according to thread- or MPI-level parallelism.
 Returns the new `target` and `source`, as the sorting process may involve swapping them.
 """
 sort_into_targets!(dv::T, wm::T, stats) where {T} = wm, dv, stats
+
+"""
+    sum_mutating!(accumulator, [f! = add!], iterator)
+
+Add the sum of elements in `iterator` to `accumulator`, storing the result in `accumulator`.
+If `f!` is provided, it must accept two arguments, the first being the
+accumulator and the second the element of the iterator. Otherwise, `add!` is used.
+
+See also [`mapreduce`](@ref).
+"""
+sum_mutating!(accu, iterator; kwargs...) = sum_mutating!(accu, add!, iterator; kwargs...)
+
+function sum_mutating!(accu, f!, iterator)
+    for x in iterator
+        f!(accu, x)
+    end
+    return accu
+end

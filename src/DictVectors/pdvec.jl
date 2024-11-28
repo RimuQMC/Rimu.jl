@@ -513,9 +513,9 @@ function Base.iterate(t::PDVecIterator, (segment_id, state))
 end
 
 """
-    mapreduce(f, op, keys(::PDVec); init)
-    mapreduce(f, op, values(::PDVec); init)
-    mapreduce(f, op, pairs(::PDVec); init)
+    mapreduce(f, op, keys(::PDVec); [init])
+    mapreduce(f, op, values(::PDVec); [init])
+    mapreduce(f, op, pairs(::PDVec); [init])
 
 Perform a parallel reduction operation on [`PDVec`](@ref)s. MPI-compatible. Is used in the
 definition of various functions from Base such as `reduce`, `sum`, `prod`, etc.
@@ -536,6 +536,38 @@ end
 # MPI.jl on non-Intel processors. This method is a workaround that uses the default
 # reduction operator.
 Base.sum(f, t::PDVecIterator; kwargs...) = mapreduce(f, +, t; kwargs...)
+
+"""
+    sum_mutating!(accumulator, [f! = add!], keys(::PDVec); [init])
+    sum_mutating!(accumulator, [f! = add!], values(::PDVec); [init])
+    sum_mutating!(accumulator, [f! = add!], pairs(::PDVec); [init])
+
+Perform a parallel sum on [`PDVec`](@ref)s for vector-valued results while minimizing
+allocations. The result of the sum will be added to `accumulator` and stored in
+`accumulator`. MPI-compatible. If `f!` is provided, it must accept two arguments, the first
+being the accumulator and the second the element of the iterator. Otherwise,`add!` is used.
+
+If provided, `init` must be a neutral element for `+` and of the same type as `accumulator`.
+
+See also [`mapreduce`](@ref).
+"""
+function Interfaces.sum_mutating!(accu, f!, iterator::PDVecIterator; kwargs...)
+    interim_result = _sum_mutating(accu, f!, iterator; kwargs...)
+    add!(accu, interim_result)
+    return accu
+end
+# I'm not sure why this function barrier is necessary, but it saves 10% cpu time (or 60ms)
+# in a benchmark with a PDVec of length 12870.
+function _sum_mutating(accu, f!, iterator::PDVecIterator; kwargs...)
+    interim_result = Folds.mapreduce( # parallel reduction via threads
+        +, Iterators.filter(!isempty, iterator.vector.segments); kwargs...
+    ) do segment
+        # each segment gets is own copy of the accumulator such that each thread can work
+        # on it independently. Later the accumulators are merged.
+        sum_mutating!(zero(accu), f!, iterator.selector(segment))
+    end
+    return merge_remote_reductions(iterator.vector.communicator, +, interim_result) # MPI
+end
 
 """
     all(predicate, keys(::PDVec); kwargs...)
@@ -754,16 +786,16 @@ end
 ### Operator linear algebra operations
 ###
 """
-    mul!(y::PDVec, A::AbstractOperator, x::PDVec[, w::PDWorkingMemory])
+    mul!(y::PDVec, A::AbstractObservable, x::PDVec[, w::PDWorkingMemory])
 
 Perform `y = A * x` in-place. The working memory `w` is required to facilitate
 threaded/distributed operations. If not passed a new instance will be allocated. `y` and `x`
 may be the same vector.
 
-See [`PDVec`](@ref), [`PDWorkingMemory`](@ref), [`AbstractOperator`](@ref).
+See [`PDVec`](@ref), [`PDWorkingMemory`](@ref), [`AbstractObservable`](@ref).
 """
 function LinearAlgebra.mul!(
-    y::PDVec, op::AbstractOperator, x::PDVec,
+    y::PDVec, op::AbstractObservable, x::PDVec,
     w=PDWorkingMemory(y; style=StochasticStyle(y)),
 )
     if !(w.style isa IsDeterministic)
@@ -777,7 +809,7 @@ function LinearAlgebra.mul!(
 end
 
 """
-    dot(y::PDVec, A::AbstractOperator, x::PDVec[, w::PDWorkingMemory])
+    dot(y::PDVec, A::AbstractObservable, x::PDVec[, w::PDWorkingMemory])
 
 Perform `y ⋅ A ⋅ x`. The working memory `w` is required to facilitate threaded/distributed
 operations with non-diagonal `A`. If needed and not passed a new instance will be
@@ -785,14 +817,14 @@ allocated. `A` can be replaced with a tuple of operators.
 
 See [`PDVec`](@ref), [`PDWorkingMemory`](@ref).
 """
-function LinearAlgebra.dot(t::PDVec, op::AbstractOperator, u::PDVec, w)
+function LinearAlgebra.dot(t::PDVec, op::AbstractObservable, u::PDVec, w)
     return dot(LOStructure(op), t, op, u, w)
 end
-function LinearAlgebra.dot(t::PDVec, op::AbstractOperator, u::PDVec)
+function LinearAlgebra.dot(t::PDVec, op::AbstractObservable, u::PDVec)
     return dot(LOStructure(op), t, op, u)
 end
 function LinearAlgebra.dot(
-    ::IsDiagonal, t::PDVec, op::AbstractOperator, u::PDVec, w=nothing
+    ::IsDiagonal, t::PDVec, op::AbstractObservable, u::PDVec, w=nothing
 )
     T = typeof(zero(valtype(t)) * zero(valtype(u)) * zero(eltype(op)))
     return sum(pairs(u); init=zero(T)) do (k, v)
@@ -800,7 +832,7 @@ function LinearAlgebra.dot(
     end
 end
 function LinearAlgebra.dot(
-    ::LOStructure, left::PDVec, op::AbstractOperator, right::PDVec, w=nothing
+    ::LOStructure, left::PDVec, op::AbstractObservable, right::PDVec, w=nothing
 )
     # First two cases: only one vector is distrubuted. Avoid shuffling things around
     # by placing that one on the left to reduce the need for communication.
@@ -819,7 +851,7 @@ function LinearAlgebra.dot(
 end
 # Default variant: also called from other LOStructures.
 function LinearAlgebra.dot(
-    ::AdjointUnknown, t::PDVec, op::AbstractOperator, source::PDVec, w=nothing
+    ::AdjointUnknown, t::PDVec, op::AbstractObservable, source::PDVec, w=nothing
 )
     if is_distributed(t)
         if isnothing(w)
@@ -831,19 +863,6 @@ function LinearAlgebra.dot(
         target = t
     end
     return dot_from_right(target, op, source)
-end
-
-function Interfaces.dot_from_right(target, op, source::PDVec)
-    T = typeof(zero(valtype(target)) * zero(valtype(source)) * zero(eltype(op)))
-
-    result = sum(pairs(source); init=zero(T)) do (k, v)
-        res = conj(target[k]) * diagonal_element(op, k) * v
-        for (k_off, v_off) in offdiagonals(op, k)
-            res += conj(target[k_off]) * v_off * v
-        end
-        res
-    end
-    return result::T
 end
 
 function LinearAlgebra.dot(t::PDVec, ops::Tuple, source::PDVec, w=nothing)

@@ -42,9 +42,6 @@ function test_observable_interface(obs, addr)
                 @test_throws ArgumentError obs'
             end
         end
-        @testset "allows_address_type" begin
-            @test allows_address_type(obs, addr)
-        end
         @testset "show" begin
             # Check that the result of show can be pasted into the REPL
             @test eval(Meta.parse(repr(obs))) == obs
@@ -64,7 +61,10 @@ function. Otherwise, the spawning tests are skipped.
 """
 function test_operator_interface(op, addr; test_spawning=true)
     test_observable_interface(op, addr)
-
+    
+    @testset "allows_address_type" begin
+        @test allows_address_type(op, addr)
+    end
     @testset "Operator interface: $(nameof(typeof(op)))" begin
         @testset "diagonal_element" begin
             @test diagonal_element(op, addr) isa eltype(op)
@@ -108,6 +108,9 @@ The main purpose of this test function is to check that all required methods are
 function test_hamiltonian_interface(H, addr=starting_address(H); test_spawning=true)
     test_operator_interface(H, addr; test_spawning)
 
+    @testset "allows_address_type" begin
+        @test allows_address_type(H, addr)
+    end
     @testset "Hamiltonians-only tests with $(nameof(typeof(H)))" begin
         # starting_address is specific to Hamiltonians
         @test allows_address_type(H, starting_address(H))
@@ -1910,3 +1913,31 @@ end
         @test round.(eigvals(Matrix(HM_b)), digits=8) ⊆ round.(eigvals(Matrix(HR_b)), digits=8)
     end
 end
+
+@testset "ReducedDensityMatrix" begin
+    dvec_f = PDVec(FermiFS{2,4}(1,1,0,0) => 0.5, FermiFS{2,4}(0,0,1,1)=>0.5)
+    dvec_b = PDVec(BoseFS{4,4}(0,0,2,2) => 0.5, BoseFS{4,4}(2,2,0,0)=>0.5)
+    op = ReducedDensityMatrix(1)
+    spd_b = zeros(4,4)
+    spd_f = zeros(4,4)
+    for i in 1:4, j in 1:4
+        spd_b[i,j] = dot(dvec_b, SingleParticleExcitation(i, j), dvec_b)
+        spd_f[i,j] = dot(dvec_f, SingleParticleExcitation(i, j), dvec_f)
+    end
+    tpd_f = zeros(6,6)
+    t1 = 0; t2 = 0
+    for i in 1:4, j in i+1:4;
+        t1 += 1; t2 = 0;
+        for k in 1:4, l in k+1:4 
+            t2+=1; tpd_f[t1,t2] = dot(dvec_f, TwoParticleExcitation(i, j, k, l), dvec_f);
+        end
+    end
+    @test dot(dvec_f, op, dvec_f) == spd_f
+    @test dot(dvec_b, op, dvec_b) == spd_b
+    @test dot(dvec_f, ReducedDensityMatrix(2), dvec_f) == tpd_f
+    @test_throws ArgumentError dot(dvec_b, ReducedDensityMatrix(2), dvec_b)
+    @test LOStructure(op) isa IsHermitian
+    test_observable_interface(ReducedDensityMatrix(1), BoseFS{4,4}(2,2,0,0))
+    test_observable_interface(ReducedDensityMatrix(2), FermiFS{2,4}(1,1,0,0))
+end
+    

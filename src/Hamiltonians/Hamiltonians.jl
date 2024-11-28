@@ -65,6 +65,7 @@ using TupleTools: TupleTools
 
 using ..BitStringAddresses
 using ..Interfaces
+using ..Interfaces: sum_mutating!
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
     offdiagonals, random_offdiagonal, LOStructure, allows_address_type
 
@@ -85,7 +86,7 @@ export FroehlichPolaron
 export ParticleNumberOperator
 
 export G2MomCorrelator, G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
-export SingleParticleExcitation, TwoParticleExcitation
+export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
 export StringCorrelator
 
 export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
@@ -93,6 +94,14 @@ export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
 export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCartesianCentralImpurity
 export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
+
+if VERSION < v"1.10"
+    # used for ReducedDensityMatrix
+    function hermitianpart!(A)
+        A .= (A + A') / 2
+        return Hermitian(A)
+    end
+end
 
 include("abstract.jl")
 include("offdiagonals.jl")

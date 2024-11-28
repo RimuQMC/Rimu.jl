@@ -22,11 +22,11 @@ using ..Interfaces: Interfaces, AbstractDVec, AdjointUnknown,
     CompressionStrategy, IsDiagonal, LOStructure,
     apply_column!, apply_operator!, compress!,
     diagonal_element, offdiagonals, step_stats, AbstractHamiltonian, AbstractOperator,
-    dot_from_right
+    AbstractObservable, dot_from_right
 using ..StochasticStyles: StochasticStyles, IsDeterministic
 
 import ..Interfaces: deposit!, storage, StochasticStyle, default_style, freeze, localpart,
-    working_memory
+    working_memory, sum_mutating!
 
 export deposit!, storage, walkernumber, walkernumber_and_length, dot_from_right
 export DVec, InitiatorDVec, PDVec, PDWorkingMemory
