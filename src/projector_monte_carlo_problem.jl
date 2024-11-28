@@ -186,7 +186,7 @@ function ProjectorMonteCarloProblem(
 
     n_spectral = num_spectral_states(spectral_strategy) # spectral_strategy may override n_spectral
 
-    if replica_strategy == AllOverlaps(n_replicas) && n_spectral > 1
+    if replica_strategy isa AllOverlaps && n_spectral > 1
         throw(ArgumentError("AllOverlaps is not implemented for more than one spectral state."))
     end
 
