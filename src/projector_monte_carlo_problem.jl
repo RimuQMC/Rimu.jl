@@ -235,7 +235,7 @@ function ProjectorMonteCarloProblem(
         post_step_strategy = (post_step_strategy,)
     end
 
-    return ProjectorMonteCarloProblem{n_replicas,n_spectral}(
+    return ProjectorMonteCarloProblem{n_replicas,num_spectral_states(spectral_strategy)}(
         algorithm,
         hamiltonian,
         start_at, # starting_vectors,
