@@ -52,6 +52,10 @@ the [`FCIQMC`](@ref) algorithm.
 - `n_replicas = 1`: Number of synchronised independent simulations.
 - `replica_strategy = NoStats(n_replicas)`: Which results to report from replica
   simulations, see [`ReplicaStrategy`](@ref).
+- `n_spectral = 1`: Number of targeted spectral states. Set `n_spectral > 1` to find excited
+  states.
+- `spectral_strategy = GramSchmidt(n_spectral)`: The [`SpectralStrategy`](@ref) used for 
+  orthogonalizing spectral states.
 
 # Example
 
@@ -95,6 +99,9 @@ julia> size(DataFrame(simulation))
     `true`, a random seed is generated. If set to number, this number is used as the seed.
     The seed is used by `solve` such that `solve`ing the problem twice will yield identical
     results. If set to `false`, no seed is used and results are not reproducible.
+- `minimum_size = 2*num_spectral_states(spectral_strategy)`: The minimum size of the basis
+    used to construct starting vectors for simulations of spectral states, if `start_at`
+    is not provided.
 
 See also [`init`](@ref), [`solve`](@ref).
 """
@@ -115,6 +122,7 @@ struct ProjectorMonteCarloProblem{N,S} # is not type stable but does not matter
     maxlength::Int
     metadata::LittleDict{String,String} # user-supplied metadata + display_name
     random_seed::Union{Nothing,UInt64}
+    minimum_size::Int
 end
 
 function Base.show(io::IO, p::ProjectorMonteCarloProblem)
@@ -161,7 +169,9 @@ function ProjectorMonteCarloProblem(
     initial_shift_parameters=nothing,
     reporting_strategy = ReportDFAndInfo(),
     post_step_strategy = (),
-    spectral_strategy = GramSchmidt(),
+    n_spectral = 1,
+    spectral_strategy = GramSchmidt(n_spectral),
+    minimum_size = 2*num_spectral_states(spectral_strategy),
     maxlength = nothing,
     metadata = nothing,
     display_name = "PMCSimulation",
@@ -173,6 +183,12 @@ function ProjectorMonteCarloProblem(
     end
 
     n_replicas = num_replicas(replica_strategy) # replica_strategy may override n_replicas
+
+    n_spectral = num_spectral_states(spectral_strategy) # spectral_strategy may override n_spectral
+
+    if replica_strategy isa AllOverlaps && n_spectral > 1
+        throw(ArgumentError("AllOverlaps is not implemented for more than one spectral state."))
+    end
 
     if random_seed == true
         random_seed = rand(RandomDevice(),UInt64)
@@ -240,7 +256,8 @@ function ProjectorMonteCarloProblem(
         spectral_strategy,
         maxlength,
         metadata,
-        random_seed
+        random_seed,
+        minimum_size
     )
 end
 
