@@ -104,22 +104,15 @@ if VERSION < v"1.10"
 end
 
 function test_observable_interface end
-"""
-    @test_observable_interface(obs, addr)
+function test_operator_interface end
+function test_hamiltonian_interface end
+function test_hamiltonian_structure end
 
-This function tests the interface of an observable `obs` at address `addr` by checking that
-all required methods are defined.
-"""
-# macro test_observable_interface(obs, addr)
-
-#     return :(_test_observable_interface($__module__, obs, addr))
+# macro can_paste_into_repl(expr)
+#     # @show expr
+#     # @show __module__
+#     return :($__module__.eval(Meta.parse(repr($__module__.$expr))) == $__module__.$expr)
 # end
-
-macro can_paste_into_repl(expr)
-    # @show expr
-    # @show __module__
-    return :($__module__.eval(Meta.parse(repr($__module__.$expr))) == $__module__.$expr)
-end
 
 include("abstract.jl")
 include("offdiagonals.jl")

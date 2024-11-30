@@ -7,7 +7,8 @@ using DataFrames
 using Suppressor
 using StaticArrays
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
-using Rimu.Hamiltonians: test_observable_interface, @can_paste_into_repl
+using Rimu.Hamiltonians: test_observable_interface, test_operator_interface,
+    test_hamiltonian_interface, test_hamiltonian_structure
 
 function exact_energy(ham)
     dv = DVec(starting_address(ham) => 1.0)
@@ -15,140 +16,6 @@ function exact_energy(ham)
     return all_results[1][1]
 end
 
-"""
-    test_operator_interface(op, addr; test_spawning=true)
-
-This function tests the interface of an operator `op` at address `addr` by checking that all
-required methods are defined.
-
-If `test_spawning` is `true`, tests are performed that require `offdiagonals` to return an
-`Hamiltonians.AbstractOffDiagonals`, which is a prerequisite for using the `spawn!`
-function. Otherwise, the spawning tests are skipped.
-"""
-function test_operator_interface(op, addr; test_spawning=true)
-    test_observable_interface(op, addr)
-
-    @testset "allows_address_type" begin
-        @test allows_address_type(op, addr)
-    end
-    @testset "Operator interface: $(nameof(typeof(op)))" begin
-        @testset "diagonal_element" begin
-            @test diagonal_element(op, addr) isa eltype(op)
-            @test eltype(diagonal_element(op, addr)) == scalartype(op)
-        end
-        @testset "offdiagonals" begin
-            # `get_offdiagonal` is not mandatory and thus not tested
-            ods = offdiagonals(op, addr)
-            vec_ods = collect(ods)
-            eltype(vec_ods) == Tuple{typeof(addr), eltype(op)} == eltype(ods)
-            @test length(vec_ods) ≤ num_offdiagonals(op, addr)
-        end
-        if test_spawning
-            @testset "spawning" begin
-                ods = offdiagonals(op, addr)
-                @test ods isa AbstractOffdiagonals{typeof(addr),eltype(op)}
-                @test ods isa AbstractVector
-                @test size(ods) == (num_offdiagonals(op, addr),)
-                if length(ods) > 0
-                    @test random_offdiagonal(op, addr) isa Tuple{typeof(addr), <:Real, eltype(op)}
-                end
-            end
-        end
-        @testset "mul!" begin # this works with vector valued operators
-            v = DVec(addr => scalartype(op)(2))
-            w = empty(v, eltype(op); style=IsDeterministic{scalartype(op)}())
-            mul!(w, op, v) # operator vector product
-            @test dot(v, op, v) ≈ Interfaces.dot_from_right(v, op, v) ≈ dot(v, w)
-        end
-        @testset "dimension" begin
-            @test dimension(addr) ≥ dimension(op, addr)
-        end
-    end
-end
-
-"""
-    test_hamiltonian_interface(H, addr=starting_address(H))
-
-The main purpose of this test function is to check that all required methods are defined.
-"""
-function test_hamiltonian_interface(H, addr=starting_address(H); test_spawning=true)
-    test_operator_interface(H, addr; test_spawning)
-
-    @testset "allows_address_type" begin
-        @test allows_address_type(H, addr)
-    end
-    @testset "Hamiltonians-only tests with $(nameof(typeof(H)))" begin
-        # starting_address is specific to Hamiltonians
-        @test allows_address_type(H, starting_address(H))
-
-        @test dimension(H) ≥ dimension(H, addr)
-
-        # Hamiltonians can only have scalar eltype
-        @test scalartype(H) === eltype(H)
-
-        # Hamiltonian action on a vector
-        v = DVec(addr => scalartype(H)(2))
-        v1 = similar(v)
-        mul!(v1, H, v)
-        v2 = H * v
-        v3 = similar(v)
-        H(v3, v)
-        v4 = H(v)
-        @test v1 == v2 == v3 == v4
-        v5 = DVec(addr => diagonal_element(H, addr))
-        for (addr, val) in offdiagonals(H, addr)
-            v5[addr] += val
-        end
-        scale!(v5, scalartype(H)(2))
-        v5[addr] = v5[addr] # remove possible 0.0 from the diagonal
-        @test v5 == v1
-
-        if test_spawning && scalartype(H) <: Real
-            # applying an operator on a PDVec uses spawn!, which requires
-            # offdiagonals to be an AbstractVector
-            # currently this only works for real operators as spawn! is not
-            # implemented for complex operators
-            pv = PDVec(addr => scalartype(H)(2))
-            pv1 = H(pv)
-            @test dot(pv1, H, pv) ≈ Interfaces.dot_from_right(pv1, H, pv) ≈ dot(v1, v1)
-        end
-
-    end
-end
-
-"""
-    test_hamiltonian_structure(H)
-
-Test the `LOStructure` of a small Hamiltonian `H` by instantiating it as a sparse matrix and
-checking whether the structure of the matrix is constistent with the result of
-`LOStructure(H)` and the `eltype` is consistent with `eltype(H)`.
-
-This function is intended to be used for small Hamiltonians where instantiating the matrix
-is quick.
-"""
-function test_hamiltonian_structure(H)
-    d = dimension(H)
-    d > 20 && @warn "This function is intended for small Hamiltonians. The dimension is $d."
-    m = sparse(H)
-    @test eltype(m) === eltype(H)
-    if LOStructure(H) == IsDiagonal()
-        @test isdiag(m)
-    elseif LOStructure(H) == IsHermitian()
-        @test H' == H
-        @test H' === H
-        @test ishermitian(m)
-    elseif LOStructure(H) == AdjointKnown()
-        @test m' == sparse(H')
-    end
-    if !ishermitian(m)
-        @test LOStructure(H) != IsHermitian()
-        if LOStructure(H) == IsDiagonal()
-            @test !isreal(m)
-            @test !(eltype(H) <: Real)
-        end
-    end
-    nothing
-end
 @testset "Hamiltonian interface tests" begin
     for H in (
         HubbardReal1D(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0),
