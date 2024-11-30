@@ -7,46 +7,12 @@ using DataFrames
 using Suppressor
 using StaticArrays
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
+using Rimu.Hamiltonians: test_observable_interface, @can_paste_into_repl
 
 function exact_energy(ham)
     dv = DVec(starting_address(ham) => 1.0)
     all_results = eigsolve(ham, dv, 1, :SR; issymmetric = LOStructure(ham) == IsHermitian())
     return all_results[1][1]
-end
-
-"""
-    test_observable_interface(obs, addr)
-
-This function tests the interface of an observable `obs` at address `addr` by checking that
-all required methods are defined.
-"""
-function test_observable_interface(obs, addr)
-    @testset "Observable interface: $(nameof(typeof(obs)))" begin
-        @testset "three way dot" begin # this works with vector valued operators
-            v = DVec(addr => scalartype(obs)(2))
-            @test dot(v, obs, v) isa eltype(obs)
-            @test dot(v, obs, v) ≈ Interfaces.dot_from_right(v, obs, v)
-        end
-        @testset "LOStructure" begin
-            @test LOStructure(obs) isa LOStructure
-            if LOStructure(obs) isa IsHermitian
-                @test obs' === obs
-            elseif  LOStructure(obs) isa IsDiagonal
-                @test num_offdiagonals(obs, addr) == 0
-                if scalartype(obs) <: Real
-                    @test obs' === obs
-                end
-            elseif LOStructure(obs) isa AdjointKnown
-                @test begin obs'; true; end # make sure no error is thrown
-            else
-                @test_throws ArgumentError obs'
-            end
-        end
-        @testset "show" begin
-            # Check that the result of show can be pasted into the REPL
-            @test eval(Meta.parse(repr(obs))) == obs
-        end
-    end
 end
 
 """
@@ -61,7 +27,7 @@ function. Otherwise, the spawning tests are skipped.
 """
 function test_operator_interface(op, addr; test_spawning=true)
     test_observable_interface(op, addr)
-    
+
     @testset "allows_address_type" begin
         @test allows_address_type(op, addr)
     end
@@ -233,6 +199,9 @@ end
     )
         # test_hamiltonian_interface(H; test_spawning=false)
         test_hamiltonian_interface(H; test_spawning=!(H isa HOCartesianContactInteractions))
+        # Check that the result of show can be pasted into the REPL
+        @test eval(Meta.parse(repr(H))) == H
+
     end
 end
 
@@ -255,6 +224,8 @@ end
         (Momentum(1), BoseFS(1, 2, 3, 4)),
     ]
         test_operator_interface(op, addr)
+        # Check that the result of show can be pasted into the REPL
+        @test eval(Meta.parse(repr(op))) == op
     end
 end
 
@@ -1928,7 +1899,7 @@ end
     t1 = 0; t2 = 0
     for i in 1:4, j in i+1:4;
         t1 += 1; t2 = 0;
-        for k in 1:4, l in k+1:4 
+        for k in 1:4, l in k+1:4
             t2+=1; tpd_f[t1,t2] = dot(dvec_f, TwoParticleExcitation(i, j, k, l), dvec_f);
         end
     end
@@ -1939,5 +1910,8 @@ end
     @test LOStructure(op) isa IsHermitian
     test_observable_interface(ReducedDensityMatrix(1), BoseFS{4,4}(2,2,0,0))
     test_observable_interface(ReducedDensityMatrix(2), FermiFS{2,4}(1,1,0,0))
+    for r in (ReducedDensityMatrix(1), ReducedDensityMatrix{ComplexF32}(2))
+        # Check that the result of show can be pasted into the REPL
+        @test eval(Meta.parse(repr(r))) == r
+    end
 end
-    

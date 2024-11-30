@@ -1,7 +1,7 @@
 name = "Rimu"
 uuid = "c53c40cc-bd84-11e9-2cf4-a9fde2b9386e"
 authors = ["Joachim Brand <j.brand@massey.ac.nz>"]
-version = "0.13.2-dev"
+version = "0.14.0"
 
 [deps]
 Arrow = "69666777-d1a9-59fb-9406-91d4454c9d45"
@@ -46,11 +46,13 @@ VectorInterface = "409d34a3-91d5-4945-b6ec-7529ddf182d8"
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
 IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [extensions]
 ArpackExt = "Arpack"
 IterativeSolversExt = "IterativeSolvers"
 KrylovKitExt = "KrylovKit"
+TestExt = "Test"
 
 [compat]
 Arpack = "0.5"
@@ -85,6 +87,7 @@ StrFormat = "1"
 StrLiterals = "1"
 TOML = "1"
 Tables = "1.9"
+Test = "1.11"
 TerminalLoggers = "0.1.4"
 TupleTools = "1"
 VectorInterface = "0.2, 0.3, 0.4, 0.5"
