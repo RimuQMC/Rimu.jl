@@ -103,10 +103,10 @@ if VERSION < v"1.10"
     end
 end
 
-function test_observable_interface end
-function test_operator_interface end
-function test_hamiltonian_interface end
-function test_hamiltonian_structure end
+# function test_observable_interface end
+# function test_operator_interface end
+# function test_hamiltonian_interface end
+# function test_hamiltonian_structure end
 
 # macro can_paste_into_repl(expr)
 #     # @show expr

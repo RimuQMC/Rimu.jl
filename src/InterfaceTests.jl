@@ -1,4 +1,4 @@
-module TestExt
+module InterfaceTests
 
 using Test: Test, @test, @testset, @test_throws
 using Rimu: Rimu, DVec, Interfaces, LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
@@ -6,19 +6,36 @@ using Rimu: Rimu, DVec, Interfaces, LOStructure, IsHermitian, IsDiagonal, Adjoin
     diagonal_element, dimension, dot_from_right, IsDeterministic, starting_address, PDVec,
     sparse, scale!, scalartype
 using Rimu.Hamiltonians: AbstractHamiltonian, AbstractOperator, AbstractObservable,
-    AbstractOffdiagonals, test_observable_interface,
-    test_operator_interface, test_hamiltonian_interface
+    AbstractOffdiagonals
 using LinearAlgebra: dot, mul!, isdiag, ishermitian
 
-@show "TestExt.jl: Loading TestExt module"
+export test_observable_interface, test_operator_interface, test_hamiltonian_interface,
+    test_hamiltonian_structure
 
 """
-    @test_observable_interface(obs, addr)
+    test_observable_interface(obs, addr)
 
-This function tests the interface of an observable `obs` at address `addr` by checking that
-all required methods are defined.
+This function tests compliance with the [`AbstractObservable`](@ref) interface for an
+observable `obs` at address `addr` (typically [`<: AbstractFockAddress`](@ref)) by checking
+that all required methods are defined.
+
+The following properties are tested:
+- `dot(v, obs, v)` returns a value of the same type as the `eltype` of the observable
+- `LOStructure` is set consistently
+
+### Example
+```julia-doctest
+julia> using Rimu.InterfaceTests
+
+julia> test_observable_interface(ReducedDensityMatrix(2), FermiFS(1,0,1,1));
+Test Summary:                              | Pass  Total  Time
+Observable interface: ReducedDensityMatrix |    4      4  0.0s
+```
+
+See also [`AbstractObservable`](@ref), [`test_operator_interface`](@ref),
+[`test_hamiltonian_interface`](@ref).
 """
-function Rimu.Hamiltonians.test_observable_interface(obs, addr)
+function test_observable_interface(obs, addr)
     @testset "Observable interface: $(nameof(typeof(obs)))" begin
         @testset "three way dot" begin # this works with vector valued operators
             v = DVec(addr => scalartype(obs)(2))
@@ -49,14 +66,40 @@ end
 """
     test_operator_interface(op, addr; test_spawning=true)
 
-This function tests the interface of an operator `op` at address `addr` by checking that all
+This function tests compliance with the [`AbstractOperator`](@ref) interface for an operator
+`op` at address `addr` (typically [`<: AbstractFockAddress`](@ref)) by checking that all
 required methods are defined.
 
 If `test_spawning` is `true`, tests are performed that require `offdiagonals` to return an
 `Hamiltonians.AbstractOffDiagonals`, which is a prerequisite for using the `spawn!`
 function. Otherwise, the spawning tests are skipped.
+
+The following properties are tested:
+- `diagonal_element` returns a value of the same type as the `eltype` of the operator
+- `offdiagonals` behaves like an `AbstractVector`
+- `num_offdiagonals` returns the correct number of offdiagonals
+- `random_offdiagonal` returns a tuple with the correct types
+- `mul!` and `dot` work as expected
+- `dimension` returns a consistent value
+- the [`AbstractObservable`](@ref) interface is tested
+
+### Example
+```julia-doctest
+julia> using Rimu.InterfaceTests
+
+julia> test_operator_interface(SuperfluidCorrelator(3), BoseFS(1, 2, 3, 1));
+Test Summary:                              | Pass  Total  Time
+Observable interface: SuperfluidCorrelator |    4      4  0.0s
+Test Summary:       | Pass  Total  Time
+allows_address_type |    1      1  0.0s
+Test Summary:                            | Pass  Total  Time
+Operator interface: SuperfluidCorrelator |    9      9  0.0s
+```
+
+See also [`AbstractOperator`](@ref), [`test_observable_interface`](@ref),
+[`test_hamiltonian_interface`](@ref).
 """
-function Rimu.Hamiltonians.test_operator_interface(op, addr; test_spawning=true)
+function test_operator_interface(op, addr; test_spawning=true)
     test_observable_interface(op, addr)
 
     @testset "allows_address_type" begin
@@ -98,9 +141,7 @@ function Rimu.Hamiltonians.test_operator_interface(op, addr; test_spawning=true)
 end
 
 """
-    test_hamiltonian_interface(
-        h::AbstractHamiltonian, addr=starting_address(h); test_spawning=true
-    )
+    test_hamiltonian_interface(h, addr=starting_address(h); test_spawning=true)
 
 The main purpose of this test function is to check that all required methods of the
 [`AbstractHamiltonian`](@ref) interface are defined and work as expected.
@@ -114,14 +155,12 @@ This function also tests the following properties of the Hamiltonian:
 - Hamiltonian action on a vector <: `AbstractDVec`
 - `starting_address` returns an [`allows_address_type`](@ref) address
 - `LOStructure` is one of `IsDiagonal`, `IsHermitian`, `AdjointKnown`
-- the `AbstractOperator` interface is tested
-- the `AbstractObservable` interface is tested
+- the [`AbstractOperator`](@ref) interface is tested
+- the [`AbstractObservable`](@ref) interface is tested
 
 ### Example
-```julia-doctest; setup=:(
-    using Rimu, Test; test_hamiltonian_interface(HubbardRealSpace(BoseFS(2,0,3,1)))
-)
-julia> using Rimu, Test
+```julia-doctest
+julia> using Rimu.InterfaceTests
 
 julia> test_hamiltonian_interface(HubbardRealSpace(BoseFS(2,0,3,1)));
 Test Summary:                          | Pass  Total  Time
@@ -136,15 +175,9 @@ Test Summary:                                 | Pass  Total  Time
 Hamiltonians-only tests with HubbardRealSpace |    6      6  0.0s
 ```
 
-!!! note
-    This function requires the `Test` module to be loaded with `using Test`.
-
 See also [`test_operator_interface`](@ref), [`test_observable_interface`](@ref).
 """
-function Rimu.Hamiltonians.test_hamiltonian_interface(
-    h::AbstractHamiltonian, addr=starting_address(h);
-    test_spawning=true
-)
+function test_hamiltonian_interface(h, addr=starting_address(h); test_spawning=true)
     test_operator_interface(h, addr; test_spawning)
 
     @testset "allows_address_type" begin
@@ -196,40 +229,42 @@ Test the `LOStructure` of a small Hamiltonian `h` by instantiating it as a spars
 checking whether the structure of the matrix is constistent with the result of
 `LOStructure(h)` and the `eltype` is consistent with `eltype(h)`.
 
-This function is intended to be used for small Hamiltonians where instantiating the matrix
-is quick.
+This function is intended to be used in automated test for small Hamiltonians where
+instantiating the matrix is quick. A warning will print if the dimension of the Hamiltonian
+is larger than `20`.
 
 ### Example
 ```julia-doctest
-julia> using Rimu, Test
+julia> using Rimu.InterfaceTests
 
-julia> @testset "structure" test_hamiltonian_structure(HubbardRealSpace(BoseFS(2,0,1)));
+julia> test_hamiltonian_structure(HubbardRealSpace(BoseFS(2,0,1)));
 Test Summary: | Pass  Total  Time
 structure     |    4      4  0.0s
 ```
 """
-function Rimu.Hamiltonians.test_hamiltonian_structure(h::AbstractHamiltonian; sizelim=20)
-    d = dimension(h)
-    d > 20 && @warn "This function is intended for small Hamiltonians. The dimension is $d."
-    m = sparse(h; sizelim)
-    @test eltype(m) === eltype(h)
-    if LOStructure(h) == IsDiagonal()
-        @test isdiag(m)
-    elseif LOStructure(h) == IsHermitian()
-        @test h' == h
-        @test h' === h
-        @test ishermitian(m)
-    elseif LOStructure(h) == AdjointKnown()
-        @test m' == sparse(h')
-    end
-    if !ishermitian(m)
-        @test LOStructure(h) != IsHermitian()
+function test_hamiltonian_structure(h::AbstractHamiltonian; sizelim=20)
+    @testset "Hamiltonian structure" begin
+        d = dimension(h)
+        d > 20 && @warn "This function is intended for small Hamiltonians. The dimension is $d."
+        m = sparse(h; sizelim)
+        @test eltype(m) === eltype(h)
         if LOStructure(h) == IsDiagonal()
-            @test !isreal(m)
-            @test !(eltype(h) <: Real)
+            @test isdiag(m)
+        elseif LOStructure(h) == IsHermitian()
+            @test h' == h
+            @test h' === h
+            @test ishermitian(m)
+        elseif LOStructure(h) == AdjointKnown()
+            @test m' == sparse(h')
+        end
+        if !ishermitian(m)
+            @test LOStructure(h) != IsHermitian()
+            if LOStructure(h) == IsDiagonal()
+                @test !isreal(m)
+                @test !(eltype(h) <: Real)
+            end
         end
     end
-    nothing
 end
 
 

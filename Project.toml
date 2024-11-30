@@ -39,6 +39,7 @@ StrLiterals = "68059f60-971f-57ff-a2d0-18e7de9ccc84"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 TerminalLoggers = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TupleTools = "9d95972d-f1c8-5527-a6e0-b4b365fa01f6"
 VectorInterface = "409d34a3-91d5-4945-b6ec-7529ddf182d8"
 
@@ -46,13 +47,11 @@ VectorInterface = "409d34a3-91d5-4945-b6ec-7529ddf182d8"
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
 IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [extensions]
 ArpackExt = "Arpack"
 IterativeSolversExt = "IterativeSolvers"
 KrylovKitExt = "KrylovKit"
-TestExt = "Test"
 
 [compat]
 Arpack = "0.5"
@@ -87,8 +86,8 @@ StrFormat = "1"
 StrLiterals = "1"
 TOML = "1"
 Tables = "1.9"
-Test = "1.11"
 TerminalLoggers = "0.1.4"
+Test = "1.11"
 TupleTools = "1"
 VectorInterface = "0.2, 0.3, 0.4, 0.5"
 julia = "1.9"
@@ -97,7 +96,6 @@ julia = "1.9"
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
 IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]

@@ -104,4 +104,6 @@ include("pmc_simulation.jl")
 
 include("lomc.jl")                  # top level
 
+include("InterfaceTests.jl")
+
 end # module

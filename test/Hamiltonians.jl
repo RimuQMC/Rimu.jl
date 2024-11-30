@@ -7,7 +7,7 @@ using DataFrames
 using Suppressor
 using StaticArrays
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
-using Rimu.Hamiltonians: test_observable_interface, test_operator_interface,
+using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
 
 function exact_energy(ham)
