@@ -43,7 +43,7 @@ for fn in EXAMPLES_FILES
 end
 
 makedocs(;
-    modules=[Rimu,Rimu.RimuIO],
+    modules=[Rimu,Rimu.RimuIO,Rimu.InterfaceTests],
     format=Documenter.HTML(
         prettyurls = false,
         size_threshold=700_000, # 700 kB
@@ -55,17 +55,17 @@ makedocs(;
         "User documentation" => [
             "Exact Diagonalization" => "exactdiagonalization.md",
             "Projector Monte Carlo" => "projectormontecarlo.md",
+            "Hamiltonians" => "hamiltonians.md",
             "StatsTools" => "statstools.md",
             "Using MPI" => "mpi.md",
+            "Custom Hamiltonians" => "custom_hamiltonians.md",
         ],
         "Developer documentation" => [
             "Interfaces" => "interfaces.md",
-            "Hamiltonians" => "hamiltonians.md",
             "Dict vectors" => "dictvectors.md",
             "BitString addresses" => "addresses.md",
             "Stochastic styles" => "stochasticstyles.md",
             "I/O" => "rimuio.md",
-            "Random numbers" => "randomnumbers.md",
             "Documentation generation" => "documentation.md",
             "Code testing" => "testing.md",
         ],

@@ -1,3 +1,14 @@
+"""
+The module `Rimu.InterfaceTests` provides functions to test compliance with the
+[`AbstractObservable`](@ref), [`AbstractOperator`](@ref), and [`AbstractHamiltonian`](@ref)
+interfaces. Load the module with `using Rimu.InterfaceTests`.
+
+The module exports the following functions:
+- [`test_observable_interface`](@ref Rimu.InterfaceTests.test_observable_interface)
+- [`test_operator_interface`](@ref Rimu.InterfaceTests.test_operator_interface)
+- [`test_hamiltonian_interface`](@ref Rimu.InterfaceTests.test_hamiltonian_interface)
+- [`test_hamiltonian_structure`](@ref Rimu.InterfaceTests.test_hamiltonian_structure)
+"""
 module InterfaceTests
 
 using Test: Test, @test, @testset, @test_throws
@@ -16,7 +27,8 @@ export test_observable_interface, test_operator_interface, test_hamiltonian_inte
     test_observable_interface(obs, addr)
 
 This function tests compliance with the [`AbstractObservable`](@ref) interface for an
-observable `obs` at address `addr` (typically [`<: AbstractFockAddress`](@ref)) by checking
+observable `obs` at address `addr` (typically
+[`<: AbstractFockAddress`](@ref Rimu.BitStringAddresses.AbstractFockAddress)) by checking
 that all required methods are defined.
 
 The following properties are tested:
@@ -67,8 +79,9 @@ end
     test_operator_interface(op, addr; test_spawning=true)
 
 This function tests compliance with the [`AbstractOperator`](@ref) interface for an operator
-`op` at address `addr` (typically [`<: AbstractFockAddress`](@ref)) by checking that all
-required methods are defined.
+`op` at address `addr` (typically
+[`<: AbstractFockAddress`](@ref Rimu.BitStringAddresses.AbstractFockAddress)) by
+checking that all required methods are defined.
 
 If `test_spawning` is `true`, tests are performed that require `offdiagonals` to return an
 `Hamiltonians.AbstractOffDiagonals`, which is a prerequisite for using the `spawn!`

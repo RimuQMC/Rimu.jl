@@ -97,52 +97,6 @@ Momentum
 AxialAngularMomentumHO
 ```
 
-## Hamiltonians interface
-
-Behind the implementation of a particular model is a more abstract interface for defining
-Hamiltonians. If you want to define a new model you should make use of this interface. The
-most general form of a model Hamiltonian should subtype to `AbstractHamiltonian` and
-implement the relevant methods.
-
-```@docs
-AbstractHamiltonian
-offdiagonals
-diagonal_element
-starting_address
-```
-
-The following functions may be implemented instead of [`offdiagonals`](@ref).
-
-```@docs
-num_offdiagonals
-get_offdiagonal
-```
-
-The following functions come with default implementations, but may be customized.
-
-```@docs
-random_offdiagonal
-Hamiltonians.LOStructure
-dimension
-has_adjoint
-allows_address_type
-Base.eltype
-VectorInterface.scalartype
-mul!
-```
-
-This interface relies on unexported functionality, including
-```@docs
-Hamiltonians.adjoint
-Hamiltonians.dot
-Hamiltonians.AbstractOffdiagonals
-Hamiltonians.Offdiagonals
-Hamiltonians.check_address_type
-Hamiltonians.number_conserving_dimension
-Hamiltonians.number_conserving_bose_dimension
-Hamiltonians.number_conserving_fermi_dimension
-```
-
 ## Geometry
 
 Lattices in higher dimensions are defined here for [`HubbardRealSpace`](@ref) and [`G2RealSpace`](@ref).
