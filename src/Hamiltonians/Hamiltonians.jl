@@ -6,14 +6,12 @@ Hamiltonians.
 
 Real space Hubbard models
  - [`HubbardReal1D`](@ref)
- - [`BoseHubbardReal1D2C`](@ref)
  - [`HubbardReal1DEP`](@ref)
  - [`HubbardRealSpace`](@ref)
  - [`ExtendedHubbardReal1D`](@ref)
 
 Momentum space Hubbard models
 - [`HubbardMom1D`](@ref)
-- [`BoseHubbardMom1D2C`](@ref)
 - [`HubbardMom1DEP`](@ref)
 
 Harmonic oscillator models
@@ -37,7 +35,6 @@ Other
 - [`ParticleNumberOperator`](@ref)
 - [`G2RealCorrelator`](@ref)
 - [`G2RealSpace`](@ref)
-- [`G2MomCorrelator`](@ref)
 - [`DensityMatrixDiagonal`](@ref)
 - [`SingleParticleExcitation`](@ref)
 - [`TwoParticleExcitation`](@ref)
@@ -75,7 +72,6 @@ export MatrixHamiltonian
 export HubbardReal1D, HubbardMom1D, ExtendedHubbardReal1D, ExtendedHubbardMom1D, HubbardRealSpace
 export HubbardReal1DEP, shift_lattice, shift_lattice_inv
 export HubbardMom1DEP
-export BoseHubbardMom1D2C, BoseHubbardReal1D2C
 export GutzwillerSampling, GuidingVectorSampling
 export ParitySymmetry
 export TimeReversalSymmetry
@@ -85,7 +81,7 @@ export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron
 export ParticleNumberOperator
 
-export G2MomCorrelator, G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
+export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
 export StringCorrelator
 

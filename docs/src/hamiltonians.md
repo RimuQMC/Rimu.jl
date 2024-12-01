@@ -17,7 +17,6 @@ of the Hubbard model in real and momentum space, as well as some other models.
 ## Real space Hubbard models
 ```@docs
 HubbardReal1D
-BoseHubbardReal1D2C
 HubbardReal1DEP
 HubbardRealSpace
 ExtendedHubbardReal1D
@@ -26,7 +25,6 @@ ExtendedHubbardReal1D
 ## Momentum space Hubbard models
 ```@docs
 HubbardMom1D
-BoseHubbardMom1D2C
 HubbardMom1DEP
 ExtendedHubbardMom1D
 ```

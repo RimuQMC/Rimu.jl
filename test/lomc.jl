@@ -502,8 +502,7 @@ Random.seed!(1234)
             )
 
             for address in (
-                BoseFS2C((1,2,3), (0,1,0)),
-                CompositeFS(BoseFS((1,2,3)), FermiFS((0,1,0)))
+                CompositeFS(BoseFS((1,2,3)), FermiFS((0,1,0))),
             )
                 @test single_particle_density(address) == (1, 3, 3)
                 @test single_particle_density(address; component=1) == (1, 2, 3)
@@ -517,8 +516,7 @@ end
 @testset "Ground state energy estimates" begin
     for H in (
         HubbardReal1D(BoseFS((1,1,2))),
-        BoseHubbardReal1D2C(BoseFS2C((1,2,2), (0,1,0))),
-        BoseHubbardMom1D2C(BoseFS2C((0,1), (1,0))),
+        HubbardMom1D(BoseFS((1, 1, 2)))
     )
         @testset "$H" begin
             dv = DVec(starting_address(H) => 2; style=IsDynamicSemistochastic())

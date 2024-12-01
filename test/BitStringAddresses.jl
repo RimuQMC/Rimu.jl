@@ -450,24 +450,6 @@ end
         @test num_particles(FermiFS2C(3, 1 => 1)) == 1
         @test num_particles(FermiFS2C(3, 1 => -1)) == 1
     end
-
-    @testset "BoseFS2C" begin
-        fs1 = BoseFS2C((1,1,1,0,0,0,0), (1,1,1,0,5,0,0))
-        @test num_modes(fs1) == 7
-        @test num_components(fs1) == 2
-        @test num_particles(fs1) == 11
-        @test eval(Meta.parse(repr(fs1))) == fs1
-        @test BoseFS2C(parse_address(sprint(show, fs1; context=:compact => true))) == fs1
-        @test onr(fs1) == ([1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 0, 5, 0, 0])
-
-        fs2 = BoseFS2C(BoseFS((0,0,0,0,0,0,3)), BoseFS((0,2,1,0,5,0,0)))
-        @test fs1 < fs2
-
-        @test_throws MethodError BoseFS2C(BoseFS((1,1)), BoseFS((1,1,1)))
-        @test BoseFS2C(CompositeFS(BoseFS((1,2)), BoseFS((3,1)))) == BoseFS2C((1,2), (3,1))
-        @test CompositeFS(BoseFS2C(BoseFS((1,2)), BoseFS((3,1)))) ==
-            CompositeFS(BoseFS((1,2)), BoseFS((3,1)))
-    end
 end
 
 @testset "OccupationNumberFS functions" begin

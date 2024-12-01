@@ -97,51 +97,6 @@ using Rimu: replace_keys, delete_and_warn_if_present, clean_and_warn_if_others_p
     end
 end
 
-@testset "BoseFS2C" begin
-    bfs2c = BoseFS2C(BoseFS((1,2,0,4)),BoseFS((4,0,3,1)))
-    @test typeof(bfs2c) <: BoseFS2C{7,8,4}
-    @test num_occupied_modes(bfs2c.bsa) == 3
-    @test num_occupied_modes(bfs2c.bsb) == 3
-    @test onr(bfs2c.bsa) == [1,2,0,4]
-    @test onr(bfs2c.bsb) == [4,0,3,1]
-    @test Hamiltonians.bose_hubbard_2c_interaction(bfs2c) == 8 # n_a*n_b over all sites
-end
-
-@testset "TwoComponentBosonicHamiltonian" begin
-    aIni2cReal = BoseFS2C(BoseFS((1,1,1,1)),BoseFS((1,1,1,1))) # real space two-component
-    Ĥ2cReal = BoseHubbardReal1D2C(aIni2cReal; ua = 6.0, ub = 6.0, ta = 1.0, tb = 1.0, v= 6.0)
-    hamA = HubbardReal1D(BoseFS((1,1,1,1)); u=6.0, t=1.0)
-    hamB = HubbardReal1D(BoseFS((1,1,1,1)); u=6.0)
-    @test hamA == Ĥ2cReal.ha
-    @test hamB == Ĥ2cReal.hb
-    @test num_offdiagonals(Ĥ2cReal,aIni2cReal) == 16
-    @test num_offdiagonals(Ĥ2cReal,aIni2cReal) == num_offdiagonals(Ĥ2cReal.ha,aIni2cReal.bsa)+num_offdiagonals(Ĥ2cReal.hb,aIni2cReal.bsb)
-    @test dimension(Ĥ2cReal) == 1225
-    @test dimension(Float64, Ĥ2cReal) == 1225.0
-
-    hp2c = offdiagonals(Ĥ2cReal,aIni2cReal)
-    @test length(hp2c) == 16
-    @test hp2c[1][1] == BoseFS2C(BoseFS((0,2,1,1)), BoseFS((1,1,1,1)))
-    @test hp2c[1][2] ≈ -1.4142135623730951
-    @test diagonal_element(Ĥ2cReal,aIni2cReal) ≈ 24.0 # from the V term
-
-    aIni2cMom = BoseFS2C(BoseFS((0,4,0,0)),BoseFS((0,4,0,0))) # momentum space two-component
-    Ĥ2cMom = BoseHubbardMom1D2C(aIni2cMom; ua = 6.0, ub = 6.0, ta = 1.0, tb = 1.0, v= 6.0)
-    @test num_offdiagonals(Ĥ2cMom,aIni2cMom) == 9
-    @test dimension(Ĥ2cMom) == 1225
-    @test dimension(Float64, Ĥ2cMom) == 1225.0
-
-    hp2cMom = offdiagonals(Ĥ2cMom,aIni2cMom)
-    @test length(hp2cMom) == 9
-    @test hp2cMom[1][1] == BoseFS2C(BoseFS((1,2,1,0)), BoseFS((0,4,0,0)))
-    @test hp2cMom[1][2] ≈ 2.598076211353316
-
-    smat2cReal, adds2cReal = ExactDiagonalization.build_sparse_matrix_from_LO(Ĥ2cReal,aIni2cReal)
-    eig2cReal = eigen(Matrix(smat2cReal))
-    smat2cMom, adds2cMom = ExactDiagonalization.build_sparse_matrix_from_LO(Ĥ2cMom, aIni2cMom)
-    eig2cMom = eigen(Matrix(smat2cMom))
-    @test eig2cReal.values[1] ≈ eig2cMom.values[1]
-end
 
 @safetestset "KrylovKit" begin
     include("KrylovKit.jl")

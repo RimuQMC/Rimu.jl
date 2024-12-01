@@ -57,12 +57,6 @@ function check_tr_address(addr::CompositeFS)
         throw(ArgumentError("Two component address with equal particle numbers and component types required for `TimeReversalSymmetry`."))
     end
 end
-function check_tr_address(addr::BoseFS2C{NA,NB,M,SA,SB,N}) where {NA,NB,M,SA,SB,N}
-    if NA ≠ NB || SA ≠ SB
-        throw(ArgumentError("Two component address with equal particle numbers required for `TimeReversalSymmetry`."))
-    end
-end
-
 
 function Base.show(io::IO, h::TimeReversalSymmetry)
     print(io, "TimeReversalSymmetry(", h.hamiltonian, ", even=", h.even, ")")
@@ -123,4 +117,3 @@ end
 function diagonal_element(h::TimeReversalSymmetry, add)
     return diagonal_element(h.hamiltonian, add)
 end
-
