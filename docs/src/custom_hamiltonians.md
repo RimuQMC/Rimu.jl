@@ -1,10 +1,15 @@
-# Custom Hamiltonians and observables
+# Advanced operator usage and custom Hamiltonians
 
 `Rimu` can be used to work with custom Hamiltonians and observables that are user-defined and
  not part of the `Rimu.jl` package. To make this possible and reliable, `Rimu` exposes a number 
- of interfaces and provides helper functions to test compliance with the interfaces through the submodule [`Rimu.InterfaceTests`](@ref), see [Interface tests](@ref).
+ of interfaces and provides helper functions to test compliance with the interfaces through the 
+ submodule [`Rimu.InterfaceTests`](@ref), see [Interface tests](@ref). This section covers the
+ relevant interfaces, the interface functions as well as potentially useful helper functions.
 
- In order to define custom Hamiltonians or observables it is useful to know how the operator type hierarchy works in `Rimu`. For an example of how to code custom Hamiltonians that are not part of the `Rimu.jl` package, see [`RimuLegacyHamiltonians.jl`](https://github.com/RimuQMC/RimuLegacyHamiltonians.jl).
+ In order to define custom Hamiltonians or observables it is useful to know how the operator 
+ type hierarchy works in `Rimu`. For an example of how to implement custom Hamiltonians that 
+ are not part of the `Rimu.jl` package, see 
+ [`RimuLegacyHamiltonians.jl`](https://github.com/RimuQMC/RimuLegacyHamiltonians.jl).
 
 ## Operator type hierarchy
 
@@ -62,6 +67,13 @@ Hamiltonians.number_conserving_bose_dimension
 Hamiltonians.number_conserving_fermi_dimension
 ```
 
+## Operator and observable interface 
+
+```@docs
+AbstractObservable
+AbstractOperator
+```
+
 ## Interface tests
 Helper functions that can be used for testing the various interfaces are provided in the 
 (unexported) submodule `Rimu.InterfaceTests`. 
@@ -76,6 +88,20 @@ Rimu.InterfaceTests.test_hamiltonian_interface
 Rimu.InterfaceTests.test_hamiltonian_structure
 Rimu.InterfaceTests.test_observable_interface
 Rimu.InterfaceTests.test_operator_interface
+```
+
+## Utilities for harmonic oscillator models
+Useful utilities for harmonic oscillator in Cartesian basis, see [`HOCartesianContactInteractions`](@ref)
+and [`HOCartesianEnergyConservedPerDim`](@ref).
+```@docs
+get_all_blocks
+fock_to_cart
+```
+Underlying integrals for the interaction matrix elements are implemented in the following unexported functions
+```@docs
+Hamiltonians.four_oscillator_integral_general
+Hamiltonians.ho_delta_potential
+Hamiltonians.log_abs_oscillator_zero
 ```
 
 ## Index

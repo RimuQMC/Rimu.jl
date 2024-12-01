@@ -11,13 +11,10 @@ The Hamiltonians can be used for projector quantum Monte Carlo with [`ProjectorM
 Hamiltonians
 ```
 
-
-## Model Hamiltonians
-
 Here is a list of fully implemented model Hamiltonians. There are several variants
 of the Hubbard model in real and momentum space, as well as some other models.
 
-### Real space Hubbard models
+## Real space Hubbard models
 ```@docs
 HubbardReal1D
 BoseHubbardReal1D2C
@@ -26,7 +23,7 @@ HubbardRealSpace
 ExtendedHubbardReal1D
 ```
 
-### Momentum space Hubbard models
+## Momentum space Hubbard models
 ```@docs
 HubbardMom1D
 BoseHubbardMom1D2C
@@ -34,21 +31,21 @@ HubbardMom1DEP
 ExtendedHubbardMom1D
 ```
 
-### Harmonic oscillator models
+## Harmonic oscillator models
 ```@docs
 HOCartesianContactInteractions
 HOCartesianEnergyConservedPerDim
 HOCartesianCentralImpurity
 ```
 
-### Other
+## Other model Hamiltonaians
 ```@docs
 MatrixHamiltonian
 Transcorrelated1D
 FroehlichPolaron
 ```
 
-### Convenience functions
+## Convenience functions
 ```@docs
 rayleigh_quotient
 momentum
@@ -81,8 +78,6 @@ AbstractHamiltonian{T} <: AbstractOperator{T} <: AbstractObservable{T}
 ```
 
 ```@docs
-AbstractObservable
-AbstractOperator
 ParticleNumberOperator
 G2RealCorrelator
 G2RealSpace
@@ -109,20 +104,6 @@ Hamiltonians.neighbor_site
 PeriodicBoundaries
 HardwallBoundaries
 LadderBoundaries
-```
-
-## Harmonic Oscillator
-Useful utilities for harmonic oscillator in Cartesian basis, see [`HOCartesianContactInteractions`](@ref)
-and [`HOCartesianEnergyConservedPerDim`](@ref).
-```@docs
-get_all_blocks
-fock_to_cart
-```
-Underlying integrals for the interaction matrix elements are implemented in the following unexported functions
-```@docs
-Hamiltonians.four_oscillator_integral_general
-Hamiltonians.ho_delta_potential
-Hamiltonians.log_abs_oscillator_zero
 ```
 
 ## Index
