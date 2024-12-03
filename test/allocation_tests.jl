@@ -39,14 +39,6 @@ end
         ExtendedHubbardReal1D(b2),
         ExtendedHubbardReal1D(b3),
 
-        BoseHubbardReal1D2C(BoseFS2C(b1, b1)),
-        BoseHubbardReal1D2C(BoseFS2C(b2, b2)),
-        BoseHubbardReal1D2C(BoseFS2C(b3, b3)),
-
-        BoseHubbardMom1D2C(BoseFS2C(b1, b1)),
-        BoseHubbardMom1D2C(BoseFS2C(b2, b2)),
-        BoseHubbardMom1D2C(BoseFS2C(b3, b3)),
-
         HubbardRealSpace(b1),
         HubbardRealSpace(b2),
         HubbardRealSpace(b3),
