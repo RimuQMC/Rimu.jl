@@ -286,7 +286,7 @@ end
 function single_particle_density(add::SingleComponentFockAddress; component=0)
     return float.(Tuple(onr(add)))
 end
-function single_particle_density(add::Union{CompositeFS,BoseFS2C}; component=0)
+function single_particle_density(add::Union{CompositeFS}; component=0)
     if component == 0
         return float.(Tuple(sum(onr(add))))
     else

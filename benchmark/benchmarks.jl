@@ -63,16 +63,6 @@ const SUITE = @benchmarkset "Rimu" begin
             lomc!(ham, dv; s_strat, post_step, dτ=1e-4, laststep=8000)
         end seconds=150
 
-        @case "(4+1, 11) 2C Mom space with G2Correlators" begin
-            addr = BoseFS2C(ntuple(i -> ifelse(i == 5, 4, 0), 11), ntuple(==(5), 11))
-            ham = BoseHubbardMom1D2C(addr, v=0.1)
-            dv = PDVec(addr => 1.0f0; style=IsDynamicSemistochastic{Float32}())
-            s_strat = DoubleLogUpdate(target_walkers=10_000)
-            replica_strategy = AllOverlaps(2; operator = ntuple(i -> G2Correlator(i - 1), 7))
-
-            lomc!(ham, dv; s_strat, replica_strategy, laststep=2000)
-        end seconds=150
-
         @case "(50, 50) Real space" begin
             addr = near_uniform(BoseFS{50,50})
             ham = HubbardReal1D(addr, u=6.0)

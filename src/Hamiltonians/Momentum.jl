@@ -53,9 +53,5 @@ end
 diagonal_element(m::Momentum{0}, a::SingleComponentFockAddress) = _momentum(a, m.fold)
 diagonal_element(m::Momentum{1}, a::SingleComponentFockAddress) = _momentum(a, m.fold)
 
-diagonal_element(m::Momentum{0}, a::BoseFS2C) = _momentum((a.bsa, a.bsb), m.fold)
-diagonal_element(m::Momentum{1}, a::BoseFS2C) = _momentum(a.bsa, m.fold)
-diagonal_element(m::Momentum{2}, a::BoseFS2C) = _momentum(a.bsb, m.fold)
-
 diagonal_element(m::Momentum{0}, a::CompositeFS) = _momentum(a.components, m.fold)
 diagonal_element(m::Momentum{N}, a::CompositeFS) where {N} = _momentum(a.components[N], m.fold)

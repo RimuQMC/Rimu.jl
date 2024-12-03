@@ -114,8 +114,6 @@ include("HubbardMom1DEP.jl")
 include("HubbardRealSpace.jl")
 include("ExtendedHubbardReal1D.jl")
 
-include("BoseHubbardReal1D2C.jl")
-include("BoseHubbardMom1D2C.jl")
 include("FroehlichPolaron.jl")
 
 include("GutzwillerSampling.jl")
