@@ -79,6 +79,7 @@ AbstractHamiltonian{T} <: AbstractOperator{T} <: AbstractObservable{T}
 ParticleNumberOperator
 G2RealCorrelator
 G2RealSpace
+G2MomCorrelator
 SuperfluidCorrelator
 StringCorrelator
 DensityMatrixDiagonal

@@ -34,6 +34,7 @@ Other
 ## [Observables](#Observables)
 - [`ParticleNumberOperator`](@ref)
 - [`G2RealCorrelator`](@ref)
+- [`G2MomCorrelator`](@ref)
 - [`G2RealSpace`](@ref)
 - [`DensityMatrixDiagonal`](@ref)
 - [`SingleParticleExcitation`](@ref)
@@ -83,7 +84,7 @@ export ParticleNumberOperator
 
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
-export StringCorrelator
+export StringCorrelator, G2MomCorrelator
 
 export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
 
@@ -124,6 +125,7 @@ include("Stoquastic.jl")
 
 include("Transcorrelated1D.jl")
 include("correlation_functions.jl")
+include("G2MomCorrelator.jl")
 include("DensityMatrixDiagonal.jl")
 include("reduced_density_matrix.jl")
 include("Momentum.jl")
