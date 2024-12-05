@@ -150,6 +150,11 @@ using Suppressor
 
     @testset "fock build basis" begin
         for addr in (
+            BoseFS(1),
+            BoseFS(10, 10),
+            FermiFS(1, 1, 0),
+            FermiFS(1, 0),
+            FermiFS(1),
             BoseFS(1, 1, 1, 1, 1, 2, 1, 1),
             FermiFS(1, 1, 1, 0, 0, 0),
             FermiFS2C((1, 1, 0, 0, 0, 0), (0, 1, 0, 1, 1, 0)),
