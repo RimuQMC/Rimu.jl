@@ -219,7 +219,7 @@ function basis_breadth_first_search(
     max_tasks=4 * Threads.nthreads(),
 
     max_depth=Inf,
-    stop_after=Inf,
+    minimum_size=Inf,
 
     cutoff=nothing,
     filter=isnothing(cutoff) ? Returns(true) : a -> diagonal_element(operator, a) ≤ cutoff,
@@ -261,7 +261,7 @@ function basis_breadth_first_search(
     early_stop = false
     while !isempty(curr_frontier)
         depth += 1
-        early_stop = length(basis) > stop_after || depth > max_depth
+        early_stop = length(basis) > minimum_size || depth > max_depth
 
         # We can stop here when not constructing the matrix. If we are, we still need
         # to do another round to evaluate the columns.
@@ -333,10 +333,10 @@ Providing an energy cutoff will skip addresses with diagonal elements greater
 than `cutoff`. Alternatively, an arbitrary `filter` function can be used instead.
 Addresses passed as arguments are not filtered.
 
-Providing a `max_depth` will limit the size of the basis by only visiting addresses
-that are connected to the `starting_address` through `max_depth` hops through the
-Hamiltonian. Similarly, providing `stop_after` will stop the bulding process after the basis
-reaches a length of at least `stop_after`.
+Providing a `max_depth` will limit the size of the basis by only visiting addresses that are
+connected to the `starting_address` through `max_depth` hops through the
+Hamiltonian. Similarly, providing `minimum_size` will stop the bulding process after the
+basis reaches a length of at least `minimum_size`.
 
 A maximum basis size `sizelim` can be set which will throw an error if the expected
 dimension of `ham` is larger than `sizelim`. This may be useful when memory may be a
@@ -372,10 +372,10 @@ than `cutoff`. Alternatively, an arbitrary `filter` function can be used instead
 not enabled by default. To generate the matrix truncated to the subspace spanned by the
 `addresses`, use `filter = Returns(false)`.
 
-Providing a `max_depth` will limit the size of the matrix by only visiting addresses
-that are connected to the `starting_address` through `max_depth` hops through the
-Hamiltonian. Similarly, providing `stop_after` will stop the bulding process after the basis
-reaches a length of at least `stop_after`.
+Providing a `max_depth` will limit the size of the matrix by only visiting addresses that
+are connected to the `starting_address` through `max_depth` hops through the
+Hamiltonian. Similarly, providing `minimum_size` will stop the bulding process after the
+basis reaches a length of at least `minimum_size`.
 
 Setting `sort` to `true` will sort the `basis` and order the matrix rows and columns
 accordingly. This is useful when the order of the columns matters, e.g. when comparing

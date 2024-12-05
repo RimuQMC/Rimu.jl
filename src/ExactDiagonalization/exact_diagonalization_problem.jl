@@ -35,7 +35,7 @@ See [`BasisSetRepresentation`](@ref) for more information.
 - `cutoff`: A cutoff value for the basis set representation.
 - `filter`: A filter function for the basis set representation.
 - `max_depth = Inf`: Limit the depth when building the matrix.
-- `stop_after = Inf`: Stop building the matrix after this size is reached.
+- `minimum_size = Inf`: Stop building the matrix after this size is reached.
 - `nnzs = 0`: A hint for the number of non-zero elements in the basis set representation.
   Setting a non-zero value can speed up the computation.
 - `col_hint = 0`: A hint for the number of columns in the basis set representation.

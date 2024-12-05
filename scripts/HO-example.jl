@@ -9,7 +9,7 @@
 # how to generate these blocks and find the energy and angular momentum eigenstates.
 
 # A runnable script for this example is located
-# [here](https://github.com/joachimbrand/Rimu.jl/blob/develop/scripts/HO-example.jl).
+# [here](https://github.com/RimuQMC/Rimu.jl/blob/develop/scripts/HO-example.jl).
 # Run it with `julia HO-example.jl`.
 
 # First, load all needed packages.

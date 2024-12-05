@@ -179,4 +179,8 @@ end
     # For example, replace `using Foo` with `using Foo: bar, baz`.
 end
 
+@safetestset "excited states" begin
+    include("excited_states_tests.jl")
+end
+
 # Note: Running Rimu with several MPI ranks is tested seperately on GitHub CI and not here.

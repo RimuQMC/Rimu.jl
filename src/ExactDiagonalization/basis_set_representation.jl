@@ -1,7 +1,7 @@
 """
     BasisSetRepresentation(
         hamiltonian::AbstractHamiltonian, addr=starting_address(hamiltonian);
-        sizelim=10^7, cutoff, filter, max_depth, stop_after, sort=false, kwargs...
+        sizelim=10^7, cutoff, filter, max_depth, minimum_size, sort=false, kwargs...
     )
     BasisSetRepresentation(hamiltonian::AbstractHamiltonian, addresses::AbstractVector; kwargs...)
 
@@ -23,8 +23,8 @@ subspace spanned by the `addresses`, use `filter = Returns(false)`.
 
 Providing a `max_depth` will limit the size of the matrix and basis by only visiting
 addresses that are connected to the `starting_address` through `max_depth` hops through the
-Hamiltonian. Similarly, providing `stop_after` will stop the bulding process after the basis
-reaches a length of at least `stop_after`.
+Hamiltonian. Similarly, providing `minimum_size` will stop the bulding process after the
+basis reaches a length of at least `minimum_size`.
 
 Setting `sort` to `true` will sort the matrix rows and columns. This is useful when the
 order of the columns matters, e.g. when comparing matrices. Any additional keyword arguments

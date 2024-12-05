@@ -50,7 +50,7 @@ using Suppressor
         @test mat_cut == mat_cut_manual
     end
 
-    @testset "max_depth and stop_after" begin
+    @testset "max_depth and minimum_size" begin
         addr = BoseFS(5, 1 => 1)
         ham = HubbardRealSpace(addr; geometry=CubicGrid((5,), (false,)))
 
@@ -62,11 +62,11 @@ using Suppressor
         @test build_basis(ham; max_depth=3) == basis_addr[1:4]
         @test build_basis(ham; max_depth=4) == basis_addr
 
-        @test build_basis(ham; stop_after=0) == [addr]
-        @test build_basis(ham; stop_after=1) == basis_addr[1:2]
-        @test build_basis(ham; stop_after=2) == basis_addr[1:3]
-        @test build_basis(ham; stop_after=3) == basis_addr[1:4]
-        @test build_basis(ham; stop_after=4) == basis_addr
+        @test build_basis(ham; minimum_size=0) == [addr]
+        @test build_basis(ham; minimum_size=1) == basis_addr[1:2]
+        @test build_basis(ham; minimum_size=2) == basis_addr[1:3]
+        @test build_basis(ham; minimum_size=3) == basis_addr[1:4]
+        @test build_basis(ham; minimum_size=4) == basis_addr
     end
 
     @testset "getindex" begin

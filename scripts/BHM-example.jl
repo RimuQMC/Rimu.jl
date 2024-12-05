@@ -4,7 +4,7 @@
 # particles in 6 lattice sites.
 
 # A runnable script for this example is located
-# [here](https://github.com/joachimbrand/Rimu.jl/blob/develop/scripts/BHM-example.jl).
+# [here](https://github.com/RimuQMC/Rimu.jl/blob/develop/scripts/BHM-example.jl).
 # Run it with `julia BHM-example.jl`.
 
 # First, we load Rimu and Plots.

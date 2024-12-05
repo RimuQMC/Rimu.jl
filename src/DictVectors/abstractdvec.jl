@@ -263,7 +263,7 @@ walkernumber_and_length(v) = walkernumber(v), length(v)
 ###
 ### Vector-operator functions
 ###
-function LinearAlgebra.mul!(w::AbstractDVec, h::AbstractOperator, v::AbstractDVec)
+function LinearAlgebra.mul!(w::AbstractDVec, h::AbstractObservable, v::AbstractDVec)
     empty!(w)
     for (key, val) in pairs(v)
         w[key] += diagonal_element(h, key) * val
@@ -274,7 +274,7 @@ function LinearAlgebra.mul!(w::AbstractDVec, h::AbstractOperator, v::AbstractDVe
     return w
 end
 
-function Base.:*(h::AbstractOperator, v::AbstractDVec)
+function Base.:*(h::AbstractObservable, v::AbstractDVec)
     T = promote_type(scalartype(h), scalartype(v))
     if eltype(h) ≠ scalartype(h)
         throw(ArgumentError("Operators with non-scalar eltype don't support "*
@@ -286,13 +286,13 @@ function Base.:*(h::AbstractOperator, v::AbstractDVec)
 end
 
 # docstring in Interfaces
-function LinearAlgebra.dot(w::AbstractDVec, op::AbstractOperator, v::AbstractDVec)
+function LinearAlgebra.dot(w::AbstractDVec, op::AbstractObservable, v::AbstractDVec)
     return dot(LOStructure(op), w, op, v)
 end
-function LinearAlgebra.dot(::AdjointUnknown, w, op::AbstractOperator, v)
+function LinearAlgebra.dot(::AdjointUnknown, w, op::AbstractObservable, v)
     return dot_from_right(w, op, v)
 end
-function LinearAlgebra.dot(::LOStructure, w, op::AbstractOperator, v)
+function LinearAlgebra.dot(::LOStructure, w, op::AbstractObservable, v)
     if length(w) < length(v)
         return conj(dot_from_right(v, op', w)) # turn args around to execute faster
     else
@@ -301,14 +301,15 @@ function LinearAlgebra.dot(::LOStructure, w, op::AbstractOperator, v)
 end
 
 # docstring in Interfaces
-function Interfaces.dot_from_right(w, op, v::AbstractDVec)
-    T = typeof(zero(valtype(w)) * zero(eltype(op)) * zero(valtype(v)))
-    result = zero(T)
-    for (key, val) in pairs(v)
-        result += conj(w[key]) * diagonal_element(op, key) * val
-        for (add, elem) in offdiagonals(op, key)
-            result += conj(w[add]) * elem * val
+function Interfaces.dot_from_right(target, op, source::AbstractDVec)
+    T = typeof(zero(valtype(target)) * zero(valtype(source)) * zero(eltype(op)))
+
+    result = sum(pairs(source); init=zero(T)) do (k, v)
+        res = conj(target[k]) * diagonal_element(op, k) * v
+        for (k_off, v_off) in offdiagonals(op, k)
+            res += conj(target[k_off]) * v_off * v
         end
+        res
     end
-    return result
+    return result::T
 end

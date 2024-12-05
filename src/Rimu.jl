@@ -3,7 +3,7 @@ module Rimu
 using Arrow: Arrow
 using DataFrames: DataFrames, DataFrame, metadata
 using DataStructures: DataStructures
-using LinearAlgebra: LinearAlgebra, dot, isdiag
+using LinearAlgebra: LinearAlgebra, dot, isdiag, eigvecs, norm
 using OrderedCollections: OrderedCollections, LittleDict, freeze
 using Parameters: Parameters, @pack!, @unpack, @with_kw
 using ProgressLogging: ProgressLogging, @logprogress, @withprogress
@@ -37,7 +37,7 @@ const PACKAGE_VERSION = VersionNumber(TOML.parsefile(pkgdir(Rimu, "Project.toml"
 **Random integrators for many-body quantum systems**
 
 Welcome to `Rimu` version $PACKAGE_VERSION.
-Read the documentation [online](https://joachimbrand.github.io/Rimu.jl/).
+Read the documentation [online](https://RimuQMC.github.io/Rimu.jl/).
 """
 Rimu
 

@@ -23,6 +23,8 @@ localpart
 apply_operator!
 sort_into_targets!
 working_memory
+mapreduce
+sum_mutating!
 ```
 
 ## Supported operations

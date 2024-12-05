@@ -27,15 +27,15 @@ deployed automatically with GitHub Actions. This needs to be set up with an appr
 script in the file `.github/workflows/docs.yml`, where triggers for this to happen can be
 defined. In the current set up, a new documentation web site is generated and deployed
 whenever someone pushes to the develop branch on the GitHub server. The updated
-documentation can then be accessed [here](https://joachimbrand.github.io/Rimu.jl/dev/).
+documentation can then be accessed [here](https://RimuQMC.github.io/Rimu.jl/dev/).
 
-Previews for pull-requests can be accessed by replacing 101 in the following link with the PR number: [https://joachimbrand.github.io/Rimu.jl/previews/PR101/](https://joachimbrand.github.io/Rimu.jl/previews/PR101/)
+Previews for pull-requests can be accessed by replacing 101 in the following link with the PR number: [https://RimuQMC.github.io/Rimu.jl/previews/PR101/](https://RimuQMC.github.io/Rimu.jl/previews/PR101/)
 
 ### Example scripts
 
-Examples should be added to the `scripts` folder, in the form of `.jl` files suitable for 
-parsing by [`Literate`](https://github.com/fredrikekre/Literate.jl). The process of generating 
-documentation is automated in the `docs/make.jl` file and assumes that the following line is 
+Examples should be added to the `scripts` folder, in the form of `.jl` files suitable for
+parsing by [`Literate`](https://github.com/fredrikekre/Literate.jl). The process of generating
+documentation is automated in the `docs/make.jl` file and assumes that the following line is
 at (or near) the top of the script:
 ```
 # # Example N: Title
@@ -43,7 +43,7 @@ at (or near) the top of the script:
 where the number `N` and `Title` will be extracted automatically.
 
 Tests for the results and output of specific scripts should be added at the end of each example. The code to run the test should be hidden from the final generated document by
-appending "#hide" to each line of testing code. For example, 
+appending "#hide" to each line of testing code. For example,
 ```
 using Test                          #hide
 @test isfile("result.out")          #hide

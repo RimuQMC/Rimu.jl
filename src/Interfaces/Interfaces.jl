@@ -39,7 +39,7 @@ Follow the links for the definitions of the interfaces!
 module Interfaces
 
 using LinearAlgebra: LinearAlgebra, diag
-using VectorInterface: VectorInterface, add, zerovector!, scalartype
+using VectorInterface: VectorInterface, add, add!, zerovector!, scalartype
 
 import OrderedCollections: freeze
 
@@ -48,7 +48,7 @@ export
     CompressionStrategy, NoCompression, compress!
 export
     AbstractDVec, deposit!, storage, localpart, freeze, working_memory,
-    apply_operator!, sort_into_targets!
+    apply_operator!, sort_into_targets!, sum_mutating!
 export
     AbstractHamiltonian, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
     random_offdiagonal, starting_address, allows_address_type,
