@@ -20,7 +20,7 @@ AbstractHamiltonian <: AbstractOperator <: AbstractObservable
 ```
 The different abstract types have different requirements and are meant to be used for different purposes. 
 - [`AbstractHamiltonian`](@ref)s are fully featured models that define a Hilbert space and a linear operator over a scalar field. They can be passed as a Hamiltonian into [`ProjectorMonteCarloProblem`](@ref) or [`ExactDiagonalizationProblem`](@ref).
-- [`AbstractOperator`](@ref) and [`AbstractObservable`](@ref) are supertypes of [`AbstractHamiltonian`](@ref) with less stringent conditions. They are useful for defining observables that can be used in a three-way `dot` product, or passed as observables into a [`ReplicaStrategy`](@ref) in a [`ProjectorMonteCarloProblem`](@ref).
+- [`AbstractOperator`](@ref) and [`AbstractObservable`](@ref) are supertypes of [`AbstractHamiltonian`](@ref) with less stringent conditions. They are useful for defining observables that can be used in a three-way `dot` product, or passed as observables into a [`ReplicaStrategy`](@ref) that can be inserted with the keyword `replica_strategy` into a [`ProjectorMonteCarloProblem`](@ref).
 
 ## Hamiltonians interface
 

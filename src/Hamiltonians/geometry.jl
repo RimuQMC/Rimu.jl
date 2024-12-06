@@ -2,7 +2,8 @@
     CubicGrid(dims::NTuple{D,Int}, fold::NTuple{D,Bool})
 
 Represents a `D`-dimensional grid. Used to define a cubic lattice and boundary conditions
-for some [`AbstractHamiltonian`](@ref)s. The type instance can be used to convert between
+for some [`AbstractHamiltonian`](@ref)s, e.g. with the keyword argument `geometry` when
+constructing a [`HubbardRealSpace`](@ref). The type instance can be used to convert between
 cartesian vector indices (tuples or `SVector`s) and linear indices (integers). When indexed
 with vectors, it folds them back into the grid if the out-of-bounds dimension is periodic and
 0 otherwise (see example below).
@@ -38,7 +39,8 @@ julia> geo[(3,4)] # returns 0 if out of bounds
 ```
 
 See also [`PeriodicBoundaries`](@ref), [`HardwallBoundaries`](@ref) and
-[`LadderBoundaries`](@ref) for special-case constructors.
+[`LadderBoundaries`](@ref) for special-case constructors. See also
+[`HubbardRealSpace`](@ref) and [`G2RealSpace`](@ref).
 """
 struct CubicGrid{D,Dims,Fold}
     function CubicGrid(
@@ -56,7 +58,7 @@ CubicGrid(args::Vararg{Int}) = CubicGrid(args)
     PeriodicBoundaries(dims...) -> CubicGrid
     PeriodicBoundaries(dims) -> CubicGrid
 
-Return `CubicGrid` with all dimensions periodic. Equivalent to `CubicGrid(dims)`.
+Return a [`CubicGrid`](@ref) with all dimensions periodic. Equivalent to `CubicGrid(dims)`.
 """
 function PeriodicBoundaries(dims::NTuple{D,Int}) where {D}
     return CubicGrid(dims, ntuple(Returns(true), Val(D)))
@@ -67,7 +69,7 @@ PeriodicBoundaries(dims::Vararg{Int}) = PeriodicBoundaries(dims)
     HardwallBoundaries(dims...) -> CubicGrid
     HardwallBoundaries(dims) -> CubicGrid
 
-Return `CubicGrid` with all dimensions non-periodic. Equivalent to
+Return a [`CubicGrid`](@ref) with all dimensions non-periodic. Equivalent to
 `CubicGrid(dims, (false, false, ...))`.
 """
 function HardwallBoundaries(dims::NTuple{D,Int}) where {D}
@@ -79,8 +81,8 @@ HardwallBoundaries(dims::Vararg{Int}) = HardwallBoundaries(dims)
     LadderBoundaries(dims...) -> CubicGrid
     LadderBoundaries(dims) -> CubicGrid
 
-Return `CubicGrid` where the first dimension is dimensions non-periodic and the rest are
-periodic. Equivalent to `CubicGrid(dims, (true, false, ...))`.
+Return a [`CubicGrid`](@ref) where the first dimension is dimensions non-periodic and the
+rest are periodic. Equivalent to `CubicGrid(dims, (true, false, ...))`.
 """
 function LadderBoundaries(dims::NTuple{D,Int}) where {D}
     return CubicGrid(dims, ntuple(>(1), Val(D)))
@@ -100,13 +102,15 @@ fold(g::CubicGrid{<:Any,<:Any,Fold}) where {Fold} = Fold
     num_dimensions(geom::LatticeCubicGrid)
 
 Return the number of dimensions of the lattice in this geometry.
+
+See also [`CubicGrid`](@ref).
 """
 num_dimensions(::CubicGrid{D}) where {D} = D
 
 """
     fold_vec(g::CubicGrid{D}, vec::SVector{D,Int}) -> SVector{D,Int}
 
-Use the CubicGrid to fold the `vec` in each dimension. If folding is disabled in a
+Use the [`CubicGrid`](@ref) to fold the `vec` in each dimension. If folding is disabled in a
 dimension, and the vector is allowed to go out of bounds.
 
 ```julia
@@ -179,8 +183,8 @@ end
 """
     Displacements(geometry::CubicGrid) <: AbstractVector{SVector{D,Int}}
 
-Return all valid offset vectors in a [`CubicGrid`](@ref). If `center=true` the (0,0) displacement is
-placed at the centre of the array.
+Return all valid offset vectors in a [`CubicGrid`](@ref). If `center=true` the (0,0)
+displacement is placed at the centre of the array.
 
 ```jldoctest; setup=:(using Rimu.Hamiltonians: Displacements)
 julia> geometry = CubicGrid((3,4));
@@ -222,6 +226,8 @@ end
     neighbor_site(geom::CubicGrid, site, i)
 
 Find the `i`-th neighbor of `site` in the geometry. If the move is illegal, return 0.
+
+See also [`CubicGrid`](@ref).
 """
 function neighbor_site(g::CubicGrid{D}, mode, chosen) where {D}
     # TODO: reintroduce LadderBoundaries small dimensions

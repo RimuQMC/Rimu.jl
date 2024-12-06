@@ -92,7 +92,8 @@ AxialAngularMomentumHO
 
 ## Geometry
 
-Lattices in higher dimensions are defined here for [`HubbardRealSpace`](@ref) and [`G2RealSpace`](@ref).
+Lattices in higher dimensions are defined here and can be passed with the keyword argument
+`geometry` to [`HubbardRealSpace`](@ref) and [`G2RealSpace`](@ref).
 
 ```@docs
 CubicGrid
