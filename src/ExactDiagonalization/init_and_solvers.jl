@@ -114,6 +114,8 @@ function CommonSolve.init(
     nnzs = get(kw, :nnzs, 0)
     col_hint = get(kw, :col_hint, 0)
     sort = get(kw, :sort, false)
+    max_depth = get(kw, :max_depth, Inf)
+    minimum_size = get(kw, :minimum_size, Inf)
 
     # determine the starting address or vector
     v0 = p.v0
@@ -136,11 +138,16 @@ function CommonSolve.init(
     @assert v0 isa Union{FrozenDVec{<:AbstractFockAddress},Nothing}
 
     # create the BasisSetRepresentation
-    bsr = BasisSetRepresentation(p.hamiltonian, addr_or_vec; sizelim, filter, nnzs, col_hint, sort)
+    bsr = BasisSetRepresentation(
+        p.hamiltonian, addr_or_vec;
+        sizelim, filter, nnzs, col_hint, sort, max_depth, minimum_size,
+    )
 
     # prepare kwargs for the solver
     kw = (; kw..., sizelim, cutoff, filter, nnzs, col_hint, sort)
-    kw_nt = delete(kw, (:sizelim, :cutoff, :filter, :nnzs, :col_hint, :sort))
+    kw_nt = delete(
+        kw, (:sizelim, :cutoff, :filter, :nnzs, :col_hint, :sort, :max_depth, :minimum_size)
+    )
 
     return MatrixEDSolver(algorithm, p, bsr, v0, kw_nt)
 end
