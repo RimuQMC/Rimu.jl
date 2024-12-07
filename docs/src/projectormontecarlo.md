@@ -8,7 +8,7 @@ Full Configuration Interaction Quantum Monte Carlo (FCIQMC).
 ## `ProjectorMonteCarloProblem`
 
 To run a projector Monte Carlo simulation you set up a problem with [`ProjectorMonteCarloProblem`](@ref)
-and solve it with [`solve`](@ref). Alternatively you can [`init`](@ref) it with to obtain a [`PMCSimulation`](@ref) struct, [`step!`](@ref) 
+and solve it with [`solve`](@ref). Alternatively you can [`init`](@ref) it with to obtain a [`PMCSimulation`](@ref Rimu.PMCSimulation) struct, [`step!`](@ref) 
 through time steps, and [`solve!`](@ref) it to completion. 
 
 ```@docs; canonical=false
