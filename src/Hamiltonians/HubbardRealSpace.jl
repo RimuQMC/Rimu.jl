@@ -201,9 +201,9 @@ function HubbardRealSpace(
         throw(ArgumentError("`t` must be a vector of length $C"))
     elseif length(v) ≠ C * D
         throw(ArgumentError("`v` must be a $C × $D matrix"))
-    elseif address isa BoseFS2C
+    elseif !(address isa SingleComponentFockAddress || address isa CompositeFS)
         throw(ArgumentError(
-            "`BoseFS2C` is not supported for this Hamiltonian, use `CompositeFS`"
+            "unsupported address type detected use `CompositeFS` or `<: SingleComponentFockAddress`"
         ))
     end
     warn_fermi_interaction(address, u)

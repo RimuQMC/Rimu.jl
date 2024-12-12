@@ -40,17 +40,5 @@ function diagonal_element(dmd::DensityMatrixDiagonal{C}, add::CompositeFS) where
     return float(find_mode(comp, dmd.mode).occnum)
 end
 
-function diagonal_element(dmd::DensityMatrixDiagonal{0}, add::BoseFS2C)
-    return float(find_mode(add.bsa, dmd.mode).occnum + find_mode(add.bsb, dmd.mode).occnum)
-end
-function diagonal_element(dmd::DensityMatrixDiagonal{1}, add::BoseFS2C)
-    comp = add.bsa
-    return float(find_mode(comp, dmd.mode).occnum)
-end
-function diagonal_element(dmd::DensityMatrixDiagonal{2}, add::BoseFS2C)
-    comp = add.bsb
-    return float(find_mode(comp, dmd.mode).occnum)
-end
-
 num_offdiagonals(dmd::DensityMatrixDiagonal, _) = 0
 LOStructure(::Type{<:DensityMatrixDiagonal}) = IsDiagonal()

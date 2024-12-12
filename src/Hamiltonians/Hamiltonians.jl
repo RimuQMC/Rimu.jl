@@ -6,14 +6,12 @@ Hamiltonians.
 
 Real space Hubbard models
  - [`HubbardReal1D`](@ref)
- - [`BoseHubbardReal1D2C`](@ref)
  - [`HubbardReal1DEP`](@ref)
  - [`HubbardRealSpace`](@ref)
  - [`ExtendedHubbardReal1D`](@ref)
 
 Momentum space Hubbard models
 - [`HubbardMom1D`](@ref)
-- [`BoseHubbardMom1D2C`](@ref)
 - [`HubbardMom1DEP`](@ref)
 
 Harmonic oscillator models
@@ -36,8 +34,8 @@ Other
 ## [Observables](#Observables)
 - [`ParticleNumberOperator`](@ref)
 - [`G2RealCorrelator`](@ref)
-- [`G2RealSpace`](@ref)
 - [`G2MomCorrelator`](@ref)
+- [`G2RealSpace`](@ref)
 - [`DensityMatrixDiagonal`](@ref)
 - [`SingleParticleExcitation`](@ref)
 - [`TwoParticleExcitation`](@ref)
@@ -75,7 +73,6 @@ export MatrixHamiltonian
 export HubbardReal1D, HubbardMom1D, ExtendedHubbardReal1D, ExtendedHubbardMom1D, HubbardRealSpace
 export HubbardReal1DEP, shift_lattice, shift_lattice_inv
 export HubbardMom1DEP
-export BoseHubbardMom1D2C, BoseHubbardReal1D2C
 export GutzwillerSampling, GuidingVectorSampling
 export ParitySymmetry
 export TimeReversalSymmetry
@@ -85,9 +82,9 @@ export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron
 export ParticleNumberOperator
 
-export G2MomCorrelator, G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
+export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
-export StringCorrelator
+export StringCorrelator, G2MomCorrelator
 
 export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
 
@@ -118,8 +115,6 @@ include("HubbardMom1DEP.jl")
 include("HubbardRealSpace.jl")
 include("ExtendedHubbardReal1D.jl")
 
-include("BoseHubbardReal1D2C.jl")
-include("BoseHubbardMom1D2C.jl")
 include("FroehlichPolaron.jl")
 
 include("GutzwillerSampling.jl")
@@ -130,6 +125,7 @@ include("Stoquastic.jl")
 
 include("Transcorrelated1D.jl")
 include("correlation_functions.jl")
+include("G2MomCorrelator.jl")
 include("DensityMatrixDiagonal.jl")
 include("reduced_density_matrix.jl")
 include("Momentum.jl")

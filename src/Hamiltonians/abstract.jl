@@ -80,9 +80,6 @@ end
 function dimension(::Type{<:FermiFS{N,M}}) where {N,M}
     return number_conserving_fermi_dimension(N, M)
 end
-function dimension(::Type{<:BoseFS2C{NA,NB,M}}) where {NA,NB,M}
-    return dimension(BoseFS{NA,M}) * dimension(BoseFS{NB,M})
-end
 function dimension(::Type{<:CompositeFS{<:Any,<:Any,<:Any,T}}) where {T}
     return prod(dimension, T.parameters)
     # This relies on an implementation detail of the Tuple type and may break in future
@@ -139,9 +136,6 @@ function number_conserving_dimension(address::FermiFS)
     m = num_modes(address)
     n = num_particles(address)
     return number_conserving_fermi_dimension(n, m)
-end
-function number_conserving_dimension(addr::BoseFS2C)
-    return number_conserving_dimension(addr.bsa) * number_conserving_dimension(addr.bsb)
 end
 function number_conserving_dimension(address::CompositeFS)
     return prod(number_conserving_dimension, address.components)

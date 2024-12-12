@@ -7,9 +7,9 @@ Full Configuration Interaction Quantum Monte Carlo (FCIQMC).
 
 ## `ProjectorMonteCarloProblem`
 
-To run a projector Monte Carlo simulation you set up a problem with `ProjectorMonteCarloProblem`
-and solve it with `solve`. Alternatively you can initialize a `PMCSimulation` struct, `step!` 
-through time steps, and `solve!` it to completion. 
+To run a projector Monte Carlo simulation you set up a problem with [`ProjectorMonteCarloProblem`](@ref)
+and solve it with [`solve`](@ref). Alternatively you can [`init`](@ref) it with to obtain a [`PMCSimulation`](@ref Rimu.PMCSimulation) struct, [`step!`](@ref) 
+through time steps, and [`solve!`](@ref) it to completion. 
 
 ```@docs; canonical=false
 ProjectorMonteCarloProblem
@@ -22,16 +22,16 @@ step!
 After `solve` or `solve!` have been called the returned `PMCSimulation` contains the results of 
 the projector Monte Carlo calculation.
 
-### `PMCSimulation` and report as a `DataFrame`
+## `PMCSimulation` and report as a `DataFrame`
 
 ```@docs; canonical=false
 Rimu.PMCSimulation
 ```
 
-The `DataFrame` returned from `DataFrame(::PMCSimulation)` contains the time series data from 
+The [`DataFrame`](https://dataframes.juliadata.org/stable/) returned from `DataFrame(::PMCSimulation)` contains the time series data from 
 the projector Monte Carlo simulation that is of primary interest for analysis. Depending on the 
 `reporting_strategy` and other options passed as keyword arguments to 
-`ProjectorMonteCarloProblem` it can have different numbers of rows and columns. The rows 
+[`ProjectorMonteCarloProblem`](@ref) it can have different numbers of rows and columns. The rows 
 correspond to the reported time steps (Monte Carlo steps). There is at least one column with the name `:step`. Further columns are usually present with additional data reported from the simulation.
 
 For the default option `algorithm = FCIQMC(; shift_strategy, time_step_strategy)` with a single
