@@ -36,7 +36,7 @@ HOCartesianEnergyConservedPerDim
 HOCartesianCentralImpurity
 ```
 
-## Other model Hamiltonaians
+## Other model Hamiltonians
 ```@docs
 MatrixHamiltonian
 Transcorrelated1D
