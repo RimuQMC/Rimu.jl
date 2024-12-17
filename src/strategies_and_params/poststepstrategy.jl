@@ -260,14 +260,14 @@ julia> single_particle_density(v)
 (0.2, 1.0, 1.6, 1.0, 0.2)
 
 julia> single_particle_density(v; component=1)
-(0.0, 1.6, 1.6, 0.4, 0.4)
+(0.0, 0.8, 0.8, 0.2, 0.2)
 ```
 
 # See also
 
 * [`SingleParticleDensity`](@ref)
 """
-function single_particle_density(dvec::AbstractDVec; component=0)
+function single_particle_density(dvec; component=0)
     K = keytype(dvec)
     V = float(valtype(dvec))
     M = num_modes(K)
