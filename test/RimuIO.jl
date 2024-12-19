@@ -37,6 +37,7 @@ end
         BoseFS(101, 5 => 10),
         FermiFS((1,1,1,0,0,0)),
         FermiFS2C(near_uniform(FermiFS{50,100}), FermiFS(100, 1 => 1)),
+        CompositeFS(near_uniform(BoseFS{8,9}), near_uniform(BoseFS{1,9})),
         CompositeFS(
             BoseFS((1,1,1,1,1)),
             FermiFS((1,0,0,0,0)),
