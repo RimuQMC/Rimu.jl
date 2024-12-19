@@ -153,11 +153,11 @@ function load_state(::Type{D}, filename; style=nothing, kwargs...) where {D}
         end
     end
     vector = D{K,V}(; style, kwargs...)
-    fill_vector!(vector, tbl.key, tbl.value)
+    copyto!(vector, tbl.key, tbl.value)
 
     arrow_meta = Arrow.metadata(tbl)[]
     if !isnothing(arrow_meta)
-        metadata = NamedTuple(Symbol(k) => try_parse_eval(v) for (k, v) in arrow_meta)
+        metadata = NamedTuple(Symbol(k) => v for (k, v) in arrow_meta)
     else
         metadata = (;)
     end
@@ -170,32 +170,6 @@ function load_state(filename; kwargs...)
         return load_state(DVec, filename; kwargs...)
     else
         return load_state(PDVec, filename; kwargs...)
-    end
-end
-
-function try_parse_eval(string)
-    try
-        return eval(Meta.parse(string))
-    catch e
-        return string
-    end
-end
-
-# TODO: move me to (P)DVec?
-function fill_vector!(vector::PDVec, keys, vals)
-    Threads.@threads for seg_id in eachindex(vector.segments)
-        seg = vector.segments[seg_id]
-        sizehint!(seg, length(keys) ÷ length(vector.segments))
-        for (k, v) in zip(keys, vals)
-            if target_segment(vector, k) == (seg_id, true)
-                seg[k] = v
-            end
-        end
-    end
-end
-function fill_vector!(vector::DVec, keys, vals)
-    for (k, v) in zip(keys, vals)
-        vector[k] = v
     end
 end
 
