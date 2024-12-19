@@ -408,7 +408,7 @@ function Base.copyto!(dst::PDVec, src::PDVec)
     return dst
 end
 function Base.copyto!(dst::PDVec, keys, vals)
-    Folds.foreach(dst.segments) do seg_id
+    Folds.foreach(eachindex(dst.segments)) do seg_id
         seg = dst.segments[seg_id]
         sizehint!(seg, length(keys) ÷ length(dst.segments))
         for (k, v) in zip(keys, vals)
