@@ -131,13 +131,13 @@ function _save_state_mpi(filename, vector; io=stderr, kwargs...)
 end
 
 """
-    load_state(filename; kwargs...)
-    load_state(PDVec, filename; kwargs...)
-    load_state(DVec, filename; kwargs...)
+    load_state(filename; kwargs...) -> PDVec, NamedTuple
+    load_state(PDVec, filename; kwargs...) -> PDVec, NamedTuple
+    load_state(DVec, filename; kwargs...) -> DVec, NamedTuple
 
 Load the state saved in the Arrow file `filename`. `kwargs` are passed to the constructor of
-`PDVec`. Any metadata stored in the file will be parsed, evaluated and returned alongside
-the vector in a `NamedTuple`.
+`PDVec`. Any metadata stored in the file is be parsed as a number (if possible) and returned
+alongside the vector in a `NamedTuple`.
 
 See also [`save_state`](@ref).
 """
@@ -157,7 +157,16 @@ function load_state(::Type{D}, filename; style=nothing, kwargs...) where {D}
 
     arrow_meta = Arrow.metadata(tbl)[]
     if !isnothing(arrow_meta)
-        metadata = NamedTuple(Symbol(k) => v for (k, v) in arrow_meta)
+        pairs = map(arrow_meta) do (k, v)
+            v_int = tryparse(Int, v)
+            !isnothing(v_int) && return Symbol(k) => v_int
+            v_float = trparse(Float64, v)
+            !isnothing(v_float) && return Symbol(k) => v_float
+            v_cmp = tryparse(ComplexF64, v)
+            !isnothing(v_cmp) && return Symbol(k) => v_cmp
+            Symbol(k) => v
+        end
+        metadata = NamedTuple(pairs)
     else
         metadata = (;)
     end
