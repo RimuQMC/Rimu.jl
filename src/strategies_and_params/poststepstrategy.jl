@@ -279,8 +279,11 @@ function single_particle_density(dvec; component=0)
     ) do (k, v)
         MultiScalar(v^2 .* single_particle_density(k; component))
     end
-
-    return result.tuple ./ sum(result.tuple) .* N
+    if ismissing(N)
+        return result.tuple ./ dot(dvec,dvec)
+    else
+        return result.tuple ./ sum(result.tuple) .* N
+    end
 end
 
 function single_particle_density(add::SingleComponentFockAddress; component=0)
