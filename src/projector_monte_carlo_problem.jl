@@ -7,21 +7,21 @@ See [`ProjectorMonteCarloProblem`](@ref), [`FCIQMC`](@ref).
 abstract type PMCAlgorithm end
 
 """
-    SimulationPlan(; starting_step = 1, last_step = 100, walltime = Inf)
+    SimulationPlan(; starting_step = 1, last_step = 100, wall_time = Inf)
 Defines the duration of the simulation. The simulation ends when the `last_step` is reached
-or the `walltime` is exceeded.
+or the `wall_time` is exceeded.
 
 See [`ProjectorMonteCarloProblem`](@ref), [`PMCSimulation`](@ref).
 """
 Base.@kwdef struct SimulationPlan
     starting_step::Int = 0
     last_step::Int = 100
-    walltime::Float64 = Inf
+    wall_time::Float64 = Inf
 end
 function Base.show(io::IO, plan::SimulationPlan)
     print(
         io, "SimulationPlan(starting_step=", plan.starting_step,
-        ", last_step=", plan.last_step, ", walltime=", plan.walltime, ")"
+        ", last_step=", plan.last_step, ", wall_time=", plan.wall_time, ")"
     )
 end
 
@@ -75,9 +75,9 @@ julia> size(DataFrame(simulation))
 
 # Further keyword arguments:
 - `starting_step = 1`: Starting step of the simulation.
-- `walltime = Inf`: Maximum time allowed for the simulation.
-- `simulation_plan = SimulationPlan(; starting_step, last_step, walltime)`: Defines the
-    duration of the simulation. Takes precedence over `last_step` and `walltime`.
+- `wall_time = Inf`: Maximum time allowed for the simulation.
+- `simulation_plan = SimulationPlan(; starting_step, last_step, wall_time)`: Defines the
+    duration of the simulation. Takes precedence over `last_step` and `wall_time`.
 - `ζ = 0.08`: Damping parameter for the shift update.
 - `ξ = ζ^2/4`: Forcing parameter for the shift update.
 - `shift_strategy = DoubleLogUpdate(; target_walkers, ζ, ξ)`: How to update the `shift`,
@@ -156,8 +156,8 @@ function ProjectorMonteCarloProblem(
     time_step = 0.01,
     starting_step = 0,
     last_step = 100,
-    walltime = Inf,
-    simulation_plan = SimulationPlan(starting_step, last_step, walltime),
+    wall_time = Inf,
+    simulation_plan = SimulationPlan(starting_step, last_step, wall_time),
     replica_strategy = NoStats(n_replicas),
     targetwalkers = nothing, # deprecated
     target_walkers = 1_000,

@@ -181,14 +181,14 @@ using Rimu: num_replicas, num_spectral_states
     @test sm.success == true == parse(Bool, (Rimu.get_metadata(sm.report, "success")))
 
     # time out
-    p = ProjectorMonteCarloProblem(h; last_step=500, walltime=1e-3)
+    p = ProjectorMonteCarloProblem(h; last_step=500, wall_time=1e-3)
     sm = init(p)
-    @test_logs (:warn, Regex("(Walltime)")) solve!(sm)
+    @test_logs (:warn, Regex("(Wall time)")) solve!(sm)
     @test sm.success == false
     @test sm.aborted == true
-    @test sm.message == "Walltime limit reached."
+    @test sm.message == "Wall time limit reached."
 
-    sm2 = solve!(sm; walltime=1.0)
+    sm2 = solve!(sm; wall_time=1.0)
     @test sm2 === sm
     @test sm.success == true
     @test sm.state.step[] == 500 == size(sm.df)[1]

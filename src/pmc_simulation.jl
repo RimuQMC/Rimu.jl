@@ -242,7 +242,7 @@ end
 
 Advance the simulation by one step.
 
-Calling [`solve!`](@ref) will advance the simulation until the last step or the walltime is
+Calling [`solve!`](@ref) will advance the simulation until the last step or the wall time is
 exceeded. When completing the simulation without calling [`solve!`](@ref), the simulation
 report needs to be finalised by calling [`Rimu.finalize_report!`](@ref).
 
@@ -300,7 +300,7 @@ end
     solve(::ProjectorMonteCarloProblem)::PMCSimulation
 
 Initialize and solve a [`ProjectorMonteCarloProblem`](@ref) until the last step is completed
-or the walltime limit is reached.
+or the wall time limit is reached.
 
 See also [`init`](@ref), [`solve!`](@ref), [`step!`](@ref), [`Rimu.PMCSimulation`](@ref),
 and [`solve(::ExactDiagonalizationProblem)`](@ref).
@@ -310,16 +310,17 @@ CommonSolve.solve
 """
     solve!(sm::PMCSimulation; kwargs...)::PMCSimulation
 
-Solve a [`Rimu.PMCSimulation`](@ref) until the last step is completed or the walltime limit
+Solve a [`Rimu.PMCSimulation`](@ref) until the last step is completed or the wall time limit
 is reached.
 
-To continue a previously completed simulation, set a new `last_step` or `walltime` using the
-keyword arguments. Optionally, changes can be made to the `replica_strategy`, the
+To continue a previously completed simulation, set a new `last_step` or `wall_time` using
+the keyword arguments. Optionally, changes can be made to the `replica_strategy`, the
 `post_step_strategy`, or the `reporting_strategy`.
 
 # Optional keyword arguments:
 * `last_step = nothing`: Set the last step to a new value and continue the simulation.
-* `walltime = nothing`: Set the allowed walltime to a new value and continue the simulation.
+* `wall_time = nothing`: Set the allowed wall time to a new value and continue the
+    simulation.
 * `reset_time = false`: Reset the `elapsed_time` counter and continue the simulation.
 * `empty_report = false`: Empty the report before continuing the simulation.
 * `replica_strategy = nothing`: Change the replica strategy. Requires the number of replicas
@@ -335,7 +336,7 @@ See also [`ProjectorMonteCarloProblem`](@ref), [`init`](@ref), [`solve`](@ref),
 """
 function CommonSolve.solve!(sm::PMCSimulation;
     last_step = nothing,
-    walltime = nothing,
+    wall_time = nothing,
     reset_time = false,
     replica_strategy=nothing,
     post_step_strategy=nothing,
@@ -351,9 +352,9 @@ function CommonSolve.solve!(sm::PMCSimulation;
         report_metadata!(sm.report, "laststep", last_step)
         reset_flags = true
     end
-    if !isnothing(walltime)
+    if !isnothing(wall_time)
         state = sm.state
-        sm.state = @set state.simulation_plan.walltime = walltime
+        sm.state = @set state.simulation_plan.wall_time = wall_time
         reset_flags = true
     end
     if !isnothing(replica_strategy)
@@ -419,10 +420,10 @@ function CommonSolve.solve!(sm::PMCSimulation;
     name = get_metadata(sm.report, "display_name")
 
     @withprogress name = while !sm.aborted && !sm.success
-        if time() - starting_time > simulation_plan.walltime
+        if time() - starting_time > simulation_plan.wall_time
             sm.aborted = true
-            sm.message = "Walltime limit reached."
-            @warn "Walltime limit reached. Aborting simulation."
+            sm.message = "Wall time limit reached."
+            @warn "Wall time limit reached. Aborting simulation."
         else
             step!(sm)
         end
