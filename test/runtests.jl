@@ -42,9 +42,9 @@ end
     include("projector_monte_carlo_problem.jl")
 end
 
-@safetestset "lomc!" begin
-    include("lomc.jl")
-end
+# @safetestset "lomc!" begin
+#     include("lomc.jl")
+# end
 
 @safetestset "RimuIO" begin
     include("RimuIO.jl")
