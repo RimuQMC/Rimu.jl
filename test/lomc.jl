@@ -53,7 +53,7 @@ Random.seed!(1234)
         address = BoseFS{5,2}((2,3))
         H = HubbardReal1D(address; u=0.1)
         dv = DVec(address => 1; style=IsStochasticInteger())
-        df, state = @test_logs (:warn, Regex("(Simulation)")) lomc!(H, dv; laststep=0, shift=23.1, dτ=0.002)
+        df, state = @test_logs (:warn, Regex("(Simulation)")) match_mode = :any lomc!(H, dv; laststep=0, shift=23.1, dτ=0.002)
         @test state.spectral_states[1].single_states[1].shift_parameters.time_step  == 0.002
         @test state.spectral_states[1].single_states[1].shift_parameters.shift == 23.1
         @test state.replica_strategy == NoStats{1}() # uses getfield method
@@ -91,7 +91,7 @@ Random.seed!(1234)
         walkers = lomc!(H, copy(dv); s_strat, laststep=1000).df.norm
         @test median(walkers) ≈ 1000 rtol=0.1
 
-        _, state = @test_logs (:warn, Regex("(Simulation)")) lomc!(H, copy(dv); targetwalkers=500, laststep=0)
+        _, state = @test_logs (:warn, Regex("(Simulation)")) match_mode = :any lomc!(H, copy(dv); targetwalkers=500, laststep=0)
         @test only(state).algorithm.shift_strategy.target_walkers == 500
     end
 

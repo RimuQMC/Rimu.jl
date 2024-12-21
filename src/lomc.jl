@@ -118,6 +118,8 @@ function lomc!(
     maxlength = nothing,
     wm = nothing
 )
+    @warn "The use of `lomc!` is deprecated. Use `ProjectorMonteCarloProblem` and `solve` instead."
+
     if !isnothing(wm)
         @warn "The `wm` argument has been removed and will be ignored."
     end
@@ -193,11 +195,14 @@ function lomc!(
 end
 
 function lomc!(::AbstractMatrix, v=nothing; kwargs...)
+    @warn "The use of `lomc!` is deprecated. Use `ProjectorMonteCarloProblem` and `solve` instead."
     throw(ArgumentError("Using lomc! with a matrix is no longer supported. Use `MatrixHamiltonian` instead."))
 end
 
 # methods for backward compatibility
 function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", metadata=nothing)
+    @warn "The use of `lomc!` is deprecated. Use `ProjectorMonteCarloProblem` and `solve` instead."
+
     if !iszero(laststep)
         state = @set state.simulation_plan.last_step = laststep
     end
