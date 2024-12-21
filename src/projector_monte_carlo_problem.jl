@@ -54,7 +54,7 @@ the [`FCIQMC`](@ref) algorithm.
   simulations, see [`ReplicaStrategy`](@ref).
 - `n_spectral = 1`: Number of targeted spectral states. Set `n_spectral > 1` to find excited
   states.
-- `spectral_strategy = GramSchmidt(n_spectral)`: The [`SpectralStrategy`](@ref) used for 
+- `spectral_strategy = GramSchmidt(n_spectral)`: The [`SpectralStrategy`](@ref) used for
   orthogonalizing spectral states.
 
 # Example
@@ -90,7 +90,7 @@ julia> size(DataFrame(simulation))
     Hamiltonian and the starting vectors.
 - `initial_shift_parameters`: Initial shift parameters or collection of initial shift
     parameters. Overrides `shift` if provided.
-- `maxlength = 2 * target_walkers + 100`: Maximum length of the vectors.
+- `max_length = 2 * target_walkers + 100`: Maximum length of the vectors.
 - `display_name = "PMCSimulation"`: Name displayed in progress bar (via `ProgressLogging`).
 - `metadata`: User-supplied metadata to be added to the report. Must be an iterable of
   pairs or a `NamedTuple`, e.g. `metadata = ("key1" => "value1", "key2" => "value2")`.
@@ -119,7 +119,7 @@ struct ProjectorMonteCarloProblem{N,S} # is not type stable but does not matter
     reporting_strategy::ReportingStrategy
     post_step_strategy::Tuple
     spectral_strategy::SpectralStrategy{S}
-    maxlength::Int
+    max_length::Int
     metadata::LittleDict{String,String} # user-supplied metadata + display_name
     random_seed::Union{Nothing,UInt64}
     minimum_size::Int
@@ -129,19 +129,19 @@ function Base.show(io::IO, p::ProjectorMonteCarloProblem)
     nr = num_replicas(p)
     ns = num_spectral_states(p)
     println(io, "ProjectorMonteCarloProblem with $nr replica(s) and $ns spectral state(s):")
-    isnothing(p.algorithm) || println(io, "  Algorithm: ", p.algorithm)
-    println(io, "  Hamiltonian: ", p.hamiltonian)
-    println(io, "  Style: ", p.style)
-    println(io, "  Initiator: ", p.initiator)
-    println(io, "  Threading: ", p.threading)
-    println(io, "  Simulation Plan: ", p.simulation_plan)
-    println(io, "  Replica Strategy: ", p.replica_strategy)
-    print(io, "  Reporting Strategy: ", p.reporting_strategy)
-    println(io, "  Post Step Strategy: ", p.post_step_strategy)
-    println(io, "  Spectral Strategy: ", p.spectral_strategy)
-    println(io, "  Maxlength: ", p.maxlength)
-    println(io, "  Metadata: ", p.metadata)
-    print(io, "  Random Seed: ", p.random_seed)
+    isnothing(p.algorithm) || println(io, "  algorithm = ", p.algorithm)
+    println(io, "  hamiltonian = ", p.hamiltonian)
+    println(io, "  style = ", p.style)
+    println(io, "  initiator = ", p.initiator)
+    println(io, "  threading = ", p.threading)
+    println(io, "  simulation_plan = ", p.simulation_plan)
+    println(io, "  replica_strategy = ", p.replica_strategy)
+    print(io, "  reporting_strategy = ", p.reporting_strategy)
+    println(io, "  post_step_strategy = ", p.post_step_strategy)
+    println(io, "  spectral_strategy = ", p.spectral_strategy)
+    println(io, "  max_length = ", p.max_length)
+    println(io, "  metadata = ", p.metadata)
+    print(io, "  random_seed = ", p.random_seed)
 end
 
 
@@ -172,7 +172,8 @@ function ProjectorMonteCarloProblem(
     n_spectral = 1,
     spectral_strategy = GramSchmidt(n_spectral),
     minimum_size = 2*num_spectral_states(spectral_strategy),
-    maxlength = nothing,
+    max_length = nothing,
+    maxlength = nothing, # deprecated
     metadata = nothing,
     display_name = "PMCSimulation",
     random_seed = true
@@ -219,10 +220,18 @@ function ProjectorMonteCarloProblem(
     end
 
     shift_strategy = algorithm.shift_strategy
-    if isnothing(maxlength)
-        maxlength = round(Int, 2 * abs(shift_strategy.target_walkers) + 100)
+
+    if isnothing(maxlength) # deprecated
+        if isdefined(shift_strategy, :target_walkers)
+            maxlength = round(Int, 2 * abs(shift_strategy.target_walkers) + 100)
+        else
+            maxlength = round(Int, 2 * abs(target_walkers) + 100)
+        end
         # padding for small walkernumbers
+    else
+        @warn "The keyword argument `maxlength` is deprecated. Use `max_length` instead."
     end
+    max_length = isnothing(max_length) ? maxlength : max_length
 
     # convert metadata to LittleDict
     report = Report()
@@ -254,7 +263,7 @@ function ProjectorMonteCarloProblem(
         reporting_strategy,
         post_step_strategy,
         spectral_strategy,
-        maxlength,
+        max_length,
         metadata,
         random_seed,
         minimum_size

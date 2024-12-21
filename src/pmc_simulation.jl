@@ -80,7 +80,7 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     @unpack algorithm, hamiltonian, start_at, style, threading, simulation_plan,
         replica_strategy, initial_shift_parameters,
         reporting_strategy, post_step_strategy,
-        maxlength, metadata, initiator, random_seed, spectral_strategy, minimum_size = problem
+        max_length, metadata, initiator, random_seed, spectral_strategy, minimum_size = problem
 
     reporting_strategy = refine_reporting_strategy(reporting_strategy)
 
@@ -137,7 +137,7 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     # set up the initial state
     state = ReplicaState(
         spectral_states,
-        Ref(maxlength),
+        Ref(max_length),
         Ref(simulation_plan.starting_step),
         simulation_plan,
         reporting_strategy,

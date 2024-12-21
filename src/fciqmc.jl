@@ -177,11 +177,11 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
         end
         return false
     end
-    if len > state.maxlength[]
+    if len > state.max_length[]
         if length(state.spectral_states) > 1
-            @error "`maxlength` reached in single state $(s_state.id). Aborting."
+            @error "`max_length` reached in single state $(s_state.id). Aborting."
         else
-            @error "`maxlength` reached. Aborting."
+            @error "`max_length` reached. Aborting."
         end
         return false
     end

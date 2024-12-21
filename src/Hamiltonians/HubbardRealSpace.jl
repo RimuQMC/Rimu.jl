@@ -266,7 +266,7 @@ function Base.show(io::IO, h::HubbardRealSpace{C}) where C
         println(io, "  u = ", Float64.(h.u), ",")
     end
     !isnothing(h.v) && println(io, "  v = ", Float64.(h.v), ",")
-    println(io, ")")
+    print(io, ")")
 end
 
 # Overload equality due to stored potential energy arrays.

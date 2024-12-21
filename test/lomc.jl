@@ -287,7 +287,7 @@ Random.seed!(1234)
         @test all(df.len_5[1:end-1] .≤ 10)
         @test all(df.len_6[1:end-1] .≤ 10)
 
-        state.maxlength[] += 1000
+        state.max_length[] += 1000
         df_cont = lomc!(state).df
         @test size(df_cont, 1) == 100 - size(df, 1)
     end

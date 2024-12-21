@@ -100,7 +100,7 @@ struct ReplicaState{
     PS<:NTuple{<:Any,PostStepStrategy},
 } <: AbstractMatrix{SingleState}
     spectral_states::R
-    maxlength::Ref{Int}
+    max_length::Ref{Int}
     step::Ref{Int}
     simulation_plan::SimulationPlan
     reporting_strategy::RS
@@ -172,7 +172,7 @@ function report_default_metadata!(report::Report, state::ReplicaState)
     report_metadata!(report, "time_step", shift_parameters.time_step)
     report_metadata!(report, "step", state.step[])
     report_metadata!(report, "shift", shift_parameters.shift)
-    report_metadata!(report, "maxlength", state.maxlength[])
+    report_metadata!(report, "max_length", state.max_length[])
     report_metadata!(report, "post_step_strategy", state.post_step_strategy)
     report_metadata!(report, "v_summary", summary(s_state.v))
     report_metadata!(report, "v_type", typeof(s_state.v))

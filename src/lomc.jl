@@ -156,7 +156,7 @@ function lomc!(
         replica_strategy = replica,
         reporting_strategy = r_strat,
         post_step_strategy = post_step,
-        maxlength,
+        max_length = maxlength,
         metadata,
         display_name = name,
         random_seed = false
@@ -201,7 +201,7 @@ function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", me
     if !iszero(laststep)
         state = @set state.simulation_plan.last_step = laststep
     end
-    @unpack spectral_states, maxlength, step, simulation_plan,
+    @unpack spectral_states, max_length, step, simulation_plan,
     reporting_strategy, post_step_strategy, replica_strategy = state
     first_replica = first(state) # SingleState
     @unpack hamiltonian = first_replica
@@ -213,7 +213,7 @@ function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", me
         replica_strategy,
         reporting_strategy,
         post_step_strategy,
-        maxlength=maxlength[],
+        max_length=max_length[],
         simulation_plan,
         metadata,
         display_name=name,
