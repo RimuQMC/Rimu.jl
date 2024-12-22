@@ -55,9 +55,9 @@ julia> address = BoseFS(1,2,3);
 
 julia> hamiltonian = HubbardReal1D(address);
 
-julia> df1, state = lomc!(hamiltonian; targetwalkers=500, laststep=100);
+julia> df1, state = @suppress lomc!(hamiltonian; targetwalkers=500, laststep=100);
 
-julia> df2, _ = lomc!(state, df1; laststep=200, metadata=(;info="cont")); # Continuation run
+julia> df2, _ = @suppress lomc!(state, df1; laststep=200, metadata=(;info="cont")); # Continuation run
 
 julia> size(df1)
 (100, 9)
