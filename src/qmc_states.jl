@@ -68,19 +68,6 @@ function state_vectors(state::SpectralState)
 end
 
 """
-    _n_walkers(v, shift_strategy)
-Returns an estimate of the expected number of walkers as an integer.
-"""
-function _n_walkers(v, shift_strategy)
-    n = if hasfield(typeof(shift_strategy), :target_walkers)
-        shift_strategy.target_walkers
-    else # e.g. for LogUpdate()
-        walkernumber(v)
-    end
-    return ceil(Int, max(real(n), imag(n)))
-end
-
-"""
     ReplicaState <: AbstractMatrix{SingleState}
 
 Holds information about multiple replicas of [`SpectralState`](@ref)s.
