@@ -14,6 +14,24 @@ using ExplicitImports: check_no_implicit_imports
 
 @test Rimu.PACKAGE_VERSION == VersionNumber(TOML.parsefile(pkgdir(Rimu, "Project.toml"))["version"])
 
+@safetestset "ExplicitImports" begin
+    using Rimu
+    using ExplicitImports
+    # Check that no implicit imports are used in the Rimu module.
+    # See https://ericphanson.github.io/ExplicitImports.jl/stable/
+    @test check_no_implicit_imports(Rimu; skip=(Rimu, Base, Core, VectorInterface)) === nothing
+    # If this test fails, make your import statements explicit.
+    # For example, replace `using Foo` with `using Foo: bar, baz`.
+end
+
+@safetestset "doctests" begin
+    include("doctests.jl")
+end
+
+@safetestset "excited states" begin
+    include("excited_states_tests.jl")
+end
+
 @safetestset "Interfaces" begin
     include("Interfaces.jl")
 end
@@ -118,24 +136,6 @@ end
         @info "No progress bar" sl
     end
     @test default_logger() isa Logging.ConsoleLogger
-end
-
-@safetestset "doctests" begin
-    include("doctests.jl")
-end
-
-@safetestset "ExplicitImports" begin
-    using Rimu
-    using ExplicitImports
-    # Check that no implicit imports are used in the Rimu module.
-    # See https://ericphanson.github.io/ExplicitImports.jl/stable/
-    @test check_no_implicit_imports(Rimu; skip=(Rimu, Base, Core, VectorInterface)) === nothing
-    # If this test fails, make your import statements explicit.
-    # For example, replace `using Foo` with `using Foo: bar, baz`.
-end
-
-@safetestset "excited states" begin
-    include("excited_states_tests.jl")
 end
 
 # Note: Running Rimu with several MPI ranks is tested seperately on GitHub CI and not here.

@@ -711,14 +711,17 @@ end
     d = DataFrame(sim)
     @test d.shift ≈ a.shift
     # integer walkernumber triggers IsStochasticInteger algorithm
-    Random.seed!(15)
-    sim = solve(ProjectorMonteCarloProblem(mh; start_at=DVec(pairs(ones(Int, dim)))))
+    sim = solve(
+        ProjectorMonteCarloProblem(mh; start_at=DVec(pairs(ones(Int, dim))), random_seed=18)
+    )
     @test StochasticStyle(only(state_vectors(sim))) == IsStochasticInteger()
     e = DataFrame(sim)
     @test ≈(e.shift[end], a.shift[end], atol=0.3)
     # wrap full matrix as MatrixHamiltonian
     fmh =  MatrixHamiltonian(Matrix(sparse_matrix))
-    sim = solve(ProjectorMonteCarloProblem(fmh; start_at=DVec(pairs(ones(dim)))))
+    sim = solve(
+        ProjectorMonteCarloProblem(fmh; start_at=DVec(pairs(ones(dim))), random_seed=15)
+    )
     @test StochasticStyle(only(state_vectors(sim))) == IsDeterministic()
     f = DataFrame(sim)
     @test f.shift ≈ a.shift

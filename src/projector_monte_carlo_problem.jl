@@ -96,9 +96,11 @@ julia> size(DataFrame(simulation))
   pairs or a `NamedTuple`, e.g. `metadata = ("key1" => "value1", "key2" => "value2")`.
   All metadata is converted to strings.
 - `random_seed = true`: Provide and store a seed for the random number generator. If set to
-    `true`, a random seed is generated. If set to number, this number is used as the seed.
-    The seed is used by `solve` such that `solve`ing the problem twice will yield identical
-    results. If set to `false`, no seed is used and results are not reproducible.
+    `true`, a new random seed is generated from `RandomDevice()`. If set to number, this
+    number is used as the seed. This seed is used by `solve` (and `init`) to re-seed the
+    default random number generator (consistently on each MPI rank) such that
+    `solve`ing the same `ProjectorMonteCarloProblem` twice will yield identical results. If
+    set to `false`, no seed is used and consecutive random numbers are used.
 - `minimum_size = 2*num_spectral_states(spectral_strategy)`: The minimum size of the basis
     used to construct starting vectors for simulations of spectral states, if `start_at`
     is not provided.
