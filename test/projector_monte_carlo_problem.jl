@@ -98,8 +98,24 @@ end
         @test startswith(sprint(show, sm.state), "ReplicaState")
         @test startswith(sprint(show, sm.state[1]), "SingleState")
         @test startswith(sprint(show, sm.state.spectral_states), "(SpectralState")
-
     end
+
+    @testset "Default DVec" begin
+        address = BoseFS(2, 3)
+        H = HubbardReal1D(address; u=20)
+        sm = init(ProjectorMonteCarloProblem(H; threading=false))
+        @test only(state_vectors(sm)) isa DVec
+        @test StochasticStyle(only(state_vectors(sm))) isa IsDynamicSemistochastic
+
+        sm = init(ProjectorMonteCarloProblem(H; threading=true))
+        @test only(state_vectors(sm)) isa PDVec
+        @test StochasticStyle(only(state_vectors(sm))) isa IsDynamicSemistochastic
+
+        sm = init(ProjectorMonteCarloProblem(H; threading=false, initiator=true))
+        @test only(state_vectors(sm)) isa InitiatorDVec
+        @test StochasticStyle(only(state_vectors(sm))) isa IsDynamicSemistochastic
+    end
+
 
     @testset "random seeds" begin
         p = ProjectorMonteCarloProblem(h) # generates random_seed
