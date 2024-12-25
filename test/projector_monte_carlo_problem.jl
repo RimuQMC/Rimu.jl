@@ -172,6 +172,8 @@ using Rimu: num_replicas, num_spectral_states
 
     # Tables.jl interface
     @test Tables.istable(sm)
+    @test Tables.columnaccess(sm)
+    @test Tables.schema(sm) == Tables.schema(DataFrame(sm))
     @test map(NamedTuple, Tables.rows(sm)) == map(NamedTuple, Tables.rows(df))
 
     # continue simulation
@@ -219,4 +221,66 @@ using Rimu: num_replicas, num_spectral_states
     @test size(sm.df)[1] == 100 # the report was emptied
     @test solve!(sm; last_step=300, reporting_strategy=ReportDFAndInfo()) === sm
     @test size(sm.df)[1] == 200 # the report was not emptied
+end
+
+@testset "Dead population" begin
+    address = BoseFS{5,2}((2, 3))
+    H = HubbardReal1D(address; u=20)
+    dv = DVec(address => 10; style=IsStochasticInteger())
+
+    # Only population is dead.
+    p = ProjectorMonteCarloProblem(H; start_at=dv, last_step=100, shift=0.0, random_seed=7)
+    sim = @suppress_err solve(p)
+    @test sim.aborted == true
+    @test sim.success == false
+    @test sim.modified == true
+    @test sim.message == "Aborted in step 5."
+    @test size(sim.df, 1) < 100
+
+    # population does not die with sensible default shift
+    p = ProjectorMonteCarloProblem(H; start_at=dv, last_step=100, random_seed=7)
+    sim = solve(p)
+    @test sim.aborted == false
+    @test sim.success == true
+    @test sim.modified == true
+    @test size(sim.df, 1) == 100
+
+    # Populations in replicas are dead.
+    p = ProjectorMonteCarloProblem(
+        H;
+        start_at=dv, n_replicas=3, last_step=100, shift=0.0, random_seed=7
+    )
+    sim = @suppress_err solve(p)
+    @test sim.aborted == true
+    @test sim.success == false
+    @test sim.modified == true
+    @test sim.message == "Aborted in step 3."
+    @test size(sim.df, 1) < 100
+end
+
+@testset "max_length" begin
+    # walker number blows up when time_step is too large
+    h = HubbardReal1D(BoseFS(1, 3, 5, 2, 1))
+    p = ProjectorMonteCarloProblem(h; time_step=0.1, target_walkers=100, random_seed=7)
+    sm = init(p)
+    @test size(DataFrame(sm)) == (0, 0)
+    @test size(sm.df) == (0, 0)
+    @test sm.state.max_length[] > 100 # default max_length
+    @test sm.state.step[] == 0
+    @test @suppress_err solve!(sm) === sm
+    @test sm.modified == true
+    @test sm.success == false
+    @test sm.aborted == true
+    @test sm.message == "Aborted in step 6."
+    @test is_finalized(sm.report) == true
+    @test @suppress_err step!(sm) === sm # no effect, aborted
+
+
+    # runs fine with a smaller time_step
+    p = ProjectorMonteCarloProblem(h; time_step=0.01, target_walkers=100, random_seed=7)
+    sm = solve!(init(p))
+    @test sm.success == true
+    @test sm.aborted == false
+    @test size(sm.df, 1) == 100
+    @test @suppress_err step!(sm) === sm # no effect, already finalized
 end
