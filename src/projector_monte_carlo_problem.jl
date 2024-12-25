@@ -159,15 +159,16 @@ function ProjectorMonteCarloProblem(
     starting_step = 0,
     last_step = 100,
     wall_time = Inf,
-    simulation_plan = SimulationPlan(starting_step, last_step, wall_time),
+    walltime = nothing, # deprecated
+    simulation_plan = nothing,
     replica_strategy = NoStats(n_replicas),
     targetwalkers = nothing, # deprecated
     target_walkers = 1_000,
     ζ = 0.08,
     ξ = ζ^2/4,
-    shift_strategy = DoubleLogUpdate(; target_walkers, ζ, ξ),
+    shift_strategy = nothing,
     time_step_strategy=ConstantTimeStep(),
-    algorithm=FCIQMC(; shift_strategy, time_step_strategy),
+    algorithm=nothing,
     initial_shift_parameters=nothing,
     reporting_strategy = ReportDFAndInfo(),
     post_step_strategy = (),
@@ -180,9 +181,25 @@ function ProjectorMonteCarloProblem(
     display_name = "PMCSimulation",
     random_seed = true
 )
+    if !isnothing(walltime)
+        @warn "The keyword argument `walltime` is deprecated. Use `wall_time` instead."
+        wall_time = walltime
+    end
+    if isnothing(simulation_plan)
+        simulation_plan = SimulationPlan(starting_step, last_step, wall_time)
+    end
+
     if !isnothing(targetwalkers)
         @warn "The keyword argument `targetwalkers` is deprecated. Use `target_walkers` instead."
         target_walkers = targetwalkers
+    end
+
+    if isnothing(shift_strategy)
+        shift_strategy = DoubleLogUpdate(; target_walkers, ζ, ξ)
+    end
+
+    if isnothing(algorithm)
+        algorithm = FCIQMC(; shift_strategy, time_step_strategy)
     end
 
     n_replicas = num_replicas(replica_strategy) # replica_strategy may override n_replicas

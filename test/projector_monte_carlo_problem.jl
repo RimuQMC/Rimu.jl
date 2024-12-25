@@ -288,3 +288,13 @@ end
     @test size(sm.df, 1) == 100
     @test @suppress_err step!(sm) === sm # no effect, already finalized
 end
+
+@testset "deprecated keyword arguments" begin
+    h = HubbardReal1D(BoseFS(1, 3))
+    p = @suppress_err ProjectorMonteCarloProblem(
+        h; shift=1.0, targetwalkers=100, maxlength=200, walltime=23
+    )
+    @test p.algorithm.shift_strategy.target_walkers == 100
+    @test p.max_length == 200
+    @test p.simulation_plan.wall_time == 23
+end
