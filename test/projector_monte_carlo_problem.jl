@@ -1,5 +1,5 @@
 using Rimu
-using Test
+using Test, Suppressor
 import Random
 
 using Rimu: is_finalized
