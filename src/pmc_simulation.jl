@@ -6,6 +6,16 @@ Is returned by [`init(::ProjectorMonteCarloProblem)`](@ref) and solved with
 
 Obtain the results of a simulation `sm` as a DataFrame with `DataFrame(sm)`.
 
+## Fields
+- `problem::ProjectorMonteCarloProblem`: The problem that was solved
+- `state::Rimu.ReplicaState`: The current state of the simulation
+- `report::Rimu.Report`: The report of the simulation
+- `modified::Bool`: Whether the simulation has been modified
+- `aborted::Bool`: Whether the simulation has been aborted
+- `success::Bool`: Whether the simulation has been completed successfully
+- `message::String`: A message about the simulation status
+- `elapsed_time::Float64`: The time elapsed during the simulation
+
 See also [`state_vectors`](@ref),
 [`ProjectorMonteCarloProblem`](@ref), [`init`](@ref), [`solve!`](@ref).
 """

@@ -95,9 +95,14 @@ end
         @test sm.state[2].shift_parameters.shift ≡ 2.0
         @test state_vectors(sm.state)[1][BoseFS(1, 3)] == 10
         @test state_vectors(sm.state)[2][BoseFS(3, 1)] == 10
-        @test startswith(sprint(show, sm.state), "ReplicaState")
-        @test startswith(sprint(show, sm.state[1]), "SingleState")
-        @test startswith(sprint(show, sm.state.spectral_states), "(SpectralState")
+        @test startswith(sprint(show, sm.state), "2×1 Rimu.ReplicaState")
+        @test startswith(sprint(show, sm.state[1]), "Rimu.SingleState")
+        @test startswith(sprint(show, sm.state.spectral_states),
+            "(1-element Rimu.SpectralState"
+        )
+        @test startswith(sprint(show, sm.state.spectral_states[1]),
+            "1-element Rimu.SpectralState"
+        )
     end
 
     @testset "Default DVec" begin
