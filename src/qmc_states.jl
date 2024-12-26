@@ -150,6 +150,8 @@ struct StateVectors{V,R} <: AbstractMatrix{V}
 end
 Base.size(sv::StateVectors) = size(sv.state)
 Base.getindex(sv::StateVectors, i::Int, j::Int) = sv.state[i, j].v
+
+Base.show(io::IO, sv::StateVectors) = show(io, MIME("text/plain"), sv)
 function Base.show(io::IO, ::MIME"text/plain", sv::StateVectors)
     r = num_replicas(sv.state)
     s = num_spectral_states(sv.state)

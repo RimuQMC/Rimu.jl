@@ -103,6 +103,7 @@ end
         @test startswith(sprint(show, sm.state.spectral_states[1]),
             "1-element Rimu.SpectralState"
         )
+        @test startswith(sprint(show, state_vectors(sm)), "2×1 Rimu.StateVectors")
     end
 
     @testset "Default DVec" begin
