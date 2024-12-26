@@ -124,23 +124,26 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     # set up the spectral_states
     wm = working_memory(vectors[1, 1])
     spectral_states = ntuple(n_replicas) do i
+        replica_id = if n_replicas == 1
+            ""
+        else
+            "_$(i)"
+        end
         SpectralState(
             ntuple(n_spectral) do j
                 v = vectors[i, j]
                 sp = shift_parameters[i, j]
-                id = if n_replicas * n_spectral == 1
+                spectral_id = if n_spectral == 1
                     ""
-                elseif n_spectral == 1
-                    "_$(i)"
                 else
-                    "_s$(j)_$(i)" # j is the spectral state index, i is the replica index
-                end # we have to think about how to label the spectral states
+                    "_s$(j)" # j is the spectral state index, i is the replica index
+                end
                 SingleState(
                     hamiltonian, algorithm, v, zerovector(v),
                     wm isa PDWorkingMemory ? wm : working_memory(v), # reuse for PDVec
-                    sp, id
+                    sp, replica_id * spectral_id
                 )
-            end, spectral_strategy)
+            end, spectral_strategy, replica_id)
     end
     @assert spectral_states isa NTuple{n_replicas, <:SpectralState}
 

@@ -39,17 +39,17 @@ end
 
 """
     SpectralState <: AbstractVector{SingleState}
-Holds one or several [`SingleState`](@ref)s representing the ground state and excited
+Holds one or several [`Rimu.SingleState`](@ref)s representing the ground state and excited
 states of a single replica.
 Indexing the `SpectralState` `state[i]` returns the `i`th `SingleState`.
 
 ## Fields
 - `single_states`: Tuple of `SingleState`s
 - `spectral_strategy`: Strategy for computing the spectral states
-- `id::String`: id is appended to column names
+- `id::String`: Identifies the replica
 
-See also [`SpectralStrategy`](@ref), [`ReplicaState`](@ref), [`SingleState`](@ref),
-[`PMCSimulation`](@ref).
+See also [`SpectralStrategy`](@ref), [`Rimu.ReplicaState`](@ref), [`Rimu.SingleState`](@ref),
+[`Rimu.PMCSimulation`](@ref).
 """
 struct SpectralState{
     N,
@@ -58,10 +58,7 @@ struct SpectralState{
 } <: AbstractVector{SingleState}
     single_states::NS # Tuple of SingleState
     spectral_strategy::SS # SpectralStrategy
-    id::String # id is appended to column names
-end
-function SpectralState(t::Tuple, ss::SpectralStrategy, id="")
-    return SpectralState(t, ss, id)
+    id::String # identifies the replica and is appended to row names
 end
 num_spectral_states(::SpectralState{N}) where {N} = N
 
@@ -73,6 +70,7 @@ function Base.show(io::IO, ::MIME"text/plain", s::SpectralState)
     ns = num_spectral_states(s)
     print(io, "$ns-element Rimu.SpectralState")
     print(io, " with ", ns, " spectral state(s) of type ", nameof(typeof(s[1])))
+    print(io, " and id \"", s.id, "\"")
     print(io, "\n    spectral_strategy: ", s.spectral_strategy)
     for (i, r) in enumerate(s.single_states)
         print(io, "\n      $i: ", r)
@@ -99,8 +97,8 @@ and `j`th spectral state.
 - `post_step_strategy`: Post-step strategy
 - `replica_strategy`: Replica strategy
 
-See also [`ReplicaStrategy`](@ref), [`SpectralState`](@ref), [`SingleState`](@ref),
-[`PMCSimulation`](@ref).
+See also [`ReplicaStrategy`](@ref), [`Rimu.SpectralState`](@ref), [`Rimu.SingleState`](@ref),
+[`Rimu.PMCSimulation`](@ref).
 """
 struct ReplicaState{
     N, # number of replicas
