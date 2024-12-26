@@ -193,25 +193,29 @@ using Rimu.StatsTools: x_by_y_linear, ratio_estimators, particles
 end
 
 @testset "Reweighting" begin
-    Random.seed!(133)
     ham = HubbardReal1D(BoseFS((1, 1, 1, 1)), u=6.0, t=1.0)
     # using KrylovKit
     # fv = DVec(starting_address(ham)=>1.0; capacity=dimension(ham))
     # kkresults = eigsolve(ham, fv, 1, :SR; issymmetric = true)
-    # exact_energy = kkresults[1][1]
-    exact_energy = -2.869739978337469
+    # exact_energy_value = kkresults[1][1]
+    exact_energy_value = -2.869739978337469
     # run integer walker FCIQMC to get significant bias
     v = DVec(starting_address(ham) => 2; capacity=dimension(ham))
     steps_equi = 200
     steps_meas = 2^10
-    p = RunTillLastStep(laststep=steps_equi + steps_meas)
-    post_step = ProjectedEnergy(ham, v)
-    s_strat = DoubleLogUpdate(target_walkers=10)
-    df = lomc!(ham, v; params=p, s_strat, post_step).df
+    # p = RunTillLastStep(laststep=steps_equi + steps_meas)
+    post_step_strategy = ProjectedEnergy(ham, v)
+    shift_strategy = DoubleLogUpdate(target_walkers=10)
+    p = ProjectorMonteCarloProblem(
+        ham;
+        start_at=v, last_step=steps_equi + steps_meas, shift_strategy, post_step_strategy,
+        random_seed=1234
+    )
+    df = DataFrame(solve(p))
     @test_throws ArgumentError variational_energy_estimator(df) # see next testset
     bs = shift_estimator(df; skip=steps_equi)
     @test bs == blocking_analysis(df.shift[steps_equi+1:end])
-    pcb = bs.mean - exact_energy
+    pcb = bs.mean - exact_energy_value
 
     @test pcb > 0.0 # the shift has a large population control bias
     # test growth_estimator
@@ -264,12 +268,16 @@ end
     num_reps = 2
     tw = 10
 
-    params = RunTillLastStep(laststep = skipsteps + runsteps)
-    s_strat = DoubleLogUpdate(target_walkers = tw)
+    shift_strategy = DoubleLogUpdate(target_walkers = tw)
     G2list = ([G2RealCorrelator(i) for i in dvals]...,)
 
-    Random.seed!(174)
-    df = lomc!(ham, dv; params, s_strat, replica_strategy = AllOverlaps(num_reps; operator = G2list)).df
+    p = ProjectorMonteCarloProblem(
+        ham;
+        start_at=dv, last_step=skipsteps+runsteps, shift_strategy,
+        replica_strategy = AllOverlaps(num_reps; operator = G2list),
+        random_seed=179
+    )
+    df = DataFrame(solve(p))
 
     for d in dvals
         # without reweighting
@@ -306,13 +314,17 @@ using Rimu.StatsTools: replica_fidelity
     v = DVec(starting_address(ham) => 2; capacity=dimension(ham))
     steps_equi = 200
     steps_meas = 2^10
-    p = RunTillLastStep(laststep=steps_equi + steps_meas)
-    post_step = (Projector(vproj=gs), Projector(hproj=os))
-    s_strat = DoubleLogUpdate(target_walkers=10)
+    post_step_strategy = (Projector(vproj=gs), Projector(hproj=os))
+    shift_strategy = DoubleLogUpdate(target_walkers=10)
+    replica_strategy = AllOverlaps(2)
 
     # run replica fciqmc
-    Random.seed!(170)
-    rr = lomc!(ham, v; params=p, s_strat, post_step, replica_strategy=AllOverlaps()).df
+    p = ProjectorMonteCarloProblem(
+        ham;
+        start_at=v, last_step=steps_equi+steps_meas, shift_strategy, post_step_strategy,
+        random_seed=170, replica_strategy
+    )
+    rr = DataFrame(solve(p))
 
     # check fidelity with ground state
     fid_gs = replica_fidelity(rr; p_field=:vproj, skip=steps_equi)

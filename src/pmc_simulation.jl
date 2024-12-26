@@ -6,6 +6,16 @@ Is returned by [`init(::ProjectorMonteCarloProblem)`](@ref) and solved with
 
 Obtain the results of a simulation `sm` as a DataFrame with `DataFrame(sm)`.
 
+## Fields
+- `problem::ProjectorMonteCarloProblem`: The problem that was solved
+- `state::Rimu.ReplicaState`: The current state of the simulation
+- `report::Rimu.Report`: The report of the simulation
+- `modified::Bool`: Whether the simulation has been modified
+- `aborted::Bool`: Whether the simulation has been aborted
+- `success::Bool`: Whether the simulation has been completed successfully
+- `message::String`: A message about the simulation status
+- `elapsed_time::Float64`: The time elapsed during the simulation
+
 See also [`state_vectors`](@ref),
 [`ProjectorMonteCarloProblem`](@ref), [`init`](@ref), [`solve!`](@ref).
 """
@@ -80,7 +90,7 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     @unpack algorithm, hamiltonian, start_at, style, threading, simulation_plan,
         replica_strategy, initial_shift_parameters,
         reporting_strategy, post_step_strategy,
-        maxlength, metadata, initiator, random_seed, spectral_strategy, minimum_size = problem
+        max_length, metadata, initiator, random_seed, spectral_strategy, minimum_size = problem
 
     reporting_strategy = refine_reporting_strategy(reporting_strategy)
 
@@ -114,30 +124,33 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     # set up the spectral_states
     wm = working_memory(vectors[1, 1])
     spectral_states = ntuple(n_replicas) do i
+        replica_id = if n_replicas == 1
+            ""
+        else
+            "_$(i)"
+        end
         SpectralState(
             ntuple(n_spectral) do j
                 v = vectors[i, j]
                 sp = shift_parameters[i, j]
-                id = if n_replicas * n_spectral == 1
+                spectral_id = if n_spectral == 1
                     ""
-                elseif n_spectral == 1
-                    "_$(i)"
                 else
-                    "_s$(j)_$(i)" # j is the spectral state index, i is the replica index
-                end # we have to think about how to label the spectral states
+                    "_s$(j)" # j is the spectral state index, i is the replica index
+                end
                 SingleState(
                     hamiltonian, algorithm, v, zerovector(v),
                     wm isa PDWorkingMemory ? wm : working_memory(v), # reuse for PDVec
-                    sp, id
+                    sp, replica_id * spectral_id
                 )
-            end, spectral_strategy)
+            end, spectral_strategy, replica_id)
     end
     @assert spectral_states isa NTuple{n_replicas, <:SpectralState}
 
     # set up the initial state
     state = ReplicaState(
         spectral_states,
-        Ref(maxlength),
+        Ref(max_length),
         Ref(simulation_plan.starting_step),
         simulation_plan,
         reporting_strategy,
@@ -242,7 +255,7 @@ end
 
 Advance the simulation by one step.
 
-Calling [`solve!`](@ref) will advance the simulation until the last step or the walltime is
+Calling [`solve!`](@ref) will advance the simulation until the last step or the wall time is
 exceeded. When completing the simulation without calling [`solve!`](@ref), the simulation
 report needs to be finalised by calling [`Rimu.finalize_report!`](@ref).
 
@@ -300,7 +313,7 @@ end
     solve(::ProjectorMonteCarloProblem)::PMCSimulation
 
 Initialize and solve a [`ProjectorMonteCarloProblem`](@ref) until the last step is completed
-or the walltime limit is reached.
+or the wall time limit is reached.
 
 See also [`init`](@ref), [`solve!`](@ref), [`step!`](@ref), [`Rimu.PMCSimulation`](@ref),
 and [`solve(::ExactDiagonalizationProblem)`](@ref).
@@ -310,16 +323,17 @@ CommonSolve.solve
 """
     solve!(sm::PMCSimulation; kwargs...)::PMCSimulation
 
-Solve a [`Rimu.PMCSimulation`](@ref) until the last step is completed or the walltime limit
+Solve a [`Rimu.PMCSimulation`](@ref) until the last step is completed or the wall time limit
 is reached.
 
-To continue a previously completed simulation, set a new `last_step` or `walltime` using the
-keyword arguments. Optionally, changes can be made to the `replica_strategy`, the
+To continue a previously completed simulation, set a new `last_step` or `wall_time` using
+the keyword arguments. Optionally, changes can be made to the `replica_strategy`, the
 `post_step_strategy`, or the `reporting_strategy`.
 
 # Optional keyword arguments:
 * `last_step = nothing`: Set the last step to a new value and continue the simulation.
-* `walltime = nothing`: Set the allowed walltime to a new value and continue the simulation.
+* `wall_time = nothing`: Set the allowed wall time to a new value and continue the
+    simulation.
 * `reset_time = false`: Reset the `elapsed_time` counter and continue the simulation.
 * `empty_report = false`: Empty the report before continuing the simulation.
 * `replica_strategy = nothing`: Change the replica strategy. Requires the number of replicas
@@ -335,7 +349,7 @@ See also [`ProjectorMonteCarloProblem`](@ref), [`init`](@ref), [`solve`](@ref),
 """
 function CommonSolve.solve!(sm::PMCSimulation;
     last_step = nothing,
-    walltime = nothing,
+    wall_time = nothing,
     reset_time = false,
     replica_strategy=nothing,
     post_step_strategy=nothing,
@@ -351,9 +365,9 @@ function CommonSolve.solve!(sm::PMCSimulation;
         report_metadata!(sm.report, "laststep", last_step)
         reset_flags = true
     end
-    if !isnothing(walltime)
+    if !isnothing(wall_time)
         state = sm.state
-        sm.state = @set state.simulation_plan.walltime = walltime
+        sm.state = @set state.simulation_plan.wall_time = wall_time
         reset_flags = true
     end
     if !isnothing(replica_strategy)
@@ -419,10 +433,10 @@ function CommonSolve.solve!(sm::PMCSimulation;
     name = get_metadata(sm.report, "display_name")
 
     @withprogress name = while !sm.aborted && !sm.success
-        if time() - starting_time > simulation_plan.walltime
+        if time() - starting_time > simulation_plan.wall_time
             sm.aborted = true
-            sm.message = "Walltime limit reached."
-            @warn "Walltime limit reached. Aborting simulation."
+            sm.message = "Wall time limit reached."
+            @warn "Wall time limit reached. Aborting simulation."
         else
             step!(sm)
         end

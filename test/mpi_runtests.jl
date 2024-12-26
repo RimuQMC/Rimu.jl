@@ -171,7 +171,7 @@ end
                 Projector(proj_1=Norm2Projector()),
             )
             prob = ProjectorMonteCarloProblem(
-                H; start_at=dv, post_step_strategy, last_step=5000
+                H; start_at=dv, post_step_strategy, last_step=5000, random_seed=13
             )
             df = DataFrame(solve(prob))
 
@@ -194,7 +194,7 @@ end
             dv = PDVec(addr => 3; initiator_threshold=1)
             shift_strategy = DoubleLogUpdate(target_walkers=100)
             prob = ProjectorMonteCarloProblem(
-                H; start_at=dv, last_step=5000, shift_strategy
+                H; start_at=dv, last_step=5000, shift_strategy, random_seed=13
             )
             df = DataFrame(solve(prob))
 
@@ -214,7 +214,7 @@ end
                 # Diagonal
                 replica_strategy = AllOverlaps(2; operator=ntuple(DensityMatrixDiagonal, M))
                 prob = ProjectorMonteCarloProblem(
-                    H; start_at=dv, replica_strategy, last_step=10_000
+                    H; start_at=dv, replica_strategy, last_step=10_000, random_seed=13
                 )
                 df = DataFrame(solve(prob))
 
@@ -229,7 +229,7 @@ end
                 ops = ntuple(x -> G2MomCorrelator(x - cld(M, 2)), M)
                 replica_strategy = AllOverlaps(2; operator=ops)
                 prob = ProjectorMonteCarloProblem(
-                    H; start_at=dv, replica_strategy, last_step=10_000
+                    H; start_at=dv, replica_strategy, last_step=10_000, random_seed=13
                 )
                 df = DataFrame(solve(prob))
 
