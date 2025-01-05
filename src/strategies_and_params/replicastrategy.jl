@@ -142,10 +142,26 @@ end
 
 function replica_stats(rs::AllOverlaps{N,<:Any,<:Any,B}, spectral_states::NTuple{N}) where {N,B}
     # Not using broadcasting because it wasn't inferred properly.
-    # For now implement this assuming only a single spectral state; generalise later
-    vecs = ntuple(i -> only(spectral_states[i]).v, Val(N))
-    wms = ntuple(i -> only(spectral_states[i]).wm, Val(N))
-    return all_overlaps(rs.operators, vecs, wms, Val(B))
+    if num_spectral_states(spectral_states[1]) > 1
+        names = String[]
+        values = Float64[]
+        for j in 1:num_spectral_states(spectral_states[1])
+            vecs = ntuple(i -> spectral_states[i][j].v, Val(N))
+            wms = ntuple(i -> spectral_states[i][j].wm, Val(N))
+            names_j, values_j = all_overlaps(rs.operators, vecs, wms, Val(B))
+            append!(
+                names,
+                [name[1:findlast('_',name)-1]*"_s$j"*
+                name[findlast('_',name):end] for name in names_j]
+            )
+            append!(values, values_j)
+        end
+        return names, values
+    else
+        vecs = ntuple(i -> only(spectral_states[i]).v, Val(N))
+        wms = ntuple(i -> only(spectral_states[i]).wm, Val(N))
+        return all_overlaps(rs.operators, vecs, wms, Val(B))
+    end
 end
 
 """

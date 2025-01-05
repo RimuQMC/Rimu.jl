@@ -558,7 +558,10 @@ function rayleigh_replica_estimator(
     kwargs...
 )
     df = DataFrame(sim)
-    num_reps = length(filter(startswith("norm"), names(df)))
+    num_spectral = length(Set(
+        [name[1:findlast('_',name)] for name in names(df) if startswith(name,"norm")]
+    ))
+    num_reps = div(length(filter(startswith("norm"), names(df))),num_spectral)
     time_step = determine_constant_time_step(df)
     T = eltype(df[!, Symbol(shift_name, "_1")])
     shift_v = Vector{T}[]
