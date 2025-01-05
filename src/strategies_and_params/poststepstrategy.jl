@@ -271,7 +271,6 @@ function single_particle_density(dvec; component=0)
     K = keytype(dvec)
     V = float(valtype(dvec))
     M = num_modes(K)
-    N = num_particles(K)
 
     result = mapreduce(
         +, pairs(dvec);
@@ -279,11 +278,7 @@ function single_particle_density(dvec; component=0)
     ) do (k, v)
         MultiScalar(v^2 .* single_particle_density(k; component))
     end
-    if ismissing(N)
-        return result.tuple ./ dot(dvec,dvec)
-    else
-        return result.tuple ./ sum(result.tuple) .* N
-    end
+    return result.tuple ./ sum(abs2, dvec)
 end
 
 function single_particle_density(add::SingleComponentFockAddress; component=0)
