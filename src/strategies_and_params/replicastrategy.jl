@@ -68,6 +68,9 @@ Run `n_replicas` replicas and report overlaps between all pairs of replica vecto
 Column names in the report are of the form `c{i}_dot_c{j}` for vector-vector overlaps, and
 `c{i}_Op{k}_c{j}` for operator overlaps.
 
+For multiple spectral states, the column names are of the form `c{i}_dot_s{l}_c{j}` for 
+vector-vector overlaps, and `c{i}_Op{k}_s{l}_c{j}` for operator overlaps.
+
 See [`ProjectorMonteCarloProblem`](@ref), [`ReplicaStrategy`](@ref) and
 [`AbstractOperator`](@ref Interfaces.AbstractOperator) (for an interface for implementing
 operators).
