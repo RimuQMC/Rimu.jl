@@ -275,7 +275,6 @@ function single_particle_density(dvec; component=0)
     result = sum(pairs(dvec); init=MultiScalar(ntuple(_ -> zero(V), Val(M)))) do (k, v)
         MultiScalar(abs2(v) .* single_particle_density(k; component))
     end
-
     return result.tuple ./ sum(abs2, dvec)
 end
 
