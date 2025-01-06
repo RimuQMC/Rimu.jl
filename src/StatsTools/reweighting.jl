@@ -219,6 +219,7 @@ Returns a `NamedTuple` with the fields
 * `threading = Threads.nthreads() > 1`: if `false` a progress meter is displayed
 * `shift_name = :shift` name of column in `df` with shift data
 * `norm_name = :norm` name of column in `df` with walkernumber data
+* `time_step = determine_constant_time_step(df)` the time step
 * `warn = true` whether to log warning messages when blocking fails or denominators are
   small
 
@@ -242,8 +243,8 @@ function growth_estimator_analysis(
     threading=Threads.nthreads() > 1,
     shift_name=:shift,
     norm_name=:norm,
-    warn=true,
     time_step=nothing,
+    warn=true,
     kwargs...
 )
     df = DataFrame(sim)
@@ -389,6 +390,7 @@ Returns a `NamedTuple` with the fields
 * `shift_name = :shift` name of column in `df` with shift data
 * `hproj_name = :hproj` name of column in `df` with operator overlap data
 * `vproj_name = :vproj` name of column in `df` with projector overlap data
+* `time_step = determine_constant_time_step(df)` the time step
 * `warn = true` whether to log warning messages when blocking fails or denominators are small
 
 ## Example
