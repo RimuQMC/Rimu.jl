@@ -58,18 +58,22 @@ check_transform(::NoStats, _) = nothing
 
 # TODO: add custom names
 """
-    AllOverlaps(n_replicas=2; operator=nothing, transform=nothing, vecnorm=true)
+    AllOverlaps(n_replicas=2; operator=nothing, transform=nothing, vecnorm=true, mixed_spectral_overlaps=false)
         <: ReplicaStrategy{n_replicas}
 
 Run `n_replicas` replicas and report overlaps between all pairs of replica vectors. If
-`operator` is not `nothing`, the overlap `dot(c1, operator, c2)` is reported as well. If
+`operator` is not `nothing`, the overlap `dot(r1, operator, r2)` is reported as well. If
 `operator` is a tuple of operators, the overlaps are computed for all operators.
 
-Column names in the report are of the form `c{i}_dot_c{j}` for vector-vector overlaps, and
-`c{i}_Op{k}_c{j}` for operator overlaps.
+Column names in the report are of the form `r{i}s{k}_dot_r{j}s{k}` for vector-vector
+overlaps, and `r{i}s{k}_Op{m}_r{j}s{k}` for operator overlaps, where `i` and `j` label the
+replicas, `k` labels the spectral state, and `m` labels the operators.
 
-For multiple spectral states, the column names are of the form `c{i}_dot_s{l}_c{j}` for 
-vector-vector overlaps, and `c{i}_Op{k}_s{l}_c{j}` for operator overlaps.
+The `r{i}s{k}_dot_r{j}s{k}` overlap can be omitted with the flag `vecnorm=false`.
+
+By default, overlaps of different spectral states are omitted. To include overlaps of
+different spectral states `r{i}s{k}_dot_r{j}s{l}` and `r{i}s{k}_Op{m}_r{j}s{l}`, use the
+flag `mixed_spectral_overlaps=true`. 
 
 See [`ProjectorMonteCarloProblem`](@ref), [`ReplicaStrategy`](@ref) and
 [`AbstractOperator`](@ref Interfaces.AbstractOperator) (for an interface for implementing
@@ -103,22 +107,26 @@ where
 is the (right) eigenvector of ``\\hat{G}`` and ``| \\psi \\rangle`` is an eigenvector of
 ``\\hat{H}``.
 
-For a K-tuple of input operators ``(\\hat{A}_1, ..., \\hat{A}_K)``, overlaps of
+For an m-tuple of input operators ``(\\hat{A}_1, ..., \\hat{A}_m)``, overlaps of
 ``\\langle \\phi | f^{-1} \\hat{A} f^{-1} | \\phi \\rangle`` are reported as
-`c{i}_Op{k}_c{j}`. The correct vector-vector overlap ``\\langle \\phi | f^{-2} | \\phi
-\\rangle`` is reported *last* as `c{i}_Op{K+1}_c{j}`. This is in addition to the *bare*
-vector-vector overlap ``\\langle \\phi | f^{-2} | \\phi \\rangle`` that is reported as
-`c{i}_dot_c{j}`.
-
-In either case the `c{i}_dot_c{j}` overlap can be omitted with the flag `vecnorm=false`.
+`r{i}s{k}_Op{m}_r{j}s{k}`. The correct vector-vector overlap ``\\langle \\phi | f^{-2} | \\phi
+\\rangle`` is reported *last* as `r{i}s{k}_Op{m+1}_r{j}s{k}`. This is in addition to the *bare*
+vector-vector overlap ``\\langle \\phi | \\phi \\rangle`` that is reported as 
+`r{i}s{k}_dot_r{j}s{k}`.
 """
-struct AllOverlaps{N,M,O,B} <: ReplicaStrategy{N}
+struct AllOverlaps{N,M,O,B,S} <: ReplicaStrategy{N}
     operators::O
 end
 
 const TupleOrVector = Union{Tuple, Vector}
 
-function AllOverlaps(n_replicas=2; operator=nothing, transform=nothing, vecnorm=true)
+function AllOverlaps(
+    n_replicas=2;
+    operator=nothing,
+    transform=nothing,
+    vecnorm=true,
+    mixed_spectral_overlaps=false
+)
     n_replicas isa Integer || throw(ArgumentError("n_replicas must be an integer"))
     if isnothing(operator)
         operators = ()
@@ -140,64 +148,66 @@ function AllOverlaps(n_replicas=2; operator=nothing, transform=nothing, vecnorm=
     if !vecnorm && length(ops) == 0
         return NoStats(n_replicas)
     end
-    return AllOverlaps{n_replicas,length(ops),typeof(ops),vecnorm}(ops)
+    return AllOverlaps{n_replicas,length(ops),typeof(ops),vecnorm,mixed_spectral_overlaps}(ops)
 end
 
-function replica_stats(rs::AllOverlaps{N,<:Any,<:Any,B}, spectral_states::NTuple{N}) where {N,B}
-    # Not using broadcasting because it wasn't inferred properly.
-    if num_spectral_states(spectral_states[1]) > 1
-        names = String[]
-        values = Float64[]
-        for j in 1:num_spectral_states(spectral_states[1])
-            vecs = ntuple(i -> spectral_states[i][j].v, Val(N))
-            wms = ntuple(i -> spectral_states[i][j].wm, Val(N))
-            names_j, values_j = all_overlaps(rs.operators, vecs, wms, Val(B))
-            append!(
-                names,
-                [name[1:findlast('_',name)-1]*"_s$j"*
-                name[findlast('_',name):end] for name in names_j]
-            )
-            append!(values, values_j)
-        end
-        return names, values
-    else
-        vecs = ntuple(i -> only(spectral_states[i]).v, Val(N))
-        wms = ntuple(i -> only(spectral_states[i]).wm, Val(N))
-        return all_overlaps(rs.operators, vecs, wms, Val(B))
-    end
+function replica_stats(rs::AllOverlaps{N,<:Any,<:Any,B,S}, spectral_states::NTuple{N}) where {N,B,S}
+    n_spectral = num_spectral_states(spectral_states[1])
+    vecs = SMatrix{N,n_spectral}(
+        spectral_states[i][j].v for i in 1:N, j in 1:n_spectral
+    )
+    wms = SMatrix{N,n_spectral}(
+        spectral_states[i][j].wm for i in 1:N, j in 1:n_spectral
+    )
+    return all_overlaps(rs.operators, vecs, wms, Val(B), Val(S))
 end
 
 """
-    all_overlaps(operators, vectors, working_memories, vecnorm=true)
+    all_overlaps(operators, vectors, working_memories, vecnorm=true, mixed_spectral_overlaps=false)
 
 Get all overlaps between vectors and operators.  The flag `vecnorm` can disable the
-vector-vector overlap `c{i}_dot_c{j}`.
+vector-vector overlap `r{i}s{k}_dot_r{j}s{k}`.
 """
 function all_overlaps(
-    operators::TupleOrVector, vecs::NTuple{N,AbstractDVec}, wms, ::Val{B}
-) where {N,B}
+    operators::TupleOrVector, vecs::SMatrix{N,M,<:AbstractDVec}, wms, ::Val{B}, ::Val{S}
+) where {N,M,B,S}
     T = promote_type((valtype(v) for v in vecs)..., eltype.(operators)...)
     names = String[]
     values = T[]
-    for i in 1:N, j in i+1:N
-        if B
-            push!(names, "c$(i)_dot_c$(j)")
-            push!(values, dot(vecs[i], vecs[j]))
-        end
+    for i in 1:N, k in 1:M
         if all(isdiag, operators)
-            v = vecs[i]
+            v = vecs[i,k]
         else
-            v = DictVectors.copy_to_local!(wms[i], vecs[i])
+            v = DictVectors.copy_to_local!(wms[i,k], vecs[i,k])
         end
-        for (k, op) in enumerate(operators)
-            push!(names, "c$(i)_Op$(k)_c$(j)")
-            # Using dot_from_right here because dot will try to copy_to_local! if
-            # called directly.
-            push!(values, dot_from_right(v, op, vecs[j]))
+
+        if S
+            for j in 1:N, l in k+1:M
+                if B
+                    push!(names, "r$(i)s$(k)_dot_r$(j)s$(l)")
+                    push!(values, dot(vecs[i,k], vecs[j,l]))
+                end
+                for (m, op) in enumerate(operators)
+                    push!(names, "r$(i)s$(k)_Op$(m)_r$(j)s$(l)")
+                    # Using dot_from_right here because dot will try to copy_to_local! if
+                    # called directly.
+                    push!(values, dot_from_right(v, op, vecs[j,l]))
+                end
+            end
+        end
+        for j in i+1:N
+            if B
+                push!(names, "r$(i)s$(k)_dot_r$(j)s$(k)")
+                push!(values, dot(vecs[i,k], vecs[j,k]))
+            end
+            for (m, op) in enumerate(operators)
+                push!(names, "r$(i)s$(k)_Op$(m)_r$(j)s$(k)")
+                push!(values, dot_from_right(v, op, vecs[j,k]))
+            end
         end
     end
 
-    num_reports = (N * (N - 1) ÷ 2) * (B + length(operators))
+    num_reports = M * (N * (N - 1) ÷ 2) * (B + length(operators)) + S * N^2 * (M * (M - 1) ÷ 2) * (B + length(operators))
     return SVector{num_reports,String}(names).data, SVector{num_reports,T}(values).data
 end
 
