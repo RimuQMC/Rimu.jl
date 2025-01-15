@@ -33,7 +33,7 @@ See also [`PostStepStrategy`](@ref), [`ReportingStrategy`](@ref).
 """
 post_step_action
 
-# When startegies are a Tuple, apply all of them.
+# When strategies are a Tuple, apply all of them.
 function post_step_action(::Tuple{}, _, _)
     return ()
 end
