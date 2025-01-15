@@ -54,7 +54,7 @@ end
 function variational_energy_estimator(sim; max_replicas=:all, spectral_state=1, kwargs...)
     df = DataFrame(sim)
     num_replicas = parse(Int, metadata(df, "num_replicas"))
-    if iszero(num_replicas)
+    if num_replicas == 1
         throw(ArgumentError(
             "No replicas found. Use keyword \
             `replica_strategy=AllOverlaps(n)` with n≥2 in `ProjectorMonteCarloProblem` to set up replicas!"
