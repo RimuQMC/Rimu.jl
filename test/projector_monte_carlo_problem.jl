@@ -1,5 +1,5 @@
 using Rimu
-using Test
+using Test, Suppressor
 import Random
 
 using Rimu: is_finalized
@@ -22,7 +22,7 @@ using OrderedCollections: freeze
     @test sp.shift == diagonal_element(h, starting_address(h))
     @test sp.pnorm == walkernumber(only(state_vectors(simulation)))
     @test sp.pnorm isa Float64
-    @test p.maxlength == 2 * p.algorithm.shift_strategy.target_walkers + 100
+    @test p.max_length == 2 * p.algorithm.shift_strategy.target_walkers + 100
 
     ps = ProjectorMonteCarloProblem(h; initial_shift_parameters=sp, threading=false)
     @test ps.initial_shift_parameters === sp
@@ -95,7 +95,33 @@ end
         @test sm.state[2].shift_parameters.shift ≡ 2.0
         @test state_vectors(sm.state)[1][BoseFS(1, 3)] == 10
         @test state_vectors(sm.state)[2][BoseFS(3, 1)] == 10
+        @test startswith(sprint(show, sm.state), "2×1 Rimu.ReplicaState")
+        @test startswith(sprint(show, sm.state[1]), "Rimu.SingleState")
+        @test startswith(sprint(show, sm.state.spectral_states),
+            "(1-element Rimu.SpectralState"
+        )
+        @test startswith(sprint(show, sm.state.spectral_states[1]),
+            "1-element Rimu.SpectralState"
+        )
+        @test startswith(sprint(show, state_vectors(sm)), "2×1 Rimu.StateVectors")
     end
+
+    @testset "Default DVec" begin
+        address = BoseFS(2, 3)
+        H = HubbardReal1D(address; u=20)
+        sm = init(ProjectorMonteCarloProblem(H; threading=false))
+        @test only(state_vectors(sm)) isa DVec
+        @test StochasticStyle(only(state_vectors(sm))) isa IsDynamicSemistochastic
+
+        sm = init(ProjectorMonteCarloProblem(H; threading=true))
+        @test only(state_vectors(sm)) isa PDVec
+        @test StochasticStyle(only(state_vectors(sm))) isa IsDynamicSemistochastic
+
+        sm = init(ProjectorMonteCarloProblem(H; threading=false, initiator=true))
+        @test only(state_vectors(sm)) isa InitiatorDVec
+        @test StochasticStyle(only(state_vectors(sm))) isa IsDynamicSemistochastic
+    end
+
 
     @testset "random seeds" begin
         p = ProjectorMonteCarloProblem(h) # generates random_seed
@@ -172,6 +198,8 @@ using Rimu: num_replicas, num_spectral_states
 
     # Tables.jl interface
     @test Tables.istable(sm)
+    @test Tables.columnaccess(sm)
+    @test Tables.schema(sm) == Tables.schema(DataFrame(sm))
     @test map(NamedTuple, Tables.rows(sm)) == map(NamedTuple, Tables.rows(df))
 
     # continue simulation
@@ -181,14 +209,14 @@ using Rimu: num_replicas, num_spectral_states
     @test sm.success == true == parse(Bool, (Rimu.get_metadata(sm.report, "success")))
 
     # time out
-    p = ProjectorMonteCarloProblem(h; last_step=500, walltime=1e-3)
+    p = ProjectorMonteCarloProblem(h; last_step=500, wall_time=1e-3)
     sm = init(p)
-    @test_logs (:warn, Regex("(Walltime)")) solve!(sm)
+    @test_logs (:warn, Regex("(Wall time)")) solve!(sm)
     @test sm.success == false
     @test sm.aborted == true
-    @test sm.message == "Walltime limit reached."
+    @test sm.message == "Wall time limit reached."
 
-    sm2 = solve!(sm; walltime=1.0)
+    sm2 = solve!(sm; wall_time=1.0)
     @test sm2 === sm
     @test sm.success == true
     @test sm.state.step[] == 500 == size(sm.df)[1]
@@ -219,4 +247,76 @@ using Rimu: num_replicas, num_spectral_states
     @test size(sm.df)[1] == 100 # the report was emptied
     @test solve!(sm; last_step=300, reporting_strategy=ReportDFAndInfo()) === sm
     @test size(sm.df)[1] == 200 # the report was not emptied
+end
+
+@testset "Dead population" begin
+    address = BoseFS{5,2}((2, 3))
+    H = HubbardReal1D(address; u=20)
+    dv = DVec(address => 10; style=IsStochasticInteger())
+
+    # Only population is dead.
+    p = ProjectorMonteCarloProblem(H; start_at=dv, last_step=100, shift=0.0, random_seed=7)
+    sim = @suppress_err solve(p)
+    @test sim.aborted == true
+    @test sim.success == false
+    @test sim.modified == true
+    @test sim.message == "Aborted in step 5."
+    @test size(sim.df, 1) < 100
+
+    # population does not die with sensible default shift
+    p = ProjectorMonteCarloProblem(H; start_at=dv, last_step=100, random_seed=7)
+    sim = solve(p)
+    @test sim.aborted == false
+    @test sim.success == true
+    @test sim.modified == true
+    @test size(sim.df, 1) == 100
+
+    # Populations in replicas are dead.
+    p = ProjectorMonteCarloProblem(
+        H;
+        start_at=dv, n_replicas=3, last_step=100, shift=0.0, random_seed=7
+    )
+    sim = @suppress_err solve(p)
+    @test sim.aborted == true
+    @test sim.success == false
+    @test sim.modified == true
+    @test sim.message == "Aborted in step 3."
+    @test size(sim.df, 1) < 100
+end
+
+@testset "max_length" begin
+    # walker number blows up when time_step is too large
+    h = HubbardReal1D(BoseFS(1, 3, 5, 2, 1))
+    p = ProjectorMonteCarloProblem(h; time_step=0.1, target_walkers=100, random_seed=7)
+    sm = init(p)
+    @test size(DataFrame(sm)) == (0, 0)
+    @test size(sm.df) == (0, 0)
+    @test sm.state.max_length[] > 100 # default max_length
+    @test sm.state.step[] == 0
+    @test @suppress_err solve!(sm) === sm
+    @test sm.modified == true
+    @test sm.success == false
+    @test sm.aborted == true
+    @test sm.message == "Aborted in step 6."
+    @test is_finalized(sm.report) == true
+    @test @suppress_err step!(sm) === sm # no effect, aborted
+
+
+    # runs fine with a smaller time_step
+    p = ProjectorMonteCarloProblem(h; time_step=0.01, target_walkers=100, random_seed=7)
+    sm = solve!(init(p))
+    @test sm.success == true
+    @test sm.aborted == false
+    @test size(sm.df, 1) == 100
+    @test @suppress_err step!(sm) === sm # no effect, already finalized
+end
+
+@testset "deprecated keyword arguments" begin
+    h = HubbardReal1D(BoseFS(1, 3))
+    p = @suppress_err ProjectorMonteCarloProblem(
+        h; shift=1.0, targetwalkers=100, maxlength=200, walltime=23
+    )
+    @test p.algorithm.shift_strategy.target_walkers == 100
+    @test p.max_length == 200
+    @test p.simulation_plan.wall_time == 23
 end

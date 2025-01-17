@@ -55,9 +55,9 @@ julia> address = BoseFS(1,2,3);
 
 julia> hamiltonian = HubbardReal1D(address);
 
-julia> df1, state = lomc!(hamiltonian; targetwalkers=500, laststep=100);
+julia> df1, state = @suppress lomc!(hamiltonian; targetwalkers=500, laststep=100);
 
-julia> df2, _ = lomc!(state, df1; laststep=200, metadata=(;info="cont")); # Continuation run
+julia> df2, _ = @suppress lomc!(state, df1; laststep=200, metadata=(;info="cont")); # Continuation run
 
 julia> size(df1)
 (100, 9)
@@ -118,6 +118,8 @@ function lomc!(
     maxlength = nothing,
     wm = nothing
 )
+    @warn "The use of `lomc!` is deprecated. Use `ProjectorMonteCarloProblem` and `solve` instead."
+
     if !isnothing(wm)
         @warn "The `wm` argument has been removed and will be ignored."
     end
@@ -156,7 +158,7 @@ function lomc!(
         replica_strategy = replica,
         reporting_strategy = r_strat,
         post_step_strategy = post_step,
-        maxlength,
+        max_length = maxlength,
         metadata,
         display_name = name,
         random_seed = false
@@ -193,15 +195,18 @@ function lomc!(
 end
 
 function lomc!(::AbstractMatrix, v=nothing; kwargs...)
+    @warn "The use of `lomc!` is deprecated. Use `ProjectorMonteCarloProblem` and `solve` instead."
     throw(ArgumentError("Using lomc! with a matrix is no longer supported. Use `MatrixHamiltonian` instead."))
 end
 
 # methods for backward compatibility
 function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", metadata=nothing)
+    @warn "The use of `lomc!` is deprecated. Use `ProjectorMonteCarloProblem` and `solve` instead."
+
     if !iszero(laststep)
         state = @set state.simulation_plan.last_step = laststep
     end
-    @unpack spectral_states, maxlength, step, simulation_plan,
+    @unpack spectral_states, max_length, step, simulation_plan,
     reporting_strategy, post_step_strategy, replica_strategy = state
     first_replica = first(state) # SingleState
     @unpack hamiltonian = first_replica
@@ -213,7 +218,7 @@ function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", me
         replica_strategy,
         reporting_strategy,
         post_step_strategy,
-        maxlength=maxlength[],
+        max_length=max_length[],
         simulation_plan,
         metadata,
         display_name=name,

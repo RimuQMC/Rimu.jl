@@ -13,9 +13,9 @@ using Test
     p = ProjectorMonteCarloProblem(ham; spectral_strategy, last_step, style)
     s = solve(p)
     df = DataFrame(s)
-    energy1 = shift_estimator(df, shift="shift_s1_1", skip=1000)
-    energy2 = shift_estimator(df, shift="shift_s2_1", skip=1000)
-    energy3 = shift_estimator(df, shift="shift_s3_1", skip=1000)
+    energy1 = shift_estimator(df, shift="shift_s1", skip=1000)
+    energy2 = shift_estimator(df, shift="shift_s2", skip=1000)
+    energy3 = shift_estimator(df, shift="shift_s3", skip=1000)
 
     @test energy1.mean ≈ vals[1]
     @test energy2.mean ≈ vals[2]
@@ -25,13 +25,13 @@ using Test
     p = ProjectorMonteCarloProblem(ham; spectral_strategy, last_step, style, n_replicas)
     s = solve(p)
     df = DataFrame(s)
-    energy1 = shift_estimator(df, shift="shift_s1_1", skip=1000)
-    energy2 = shift_estimator(df, shift="shift_s2_1", skip=1000)
-    energy3 = shift_estimator(df, shift="shift_s3_1", skip=1000)
-    energy4 = shift_estimator(df, shift="shift_s1_2", skip=1000)
-    energy5 = shift_estimator(df, shift="shift_s2_2", skip=1000)
-    energy6 = shift_estimator(df, shift="shift_s3_2", skip=1000)
-    
+    energy1 = shift_estimator(df, shift="shift_1_s1", skip=1000)
+    energy2 = shift_estimator(df, shift="shift_1_s2", skip=1000)
+    energy3 = shift_estimator(df, shift="shift_1_s3", skip=1000)
+    energy4 = shift_estimator(df, shift="shift_2_s1", skip=1000)
+    energy5 = shift_estimator(df, shift="shift_2_s2", skip=1000)
+    energy6 = shift_estimator(df, shift="shift_2_s3", skip=1000)
+
     @test energy1.mean ≈ vals[1]
     @test energy2.mean ≈ vals[2]
     @test energy3.mean ≈ vals[3]

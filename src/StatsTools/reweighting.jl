@@ -20,7 +20,7 @@ function determine_constant_time_step(df)
         elseif hasproperty(df, "dτ_1")
             return df.dτ_1[end]
         else
-            throw(ArgumentError("Time step not found in `df`"))
+            throw(ArgumentError("key `\"time_step\"` not found in `df` metadata"))
         end
     else
         throw(ArgumentError("Time step not constant"))
@@ -219,6 +219,7 @@ Returns a `NamedTuple` with the fields
 * `threading = Threads.nthreads() > 1`: if `false` a progress meter is displayed
 * `shift_name = :shift` name of column in `df` with shift data
 * `norm_name = :norm` name of column in `df` with walkernumber data
+* `time_step = determine_constant_time_step(df)` the time step
 * `warn = true` whether to log warning messages when blocking fails or denominators are
   small
 
@@ -242,6 +243,7 @@ function growth_estimator_analysis(
     threading=Threads.nthreads() > 1,
     shift_name=:shift,
     norm_name=:norm,
+    time_step=nothing,
     warn=true,
     kwargs...
 )
@@ -249,7 +251,7 @@ function growth_estimator_analysis(
     shift_v = Vector(getproperty(df, Symbol(shift_name))) # casting to `Vector` to make SIMD loops efficient
     norm_v = Vector(getproperty(df, Symbol(norm_name)))
     num_reps = length(filter(startswith("norm"), names(df)))
-    time_step = determine_constant_time_step(df)
+    time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     se = blocking_analysis(shift_v; skip)
     E_r = se.mean
     correlation_estimate = 2^(se.k - 1)
@@ -388,6 +390,7 @@ Returns a `NamedTuple` with the fields
 * `shift_name = :shift` name of column in `df` with shift data
 * `hproj_name = :hproj` name of column in `df` with operator overlap data
 * `vproj_name = :vproj` name of column in `df` with projector overlap data
+* `time_step = determine_constant_time_step(df)` the time step
 * `warn = true` whether to log warning messages when blocking fails or denominators are small
 
 ## Example
@@ -412,6 +415,7 @@ function mixed_estimator_analysis(
     hproj_name=:hproj,
     vproj_name=:vproj,
     warn=true,
+    time_step=nothing,
     kwargs...
 )
     shift_v = Vector(getproperty(df, Symbol(shift_name))) # casting to `Vector` to make SIMD loops efficient
@@ -419,7 +423,7 @@ function mixed_estimator_analysis(
     vproj_v = Vector(getproperty(df, Symbol(vproj_name)))
     num_reps = length(filter(startswith("norm"), names(df)))
 
-    time_step = determine_constant_time_step(df)
+    time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     se = blocking_analysis(shift_v; skip)
     E_r = se.mean
     correlation_estimate = 2^(se.k - 1)
@@ -555,11 +559,12 @@ function rayleigh_replica_estimator(
     h=0,
     skip=0,
     Anorm=1,
+    time_step=nothing,
     kwargs...
 )
     df = DataFrame(sim)
     num_reps = length(filter(startswith("norm"), names(df)))
-    time_step = determine_constant_time_step(df)
+    time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     T = eltype(df[!, Symbol(shift_name, "_1")])
     shift_v = Vector{T}[]
     for a in 1:num_reps
@@ -625,11 +630,12 @@ function rayleigh_replica_estimator_analysis(
     vec_name="dot",
     Anorm=1,
     warn=true,
+    time_step=nothing,
     kwargs...
 )
     df = DataFrame(sim)
     num_reps = length(filter(startswith("norm"), names(df)))
-    time_step = determine_constant_time_step(df)
+    time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     # estimate the correlation time by blocking the shift data
     T = eltype(df[!, Symbol(shift_name, "_1")])
     shift_v = Vector{T}[]

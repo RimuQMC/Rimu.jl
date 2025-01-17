@@ -241,7 +241,8 @@ end
     add = BoseFS((0,0,0,10,0,0,0))
     H = HubbardMom1D(add)
     dv = DVec(add => 1.0, style=IsDeterministic())
-    lomc!(H, dv)
+    sim = solve(ProjectorMonteCarloProblem(H; start_at=dv))
+    dv = only(state_vectors(sim))
     normalize!(dv)
 
     for compression in (

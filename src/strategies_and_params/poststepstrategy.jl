@@ -260,7 +260,7 @@ julia> single_particle_density(v)
 (0.2, 1.0, 1.6, 1.0, 0.2)
 
 julia> single_particle_density(v; component=1)
-(0.0, 1.6, 1.6, 0.4, 0.4)
+(0.0, 0.8, 0.8, 0.2, 0.2)
 ```
 
 # See also
@@ -271,16 +271,12 @@ function single_particle_density(dvec; component=0)
     K = keytype(dvec)
     V = float(valtype(dvec))
     M = num_modes(K)
-    N = num_particles(K)
 
-    result = mapreduce(
-        +, pairs(dvec);
-        init=MultiScalar(ntuple(_ -> zero(V), Val(M)))
-    ) do (k, v)
-        MultiScalar(v^2 .* single_particle_density(k; component))
+    result = sum(pairs(dvec); init=MultiScalar(ntuple(_ -> zero(V), Val(M)))) do (k, v)
+        MultiScalar(abs2(v) .* single_particle_density(k; component))
     end
 
-    return result.tuple ./ sum(result.tuple) .* N
+    return result.tuple ./ sum(abs2, dvec)
 end
 
 function single_particle_density(add::SingleComponentFockAddress; component=0)
