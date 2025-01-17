@@ -87,6 +87,7 @@ end
         save_state(file, dvec)
         output, _ = load_state(file)
         @test output == dvec
+        rm(file)
 
         pdvec = ham * PDVec([BoseFS(1,1,1) => 1.0, BoseFS(0,3,0) => ℯ])
         save_state(file, pdvec)
@@ -94,7 +95,10 @@ end
         @test output == pdvec
 
         @test load_state(PDVec, file)[1] isa PDVec
+        @test load_state(PDVec, file)[1] == pdvec
         @test load_state(DVec, file)[1] isa DVec
+        @test load_state(DVec, file)[1] == pdvec
+        rm(file)
     end
 
     @testset "metadata" begin
@@ -106,5 +110,7 @@ end
         @test meta.float === 2.3
         @test meta.complex === 1.2 + 3im
         @test meta.string === "a string"
+        rm(file)
     end
+
 end

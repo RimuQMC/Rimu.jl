@@ -248,6 +248,35 @@ end
         end
     end
 
+    @testset "RimuIO" begin
+        @testset "save_state, load_state" begin
+            file = joinpath(mktempdir(), "tmp.arrow")
+            @mpi_root rm(file; force=true)
+
+            @testset "vectors" begin
+                ham = HubbardReal1D(BoseFS(1,1,1))
+                dvec = ham * DVec([BoseFS(1,1,1) => 1.0, BoseFS(2,1,0) => π])
+                save_state(file, dvec)
+                output, _ = load_state(file)
+                @test output == dvec
+
+                @mpi_root rm(file)
+
+                pdvec = ham * PDVec([BoseFS(1,1,1) => 1.0, BoseFS(0,3,0) => ℯ])
+                save_state(file, pdvec)
+                output, _ = load_state(file)
+                @test output == pdvec
+
+                @test load_state(PDVec, file)[1] isa PDVec
+                @test load_state(PDVec, file)[1] == pdvec
+                @test load_state(DVec, file)[1] isa DVec
+                @test load_state(DVec, file)[1] == pdvec
+
+                @mpi_root rm(file)
+            end
+        end
+    end
+
     # Make sure all ranks came this far.
     @testset "Finish" begin
         # MPI.jl currently doesn't properly map logical operators (MPI v0.20.8)
