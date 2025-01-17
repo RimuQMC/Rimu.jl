@@ -76,3 +76,35 @@ end
         end
     end
 end
+
+@testset "save_state, load_state" begin
+    file = joinpath(tmpdir, "tmp.arrow")
+    rm(file; force=true)
+
+    @testset "vectors" begin
+        ham = HubbardReal1D(BoseFS(1,1,1))
+        dvec = ham * DVec([BoseFS(1,1,1) => 1.0, BoseFS(2,1,0) => π])
+        save_state(file, dvec)
+        output, _ = load_state(file)
+        @test output == dvec
+
+        pdvec = ham * PDVec([BoseFS(1,1,1) => 1.0, BoseFS(0,3,0) => ℯ])
+        save_state(file, pdvec)
+        output, _ = load_state(file)
+        @test output == pdvec
+
+        @test load_state(PDVec, file)[1] isa PDVec
+        @test load_state(DVec, file)[1] isa DVec
+    end
+
+    @testset "metadata" begin
+        dvec = DVec(BoseFS(1,1,1,1) => 1.0)
+        save_state(file, dvec; int=1, float=2.3, complex=1.2 + 3im, string="a string")
+        _, meta = load_state(file)
+
+        @test meta.int === 1
+        @test meta.float === 2.3
+        @test meta.complex === 1.2 + 3im
+        @test meta.string === "a string"
+    end
+end
