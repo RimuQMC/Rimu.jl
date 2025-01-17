@@ -20,7 +20,7 @@ using Rimu.StochasticStyles: default_style, IsDynamicSemistochastic
 
 import Tables, Arrow, Arrow.ArrowTypes
 
-export save_df, load_df
+export save_df, load_df, save_state, load_state
 
 include("tables.jl")
 include("arrowtypes.jl")
@@ -157,16 +157,16 @@ function load_state(::Type{D}, filename; style=nothing, kwargs...) where {D}
 
     arrow_meta = Arrow.metadata(tbl)[]
     if !isnothing(arrow_meta)
-        pairs = map(arrow_meta) do (k, v)
+        metadata_pairs = map(collect(arrow_meta)) do (k, v)
             v_int = tryparse(Int, v)
             !isnothing(v_int) && return Symbol(k) => v_int
-            v_float = trparse(Float64, v)
+            v_float = tryparse(Float64, v)
             !isnothing(v_float) && return Symbol(k) => v_float
             v_cmp = tryparse(ComplexF64, v)
             !isnothing(v_cmp) && return Symbol(k) => v_cmp
             Symbol(k) => v
         end
-        metadata = NamedTuple(pairs)
+        metadata = NamedTuple(metadata_pairs)
     else
         metadata = (;)
     end
