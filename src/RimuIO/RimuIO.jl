@@ -175,7 +175,7 @@ function load_state(::Type{D}, filename; style=nothing, kwargs...) where {D}
 end
 
 function load_state(filename; kwargs...)
-    if Threads.nthreads() == 1
+    if Threads.nthreads() == 1 && mpi_size() == 1
         return load_state(DVec, filename; kwargs...)
     else
         return load_state(PDVec, filename; kwargs...)

@@ -78,27 +78,41 @@ end
 end
 
 @testset "save_state, load_state" begin
-    file = joinpath(tmpdir, "tmp.arrow")
+    file = joinpath(tmpdir, "tmp-dvec.arrow")
     rm(file; force=true)
 
     @testset "vectors" begin
-        ham = HubbardReal1D(BoseFS(1,1,1))
-        dvec = ham * DVec([BoseFS(1,1,1) => 1.0, BoseFS(2,1,0) => π])
-        save_state(file, dvec)
-        output, _ = load_state(file)
-        @test output == dvec
-        rm(file)
+        @testset "save DVec" begin
+            ham = HubbardReal1D(BoseFS(1,1,1))
+            dvec = ham * DVec([BoseFS(1,1,1) => 1.0, BoseFS(2,1,0) => π])
+            save_state(file, dvec)
+            output, _ = load_state(file)
+            @test output == dvec
+            rm(file)
+        end
 
-        pdvec = ham * PDVec([BoseFS(1,1,1) => 1.0, BoseFS(0,3,0) => ℯ])
-        save_state(file, pdvec)
-        output, _ = load_state(file)
-        @test output == pdvec
+        @testset "save PDVec" begin
+            pdvec = ham * PDVec([BoseFS(1,1,1) => 1.0, BoseFS(0,3,0) => ℯ])
+            save_state(file, pdvec)
+            output, _ = load_state(file)
+            @test output == pdvec
 
-        @test load_state(PDVec, file)[1] isa PDVec
-        @test load_state(PDVec, file)[1] == pdvec
-        @test load_state(DVec, file)[1] isa DVec
-        @test load_state(DVec, file)[1] == pdvec
-        rm(file)
+            @test load_state(PDVec, file)[1] isa PDVec
+            @test load_state(PDVec, file)[1] == pdvec
+            @test load_state(DVec, file)[1] isa DVec
+            @test load_state(DVec, file)[1] == pdvec
+            rm(file)
+        end
+
+        @testset "save empty vector" begin
+            dvec = DVec{Int,Int}()
+            save_state(file, dvec)
+            @test isempty(load_state(file)[1])
+            pdvec = PDVec{Int,Int}()
+            save_state(file, pdvec)
+            @test isempty(load_state(file)[1])
+            rm(file)
+        end
     end
 
     @testset "metadata" begin

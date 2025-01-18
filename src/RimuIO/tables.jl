@@ -7,8 +7,12 @@ table from Tables.jl. Constructed with `Tables.table(::DVec)`.
 struct DVecAsTable{K,V}
     dict::Dict{K,V}
 end
-function Base.iterate(tbl::DVecAsTable, st=0)
-    itr = iterate(tbl.dict, st)
+function Base.iterate(tbl::DVecAsTable, st=nothing)
+    if isnothing(st)
+        itr = iterate(tbl.dict)
+    else
+        itr = iterate(tbl.dict, st)
+    end
     if !isnothing(itr)
         pair, st = itr
         return (; key=pair[1], value=pair[2]), st
@@ -38,17 +42,21 @@ table from Tables.jl. Constructed with `Tables.table(::PDVec)`.
 struct PDVecAsTable{K,V,N}
     segments::NTuple{N,Dict{K,V}}
 end
-function Base.iterate(tbl::PDVecAsTable, (st,i)=(0, 1))
+function Base.iterate(tbl::PDVecAsTable, (st,i)=(nothing, 1))
     if i > length(tbl.segments)
         return nothing
     end
 
-    itr = iterate(tbl.segments[i], st)
+    if isnothing(st)
+        itr = iterate(tbl.segments[i])
+    else
+        itr = iterate(tbl.segments[i], st)
+    end
     if !isnothing(itr)
         pair, st = itr
         return (; key=pair[1], value=pair[2]), (st, i)
     else
-        return iterate(tbl, (0, i+1))
+        return iterate(tbl, (nothing, i+1))
     end
 end
 

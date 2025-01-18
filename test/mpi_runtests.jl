@@ -254,23 +254,13 @@ end
             @mpi_root rm(file; force=true)
 
             @testset "vectors" begin
-                ham = HubbardReal1D(BoseFS(1,1,1))
-                dvec = ham * DVec([BoseFS(1,1,1) => 1.0, BoseFS(2,1,0) => π])
-                save_state(file, dvec)
-                output, _ = load_state(file)
-                @test output == dvec
+                ham = HubbardReal1D(BoseFS(1,1,1,1,1))
 
-                @mpi_root rm(file)
-
-                pdvec = ham * PDVec([BoseFS(1,1,1) => 1.0, BoseFS(0,3,0) => ℯ])
+                pdvec = ham * PDVec([BoseFS(1,1,1,1,1) => 1.0, BoseFS(0,3,0,1,1) => ℯ])
                 save_state(file, pdvec)
                 output, _ = load_state(file)
                 @test output == pdvec
-
-                @test load_state(PDVec, file)[1] isa PDVec
-                @test load_state(PDVec, file)[1] == pdvec
-                @test load_state(DVec, file)[1] isa DVec
-                @test load_state(DVec, file)[1] == pdvec
+                @test output isa PDVec
 
                 @mpi_root rm(file)
             end
