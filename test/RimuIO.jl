@@ -37,6 +37,7 @@ end
         BoseFS(101, 5 => 10),
         FermiFS((1,1,1,0,0,0)),
         FermiFS2C(near_uniform(FermiFS{50,100}), FermiFS(100, 1 => 1)),
+        CompositeFS(near_uniform(BoseFS{8,9}), near_uniform(BoseFS{1,9})),
         CompositeFS(
             BoseFS((1,1,1,1,1)),
             FermiFS((1,0,0,0,0)),
@@ -74,4 +75,56 @@ end
             end
         end
     end
+end
+
+@testset "save_state, load_state" begin
+    file = joinpath(tmpdir, "tmp-dvec.arrow")
+    rm(file; force=true)
+
+    @testset "vectors" begin
+        ham = HubbardReal1D(BoseFS(1,1,1))
+        @testset "save DVec" begin
+            dvec = ham * DVec([BoseFS(1,1,1) => 1.0, BoseFS(2,1,0) => π])
+            save_state(file, dvec)
+            output, _ = load_state(file)
+            @test output == dvec
+            rm(file)
+        end
+
+        @testset "save PDVec" begin
+            pdvec = ham * PDVec([BoseFS(1,1,1) => 1.0, BoseFS(0,3,0) => ℯ])
+            save_state(file, pdvec)
+            output, _ = load_state(file)
+            @test output == pdvec
+
+            @test load_state(PDVec, file)[1] isa PDVec
+            @test load_state(PDVec, file)[1] == pdvec
+            @test load_state(DVec, file)[1] isa DVec
+            @test load_state(DVec, file)[1] == pdvec
+            rm(file)
+        end
+
+        @testset "save empty vector" begin
+            dvec = DVec{Int,Int}()
+            save_state(file, dvec)
+            @test isempty(load_state(file)[1])
+            pdvec = PDVec{Int,Int}()
+            save_state(file, pdvec)
+            @test isempty(load_state(file)[1])
+            rm(file)
+        end
+    end
+
+    @testset "metadata" begin
+        dvec = DVec(BoseFS(1,1,1,1) => 1.0)
+        save_state(file, dvec; int=1, float=2.3, complex=1.2 + 3im, string="a string")
+        _, meta = load_state(file)
+
+        @test meta.int === 1
+        @test meta.float === 2.3
+        @test meta.complex === 1.2 + 3im
+        @test meta.string === "a string"
+        rm(file)
+    end
+
 end

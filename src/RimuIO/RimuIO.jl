@@ -7,24 +7,27 @@ Provides convenience functions:
 """
 module RimuIO
 
-using Arrow: Arrow, ArrowTypes
-using BSON: BSON, bson
 using DataFrames: DataFrames, DataFrame, metadata!
 using StaticArrays: StaticArrays, SVector
 
+using Rimu: mpi_size, mpi_rank, mpi_barrier
 using Rimu.BitStringAddresses: BitStringAddresses, BitString, BoseFS,
     CompositeFS, FermiFS, SortedParticleList,
     num_modes, num_particles
-using Rimu.DictVectors: DictVectors
+using Rimu.DictVectors: PDVec, DVec, target_segment
 using Rimu.Interfaces: Interfaces, localpart, storage
+using Rimu.StochasticStyles: default_style, IsDynamicSemistochastic
 
+import Tables, Arrow, Arrow.ArrowTypes
 
-export save_df, load_df
+export save_df, load_df, save_state, load_state
 
+include("tables.jl")
 include("arrowtypes.jl")
 
 """
-    RimuIO.save_df(filename, df::DataFrame; kwargs...)
+    save_df(filename, df::DataFrame; kwargs...)
+
 Save dataframe in Arrow format.
 
 Keyword arguments are passed on to
@@ -49,7 +52,8 @@ function save_df(
 end
 
 """
-    RimuIO.load_df(filename; propagate_metadata = true, add_filename = true) -> DataFrame
+    load_df(filename; propagate_metadata = true, add_filename = true) -> DataFrame
+
 Load Arrow file into `DataFrame`. Optionally propagate metadata to `DataFrame` and
 add the file name as metadata.
 
@@ -66,6 +70,115 @@ function load_df(filename; propagate_metadata = true, add_filename = true)
     end
     add_filename && metadata!(df, "filename", filename) # add filename as metadata
     return df
+end
+
+"""
+    save_state(filename, vector; io, kwargs...)
+
+Save [`PDVec`](@ref) or [`DVec`](@ref) `vector` to an arrow file `filename`.
+
+`io` determines the output stream to write progress to. Defaults to `stderr` when MPI is
+enabled and `devnull` otherwise.
+
+All other `kwargs` are saved as strings to the arrow file and will be parsed back when the
+state is loaded.
+
+See also [`load_state`](@ref).
+"""
+function save_state(args...; kwargs...)
+    if mpi_size() > 1
+        _save_state_mpi(args...; kwargs...)
+    else
+        _save_state_serial(args...; kwargs...)
+    end
+end
+
+function _save_state_serial(filename, vector; io=devnull, kwargs...)
+    metadata = [string(k) => string(v) for (k, v) in kwargs]
+    print(io, "saving vector...")
+    time = @elapsed Arrow.write(filename, Tables.table(vector); compress=:zstd, metadata)
+    println(io, " done in $(round(time, sigdigits=3)) s")
+end
+
+function _save_state_mpi(filename, vector; io=stderr, kwargs...)
+    # First rank creates the file and saves metadata.
+    total_time = @elapsed begin
+        if mpi_rank() == 0
+            println(io, "saving vector...")
+            metadata = [string(k) => string(v) for (k, v) in kwargs]
+            time = @elapsed begin
+                Arrow.write(
+                    filename, Tables.table(vector);
+                    compress=:zstd, metadata, file=false
+                )
+            end
+            println(io, "    rank 0: $(round(time, sigdigits=3)) s")
+        end
+        # Other ranks append their data to the file in order.
+        for rank in 1:(mpi_size() - 1)
+            mpi_barrier()
+            if mpi_rank() == rank
+                time = @elapsed Arrow.append(filename, Tables.table(vector))
+                println(io, "    rank $rank: $(round(time, sigdigits=3)) s")
+            end
+        end
+    end
+    mpi_barrier()
+    if mpi_rank() == 0
+        println(io, "done in $(round(total_time, sigdigits=3)) s")
+    end
+end
+
+"""
+    load_state(filename; kwargs...) -> PDVec, NamedTuple
+    load_state(PDVec, filename; kwargs...) -> PDVec, NamedTuple
+    load_state(DVec, filename; kwargs...) -> DVec, NamedTuple
+
+Load the state saved in the Arrow file `filename`. `kwargs` are passed to the constructor of
+[`PDVec`](@ref)/[`DVec`](@ref). Any metadata stored in the file is be parsed as a number (if
+possible) and returned alongside the vector in a `NamedTuple`.
+
+See also [`save_state`](@ref).
+"""
+function load_state(::Type{D}, filename; style=nothing, kwargs...) where {D}
+    tbl = Arrow.Table(filename)
+    K = eltype(tbl.key)
+    V = eltype(tbl.value)
+    if isnothing(style)
+        if V <: AbstractFloat
+            style = IsDynamicSemistochastic()
+        else
+            style = default_style(V)
+        end
+    end
+    vector = D{K,V}(; style, kwargs...)
+    copyto!(vector, tbl.key, tbl.value)
+
+    arrow_meta = Arrow.metadata(tbl)[]
+    if !isnothing(arrow_meta)
+        metadata_pairs = map(collect(arrow_meta)) do (k, v)
+            v_int = tryparse(Int, v)
+            !isnothing(v_int) && return Symbol(k) => v_int
+            v_float = tryparse(Float64, v)
+            !isnothing(v_float) && return Symbol(k) => v_float
+            v_cmp = tryparse(ComplexF64, v)
+            !isnothing(v_cmp) && return Symbol(k) => v_cmp
+            Symbol(k) => v
+        end
+        metadata = NamedTuple(metadata_pairs)
+    else
+        metadata = (;)
+    end
+
+    return vector, metadata
+end
+
+function load_state(filename; kwargs...)
+    if Threads.nthreads() == 1 && mpi_size() == 1
+        return load_state(DVec, filename; kwargs...)
+    else
+        return load_state(PDVec, filename; kwargs...)
+    end
 end
 
 end # module RimuIO
