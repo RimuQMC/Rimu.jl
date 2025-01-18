@@ -82,8 +82,8 @@ end
     rm(file; force=true)
 
     @testset "vectors" begin
+        ham = HubbardReal1D(BoseFS(1,1,1))
         @testset "save DVec" begin
-            ham = HubbardReal1D(BoseFS(1,1,1))
             dvec = ham * DVec([BoseFS(1,1,1) => 1.0, BoseFS(2,1,0) => π])
             save_state(file, dvec)
             output, _ = load_state(file)

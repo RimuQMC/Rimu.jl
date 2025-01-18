@@ -77,7 +77,8 @@ end
 
 Save [`PDVec`](@ref) or [`DVec`](@ref) `vector` to an arrow file `filename`.
 
-`io` determines the output stream to write progress to. Defaults to `stderr` when MPI is enabled and `devnull` otherwise.
+`io` determines the output stream to write progress to. Defaults to `stderr` when MPI is
+enabled and `devnull` otherwise.
 
 All other `kwargs` are saved as strings to the arrow file and will be parsed back when the
 state is loaded.
@@ -136,8 +137,8 @@ end
     load_state(DVec, filename; kwargs...) -> DVec, NamedTuple
 
 Load the state saved in the Arrow file `filename`. `kwargs` are passed to the constructor of
-`PDVec`. Any metadata stored in the file is be parsed as a number (if possible) and returned
-alongside the vector in a `NamedTuple`.
+[`PDVec`](@ref)/[`DVec`](@ref). Any metadata stored in the file is be parsed as a number (if
+possible) and returned alongside the vector in a `NamedTuple`.
 
 See also [`save_state`](@ref).
 """

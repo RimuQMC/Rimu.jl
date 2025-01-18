@@ -1,7 +1,7 @@
 """
     struct DVecAsTable
 
-Wrapper over the storage of a `DVec` that allows us to treat a `DVec` as a
+Wrapper over the storage of a [`DVec`](@ref) that allows us to treat a [`DVec`](@ref) as a
 table from Tables.jl. Constructed with `Tables.table(::DVec)`.
 """
 struct DVecAsTable{K,V}
@@ -36,7 +36,7 @@ Tables.rows(tbl::DVecAsTable) = tbl
 """
     struct PDVecAsTable
 
-Wrapper over the storage of a `PDVec` that allows us to treat a `PDVec` as a
+Wrapper over the storage of a [`PDVec`](@ref) that allows us to treat a [`PDVec`](@ref) as a
 table from Tables.jl. Constructed with `Tables.table(::PDVec)`.
 """
 struct PDVecAsTable{K,V,N}
