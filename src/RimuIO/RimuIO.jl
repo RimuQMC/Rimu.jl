@@ -123,9 +123,7 @@ function _save_state_mpi(filename, vector; io=stderr, kwargs...)
             end
         end
     end
-    if io ≠ devnull
-        mpi_barrier()
-    end
+    mpi_barrier()
     if mpi_rank() == 0
         println(io, "done in $(round(total_time, sigdigits=3)) s")
     end
