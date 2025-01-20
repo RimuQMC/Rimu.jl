@@ -83,7 +83,7 @@ println(filter(contains("Op"), names(df)))
 # The vector-vector and operator overlaps go into calculating the Rayleigh quotient
 # for an observable
 # ```math
-#     \langle \hat{G}^{(2)}(d) \rangle = \frac{\sum_{a<b} \mathbf{c}_a^\dagger \cdot \hat{G}^{(2)}(d) \cdot \mathbf{c}_b}{\sum_{a<b} \mathbf{c}_a^\dagger \cdot \mathbf{c}_b }
+#     \langle \hat{G}^{(2)}(d) \rangle = \frac{\sum_{a<b} \mathbf{c}_a^\dagger \hat{G}^{(2)}(d) \mathbf{c}_b}{\sum_{a<b} \mathbf{c}_a^\dagger \mathbf{c}_b }
 # ```
 # The sum over all replica pairs (a,b), especially in the denominator, helps to avoid
 # errors from poor sampling if the number of walkers is too low.
