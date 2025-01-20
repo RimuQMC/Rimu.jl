@@ -14,7 +14,7 @@ function determine_constant_time_step(df)
         elseif hasproperty(df, "time_step")
             return df.time_step[end]
         elseif hasproperty(df, "time_step_r1s1")
-            return df.time_step_1[end]
+            return df.time_step_r1s1[end]
         elseif hasproperty(df, "dτ") # backwards compatibility
             return df.dτ[end]
         elseif hasproperty(df, "dτ_1")
