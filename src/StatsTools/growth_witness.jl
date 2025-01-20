@@ -51,7 +51,7 @@ function growth_witness(
     shift=:shift, norm=:norm, time_step=nothing, kwargs...
 )
     df = DataFrame(sim)
-    time_step = determine_constant_time_step(df)
+    time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
 
     shift_vec = getproperty(df, Symbol(shift))
     norm_vec = getproperty(df, Symbol(norm))
