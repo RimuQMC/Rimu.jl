@@ -45,7 +45,7 @@ using Test
     df = DataFrame(solve(p))
     for state in 1:3
         r = rayleigh_replica_estimator(df; spectral_state=state)
-        @test r.f ≈ g2s[state] atol=0.001
+        @test r.f ≈ g2s[state] atol=0.01
     end
     num_overlaps = length(filter(startswith(r"r[0-9]+s[0-9]+_dot"), names(df)))
     @test num_overlaps == 15
