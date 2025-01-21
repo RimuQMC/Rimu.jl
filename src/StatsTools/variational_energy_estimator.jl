@@ -1,6 +1,6 @@
 """
     variational_energy_estimator(shifts, overlaps; kwargs...)
-    variational_energy_estimator(df::DataFrame; max_replicas=:all, kwargs...)
+    variational_energy_estimator(df::DataFrame; max_replicas=:all, spectral_state=1, kwargs...)
     variational_energy_estimator(sim::PMCSimulation; kwargs...)
     -> r::RatioBlockingResult
 
@@ -8,7 +8,7 @@ Compute the variational energy estimator from the replica time series of the `sh
 coefficient vector `overlaps` by blocking analysis.
 The keyword argument `max_replicas` can be used to constrain the number of replicas
 processed to be smaller than all available in `df`.
-The keyword argument `spectral_state` determines which spectral state 
+The keyword argument `spectral_state` determines which spectral state's energy is computed.
 Other keyword arguments are passed on to [`ratio_of_means()`](@ref).
 Returns a [`RatioBlockingResult`](@ref).
 

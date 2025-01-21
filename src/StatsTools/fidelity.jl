@@ -1,12 +1,13 @@
 """
-    replica_fidelity(df::DataFrame; p_field = :hproj, skip = 0)
+    replica_fidelity(df::DataFrame; p_field = :hproj, spectral_state = 1, skip = 0)
     replica_fidelity(sim::PMCSimulation; kwargs...)
 
 Compute the fidelity of the average coefficient vector and the projector defined in
 `p_field` from the [`PMCSimulation`](@ref Main.Rimu.PMCSimulation) or `DataFrame` returned
-by solve, using replicas `_r1s1` and `_r2s1`. Calls [`ratio_of_means`](@ref) to perform a
-blocking analysis on a ratio of the means of separate time series and returns a
-[`RatioBlockingResult`](@ref). The first `skip` steps in the time series are skipped.
+by solve, using replicas `_r1s{i}` and `_r2s{i}`, where `i` is the `spectral_state`. Calls
+[`ratio_of_means`](@ref) to perform a blocking analysis on a ratio of the means of separate
+time series and returns a [`RatioBlockingResult`](@ref). The first `skip` steps in the time
+series are skipped.
 
 The fidelity of states `|ψ⟩` and `|ϕ⟩` is defined as
 ```math
