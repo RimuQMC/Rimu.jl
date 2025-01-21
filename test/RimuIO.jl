@@ -4,7 +4,7 @@ using Arrow
 using Rimu: RimuIO
 using DataFrames
 
-tmpdir = mktempdir()
+const tmpdir = mktempdir()
 
 @testset "save_df, load_df" begin
     file = joinpath(tmpdir, "tmp.arrow")
@@ -83,6 +83,18 @@ end
 
     @testset "vectors" begin
         ham = HubbardReal1D(BoseFS(1,1,1))
+        @testset "errors" begin
+            df1 = DataFrame(key=[1,2,3], value=[1,2,3], error=[0,0,0])
+            save_df(file, df1)
+            @test_throws ArgumentError load_state(file)
+
+            df2 = DataFrame(error=[0,0,0])
+            save_df(file, df2)
+            @test_throws ArgumentError load_state(file)
+
+            rm(file)
+        end
+
         @testset "save DVec" begin
             dvec = ham * DVec([BoseFS(1,1,1) => 1.0, BoseFS(2,1,0) => π])
             save_state(file, dvec)
@@ -117,13 +129,18 @@ end
 
     @testset "metadata" begin
         dvec = DVec(BoseFS(1,1,1,1) => 1.0)
-        save_state(file, dvec; int=1, float=2.3, complex=1.2 + 3im, string="a string")
+        save_state(
+            file, dvec;
+            int=1, float=2.3, complex=1.2 + 3im, string="a string", bool=true
+        )
         _, meta = load_state(file)
 
         @test meta.int === 1
         @test meta.float === 2.3
         @test meta.complex === 1.2 + 3im
+        @test meta.bool === true
         @test meta.string === "a string"
+        @test meta.RIMU_PACKAGE_VERSION == Rimu.PACKAGE_VERSION
         rm(file)
     end
 

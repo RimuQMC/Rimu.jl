@@ -18,7 +18,7 @@ using Rimu.DictVectors: PDVec, DVec, target_segment
 using Rimu.Interfaces: Interfaces, localpart, storage
 using Rimu.StochasticStyles: default_style, IsDynamicSemistochastic
 
-import Tables, Arrow, Arrow.ArrowTypes
+import Rimu, Tables, Arrow, Arrow.ArrowTypes
 
 export save_df, load_df, save_state, load_state
 
@@ -48,6 +48,7 @@ function save_df(
     if metadata === nothing
         metadata = [key => string(val) for (key, val) in DataFrames.metadata(df)]
     end
+    push!(metadata, "RIMU_PACKAGE_VERSION" => string(Rimu.PACKAGE_VERSION))
     Arrow.write(filename, df; compress, metadata, kwargs...)
 end
 
@@ -86,10 +87,11 @@ state is loaded.
 See also [`load_state`](@ref).
 """
 function save_state(args...; kwargs...)
+    new_kwargs = (; RIMU_PACKAGE_VERSION=Rimu.PACKAGE_VERSION, kwargs...)
     if mpi_size() > 1
-        _save_state_mpi(args...; kwargs...)
+        _save_state_mpi(args...; new_kwargs...)
     else
-        _save_state_serial(args...; kwargs...)
+        _save_state_serial(args...; new_kwargs...)
     end
 end
 
@@ -142,6 +144,9 @@ See also [`save_state`](@ref).
 """
 function load_state(::Type{D}, filename; style=nothing, kwargs...) where {D}
     tbl = Arrow.Table(filename)
+    if Tables.schema(tbl).names ≠ (:key, :value)
+        throw(ArgumentError("`$filename` is not a valid Rimu state file"))
+    end
     K = eltype(tbl.key)
     V = eltype(tbl.value)
     if isnothing(style)
@@ -157,12 +162,15 @@ function load_state(::Type{D}, filename; style=nothing, kwargs...) where {D}
     arrow_meta = Arrow.metadata(tbl)[]
     if !isnothing(arrow_meta)
         metadata_pairs = map(collect(arrow_meta)) do (k, v)
+            k == "RIMU_PACKAGE_VERSION" && return Symbol(k) => VersionNumber(v)
             v_int = tryparse(Int, v)
             !isnothing(v_int) && return Symbol(k) => v_int
             v_float = tryparse(Float64, v)
             !isnothing(v_float) && return Symbol(k) => v_float
             v_cmp = tryparse(ComplexF64, v)
             !isnothing(v_cmp) && return Symbol(k) => v_cmp
+            v_bool = tryparse(Bool, v)
+            !isnothing(v_bool) && return Symbol(k) => v_bool
             Symbol(k) => v
         end
         metadata = NamedTuple(metadata_pairs)
