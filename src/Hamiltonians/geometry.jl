@@ -129,13 +129,13 @@ See also [`HubbardRealSpace`](@ref) and [`G2RealSpace`](@ref).
 
 A 3×2 `CubicGrid` is indexed as follows.
 ```
- │ │
-─1─4─
- │ │
-─2─5─
- │ │
-─3─6─
- │ │
+  │   │
+─ 1 ─ 4 ─
+  │   │
+─ 2 ─ 5 ─
+  │   │
+─ 3 ─ 6 ─
+  │   │
 ```
 """
 struct CubicGrid{D,Dims,Fold} <: Geometry{D}
@@ -310,20 +310,26 @@ A 4×4 `HoneycombLattice` is indexed as follows.
 ```
 """
 struct HoneycombLattice{Dims,Fold} <: Geometry{2}
-    function HoneycombLattice(dims::Tuple{Int,Int}, fold=(true, true))
+    function HoneycombLattice(dims::Tuple{Int,Int}, fold::Tuple{Bool,Bool}=(true, true))
         if fold[1] && isodd(dims[1])
             throw(ArgumentError("if `fold[1] == true`, the lattice height must be even"))
         end
         if fold[2] && isodd(dims[2])
             throw(ArgumentError("if `fold[2] == true`, the lattice width must be even"))
         end
-        if any(<(1), dims)
-            throw(ArgumentError("lattice dimensions must be positive!"))
+        if any(<(2), dims)
+            throw(ArgumentError("All dimensions must be at least 2 in size"))
         end
         return new{dims,fold}()
     end
 end
-HoneycombLattice(h, w, fold=(true, true)) = HoneycombLattice((h, w), fold)
+HoneycombLattice(h, w, fold::Tuple{Bool,Bool}=(true, true)) = HoneycombLattice((h, w), fold)
+
+function Base.show(io::IO, geom::HoneycombLattice)
+    h, w = size(geom)
+    fold = periodic_dimensions(geom)
+    print(io, "HoneycombLattice($h, $w, $fold)")
+end
 
 Base.size(::HoneycombLattice{Dims}) where {Dims} = Dims
 periodic_dimensions(::HoneycombLattice{<:Any,Fold}) where {Fold} = Fold
@@ -359,13 +365,20 @@ A 3×2 `HexagonalLattice` is indexed as follows.
 """
 struct HexagonalLattice{Dims,Fold} <: Geometry{2}
     function HexagonalLattice(dims::Tuple{Int,Int}, fold::Tuple{Bool,Bool}=(true,true))
-        if any(<(1), dims)
-            throw(ArgumentError("lattice dimensions must be positive!"))
+        if any(<(2), dims)
+            throw(ArgumentError("All dimensions must be at least 2 in size"))
         end
         return new{dims,fold}()
     end
 end
-HexagonalLattice(h, w, fold=(true, true)) = HexagonalLattice((h, w), fold)
+HexagonalLattice(h, w, fold::Tuple{Bool,Bool}=(true, true)) = HexagonalLattice((h, w), fold)
+
+function Base.show(io::IO, geom::HexagonalLattice)
+    h, w = size(geom)
+    fold = periodic_dimensions(geom)
+    print(io, "HexagonalLattice($h, $w, $fold)")
+end
+
 
 Base.size(::HexagonalLattice{Dims}) where {Dims} = Dims
 periodic_dimensions(::HexagonalLattice{<:Any,Fold}) where {Fold} = Fold
