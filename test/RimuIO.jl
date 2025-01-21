@@ -1,8 +1,8 @@
 using Test
 using Rimu
 using Arrow
-using Rimu: RimuIO
 using DataFrames
+using Tables
 
 const tmpdir = mktempdir()
 
@@ -74,6 +74,22 @@ end
                 rm(file; force=true)
             end
         end
+    end
+end
+
+@testset "(P)DVec Tables.jl interface" begin
+    for T in (PDVec, DVec)
+        dvec = T(zip(1:100, 0.5:0.5:50))
+        tbl = Tables.table(dvec)
+        @test Tables.istable(tbl)
+        @test Tables.rowaccess(tbl)
+        @test !Tables.columnaccess(tbl)
+        @test Tables.schema(tbl) == Tables.Schema((:key, :value), (Int, Float64))
+        @test length(Tables.rows(tbl)) == length(dvec)
+
+        rows = Tables.rows(tbl)
+        @test [row.value for row in rows] == [dvec[row.key] for row in rows]
+        @test sum(row.value for row in Tables.rows(tbl)) == sum(values(dvec))
     end
 end
 
