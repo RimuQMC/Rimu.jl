@@ -172,7 +172,8 @@ using Rimu.Hamiltonians: Directions, Displacements
 
             @test PeriodicBoundaries(3, 3) == CubicGrid(3, 3)
             @test HardwallBoundaries(3, 4, 5) == CubicGrid((3, 4, 5), (false, false, false))
-            @test LadderBoundaries(2, 3, 4) == CubicGrid((2, 3, 4), (false, true, true))
+            @test LadderBoundaries(3, 2, 4) == CubicGrid((3, 2, 4), (true, false, true))
+            @test LadderBoundaries(2, 2, 2, 2) == HardwallBoundaries(2, 2, 2, 2)
 
             for (dims, fold) in (
                 ((4,), (false,)), ((2, 5), (true, false)), ((5, 6, 7), (true, true, false))
@@ -535,6 +536,50 @@ end
             H1 = HubbardRealSpace(fermi, geometry=geom1)
             H2 = HubbardRealSpace(fermi, geometry=geom2)
             @test exact_energy(H1) ≈ exact_energy(H2)
+        end
+    end
+    @testset "Cubic, honeycomb, and hexagonal lattices" begin
+        @testset "HoneycombLattice vs LadderBoundaries" begin
+            # N × 2 honeycomb is equivalent to LadderBoundaries for bosons
+            geom1 = HoneycombLattice(4, 2)
+            geom2 = LadderBoundaries(4, 2)
+            bose = BoseFS(1, 1, 1, 1, 0, 0, 0, 0)
+            fermi = FermiFS(1, 1, 1, 1, 0, 0, 0, 0)
+            H1 = HubbardRealSpace(bose; geometry=geom1)
+            H2 = HubbardRealSpace(bose; geometry=geom2)
+            H3 = HubbardRealSpace(fermi; geometry=geom1)
+            H4 = HubbardRealSpace(fermi; geometry=geom2)
+
+            @test sparse(H1; sort=true) == sparse(H2; sort=true)
+            @test sparse(H3; sort=true) == sparse(H4; sort=true)
+        end
+        @testset "noninteracting cases" begin
+            geom1 = PeriodicBoundaries(4, 4)
+            geom2 = HoneycombLattice(4, 4)
+            geom3 = HexagonalLattice(4, 4)
+
+            bose = BoseFS(16, 1 => 1, 2 => 1, 3 => 1, 4 => 1)
+            H1_bose = HubbardRealSpace(bose; t=[1/4], u=[0], geometry=geom1)
+            H2_bose = HubbardRealSpace(bose; t=[1/3], u=[0], geometry=geom2)
+            H3_bose = HubbardRealSpace(bose; t=[1/6], u=[0], geometry=geom3)
+            E1_bose = eigsolve(sparse(H1_bose), 1, :SR)[1][1]
+            E2_bose = eigsolve(sparse(H2_bose), 1, :SR)[1][1]
+            E3_bose = eigsolve(sparse(H3_bose), 1, :SR)[1][1]
+
+            # The Hamiltonians have the same energy as it only depends on the number of
+            # neighbors
+            @test E1_bose ≈ E2_bose && E2_bose ≈ E3_bose && E1_bose ≈ E3_bose
+
+            fermi = FermiFS(16, 1 => 1, 2 => 1, 3 => 1, 4 => 1)
+            H1_fermi = HubbardRealSpace(fermi; t=[1/4], geometry=geom1)
+            H2_fermi = HubbardRealSpace(fermi; t=[1/3], geometry=geom2)
+            H3_fermi = HubbardRealSpace(fermi; t=[1/6], geometry=geom3)
+            E1_fermi = eigsolve(sparse(H1_fermi), 1, :SR)[1][1]
+            E2_fermi = eigsolve(sparse(H2_fermi), 1, :SR)[1][1]
+            E3_fermi = eigsolve(sparse(H3_fermi), 1, :SR)[1][1]
+
+            # The Hamiltonians have different energies due to symmetry
+            @test E1_fermi ≉ E2_fermi && E2_fermi ≉ E3_fermi && E1_fermi ≉ E3_fermi
         end
     end
 end

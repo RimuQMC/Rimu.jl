@@ -181,7 +181,7 @@ Return a [`CubicGrid`](@ref) where the first dimension is dimensions non-periodi
 rest are periodic. Equivalent to `CubicGrid(dims, (true, false, ...))`.
 """
 function LadderBoundaries(dims::NTuple{D,Int}) where {D}
-    return CubicGrid(dims, ntuple(>(1), Val(D)))
+    return CubicGrid(dims, ntuple(i -> dims[i] > 2, Val(D)))
 end
 LadderBoundaries(dims::Vararg{Int}) = LadderBoundaries(dims)
 
@@ -311,14 +311,11 @@ A 4×4 `HoneycombLattice` is indexed as follows.
 """
 struct HoneycombLattice{Dims,Fold} <: Geometry{2}
     function HoneycombLattice(dims::Tuple{Int,Int}, fold::Tuple{Bool,Bool}=(true, true))
-        if fold[1] && isodd(dims[1])
-            throw(ArgumentError("if `fold[1] == true`, the lattice height must be even"))
-        end
-        if fold[2] && isodd(dims[2])
-            throw(ArgumentError("if `fold[2] == true`, the lattice width must be even"))
-        end
         if any(<(2), dims)
             throw(ArgumentError("All dimensions must be at least 2 in size"))
+        end
+        if fold[1] && isodd(dims[1]) || fold[2] && isodd(dims[2])
+            throw(ArgumentError("Periodic dimensions must be even in size"))
         end
         return new{dims,fold}()
     end
