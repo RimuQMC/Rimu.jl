@@ -140,11 +140,14 @@ is produced if `address`is incompatible with the interaction parameters `u`.
 
 ## Geometries
 
-Implemented [`CubicGrid`](@ref)s for keyword `geometry`
+Implemented [`Geometry`](@ref)s for keyword `geometry`
 
+* [`CubicGrid`](@ref)
 * [`PeriodicBoundaries`](@ref)
 * [`HardwallBoundaries`](@ref)
 * [`LadderBoundaries`](@ref)
+* [`HoneycombLattice`](@ref)
+* [`HexagonalLattice`](@ref)
 
 Default is `geometry=PeriodicBoundaries(M,)`, i.e. a one-dimensional lattice with the
 number of sites `M` inferred from the number of modes in `address`.
@@ -163,7 +166,7 @@ number of sites `M` inferred from the number of modes in `address`.
 struct HubbardRealSpace{
     C, # components
     A<:AbstractFockAddress,
-    G<:CubicGrid,
+    G<:Geometry,
     D, # dimension
     # The following need to be type params.
     T<:SVector{C,Float64},
@@ -181,7 +184,7 @@ end
 
 function HubbardRealSpace(
     address::AbstractFockAddress;
-    geometry::CubicGrid=PeriodicBoundaries((num_modes(address),)),
+    geometry::Geometry=PeriodicBoundaries((num_modes(address),)),
     t=ones(num_components(address)),
     u=ones(num_components(address), num_components(address)),
     v=zeros(num_components(address), num_dimensions(geometry))
@@ -314,7 +317,7 @@ struct HubbardRealSpaceCompOffdiagonals{G,A} <: AbstractOffdiagonals{A,Float64}
 end
 
 function offdiagonals(h::HubbardRealSpace, comp, add)
-    neighbours = 2 * num_dimensions(h.geometry)
+    neighbours = num_neighbors(h.geometry)
     return HubbardRealSpaceCompOffdiagonals(
         h.geometry, add, h.t[comp], num_occupied_modes(add) * neighbours
     )
@@ -323,7 +326,7 @@ end
 Base.size(o::HubbardRealSpaceCompOffdiagonals) = (o.length,)
 
 @inline function Base.getindex(o::HubbardRealSpaceCompOffdiagonals, chosen)
-    neighbours = 2 * num_dimensions(o.geometry)
+    neighbours = num_neighbors(o.geometry)
     particle, neigh = fldmod1(chosen, neighbours)
     src_index = find_occupied_mode(o.address, particle)
     neigh = neighbor_site(o.geometry, src_index.mode, neigh)
