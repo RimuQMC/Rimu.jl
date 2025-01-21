@@ -244,6 +244,7 @@ using Rimu.Hamiltonians: Directions, Displacements
             @test length(geom) == 20
             @test Rimu.Hamiltonians.periodic_dimensions(geom) == (true, false)
             @test eval(Meta.parse(repr(geom))) == geom
+            @test num_neighbors(geom) == 6
         end
     end
 

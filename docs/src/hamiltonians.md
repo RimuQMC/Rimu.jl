@@ -105,9 +105,10 @@ HoneycombLattice
 HexagonalLattice
 Hamiltonians.Directions
 Hamiltonians.Displacements
-Hamiltonians.neighbor_site
-Hamiltonians.periodic_dimensions
 Hamiltonians.num_dimensions
+Hamiltonians.periodic_dimensions
+Hamiltonians.num_neighbors
+Hamiltonians.neighbor_site
 ```
 
 ## Index
