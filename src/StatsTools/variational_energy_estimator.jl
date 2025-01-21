@@ -1,6 +1,6 @@
 """
     variational_energy_estimator(shifts, overlaps; kwargs...)
-    variational_energy_estimator(df::DataFrame; max_replicas=:all, kwargs...)
+    variational_energy_estimator(df::DataFrame; max_replicas=:all, spectral_state=1, kwargs...)
     variational_energy_estimator(sim::PMCSimulation; kwargs...)
     -> r::RatioBlockingResult
 
@@ -8,6 +8,7 @@ Compute the variational energy estimator from the replica time series of the `sh
 coefficient vector `overlaps` by blocking analysis.
 The keyword argument `max_replicas` can be used to constrain the number of replicas
 processed to be smaller than all available in `df`.
+The keyword argument `spectral_state` determines which spectral state's energy is computed.
 Other keyword arguments are passed on to [`ratio_of_means()`](@ref).
 Returns a [`RatioBlockingResult`](@ref).
 
@@ -50,10 +51,10 @@ function variational_energy_estimator(shifts, overlaps; kwargs...)
     return ratio_of_means(numerator, denominator; kwargs...)
 end
 
-function variational_energy_estimator(sim; max_replicas=:all, kwargs...)
+function variational_energy_estimator(sim; max_replicas=:all, spectral_state=1, kwargs...)
     df = DataFrame(sim)
-    num_replicas = length(filter(startswith("norm_"), names(df))) # number of replicas
-    if iszero(num_replicas)
+    num_replicas = parse(Int, metadata(df, "num_replicas"))
+    if num_replicas == 1
         throw(ArgumentError(
             "No replicas found. Use keyword \
             `replica_strategy=AllOverlaps(n)` with n≥2 in `ProjectorMonteCarloProblem` to set up replicas!"
@@ -61,7 +62,7 @@ function variational_energy_estimator(sim; max_replicas=:all, kwargs...)
     end
     @assert num_replicas ≥ 2 "At least two replicas are needed, found $num_replicas"
 
-    num_overlaps = length(filter(startswith(r"c._dot"), names(df)))
+    num_overlaps = length(filter(startswith(Regex("r[0-9]+s$(spectral_state)_dot_r[0-9]+s$(spectral_state)")), names(df)))
     @assert num_overlaps == binomial(num_replicas, 2) "Unexpected number of overlaps."
 
     # process at most `max_replicas` but at least 2 replicas
@@ -69,12 +70,12 @@ function variational_energy_estimator(sim; max_replicas=:all, kwargs...)
         num_replicas = max(2, min(max_replicas, num_replicas))
     end
 
-    shiftnames = [Symbol("shift_$i") for i in 1:num_replicas]
+    shiftnames = [Symbol("shift_r$(i)s$(spectral_state)") for i in 1:num_replicas]
     shifts = map(name -> getproperty(df, name), shiftnames)
     @assert length(shifts) == num_replicas
 
     overlap_names = [
-        Symbol("c$(i)_dot_c$(j)") for i in 1:num_replicas for j in i+1:num_replicas
+        Symbol("r$(i)s$(spectral_state)_dot_r$(j)s$(spectral_state)") for i in 1:num_replicas for j in i+1:num_replicas
     ]
     overlaps = map(name -> getproperty(df, name), overlap_names)
     @assert length(overlaps) ≤ num_overlaps

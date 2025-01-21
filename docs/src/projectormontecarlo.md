@@ -39,7 +39,7 @@ replica (`n_replicas = 1`) and single spectral state, the fields `:shift`, `:nor
 be present as well as others depending on the `style` argument and the `post_step_strategy`.
 
 If multiple replicas or spectral states are requested, then the relevant field names in the 
-`DataFrame` will have a suffix identifying the respective replica simulation, e.g. the `shift`s will be reported as `shift_1`, `shift_2`, ... 
+`DataFrame` will have a suffix identifying the respective replica simulation, e.g. the `shift`s will be reported as `shift_r1s1`, `shift_r2s1`, ... 
 
 Many tools for analysing the time series data obtained from a 
 [`ProjectorMonteCarloProblem`](@ref) are contained in the [Module `StatsTools`](@ref).
