@@ -57,7 +57,7 @@ function KrylovKit.eigsolve(
 end
 
 function _prepare_multiplier(
-    ham, vec; basis=nothing, starting_address=starting_address(ham), full_basis=true
+    ham, vec; basis=nothing, starting_address=starting_address(ham), full_basis=false
 )
     if issymmetric(ham) && (isnothing(vec) || isreal(vec))
         eltype = Float64
@@ -163,15 +163,14 @@ function _kk_eigsolve(s::KrylovKitDirectEDSolver, howmany, which, kw_nt)
         issymmetric=issymmetric(prop), ishermitian=ishermitian(prop), kw_nt...
     )
     success = info.converged ≥ howmany
-
-    basis = keys(vecs[1])
+    basis = prop.basis
 
     return EDResult(
         s.algorithm,
         s.problem,
         vals,
-        vecs,
         LazyDVecs(vecs, basis),
+        vecs,
         basis,
         info,
         howmany,

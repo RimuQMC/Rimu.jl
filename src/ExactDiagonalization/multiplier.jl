@@ -73,10 +73,10 @@ function Multiplier(
     address::AbstractFockAddress=starting_address(hamiltonian);
     full_basis=true, eltype=eltype(hamiltonian),
 )
-    if full_basis
-        basis = build_basis(address)
-    else
+    if !full_basis || address isa OccupationNumberFS
         basis = build_basis(hamiltonian, address)
+    else
+        basis = build_basis(address)
     end
     return Multiplier(hamiltonian, basis)
 end
