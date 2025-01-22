@@ -19,7 +19,7 @@ provided by external packages.
 """
 module ExactDiagonalization
 
-using LinearAlgebra: LinearAlgebra, eigen!, ishermitian, Matrix
+using LinearAlgebra: LinearAlgebra, eigen!, issymmetric, ishermitian, Matrix, dot
 using SparseArrays: SparseArrays, nnz, nzrange, sparse
 using CommonSolve: CommonSolve, solve, init
 using VectorInterface: VectorInterface, add
@@ -29,13 +29,12 @@ using StaticArrays: setindex
 
 using Rimu: Rimu, DictVectors, Hamiltonians, Interfaces, BitStringAddresses, replace_keys,
     clean_and_warn_if_others_present
-using ..Interfaces: AbstractDVec, AbstractHamiltonian, AdjointUnknown,
+using ..Interfaces: AbstractDVec, AbstractHamiltonian, AbstractOperator, AdjointUnknown,
     diagonal_element, offdiagonals, starting_address, LOStructure, IsHermitian
 using ..BitStringAddresses: AbstractFockAddress, BoseFS, FermiFS, CompositeFS, near_uniform
 using ..DictVectors: FrozenDVec, PDVec, DVec
 using ..Hamiltonians: allows_address_type, check_address_type, dimension,
-    ParitySymmetry, TimeReversalSymmetry
-
+    ParitySymmetry, TimeReversalSymmetry, AbstractOperator
 
 export ExactDiagonalizationProblem, KrylovKitSolver, LinearAlgebraSolver
 export ArpackSolver, LOBPCGSolver
@@ -47,6 +46,7 @@ export sparse # from SparseArrays
 include("basis_breadth_first_search.jl")
 include("basis_fock.jl")
 include("basis_set_representation.jl")
+include("multiplier.jl")
 include("algorithms.jl")
 include("exact_diagonalization_problem.jl")
 include("init_and_solvers.jl")
