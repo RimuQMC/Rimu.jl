@@ -4,7 +4,7 @@ Provides convenience functions:
 
 * [`RimuIO.save_df(filename, df::DataFrame)`](@ref) Save dataframe in Arrow format.
 * [`RimuIO.load_df(filename)`](@ref) Load Arrow file into dataframe.
-* [`RimuIO.save_state(filename, vec::AbstractDVec; metadata...)`](@ref) Save a vector and
+* [`RimuIO.save_state(filename, vector; metadata...)`](@ref) Save a vector and
   optinal metadata in Arrow format.
 * [`RimuIO.load_state(filename)`](@ref) Load a file created through by `save_state`.
 """
@@ -89,12 +89,12 @@ state is loaded.
 
 See also [`load_state`](@ref).
 """
-function save_state(args...; kwargs...)
+function save_state(filename, vector; kwargs...)
     new_kwargs = (; RIMU_PACKAGE_VERSION=Rimu.PACKAGE_VERSION, kwargs...)
     if mpi_size() > 1
-        _save_state_mpi(args...; new_kwargs...)
+        _save_state_mpi(filename, vector; new_kwargs...)
     else
-        _save_state_serial(args...; new_kwargs...)
+        _save_state_serial(filename, vector; new_kwargs...)
     end
 end
 
