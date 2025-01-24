@@ -54,26 +54,35 @@ end
 
 """
     copyto!(w, v)
+    copyto!(w, keys, values)
 
 Copy contents of `v` to `w` without emptying `w`. See [`copy!`](@ref) for a version that
 empties `w` first.
 """
-@inline function Base.copyto!(w::AbstractDVec, v)
-    sizehint!(w, length(v))
-    for (key, val) in pairs(v)
-        w[key] = val
+@inline function Base.copyto!(vector::AbstractDVec, source)
+    sizehint!(vector, length(source))
+    for (key, val) in pairs(source)
+        vector[key] = val
     end
-    return w
+    return vector
+end
+@inline function Base.copyto!(vector::AbstractDVec, keys, vals)
+    sizehint!(vector, length(keys))
+    for (key, val) in zip(keys, vals)
+        vector[key] = val
+    end
+    return vector
 end
 
 """
     copy!(w::AbstractDVec, v)
+    copy!(w::AbstractDVec, keys, values)
 
 Empty `w` and copy contents of `v` to it. See also [`copyto!`](@ref)
 """
-@inline function Base.copy!(w::AbstractDVec, v)
+@inline function Base.copy!(w::AbstractDVec, args...)
     empty!(w)
-    return copyto!(w, v)
+    return copyto!(w, args...)
 end
 Base.copy(v::AbstractDVec) = copyto!(empty(v), v)
 
