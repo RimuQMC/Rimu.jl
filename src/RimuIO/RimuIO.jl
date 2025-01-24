@@ -6,7 +6,7 @@ Provides convenience functions:
 * [`RimuIO.load_df(filename)`](@ref) Load Arrow file into dataframe.
 * [`RimuIO.save_state(filename, vector; metadata...)`](@ref) Save a vector and
   optinal metadata in Arrow format.
-* [`RimuIO.load_state(filename)`](@ref) Load a file created through by `save_state`.
+* [`RimuIO.load_state(filename)`](@ref) Load a file created by `save_state`.
 """
 module RimuIO
 
