@@ -7,6 +7,8 @@ using DataFrames
 using Suppressor
 using StaticArrays
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
+using Rimu.Hamiltonians: num_neighbors, num_dimensions, Geometry
+
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
 
@@ -162,35 +164,88 @@ end
 
 using Rimu.Hamiltonians: Directions, Displacements
 
-@testset "CubicGrid" begin
-    @testset "construtors and basic properties" begin
-        @test PeriodicBoundaries(3, 3) == CubicGrid(3, 3)
-        @test HardwallBoundaries(3, 4, 5) == CubicGrid((3, 4, 5), (false, false, false))
-        @test LadderBoundaries(2, 3, 4) == CubicGrid((2, 3, 4), (false, true, true))
+@testset "Geometry" begin
+    @testset "CubicGrid" begin
+        @testset "construtors and basic properties" begin
+            @test_throws ArgumentError CubicGrid(1, 2)
+            @test_throws ArgumentError CubicGrid(-2, 5)
 
-        for (dims, fold) in (
-            ((4,), (false,)), ((2, 5), (true, false)), ((5, 6, 7), (true, true, false))
-        )
-            geom = CubicGrid(dims, fold)
-            @test size(geom) == dims
-            @test length(geom) == prod(dims)
-            @test Rimu.Hamiltonians.fold(geom) == fold
-            @test eval(Meta.parse(repr(geom))) == geom
+            @test PeriodicBoundaries(3, 3) == CubicGrid(3, 3)
+            @test HardwallBoundaries(3, 4, 5) == CubicGrid((3, 4, 5), (false, false, false))
+            @test LadderBoundaries(3, 2, 4) == CubicGrid((3, 2, 4), (true, false, true))
+            @test LadderBoundaries(2, 2, 2, 2) == HardwallBoundaries(2, 2, 2, 2)
+
+            for (dims, fold) in (
+                ((4,), (false,)), ((2, 5), (true, false)), ((5, 6, 7), (true, true, false))
+                )
+                geom = CubicGrid(dims, fold)
+                @test geom isa Geometry{length(dims)}
+                @test size(geom) == dims
+                @test size(geom, 1) == dims[1]
+                @test length(geom) == prod(dims)
+                @test Rimu.Hamiltonians.periodic_dimensions(geom) == fold
+                @test eval(Meta.parse(repr(geom))) == geom
+                @test num_neighbors(geom) == 2 * num_dimensions(geom)
+            end
+        end
+
+        @testset "getindex" begin
+            g = CubicGrid((2,3,4), (false,true,false))
+            for i in 1:length(g)
+                v = SVector(Tuple(CartesianIndices((2,3,4))[i])...)
+                @test g[i] == v
+                @test g[v] == i
+            end
+
+            @test g[SVector(3, 1, 1)] == 0
+            @test g[SVector(1,4,1)] == 1
+            @test g[SVector(2,0,4)] == 24
+            @test g[SVector(2,3,0)] == 0
         end
     end
 
-    @testset "getindex" begin
-        g = CubicGrid((2,3,4), (false,true,false))
-        for i in 1:length(g)
-            v = SVector(Tuple(CartesianIndices((2,3,4))[i])...)
-            @test g[i] == v
-            @test g[v] == i
+    @testset "HoneycombLattice" begin
+        @testset "constructor errors" begin
+            @test_throws ArgumentError HoneycombLattice(3, 2)
+            @test_throws ArgumentError HoneycombLattice(1, 2)
+            @test_throws ArgumentError HoneycombLattice(2, 0)
+            @test_throws MethodError HoneycombLattice(2, 2, (false, true, true))
         end
 
-        @test g[SVector(3, 1, 1)] == 0
-        @test g[SVector(1,4,1)] == 1
-        @test g[SVector(2,0,4)] == 24
-        @test g[SVector(2,3,0)] == 0
+        @testset "basic properties" begin
+            for (dims, fold) in (
+                ((4, 4), (true, true)), ((3, 5), (false, false)), ((3, 2), (false, true))
+                )
+                geom = HoneycombLattice(dims, fold)
+                @test geom isa Geometry{2}
+                @test HoneycombLattice(dims..., fold) == geom
+                @test size(geom) == dims
+                @test size(geom, 2) == dims[2]
+                @test length(geom) == prod(dims)
+                @test Rimu.Hamiltonians.periodic_dimensions(geom) == fold
+                @test eval(Meta.parse(repr(geom))) == geom
+                @test num_neighbors(geom) == 3
+            end
+        end
+    end
+
+    @testset "HexagonalLattice" begin
+        @testset "constructor errors" begin
+            @test_throws ArgumentError HexagonalLattice(1, 2)
+            @test_throws ArgumentError HexagonalLattice(2, 0)
+            @test_throws MethodError HexagonalLattice(2, 2, (false, true, true))
+        end
+
+        @testset "basic properties" begin
+            geom = HexagonalLattice((5, 4), (true, false))
+            @test geom isa Hamiltonians.Geometry{2}
+            @test HexagonalLattice(5, 4, (true, false)) == geom
+            @test size(geom) == (5, 4)
+            @test length(geom) == 20
+            @test Rimu.Hamiltonians.periodic_dimensions(geom) == (true, false)
+            @test eval(Meta.parse(repr(geom))) == geom
+            @test num_neighbors(geom) == 6
+        end
     end
 
     @testset "Directions" begin
@@ -482,6 +537,50 @@ end
             H1 = HubbardRealSpace(fermi, geometry=geom1)
             H2 = HubbardRealSpace(fermi, geometry=geom2)
             @test exact_energy(H1) ≈ exact_energy(H2)
+        end
+    end
+    @testset "Cubic, honeycomb, and hexagonal lattices" begin
+        @testset "HoneycombLattice vs LadderBoundaries" begin
+            # N × 2 honeycomb is equivalent to LadderBoundaries for bosons
+            geom1 = HoneycombLattice(4, 2)
+            geom2 = LadderBoundaries(4, 2)
+            bose = BoseFS(1, 1, 1, 1, 0, 0, 0, 0)
+            fermi = FermiFS(1, 1, 1, 1, 0, 0, 0, 0)
+            H1 = HubbardRealSpace(bose; geometry=geom1)
+            H2 = HubbardRealSpace(bose; geometry=geom2)
+            H3 = HubbardRealSpace(fermi; geometry=geom1)
+            H4 = HubbardRealSpace(fermi; geometry=geom2)
+
+            @test sparse(H1; sort=true) == sparse(H2; sort=true)
+            @test sparse(H3; sort=true) == sparse(H4; sort=true)
+        end
+        @testset "noninteracting cases" begin
+            geom1 = PeriodicBoundaries(4, 4)
+            geom2 = HoneycombLattice(4, 4)
+            geom3 = HexagonalLattice(4, 4)
+
+            bose = BoseFS(16, 1 => 1, 2 => 1, 3 => 1, 4 => 1)
+            H1_bose = HubbardRealSpace(bose; t=[1/4], u=[0], geometry=geom1)
+            H2_bose = HubbardRealSpace(bose; t=[1/3], u=[0], geometry=geom2)
+            H3_bose = HubbardRealSpace(bose; t=[1/6], u=[0], geometry=geom3)
+            E1_bose = eigsolve(sparse(H1_bose), 1, :SR)[1][1]
+            E2_bose = eigsolve(sparse(H2_bose), 1, :SR)[1][1]
+            E3_bose = eigsolve(sparse(H3_bose), 1, :SR)[1][1]
+
+            # The Hamiltonians have the same energy as it only depends on the number of
+            # neighbors
+            @test E1_bose ≈ E2_bose && E2_bose ≈ E3_bose && E1_bose ≈ E3_bose
+
+            fermi = FermiFS(16, 1 => 1, 2 => 1, 3 => 1, 4 => 1)
+            H1_fermi = HubbardRealSpace(fermi; t=[1/4], geometry=geom1)
+            H2_fermi = HubbardRealSpace(fermi; t=[1/3], geometry=geom2)
+            H3_fermi = HubbardRealSpace(fermi; t=[1/6], geometry=geom3)
+            E1_fermi = eigsolve(sparse(H1_fermi), 1, :SR)[1][1]
+            E2_fermi = eigsolve(sparse(H2_fermi), 1, :SR)[1][1]
+            E3_fermi = eigsolve(sparse(H3_fermi), 1, :SR)[1][1]
+
+            # The Hamiltonians have different energies due to symmetry
+            @test E1_fermi ≉ E2_fermi && E2_fermi ≉ E3_fermi && E1_fermi ≉ E3_fermi
         end
     end
 end

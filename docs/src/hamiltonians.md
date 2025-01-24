@@ -65,11 +65,11 @@ Stoquastic
 ```
 
 ## Observables
-`Rimu.jl` offers two other supertypes for operators that are less 
-restrictive than [`AbstractHamiltonian`](@ref). 
+`Rimu.jl` offers two other supertypes for operators that are less
+restrictive than [`AbstractHamiltonian`](@ref).
 [`AbstractObservable`](@ref) and [`AbstractOperator`](@ref)s both
-can represent a physical observable. Their expectation values can be sampled during a [`ProjectorMonteCarloProblem`](@ref) simulation by 
-passing them into a suitable [`ReplicaStrategy`](@ref), e.g. 
+can represent a physical observable. Their expectation values can be sampled during a [`ProjectorMonteCarloProblem`](@ref) simulation by
+passing them into a suitable [`ReplicaStrategy`](@ref), e.g.
 [`AllOverlaps`](@ref). Some observables are also [`AbstractHamiltonian`](@ref)s. The full type hierarchy is
 ```julia
 AbstractHamiltonian{T} <: AbstractOperator{T} <: AbstractObservable{T}
@@ -96,13 +96,19 @@ Lattices in higher dimensions are defined here and can be passed with the keywor
 `geometry` to [`HubbardRealSpace`](@ref) and [`G2RealSpace`](@ref).
 
 ```@docs
+Hamiltonians.Geometry
 CubicGrid
-Hamiltonians.Directions
-Hamiltonians.Displacements
-Hamiltonians.neighbor_site
 PeriodicBoundaries
 HardwallBoundaries
 LadderBoundaries
+HoneycombLattice
+HexagonalLattice
+Hamiltonians.Directions
+Hamiltonians.Displacements
+Hamiltonians.num_dimensions
+Hamiltonians.periodic_dimensions
+Hamiltonians.num_neighbors
+Hamiltonians.neighbor_site
 ```
 
 ## Index

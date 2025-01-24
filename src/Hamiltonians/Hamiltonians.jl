@@ -86,7 +86,7 @@ export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagona
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
 export StringCorrelator, G2MomCorrelator
 
-export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
+export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries, HoneycombLattice, HexagonalLattice
 
 export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCartesianCentralImpurity
 export AxialAngularMomentumHO
