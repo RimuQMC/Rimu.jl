@@ -6,12 +6,13 @@ using CommonSolve: CommonSolve
 using Setfield: Setfield, @set
 using NamedTupleTools: NamedTupleTools, delete
 
-using Rimu: Rimu, AbstractDVec, AbstractHamiltonian, IsDeterministic, PDVec, DVec,
-    PDWorkingMemory, scale!!, working_memory, zerovector, dimension, replace_keys
+using Rimu: Rimu, AbstractDVec, AbstractHamiltonian, AbstractOperator, IsDeterministic,
+    starting_address, PDVec, DVec, PDWorkingMemory,
+    scale!!, working_memory, zerovector, dimension, replace_keys
 
 using Rimu.ExactDiagonalization: MatrixEDSolver, KrylovKitSolver,
     KrylovKitDirectEDSolver,
-    LazyDVecs, EDResult, LazyCoefficientVectorsDVecs
+    LazyDVecs, EDResult, LazyCoefficientVectorsDVecs, Multiplier
 
 const U = Union{Symbol,EigSorter}
 
@@ -55,6 +56,45 @@ function KrylovKit.eigsolve(
     )
 end
 
+function _prepare_multiplier(
+    ham, vec; basis=nothing, starting_address=starting_address(ham), full_basis=false
+)
+    if issymmetric(ham) && (isnothing(vec) || isreal(vec))
+        eltype = Float64
+    else
+        eltype = ComplexF64
+    end
+    if isnothing(basis)
+        prop = Multiplier(ham, starting_address; full_basis, eltype)
+    else
+        prop = Multiplier(ham, basis; eltype)
+    end
+end
+
+function KrylovKit.eigsolve(
+    ham::AbstractOperator, vec::Vector, howmany::Int=1, which::U=:LR;
+    basis=nothing, starting_address=starting_address(ham), full_basis=true, kwargs...
+)
+    # Change the type of `vec` to float, if needed.
+    v = scale!!(vec, 1.0)
+    prop = _prepare_multiplier(ham, v; basis, starting_address, full_basis)
+    return eigsolve(
+        prop, v, howmany, which;
+        ishermitian=ishermitian(ham), issymmetric=issymmetric(ham), kwargs...
+    )
+end
+function KrylovKit.eigsolve(
+    ham::AbstractOperator, howmany::Int=1, which::U=:LR;
+    basis=nothing, starting_address=starting_address(ham), full_basis=true, kwargs...
+    )
+    prop = _prepare_multiplier(ham, nothing; basis, starting_address, full_basis)
+    v = rand(eltype(prop), size(prop, 1))
+    return eigsolve(
+        prop, v, howmany, which;
+        ishermitian=ishermitian(ham), issymmetric=issymmetric(ham), kwargs...
+    )
+end
+
 # solve for KrylovKit solvers: prepare arguments for `KrylovKit.eigsolve`
 function CommonSolve.solve(s::S; kwargs...
 ) where {S<:Union{MatrixEDSolver{<:KrylovKitSolver},KrylovKitDirectEDSolver}}
@@ -92,10 +132,6 @@ function _kk_eigsolve(s::MatrixEDSolver{<:KrylovKitSolver}, howmany, which, kw_n
     # solve the problem
     vals, vecs, info = eigsolve(s.basissetrep.sparse_matrix, x0, howmany, which; kw_nt...)
     success = info.converged ≥ howmany
-    if !success
-        @warn "KrylovKit.eigsolve did not converge for all requested eigenvalues:" *
-              " $(info.converged) converged out of $howmany requested value(s)."
-    end
 
     return EDResult(
         s.algorithm,
@@ -113,22 +149,28 @@ end
 
 # solve with KrylovKit direct
 function _kk_eigsolve(s::KrylovKitDirectEDSolver, howmany, which, kw_nt)
-
-    vals, vecs, info = eigsolve(s.problem.hamiltonian, s.v0, howmany, which; kw_nt...)
-    success = info.converged ≥ howmany
-    if !success
-        @warn "KrylovKit.eigsolve did not converge for all requested eigenvalues:" *
-              " $(info.converged) converged out of $howmany requested value(s)."
+    prop = _prepare_multiplier(s.problem.hamiltonian, s.v0#=TODO: new args go here=#)
+    if isnothing(s.v0)
+        x0 = rand(size(prop, 1))
+    else
+        x0 = zeros(eltype(prop), size(prop, 1))
+        for (k, v) in pairs(s.v0)
+            x0[prop.mapping[k]] = v
+        end
     end
-
-    basis = keys(vecs[1])
+    vals, vecs, info = eigsolve(
+        prop, x0, howmany, which;
+        issymmetric=issymmetric(prop), ishermitian=ishermitian(prop), kw_nt...
+    )
+    success = info.converged ≥ howmany
+    basis = prop.basis
 
     return EDResult(
         s.algorithm,
         s.problem,
         vals,
+        LazyDVecs(vecs, basis),
         vecs,
-        LazyCoefficientVectorsDVecs(vecs, basis),
         basis,
         info,
         howmany,

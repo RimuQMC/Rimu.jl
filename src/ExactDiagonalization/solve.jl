@@ -86,9 +86,7 @@ end
 # The code for `CommonSolve.solve(::KrylovKitDirectEDSolver; ...)` is part of the
 # `KrylovKitExt.jl` extension.
 
-function CommonSolve.solve(s::MatrixEDSolver{<:LinearAlgebraSolver};
-    kwargs...
-)
+function CommonSolve.solve(s::MatrixEDSolver{<:LinearAlgebraSolver}; kwargs...)
     # combine keyword arguments
     kw_nt = (; s.kw_nt..., kwargs...)
     kw_nt = clean_and_warn_if_others_present(kw_nt, (:permute, :scale, :sortby))
