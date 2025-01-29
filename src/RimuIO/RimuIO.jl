@@ -15,7 +15,7 @@ using StaticArrays: StaticArrays, SVector
 
 using Rimu: mpi_size, mpi_rank, mpi_barrier
 using Rimu.BitStringAddresses: BitStringAddresses, BitString, BoseFS,
-    CompositeFS, FermiFS, SortedParticleList,
+    CompositeFS, OccupationNumberFS, FermiFS, SortedParticleList,
     num_modes, num_particles
 using Rimu.DictVectors: PDVec, DVec, target_segment
 using Rimu.Interfaces: Interfaces, localpart, storage

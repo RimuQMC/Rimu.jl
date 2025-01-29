@@ -35,14 +35,16 @@ end
         SortedParticleList((1, 0, 1, 0, 0, 2, 3)),
         near_uniform(BoseFS{10, 10}),
         BoseFS(101, 5 => 10),
-        FermiFS((1,1,1,0,0,0)),
+        FermiFS(1,1,1,0,0,0),
         FermiFS2C(near_uniform(FermiFS{50,100}), FermiFS(100, 1 => 1)),
         CompositeFS(near_uniform(BoseFS{8,9}), near_uniform(BoseFS{1,9})),
+        OccupationNumberFS(1,2,3,4,5),
         CompositeFS(
-            BoseFS((1,1,1,1,1)),
-            FermiFS((1,0,0,0,0)),
-            BoseFS((1,1,0,0,0)),
-            FermiFS((1,1,1,0,0)),
+            BoseFS(1,1,1,1,1),
+            FermiFS(1,0,0,0,0),
+            OccupationNumberFS(5,4,3,2,1),
+            BoseFS(1,1,0,0,0),
+            FermiFS(1,1,1,0,0),
         ),
     )
         @testset "$(typeof(addr))" begin

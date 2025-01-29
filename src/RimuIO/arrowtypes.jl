@@ -92,6 +92,20 @@ function ArrowTypes.JuliaType(::Val{FERMIFS_SPL}, ::Type{NTuple{X,Y}}, meta) whe
 end
 
 ###
+### OccupationNumberFS
+###
+const OCCUPATIONNUMBERFS = Symbol("Rimu.OccupationNumberFS")
+ArrowTypes.arrowname(::Type{<:OccupationNumberFS}) = OCCUPATIONNUMBERFS
+ArrowTypes.ArrowType(::Type{OccupationNumberFS{M,T}}) where {M,T} = NTuple{M,T}
+ArrowTypes.toarrow(fs::OccupationNumberFS) = Tuple(fs.onr)
+function ArrowTypes.JuliaType(::Val{OCCUPATIONNUMBERFS}, ::Type{NTuple{M,T}}, _) where {M,T}
+    return OccupationNumberFS{M,T}
+end
+function ArrowTypes.fromarrow(::Type{T}, storage) where {T<:OccupationNumberFS}
+    return T(SVector(storage))
+end
+
+###
 ### CompositeFS
 ###
 const COMPOSITEFS = Symbol("Rimu.CompositeFS")
