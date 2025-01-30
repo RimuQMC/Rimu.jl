@@ -33,7 +33,7 @@ See also [`PostStepStrategy`](@ref), [`ReportingStrategy`](@ref).
 """
 post_step_action
 
-# When startegies are a Tuple, apply all of them.
+# When strategies are a Tuple, apply all of them.
 function post_step_action(::Tuple{}, _, _)
     return ()
 end
@@ -275,7 +275,6 @@ function single_particle_density(dvec; component=0)
     result = sum(pairs(dvec); init=MultiScalar(ntuple(_ -> zero(V), Val(M)))) do (k, v)
         MultiScalar(abs2(v) .* single_particle_density(k; component))
     end
-
     return result.tuple ./ sum(abs2, dvec)
 end
 

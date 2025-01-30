@@ -70,19 +70,20 @@ problem = ProjectorMonteCarloProblem(H;
 result = solve(problem)
 df = DataFrame(result);
 
-# The output `DataFrame` has FCIQMC statistics for each replica (e.g. shift, norm),
+# The output `DataFrame` has FCIQMC statistics for each replica (e.g. shift, norm)
+# and for each spectral state (here only the ground state `s1` is calculated),
 println(filter(startswith("shift_"), names(df)))
 
-# as well as vector-vector overlaps (e.g. `c1_dot_c2`),
+# as well as vector-vector overlaps (e.g. `r1s1_dot_r2s1`),
 println(filter(contains("dot"), names(df)))
 
-# and operator overlaps (e.g. `c1_Op1_c2`) between the replicas.
+# and operator overlaps (e.g. `r1s1_Op1_r2s1`) between the replicas.
 println(filter(contains("Op"), names(df)))
 
 # The vector-vector and operator overlaps go into calculating the Rayleigh quotient
 # for an observable
 # ```math
-#     \langle \hat{G}^{(2)}(d) \rangle = \frac{\sum_{a<b} \mathbf{c}_a^\dagger \cdot \hat{G}^{(2)}(d) \cdot \mathbf{c}_b}{\sum_{a<b} \mathbf{c}_a^\dagger \cdot \mathbf{c}_b }
+#     \langle \hat{G}^{(2)}(d) \rangle = \frac{\sum_{a<b} \mathbf{c}_a^\dagger \hat{G}^{(2)}(d) \mathbf{c}_b}{\sum_{a<b} \mathbf{c}_a^\dagger \mathbf{c}_b }
 # ```
 # The sum over all replica pairs (a,b), especially in the denominator, helps to avoid
 # errors from poor sampling if the number of walkers is too low.
@@ -107,7 +108,7 @@ end
 # energy.
 println("Shift energy from $n_replicas replicas:")
 for i in 1:n_replicas
-    se = shift_estimator(df; shift="shift_$i", skip=steps_equilibrate)
+    se = shift_estimator(df; shift="shift_r$(i)s1", skip=steps_equilibrate)
     println("   Replica $i: $(se.mean) ± $(se.err)")
 end
 

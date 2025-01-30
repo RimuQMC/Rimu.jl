@@ -219,8 +219,8 @@ end
                 df = DataFrame(solve(prob))
 
                 density_sum = sum(1:M) do i
-                    top = df[!, Symbol("c1_Op", i, "_c2")]
-                    bot = df.c1_dot_c2
+                    top = df[!, Symbol("r1s1_Op", i, "_r2s1")]
+                    bot = df.r1s1_dot_r2s1
                     pmean(ratio_of_means(top, bot; skip=5000))
                 end
                 @test density_sum ≈ N rtol=1e-3
@@ -234,8 +234,8 @@ end
                 df = DataFrame(solve(prob))
 
                 g2s = map(1:M) do i
-                    top = df[!, Symbol("c1_Op", i, "_c2")]
-                    bot = df.c1_dot_c2
+                    top = df[!, Symbol("r1s1_Op", i, "_r2s1")]
+                    bot = df.r1s1_dot_r2s1
                     pmean(ratio_of_means(top, bot; skip=5000))
                 end
                 for i in 1:cld(M, 2)
