@@ -184,7 +184,7 @@ end
 
         @test_throws ArgumentError BoseFS(10, 11 => 1)
         @test_throws ArgumentError BoseFS(10, 10 => -1)
-        @test_throws MethodError BoseFS(10 => 1)
+        @test_throws ArgumentError BoseFS(10 => 1)
     end
     @testset "onr" begin
         middle_full_onr = onr(middle_full)
