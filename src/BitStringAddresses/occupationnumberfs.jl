@@ -10,6 +10,8 @@ particles is runtime data, and can be retrieved with `num_particles(address)`.
 - `OccupationNumberFS{[M,T]}(onr)`: Construct from collection `onr` with `M` occupation
   numbers with type `T`. If unspecified, the type `T` of the occupation numbers is inferred
   from the type of the arguments.
+- `OccupationNumberFS{M[,T]}(onr)`: Construct a vacuum state with `M` modes. If `T` is
+  unspecified, `UInt8` is used.
 - `OccupationNumberFS(fs::BoseFS)`: Construct from [`BoseFS`](@ref).
 - With shortform macro [`@fs_str`](@ref). Specify the number of
   significant bits in braces. See example below.
@@ -24,6 +26,9 @@ true
 
 julia> num_particles(ofs)
 6
+
+julia> OccupationNumberFS{5}() # vacuum state with 5 modes
+OccupationNumberFS{5, UInt8}(0, 0, 0, 0, 0)
 ```
 """
 struct OccupationNumberFS{M,T<:Unsigned} <: SingleComponentFockAddress{missing,M}
@@ -53,6 +58,13 @@ end
 function OccupationNumberFS(fs::BoseFS{N,M}) where {N,M}
     return OccupationNumberFS{M,select_int_type(N)}(onr(fs))
 end
+
+# convenience constructors for vacuum state
+function OccupationNumberFS{M,T}() where {M,T}
+    return OccupationNumberFS(SVector{M,T}(Tuple(zero(T) for _ in 1:M)))
+end
+
+OccupationNumberFS{M}() where {M} = OccupationNumberFS{M,UInt8}()
 
 function print_address(io::IO, ofs::OccupationNumberFS{M,T}; compact=false) where {M,T}
     if compact
