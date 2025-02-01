@@ -479,6 +479,8 @@ end
         @test isa(OccupationNumberFS(fs), OccupationNumberFS{2, UInt8})
         fs = BoseFS(1, 333)
         @test isa(OccupationNumberFS(fs), OccupationNumberFS{2,UInt16})
+        fs = BoseFS(0, 0)
+        @test isa(OccupationNumberFS(fs), OccupationNumberFS{2,UInt8})
     end
 
     @testset "Printing and parsing OccupationNumberFS" begin
