@@ -461,7 +461,9 @@ end
     end
 
     @testset "OccupationNumberFS with multiple arguments" begin
-        @test isa(OccupationNumberFS(1, 2, 3), OccupationNumberFS{3, UInt8})
+        @test OccupationNumberFS(i for i in 1:3) == OccupationNumberFS(1, 2, 3)
+        @test isa(OccupationNumberFS{3,UInt32}(i for i in 1:3), OccupationNumberFS{3,UInt32})
+        @test isa(OccupationNumberFS(1, 2, 3), OccupationNumberFS{3,UInt8})
         @test_throws ArgumentError OccupationNumberFS(1.1, 2, 3)
         @test_throws ArgumentError OccupationNumberFS(-1, 2, 3)
         @test_throws ArgumentError OccupationNumberFS(1, 2, 300)

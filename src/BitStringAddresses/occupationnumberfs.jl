@@ -10,7 +10,7 @@ particles is runtime data, and can be retrieved with `num_particles(address)`.
 - `OccupationNumberFS{[M,T]}(onr)`: Construct from collection `onr` with `M` occupation
   numbers with type `T`. If unspecified, the type `T` of the occupation numbers is inferred
   from the type of the arguments.
-- `OccupationNumberFS{M[,T]}(onr)`: Construct a vacuum state with `M` modes. If `T` is
+- `OccupationNumberFS{M[,T]}()`: Construct a vacuum state with `M` modes. If `T` is
   unspecified, `UInt8` is used.
 - `OccupationNumberFS(fs::BoseFS)`: Construct from [`BoseFS`](@ref).
 - With shortform macro [`@fs_str`](@ref). Specify the number of
@@ -29,22 +29,30 @@ julia> num_particles(ofs)
 
 julia> OccupationNumberFS{5}() # vacuum state with 5 modes
 OccupationNumberFS{5, UInt8}(0, 0, 0, 0, 0)
+
+julia> OccupationNumberFS(i for i in 1:3) # use list comprehension
+OccupationNumberFS{3, UInt8}(1, 2, 3)
 ```
 """
 struct OccupationNumberFS{M,T<:Unsigned} <: SingleComponentFockAddress{missing,M}
     onr::SVector{M,T}
+
+    function OccupationNumberFS{M,T}(args...) where {M,T<:Unsigned}
+        return new(SVector{M,T}(args...))
+    end
 end
 
-function OccupationNumberFS{M,T}(args...) where {M,T}
-    return OccupationNumberFS(SVector{M,T}(args...))
+function OccupationNumberFS(sv::SVector{M,T}) where {M,T<:Unsigned}
+    return OccupationNumberFS{M,T}(sv)
+end
+
+function OccupationNumberFS(arg)
+    t = Tuple(arg)
+    return OccupationNumberFS{length(t)}(t)
 end
 
 function OccupationNumberFS(args...)
-    sv = SVector(args...)
-    all(isinteger, sv) || throw(ArgumentError("all arguments must be integers"))
-    all(x -> x ≥ 0, sv) || throw(ArgumentError("all arguments must be non-negative"))
-    all(x -> x < 256, sv) || throw(ArgumentError("arguments don't fit in a byte, specify type"))
-    return OccupationNumberFS(SVector{length(sv),UInt8}(args...))
+    return OccupationNumberFS{length(args)}(args)
 end
 
 function OccupationNumberFS{M}(args...) where M
@@ -52,7 +60,7 @@ function OccupationNumberFS{M}(args...) where M
     all(isinteger, sv) || throw(ArgumentError("all arguments must be integers"))
     all(x -> x ≥ 0, sv) || throw(ArgumentError("all arguments must be non-negative"))
     all(x -> x < 256, sv) || throw(ArgumentError("arguments don't fit in a byte, specify type"))
-    return OccupationNumberFS(SVector{M,UInt8}(args...))
+    return OccupationNumberFS{M,UInt8}(args...)
 end
 
 function OccupationNumberFS(fs::BoseFS{N,M}) where {N,M}
@@ -60,8 +68,8 @@ function OccupationNumberFS(fs::BoseFS{N,M}) where {N,M}
 end
 
 # convenience constructors for vacuum state
-function OccupationNumberFS{M,T}() where {M,T}
-    return OccupationNumberFS(SVector{M,T}(Tuple(zero(T) for _ in 1:M)))
+function OccupationNumberFS{M,T}() where {M,T<:Unsigned}
+    return OccupationNumberFS(SVector{M,T}(zero(T) for _ in 1:M))
 end
 
 OccupationNumberFS{M}() where {M} = OccupationNumberFS{M,UInt8}()
