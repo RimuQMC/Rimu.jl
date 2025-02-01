@@ -32,6 +32,9 @@ OccupationNumberFS{5, UInt8}(0, 0, 0, 0, 0)
 
 julia> OccupationNumberFS(i for i in 1:3) # use list comprehension
 OccupationNumberFS{3, UInt8}(1, 2, 3)
+
+julia> OccupationNumberFS(4, 1=>2, 3=>4) # sparse constructor
+OccupationNumberFS{4, UInt8}(2, 0, 4, 0)
 ```
 """
 struct OccupationNumberFS{M,T<:Unsigned} <: SingleComponentFockAddress{missing,M}
@@ -51,9 +54,10 @@ function OccupationNumberFS(arg)
     return OccupationNumberFS{length(t)}(t)
 end
 
-function OccupationNumberFS(args...)
+function OccupationNumberFS(args::Integer...)
     return OccupationNumberFS{length(args)}(args)
 end
+OccupationNumberFS(arg::Integer) = OccupationNumberFS{1}(arg) # to resolve ambiguity
 
 function OccupationNumberFS{M}(args...) where M
     sv = SVector{M}(args...)
@@ -71,8 +75,18 @@ end
 function OccupationNumberFS{M,T}() where {M,T<:Unsigned}
     return OccupationNumberFS(SVector{M,T}(zero(T) for _ in 1:M))
 end
-
 OccupationNumberFS{M}() where {M} = OccupationNumberFS{M,UInt8}()
+
+# Sparse constructors
+OccupationNumberFS(M::Integer, pairs::Pair...) = OccupationNumberFS(M, pairs)
+OccupationNumberFS(M::Integer, pairs) = OccupationNumberFS(sparse_to_onr(M, pairs))
+OccupationNumberFS{M}(pairs::Pair...) where {M} = OccupationNumberFS{M}(pairs)
+
+function OccupationNumberFS{M}(pairs::NTuple{<:Any,Pair}) where {M}
+    OccupationNumberFS{M}(sparse_to_onr(M, pairs))
+end
+
+OccupationNumberFS(pairs::Pair...) = throw(ArgumentError("number of modes must be provided"))
 
 function print_address(io::IO, ofs::OccupationNumberFS{M,T}; compact=false) where {M,T}
     if compact

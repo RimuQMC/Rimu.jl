@@ -107,6 +107,7 @@ BoseFS(vals::Integer...) = BoseFS(vals) # specify occupation numbers
 BoseFS(val::Integer) = BoseFS((val,)) # single mode address
 BoseFS{N,M}(vals::Integer...) where {N,M} = BoseFS{N,M}(vals)
 
+# Sparse constructors
 BoseFS(M::Integer, pairs::Pair...) = BoseFS(M, pairs)
 BoseFS(M::Integer, pairs) = BoseFS(sparse_to_onr(M, pairs))
 BoseFS{N,M}(pairs::Pair...) where {N,M} = BoseFS{N,M}(pairs)
