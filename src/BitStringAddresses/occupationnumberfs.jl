@@ -61,6 +61,9 @@ OccupationNumberFS(arg::Integer) = OccupationNumberFS{1}(arg) # to resolve ambig
 
 function OccupationNumberFS{M}(args...) where M
     sv = SVector{M}(args...)
+    if all(x -> isa(x, Pair), sv)
+        return OccupationNumberFS{M}(Tuple(sv))
+    end
     all(isinteger, sv) || throw(ArgumentError("all arguments must be integers"))
     all(x -> x ≥ 0, sv) || throw(ArgumentError("all arguments must be non-negative"))
     all(x -> x < 256, sv) || throw(ArgumentError("arguments don't fit in a byte, specify type"))
