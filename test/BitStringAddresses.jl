@@ -490,6 +490,8 @@ end
         @test OccupationNumberFS{2}(2 => 4) == OccupationNumberFS(2, 2 => 4)
         @test OccupationNumberFS(5, i => i + 1 for i in 1:3) ==
             OccupationNumberFS{5}(Tuple(i => i + 1 for i in 1:3))
+        @test OccupationNumberFS{5}(i => i^2 for i in 1:5) ==
+            OccupationNumberFS(5, i => i^2 for i in 1:5)
     end
 
     @testset "Printing and parsing OccupationNumberFS" begin

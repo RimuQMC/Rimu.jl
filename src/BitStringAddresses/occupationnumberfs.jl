@@ -35,6 +35,9 @@ OccupationNumberFS{3, UInt8}(1, 2, 3)
 
 julia> OccupationNumberFS(4, 1=>2, 3=>4) # sparse constructor
 OccupationNumberFS{4, UInt8}(2, 0, 4, 0)
+
+julia> OccupationNumberFS(5, i=>i^2 for i in 2:4) # sparse with list comprehension
+OccupationNumberFS{5, UInt8}(0, 4, 9, 16, 0)
 ```
 """
 struct OccupationNumberFS{M,T<:Unsigned} <: SingleComponentFockAddress{missing,M}
@@ -105,13 +108,13 @@ Base.reverse(ofs::OccupationNumberFS) = OccupationNumberFS(reverse(ofs.onr))
 onr(ofs::OccupationNumberFS) = ofs.onr
 function Base.isless(a::OccupationNumberFS{M}, b::OccupationNumberFS{M}) where {M}
     # equivalent to `isless(reverse(a.onr), reverse(b.onr))`
+    # reversing the order here to make it consistent with BoseFS
     i = length(a.onr)
     while i > 1 && a.onr[i] == b.onr[i]
         i -= 1
     end
     return isless(a.onr[i], b.onr[i])
 end
-# reversing the order here to make it consistent with BoseFS
 Base.:(==)(a::OccupationNumberFS, b::OccupationNumberFS) = a.onr == b.onr
 Base.hash(ofs::OccupationNumberFS, h::UInt) = hash(ofs.onr, h)
 
