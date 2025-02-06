@@ -2,18 +2,19 @@
     OccupationNumberFS{M,T} <: SingleComponentFockAddress
 Address type that stores the occupation numbers of a single component bosonic Fock state
 with `M` modes. The occupation numbers must fit into the type `T <: Unsigned`. The number of
-particles is runtime data, and can be retrieved with `num_particles(address)`.
+particles is runtime data, and can be retrieved with [`num_particles(address)`](@ref).
 
 # Constructors
 - `OccupationNumberFS(val::Integer...)`: Construct from occupation numbers. Must be
   < 256 to fit into `UInt8`.
+- `OccupationNumberFS(M, pairs::Pair...)`: Construct from a sparse representation with
+  `M` modes and pairs of mode index and occupation number.
 - `OccupationNumberFS{[M,T]}(onr)`: Construct from collection `onr` with `M` occupation
-  numbers with type `T`. If unspecified, the type `T` of the occupation numbers is inferred
-  from the type of the arguments.
+  numbers with optional type `T`.  `onr` may be a tuple, an array, or a generator.
 - `OccupationNumberFS{M[,T]}()`: Construct a vacuum state with `M` modes. If `T` is
   unspecified, `UInt8` is used.
 - `OccupationNumberFS(fs::BoseFS)`: Construct from [`BoseFS`](@ref).
-- With shortform macro [`@fs_str`](@ref). Specify the number of
+- With short form macro [`@fs_str`](@ref). Specify the number of
   significant bits in braces. See example below.
 
 # Examples
@@ -57,16 +58,20 @@ function OccupationNumberFS(arg)
     return OccupationNumberFS{length(t)}(t)
 end
 
-function OccupationNumberFS(args::Integer...)
-    return OccupationNumberFS{length(args)}(args)
+function OccupationNumberFS(args::Number...)
+    return OccupationNumberFS(SVector(args))
 end
-OccupationNumberFS(arg::Integer) = OccupationNumberFS{1}(arg) # to resolve ambiguity
+OccupationNumberFS(arg::Number) = OccupationNumberFS{1}(tuple(arg)) # to resolve ambiguity
+function OccupationNumberFS{M}(args::Number...) where {M}
+    return OccupationNumberFS{M}(SVector{M}(args))
+end
 
 function OccupationNumberFS{M}(args...) where M
-    sv = SVector{M}(args...)
-    if all(x -> isa(x, Pair), sv)
-        return OccupationNumberFS{M}(Tuple(sv))
+    t = Tuple(args...)
+    if all(x -> isa(x, Pair), t)
+        return OccupationNumberFS{M}(t)
     end
+    sv = SVector{M}(t)
     all(isinteger, sv) || throw(ArgumentError("all arguments must be integers"))
     all(x -> x ≥ 0, sv) || throw(ArgumentError("all arguments must be non-negative"))
     all(x -> x < 256, sv) || throw(ArgumentError("arguments don't fit in a byte, specify type"))
@@ -84,8 +89,8 @@ end
 OccupationNumberFS{M}() where {M} = OccupationNumberFS{M,UInt8}()
 
 # Sparse constructors
-OccupationNumberFS(M::Integer, pairs::Pair...) = OccupationNumberFS(M, pairs)
-OccupationNumberFS(M::Integer, pairs) = OccupationNumberFS(sparse_to_onr(M, pairs))
+OccupationNumberFS(M::Number, pairs::Pair...) = OccupationNumberFS(Int(M), pairs)
+OccupationNumberFS(M::Number, pairs) = OccupationNumberFS(sparse_to_onr(Int(M), pairs))
 OccupationNumberFS{M}(pairs::Pair...) where {M} = OccupationNumberFS{M}(pairs)
 
 function OccupationNumberFS{M}(pairs::NTuple{<:Any,Pair}) where {M}
