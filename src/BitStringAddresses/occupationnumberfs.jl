@@ -2,16 +2,19 @@
     OccupationNumberFS{M,T} <: SingleComponentFockAddress
 Address type that stores the occupation numbers of a single component bosonic Fock state
 with `M` modes. The occupation numbers must fit into the type `T <: Unsigned`. The number of
-particles is runtime data, and can be retrieved with `num_particles(address)`.
+particles is runtime data, and can be retrieved with [`num_particles(address)`](@ref).
 
 # Constructors
 - `OccupationNumberFS(val::Integer...)`: Construct from occupation numbers. Must be
   < 256 to fit into `UInt8`.
+- `OccupationNumberFS(M, pairs::Pair...)`: Construct from a sparse representation with
+  `M` modes and pairs of mode index and occupation number.
 - `OccupationNumberFS{[M,T]}(onr)`: Construct from collection `onr` with `M` occupation
-  numbers with type `T`. If unspecified, the type `T` of the occupation numbers is inferred
-  from the type of the arguments.
+  numbers with optional type `T`.  `onr` may be a tuple, an array, or a generator.
+- `OccupationNumberFS{M[,T]}()`: Construct a vacuum state with `M` modes. If `T` is
+  unspecified, `UInt8` is used.
 - `OccupationNumberFS(fs::BoseFS)`: Construct from [`BoseFS`](@ref).
-- With shortform macro [`@fs_str`](@ref). Specify the number of
+- With short form macro [`@fs_str`](@ref). Specify the number of
   significant bits in braces. See example below.
 
 # Examples
@@ -24,35 +27,77 @@ true
 
 julia> num_particles(ofs)
 6
+
+julia> OccupationNumberFS{5}() # vacuum state with 5 modes
+OccupationNumberFS{5, UInt8}(0, 0, 0, 0, 0)
+
+julia> OccupationNumberFS(i for i in 1:3) # use list comprehension
+OccupationNumberFS{3, UInt8}(1, 2, 3)
+
+julia> OccupationNumberFS(4, 1=>2, 3=>4) # sparse constructor
+OccupationNumberFS{4, UInt8}(2, 0, 4, 0)
+
+julia> OccupationNumberFS(5, i=>i^2 for i in 2:4) # sparse with list comprehension
+OccupationNumberFS{5, UInt8}(0, 4, 9, 16, 0)
 ```
 """
 struct OccupationNumberFS{M,T<:Unsigned} <: SingleComponentFockAddress{missing,M}
     onr::SVector{M,T}
+
+    function OccupationNumberFS{M,T}(args...) where {M,T<:Unsigned}
+        return new(SVector{M,T}(args...))
+    end
 end
 
-function OccupationNumberFS{M,T}(args...) where {M,T}
-    return OccupationNumberFS(SVector{M,T}(args...))
+function OccupationNumberFS(sv::SVector{M,T}) where {M,T<:Unsigned}
+    return OccupationNumberFS{M,T}(sv)
 end
 
-function OccupationNumberFS(args...)
-    sv = SVector(args...)
-    all(isinteger, sv) || throw(ArgumentError("all arguments must be integers"))
-    all(x -> x ≥ 0, sv) || throw(ArgumentError("all arguments must be non-negative"))
-    all(x -> x < 256, sv) || throw(ArgumentError("arguments don't fit in a byte, specify type"))
-    return OccupationNumberFS(SVector{length(sv),UInt8}(args...))
+function OccupationNumberFS(arg)
+    t = Tuple(arg)
+    return OccupationNumberFS{length(t)}(t)
+end
+
+function OccupationNumberFS(args::Number...)
+    return OccupationNumberFS(SVector(args))
+end
+OccupationNumberFS(arg::Number) = OccupationNumberFS{1}(tuple(arg)) # to resolve ambiguity
+function OccupationNumberFS{M}(args::Number...) where {M}
+    return OccupationNumberFS{M}(SVector{M}(args))
 end
 
 function OccupationNumberFS{M}(args...) where M
-    sv = SVector{M}(args...)
+    t = Tuple(args...)
+    if all(x -> isa(x, Pair), t)
+        return OccupationNumberFS{M}(t)
+    end
+    sv = SVector{M}(t)
     all(isinteger, sv) || throw(ArgumentError("all arguments must be integers"))
     all(x -> x ≥ 0, sv) || throw(ArgumentError("all arguments must be non-negative"))
     all(x -> x < 256, sv) || throw(ArgumentError("arguments don't fit in a byte, specify type"))
-    return OccupationNumberFS(SVector{M,UInt8}(args...))
+    return OccupationNumberFS{M,UInt8}(args...)
 end
 
 function OccupationNumberFS(fs::BoseFS{N,M}) where {N,M}
     return OccupationNumberFS{M,select_int_type(N)}(onr(fs))
 end
+
+# convenience constructors for vacuum state
+function OccupationNumberFS{M,T}() where {M,T<:Unsigned}
+    return OccupationNumberFS(SVector{M,T}(zero(T) for _ in 1:M))
+end
+OccupationNumberFS{M}() where {M} = OccupationNumberFS{M,UInt8}()
+
+# Sparse constructors
+OccupationNumberFS(M::Number, pairs::Pair...) = OccupationNumberFS(Int(M), pairs)
+OccupationNumberFS(M::Number, pairs) = OccupationNumberFS(sparse_to_onr(Int(M), pairs))
+OccupationNumberFS{M}(pairs::Pair...) where {M} = OccupationNumberFS{M}(pairs)
+
+function OccupationNumberFS{M}(pairs::NTuple{<:Any,Pair}) where {M}
+    OccupationNumberFS{M}(sparse_to_onr(M, pairs))
+end
+
+OccupationNumberFS(pairs::Pair...) = throw(ArgumentError("number of modes must be provided"))
 
 function print_address(io::IO, ofs::OccupationNumberFS{M,T}; compact=false) where {M,T}
     if compact
@@ -68,13 +113,13 @@ Base.reverse(ofs::OccupationNumberFS) = OccupationNumberFS(reverse(ofs.onr))
 onr(ofs::OccupationNumberFS) = ofs.onr
 function Base.isless(a::OccupationNumberFS{M}, b::OccupationNumberFS{M}) where {M}
     # equivalent to `isless(reverse(a.onr), reverse(b.onr))`
+    # reversing the order here to make it consistent with BoseFS
     i = length(a.onr)
     while i > 1 && a.onr[i] == b.onr[i]
         i -= 1
     end
     return isless(a.onr[i], b.onr[i])
 end
-# reversing the order here to make it consistent with BoseFS
 Base.:(==)(a::OccupationNumberFS, b::OccupationNumberFS) = a.onr == b.onr
 Base.hash(ofs::OccupationNumberFS, h::UInt) = hash(ofs.onr, h)
 
