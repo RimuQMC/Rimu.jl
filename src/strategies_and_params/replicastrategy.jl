@@ -107,7 +107,7 @@ where
 is the (right) eigenvector of ``\\hat{G}`` and ``| \\psi \\rangle`` is an eigenvector of
 ``\\hat{H}``.
 
-For an m-tuple of input operators ``(\\hat{A}_1, ..., \\hat{A}_m)``, overlaps of
+For an ``m``-tuple of input operators ``(\\hat{A}_1, ..., \\hat{A}_m)``, overlaps of
 ``\\langle \\phi | f^{-1} \\hat{A} f^{-1} | \\phi \\rangle`` are reported as
 `r{i}s{k}_Op{m}_r{j}s{k}`. The correct vector-vector overlap ``\\langle \\phi | f^{-2} | \\phi
 \\rangle`` is reported *last* as `r{i}s{k}_Op{m+1}_r{j}s{k}`. This is in addition to the *bare*
