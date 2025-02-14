@@ -207,7 +207,7 @@ Compute the [`growth_estimator`](@ref) on a `DataFrame` `df` or
 depths.
 
 Returns a `NamedTuple` with the fields
-* `df_ge`: `DataFrame` with reweighting depth and `growth_estiamator` data. See example
+* `df_ge`: `DataFrame` with reweighting depth and `growth_estimator` data. See example
   below.
 * `correlation_estimate`: estimated correlation time from blocking analysis
 * `se, se_l, se_u`: [`shift_estimator`](@ref) and error
@@ -252,7 +252,6 @@ function growth_estimator_analysis(
     df = DataFrame(sim)
     shift_v = Vector(getproperty(df, Symbol(shift_name))) # casting to `Vector` to make SIMD loops efficient
     norm_v = Vector(getproperty(df, Symbol(norm_name)))
-    num_reps = length(filter(startswith("norm"), names(df)))
     time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     se = blocking_analysis(shift_v; skip)
     E_r = se.mean
@@ -423,7 +422,6 @@ function mixed_estimator_analysis(
     shift_v = Vector(getproperty(df, Symbol(shift_name))) # casting to `Vector` to make SIMD loops efficient
     hproj_v = Vector(getproperty(df, Symbol(hproj_name)))
     vproj_v = Vector(getproperty(df, Symbol(vproj_name)))
-    num_reps = length(filter(startswith("norm"), names(df)))
 
     time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     se = blocking_analysis(shift_v; skip)
@@ -568,7 +566,7 @@ function rayleigh_replica_estimator(
     kwargs...
 )
     df = DataFrame(sim)
-    num_reps = parse(Int, metadata(df, "num_replicas"))
+    num_reps = num_replicas(df)
     time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     T = eltype(df[!, Symbol(shift_name, "_r1s1")])
     shift_v = Vector{T}[]
@@ -641,7 +639,7 @@ function rayleigh_replica_estimator_analysis(
     kwargs...
 )
     df = DataFrame(sim)
-    num_reps = parse(Int, metadata(df, "num_replicas"))
+    num_reps = num_replicas(df)
     time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     # estimate the correlation time by blocking the shift data
     T = eltype(df[!, Symbol(shift_name, "_r1s1")])

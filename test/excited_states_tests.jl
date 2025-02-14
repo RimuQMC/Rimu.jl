@@ -2,7 +2,7 @@ using Rimu
 using Test
 
 
-@testset "excited state energies" begin
+@testset "excited states" begin
     ham = HubbardReal1D(BoseFS(1,1,1,1,1))
     pr = ExactDiagonalizationProblem(ham)
     result = solve(pr)
@@ -22,6 +22,7 @@ using Test
     @test energy1.mean ≈ vals[1]
     @test energy2.mean ≈ vals[2]
     @test energy3.mean ≈ vals[3]
+    @test num_spectral_states(df) == 3
 
     n_replicas = 2
     p = ProjectorMonteCarloProblem(ham; spectral_strategy, last_step, style, n_replicas)
@@ -40,13 +41,18 @@ using Test
     @test energy5.mean ≈ vals[2]
     @test energy6.mean ≈ vals[3]
 
+    @test num_overlaps(df) == 0
+    @test_throws ArgumentError variational_energy_estimator(df)
+
     replica_strategy = AllOverlaps(n_replicas; operator=G2RealCorrelator(0), mixed_spectral_overlaps=true)
     p = ProjectorMonteCarloProblem(ham; spectral_strategy, last_step, style, replica_strategy)
     df = DataFrame(solve(p))
+    @test num_replicas(df) == 2
+    @test num_overlaps(df) == 1
     for state in 1:3
         r = rayleigh_replica_estimator(df; spectral_state=state)
         @test r.f ≈ g2s[state] atol=0.01
     end
-    num_overlaps = length(filter(startswith(r"r[0-9]+s[0-9]+_dot"), names(df)))
-    @test num_overlaps == 15
+    num_olaps = length(filter(startswith(r"r[0-9]+s[0-9]+_dot"), names(df)))
+    @test num_olaps == 15
 end

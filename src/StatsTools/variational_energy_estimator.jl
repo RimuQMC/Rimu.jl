@@ -53,32 +53,38 @@ end
 
 function variational_energy_estimator(sim; max_replicas=:all, spectral_state=1, kwargs...)
     df = DataFrame(sim)
-    num_replicas = parse(Int, metadata(df, "num_replicas"))
-    if num_replicas == 1
+    num_reps = num_replicas(df)
+    if num_reps == 1
         throw(ArgumentError(
             "No replicas found. Use keyword \
             `replica_strategy=AllOverlaps(n)` with n≥2 in `ProjectorMonteCarloProblem` to set up replicas!"
         ))
     end
-    @assert num_replicas ≥ 2 "At least two replicas are needed, found $num_replicas"
+    @assert num_reps ≥ 2 "At least two replicas are needed, found $num_replicas"
 
-    num_overlaps = length(filter(startswith(Regex("r[0-9]+s$(spectral_state)_dot_r[0-9]+s$(spectral_state)")), names(df)))
-    @assert num_overlaps == binomial(num_replicas, 2) "Unexpected number of overlaps."
+    num_olaps = num_overlaps(df)
+    if num_olaps == 0
+        throw(ArgumentError(
+            "No overlaps found. Use keyword \
+            `replica_strategy=AllOverlaps(n)` with n≥2 in `ProjectorMonteCarloProblem` to set up replicas!"
+        ))
+    end
+    @assert num_olaps == binomial(num_reps, 2) "Unexpected number of overlaps."
 
     # process at most `max_replicas` but at least 2 replicas
     if max_replicas isa Integer
-        num_replicas = max(2, min(max_replicas, num_replicas))
+        num_reps = max(2, min(max_replicas, num_reps))
     end
 
-    shiftnames = [Symbol("shift_r$(i)s$(spectral_state)") for i in 1:num_replicas]
+    shiftnames = [Symbol("shift_r$(i)s$(spectral_state)") for i in 1:num_reps]
     shifts = map(name -> getproperty(df, name), shiftnames)
-    @assert length(shifts) == num_replicas
+    @assert length(shifts) == num_reps
 
     overlap_names = [
-        Symbol("r$(i)s$(spectral_state)_dot_r$(j)s$(spectral_state)") for i in 1:num_replicas for j in i+1:num_replicas
+        Symbol("r$(i)s$(spectral_state)_dot_r$(j)s$(spectral_state)") for i in 1:num_reps for j in i+1:num_reps
     ]
     overlaps = map(name -> getproperty(df, name), overlap_names)
-    @assert length(overlaps) ≤ num_overlaps
+    @assert length(overlaps) ≤ num_olaps
 
     return variational_energy_estimator(shifts, overlaps; kwargs...)
 end

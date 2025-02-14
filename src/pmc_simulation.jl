@@ -187,6 +187,7 @@ end
 
 num_spectral_states(sm::PMCSimulation) = num_spectral_states(sm.state)
 num_replicas(sm::PMCSimulation) = num_replicas(sm.state)
+num_overlaps(sm::PMCSimulation) = num_overlaps(sm.state)
 
 function report_simulation_status_metadata!(report::Report, sm::PMCSimulation)
     @unpack modified, aborted, success, message, elapsed_time = sm
