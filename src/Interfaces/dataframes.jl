@@ -1,8 +1,3 @@
-"""
-    num_replicas(df::DataFrame)
-
-Return the number of replicas used in the simulation that produced `df`.
-"""
 function num_replicas(df::DataFrame)
     if haskey(metadata(df), "num_replicas")
         return parse(Int, metadata(df, "num_replicas"))
@@ -13,11 +8,6 @@ function num_replicas(df::DataFrame)
     end
 end
 
-"""
-    num_spectral_states(df::DataFrame)
-
-Return the number of spectral states used in the simulation that produced `df`.
-"""
 function num_spectral_states(df::DataFrame)
     if haskey(metadata(df), "num_spectral_states")
         return parse(Int, metadata(df, "num_spectral_states"))
@@ -29,11 +19,6 @@ function num_spectral_states(df::DataFrame)
     end
 end
 
-"""
-    num_overlaps(df::DataFrame)
-
-Return the number of overlaps between replicas.
-"""
 function num_overlaps(df::DataFrame)
     if haskey(metadata(df), "num_overlaps")
         return parse(Int, metadata(df, "num_overlaps"))

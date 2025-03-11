@@ -22,7 +22,7 @@ function:
 abstract type ReplicaStrategy{N} end
 
 """
-    num_replicas(state_or_strategy)
+    num_replicas(state_or_strategy_or_DataFrame)
 
 Return the number of replicas used in the simulation.
 """
