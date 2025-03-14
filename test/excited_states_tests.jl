@@ -46,8 +46,10 @@ using Test
 
     replica_strategy = AllOverlaps(n_replicas; operator=G2RealCorrelator(0), mixed_spectral_overlaps=true)
     p = ProjectorMonteCarloProblem(ham; spectral_strategy, last_step, style, replica_strategy)
-    df = DataFrame(solve(p))
+    sim = solve(p)
+    df = DataFrame(sim)
     @test num_replicas(df) == 2
+    @test num_overlaps(sim) == 1
     @test num_overlaps(df) == 1
     for state in 1:3
         r = rayleigh_replica_estimator(df; spectral_state=state)

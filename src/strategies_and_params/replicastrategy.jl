@@ -24,7 +24,8 @@ abstract type ReplicaStrategy{N} end
 """
     num_replicas(state_or_strategy_or_DataFrame)
 
-Return the number of replicas used in the simulation.
+Return the number of replicas used in the simulation. With multiple spectral states, only
+reports the number of replicas per spectral state.
 """
 num_replicas(::ReplicaStrategy{N}) where {N} = N
 

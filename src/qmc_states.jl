@@ -124,7 +124,8 @@ num_spectral_states(::ReplicaState{<:Any, S}) where {S} = S
 """
     num_overlaps(state_or_DataFrame)
 
-Return the number of overlaps between replicas.
+Return the number of overlaps between replicas. Only counts overlaps between replicas of
+the same spectral state, even if `AllOverlaps` is used with `mixed_spectral_overlaps=true`.
 """
 num_overlaps(::ReplicaState{<:Any,<:Any,<:Any,<:Any,<:NoStats}) = 0
 num_overlaps(::ReplicaState{N,<:Any,<:Any,<:Any,<:AllOverlaps{N,<:Any,<:Any,B}}) where {N,B} = B*N*(N-1)÷2
