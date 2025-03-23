@@ -26,6 +26,8 @@ abstract type ReplicaStrategy{N} end
 
 Return the number of replicas used in the simulation. With multiple spectral states, only
 reports the number of replicas per spectral state.
+
+See also [`ProjectorMonteCarloProblem`](@ref), [`AllOverlaps`](@ref), [`num_spectral_states`](@ref).
 """
 num_replicas(::ReplicaStrategy{N}) where {N} = N
 
