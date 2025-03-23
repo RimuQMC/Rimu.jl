@@ -287,3 +287,10 @@ end
 
 num_replicas(::ProjectorMonteCarloProblem{N}) where N = N
 num_spectral_states(::ProjectorMonteCarloProblem{<:Any,S}) where {S} = S
+function num_overlaps(p::ProjectorMonteCarloProblem{N}) where {N}
+    if p.replica_strategy isa AllOverlaps{N,<:Any,<:Any,true}
+        return N*(N-1)÷2
+    else
+        return 0
+    end
+end

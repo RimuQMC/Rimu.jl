@@ -104,6 +104,7 @@ end
             "1-element Rimu.SpectralState"
         )
         @test startswith(sprint(show, state_vectors(sm)), "2×1 Rimu.StateVectors")
+        @test num_overlaps(sm) == num_overlaps(p) == num_overlaps(sm.state)
     end
 
     @testset "Default DVec" begin
@@ -187,6 +188,7 @@ using Rimu: num_replicas, num_spectral_states
     @test size(DataFrame(sm))[1] == sm.state.step[]
     @test num_replicas(sm) == num_replicas(p) == num_replicas(sm.state)
     @test num_spectral_states(sm) == num_spectral_states(p) == num_spectral_states(sm.state)
+    @test num_overlaps(sm) == num_overlaps(p) == num_overlaps(sm.state)
     @test size(state_vectors(sm)) == (num_replicas(sm), num_spectral_states(sm))
     @test size(sm.state) == (num_replicas(sm), num_spectral_states(sm))
     @test sm.state[1, 1] === sm.state.spectral_states[1][1]
