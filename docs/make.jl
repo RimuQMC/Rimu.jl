@@ -75,7 +75,7 @@ makedocs(;
     authors="Joachim Brand <j.brand@massey.ac.nz>",
     checkdocs=:exports,
     doctest=false, # Doctests are done while testing.
-    # warnonly = true, # should be diabled for a release
+    # warnonly = true, # should be disabled for a release
 )
 
 deploydocs(

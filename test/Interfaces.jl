@@ -1,6 +1,7 @@
 using LinearAlgebra
 using Rimu
 using Test
+using DataFrames
 
 @testset "Interface basics" begin
     @test eltype(StyleUnknown{String}()) == String
@@ -34,6 +35,12 @@ using Test
     @test has_adjoint(ham)
 
     @test_throws ArgumentError Interfaces.dot_from_right(1, 2, 3)
+end
+
+@testset "DataFrame interfaces" begin
+    @test_throws ArgumentError num_replicas(DataFrame())
+    @test_throws ArgumentError num_spectral_states(DataFrame())
+    @test_throws ArgumentError num_overlaps(DataFrame())
 end
 
 # using lomc! with a matrix was removed in Rimu.jl v0.12.0

@@ -1,12 +1,13 @@
 """
-    replica_fidelity(df::DataFrame; p_field = :hproj, skip = 0)
+    replica_fidelity(df::DataFrame; p_field = :hproj, spectral_state = 1, skip = 0)
     replica_fidelity(sim::PMCSimulation; kwargs...)
 
 Compute the fidelity of the average coefficient vector and the projector defined in
 `p_field` from the [`PMCSimulation`](@ref Main.Rimu.PMCSimulation) or `DataFrame` returned
-by solve, using replicas `_1` and `_2`. Calls [`ratio_of_means`](@ref) to perform a
-blocking analysis on a ratio of the means of separate time series and returns a
-[`RatioBlockingResult`](@ref). The first `skip` steps in the time series are skipped.
+by solve, using replicas `_r1s{i}` and `_r2s{i}`, where `i` is the `spectral_state`. Calls
+[`ratio_of_means`](@ref) to perform a blocking analysis on a ratio of the means of separate
+time series and returns a [`RatioBlockingResult`](@ref). The first `skip` steps in the time
+series are skipped.
 
 The fidelity of states `|ψ⟩` and `|ϕ⟩` is defined as
 ```math
@@ -22,14 +23,15 @@ where `v` is the projector specified by `p_field`, which is assumed to be normal
 unity with the two-norm (i.e. `v⋅v == 1`), and ``\\mathbf{c}_1`` and ``\\mathbf{c}_2``
 are two replica coefficient vectors.
 """
-function replica_fidelity(sim; p_field = :hproj, skip = 0,  args...)
+function replica_fidelity(sim; p_field = :hproj, skip = 0,  spectral_state = 1, args...)
     df = DataFrame(sim)
-    p_field_1 = Symbol(p_field, :_1)
-    p_field_2 = Symbol(p_field, :_2)
+    p_field_1 = Symbol(p_field, :_r1s, spectral_state)
+    p_field_2 = Symbol(p_field, :_r2s, spectral_state)
     fid_num = conj(getproperty(df, p_field_1)) .* getproperty(df, p_field_2)
     fid_num = fid_num[skip+1:end]
     # denominator
-    fid_den = df.c1_dot_c2[skip+1:end]
+    #fid_den = df.r1s1_dot_r2s1[skip+1:end]
+    fid_den = Vector(df[!, Symbol("r1s", spectral_state, "_dot_r2s", spectral_state)])[skip+1:end]
 
     return ratio_of_means(fid_num, fid_den; args...)
 end

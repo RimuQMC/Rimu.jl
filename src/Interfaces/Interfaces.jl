@@ -35,11 +35,18 @@ Follow the links for the definitions of the interfaces!
 * [`apply_column!`](@ref)
 * [`apply_operator!`](@ref)
 * [`step_stats`](@ref)
+
+## Functions for retrieving information from DataFrames:
+
+* [`num_replicas`](@ref)
+* [`num_spectral_states`](@ref)
+* [`num_overlaps`](@ref)
 """
 module Interfaces
 
 using LinearAlgebra: LinearAlgebra, diag
 using VectorInterface: VectorInterface, add, add!, zerovector!, scalartype
+using DataFrames: DataFrame, metadata
 
 import OrderedCollections: freeze
 
@@ -54,9 +61,12 @@ export
     random_offdiagonal, starting_address, allows_address_type,
     LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint,
     AbstractOperator, AbstractObservable
+export
+    num_replicas, num_spectral_states, num_overlaps
 
 include("stochasticstyles.jl")
 include("dictvectors.jl")
 include("hamiltonians.jl")
+include("dataframes.jl")
 
 end

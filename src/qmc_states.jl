@@ -121,6 +121,20 @@ end
 num_replicas(::ReplicaState{N}) where {N} = N
 num_spectral_states(::ReplicaState{<:Any, S}) where {S} = S
 
+"""
+    num_overlaps(state_or_DataFrame)
+
+Return the number of overlaps between replicas that are being reported. Only counts 
+overlaps between replicas of the same spectral state, even if `AllOverlaps` is used with 
+`mixed_spectral_overlaps=true`.
+
+The return value is `0` if no overlaps are being reported, and `N*(N-1)÷2` otherwise, where `N` is the value returned by [`num_replicas`](@ref).
+
+See also [`ProjectorMonteCarloProblem`](@ref), [`AllOverlaps`](@ref), [`num_spectral_states`](@ref).
+"""
+num_overlaps(::ReplicaState{<:Any,<:Any,<:Any,<:Any,<:NoStats}) = 0
+num_overlaps(::ReplicaState{N,<:Any,<:Any,<:Any,<:AllOverlaps{N,<:Any,<:Any,B}}) where {N,B} = B*N*(N-1)÷2
+
 Base.show(io::IO, r::ReplicaState) = show(io, MIME("text/plain"), r)
 function Base.show(io::IO, ::MIME"text/plain", st::ReplicaState)
     r = num_replicas(st)
@@ -187,6 +201,7 @@ function report_default_metadata!(report::Report, state::ReplicaState)
     report_metadata!(report, "laststep", state.simulation_plan.last_step)
     report_metadata!(report, "num_replicas", num_replicas(state))
     report_metadata!(report, "num_spectral_states", num_spectral_states(state))
+    report_metadata!(report, "num_overlaps", num_overlaps(state))
     report_metadata!(report, "hamiltonian", s_state.hamiltonian)
     report_metadata!(report, "reporting_strategy", state.reporting_strategy)
     report_metadata!(report, "shift_strategy", algorithm.shift_strategy)

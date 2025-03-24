@@ -105,20 +105,20 @@ Random.seed!(1234)
             @test state.replica_strategy == NoStats(1)
             @test length(state.spectral_states) == 1
             @test "shift" ∈ names(df)
-            @test "shift_1" ∉ names(df)
+            @test "shift_r1s1" ∉ names(df)
 
             df, state = lomc!(H, dv; replica_strategy=NoStats(3))
             @test state.replica_strategy == NoStats(3)
             @test length(state.spectral_states) == 3
-            @test df.shift_1 ≠ df.shift_2 && df.shift_2 ≠ df.shift_3
-            @test "shift_4" ∉ names(df)
+            @test df.shift_r1s1 ≠ df.shift_r2s1 && df.shift_r2s1 ≠ df.shift_r3s1
+            @test "shift_r4s1" ∉ names(df)
 
             @test isnothing(Rimu.check_transform(NoStats(), H))
         end
 
-        # column names are of the form c{i}_dot_c{j} and c{i}_Op{k}_c{j}.
+        # column names are of the form r{i}s{k}_dot_r{j}s{k} and r{i}s{k}_Op{m}_r{j}s{k}.
         function num_stats(df)
-            return length(filter(x -> match(r"^c[0-9]", x) ≠ nothing, names(df)))
+            return length(filter(x -> match(r"^r[0-9]", x) ≠ nothing, names(df)))
         end
         @testset "AllOverlaps" begin
             for dv in (
@@ -183,8 +183,8 @@ Random.seed!(1234)
             G = MatrixHamiltonian(rand(5, 5))
             O = MatrixHamiltonian(rand(ComplexF64, 5, 5))
             df, _ = lomc!(G, v, replica_strategy=AllOverlaps(2; operator=O))
-            @test df.c1_dot_c2 isa Vector{ComplexF64}
-            @test df.c1_Op1_c2 isa Vector{ComplexF64}
+            @test df.r1s1_dot_r2s1 isa Vector{ComplexF64}
+            @test df.r1s1_Op1_r2s1 isa Vector{ComplexF64}
         end
     end
 
@@ -280,12 +280,12 @@ Random.seed!(1234)
         @test df.len[end] > 10
 
         df, state = @suppress_err lomc!(H, copy(dv); maxlength=10, dτ=1e-4, replica_strategy=NoStats(6))
-        @test all(df.len_1[1:end-1] .≤ 10)
-        @test all(df.len_2[1:end-1] .≤ 10)
-        @test all(df.len_3[1:end-1] .≤ 10)
-        @test all(df.len_4[1:end-1] .≤ 10)
-        @test all(df.len_5[1:end-1] .≤ 10)
-        @test all(df.len_6[1:end-1] .≤ 10)
+        @test all(df.len_r1s1[1:end-1] .≤ 10)
+        @test all(df.len_r2s1[1:end-1] .≤ 10)
+        @test all(df.len_r3s1[1:end-1] .≤ 10)
+        @test all(df.len_r4s1[1:end-1] .≤ 10)
+        @test all(df.len_r5s1[1:end-1] .≤ 10)
+        @test all(df.len_r6s1[1:end-1] .≤ 10)
 
         state.max_length[] += 1000
         df_cont = lomc!(state).df

@@ -13,12 +13,14 @@ function determine_constant_time_step(df)
             return parse(Float64, metadata(df)["time_step"])
         elseif hasproperty(df, "time_step")
             return df.time_step[end]
-        elseif hasproperty(df, "time_step_1")
-            return df.time_step_1[end]
+        elseif hasproperty(df, "time_step_r1s1")
+            return df.time_step_r1s1[end]
         elseif hasproperty(df, "dτ") # backwards compatibility
             return df.dτ[end]
         elseif hasproperty(df, "dτ_1")
             return df.dτ_1[end]
+        elseif hasproperty(df, "time_step_1")
+            return df.time_step_1[end]
         else
             throw(ArgumentError("key `\"time_step\"` not found in `df` metadata"))
         end
@@ -205,7 +207,7 @@ Compute the [`growth_estimator`](@ref) on a `DataFrame` `df` or
 depths.
 
 Returns a `NamedTuple` with the fields
-* `df_ge`: `DataFrame` with reweighting depth and `growth_estiamator` data. See example
+* `df_ge`: `DataFrame` with reweighting depth and `growth_estimator` data. See example
   below.
 * `correlation_estimate`: estimated correlation time from blocking analysis
 * `se, se_l, se_u`: [`shift_estimator`](@ref) and error
@@ -250,7 +252,6 @@ function growth_estimator_analysis(
     df = DataFrame(sim)
     shift_v = Vector(getproperty(df, Symbol(shift_name))) # casting to `Vector` to make SIMD loops efficient
     norm_v = Vector(getproperty(df, Symbol(norm_name)))
-    num_reps = length(filter(startswith("norm"), names(df)))
     time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     se = blocking_analysis(shift_v; skip)
     E_r = se.mean
@@ -421,7 +422,6 @@ function mixed_estimator_analysis(
     shift_v = Vector(getproperty(df, Symbol(shift_name))) # casting to `Vector` to make SIMD loops efficient
     hproj_v = Vector(getproperty(df, Symbol(hproj_name)))
     vproj_v = Vector(getproperty(df, Symbol(vproj_name)))
-    num_reps = length(filter(startswith("norm"), names(df)))
 
     time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     se = blocking_analysis(shift_v; skip)
@@ -477,6 +477,7 @@ end
         shift_name="shift",
         op_name="Op1",
         vec_name="dot",
+        spectral_state=1,
         h=0,
         skip=0,
         Anorm=1,
@@ -507,7 +508,8 @@ The second method computes the Rayleigh quotient directly from a `DataFrame` or
 columns, see [`AllOverlaps`](@ref Main.AllOverlaps) for default formatting. The operator
 overlap data can be scaled by a prefactor `Anorm`. A specific reweighting depth can be set
 with keyword argument `h`. The default is `h = 0` which calculates the Rayleigh quotient
-without reweighting.
+without reweighting. To compute the Rayleigh quotient for the `n`th spectral state, set
+`spectral_state = n`.
 
 The reweighting is an extension of the mixed estimator using the reweighting technique
 described in [Umrigar *et al.* (1993)](http://dx.doi.org/10.1063/1.465195).
@@ -556,6 +558,7 @@ function rayleigh_replica_estimator(
     shift_name="shift",
     op_name="Op1",
     vec_name="dot",
+    spectral_state=1,
     h=0,
     skip=0,
     Anorm=1,
@@ -563,20 +566,20 @@ function rayleigh_replica_estimator(
     kwargs...
 )
     df = DataFrame(sim)
-    num_reps = length(filter(startswith("norm"), names(df)))
+    num_reps = num_replicas(df)
     time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
-    T = eltype(df[!, Symbol(shift_name, "_1")])
+    T = eltype(df[!, Symbol(shift_name, "_r1s1")])
     shift_v = Vector{T}[]
     for a in 1:num_reps
-        push!(shift_v, Vector(df[!, Symbol(shift_name, "_", a)]))
+        push!(shift_v, Vector(df[!, Symbol(shift_name, "_r", a, "s", spectral_state)]))
     end
-    T = eltype(df[!, Symbol("c1_", vec_name, "_c2")])
+    T = eltype(df[!, Symbol("r1s1_", vec_name, "_r2s1")])
     vec_ol_v = Vector{T}[]
-    T = eltype(df[!, Symbol("c1_", op_name, "_c2")])
+    T = eltype(df[!, Symbol("r1s1_", op_name, "_r2s1")])
     op_ol_v = Vector{T}[]
     for a in 1:num_reps, b in a+1:num_reps
-        push!(op_ol_v, Vector(df[!, Symbol("c", a, "_", op_name, "_c" ,b)] .* Anorm))
-        push!(vec_ol_v, Vector(df[!, Symbol("c", a, "_", vec_name, "_c" ,b)]))
+        push!(op_ol_v, Vector(df[!, Symbol("r", a, "s", spectral_state, "_", op_name, "_r" ,b, "s", spectral_state)] .* Anorm))
+        push!(vec_ol_v, Vector(df[!, Symbol("r", a, "s", spectral_state, "_", vec_name, "_r" ,b, "s", spectral_state)]))
     end
 
     return rayleigh_replica_estimator(op_ol_v, vec_ol_v, shift_v, h, time_step; skip, kwargs...)
@@ -601,9 +604,10 @@ Returns a `NamedTuple` with the fields
 * `h_values = 100`: minimum number of reweighting depths
 * `skip = 0`: initial time steps to exclude from averaging
 * `threading = Threads.nthreads() > 1`: if `false` a progress meter is displayed
-* `shift_name = "shift"`: shift data corresponding to column in `df` with names `<shift>_1`, ...
-* `op_name = "Op1"`: name of operator overlap corresponding to column in `df` with names `c1_<op_ol>_c2`, ...
-* `vec_name = "dot"`: name of vector-vector overlap corresponding to column in `df` with names `c1_<vec_ol>_c2`, ...
+* `shift_name = "shift"`: shift data corresponding to column in `df` with names `<shift>_r1s1`, ...
+* `op_name = "Op1"`: name of operator overlap corresponding to column in `df` with names `r1s1_<op_ol>_r2s1`, ...
+* `vec_name = "dot"`: name of vector-vector overlap corresponding to column in `df` with names `r1s1_<vec_ol>_r2s1`, ...
+* `spectral_state = 1`: which spectral state to use
 * `Anorm = 1`: a scalar prefactor to scale the operator overlap data
 * `warn = true`: whether to log warning messages when blocking fails or denominators are small
 
@@ -628,22 +632,23 @@ function rayleigh_replica_estimator_analysis(
     shift_name="shift",
     op_name="Op1",
     vec_name="dot",
+    spectral_state=1,
     Anorm=1,
     warn=true,
     time_step=nothing,
     kwargs...
 )
     df = DataFrame(sim)
-    num_reps = length(filter(startswith("norm"), names(df)))
+    num_reps = num_replicas(df)
     time_step = isnothing(time_step) ? determine_constant_time_step(df) : time_step
     # estimate the correlation time by blocking the shift data
-    T = eltype(df[!, Symbol(shift_name, "_1")])
+    T = eltype(df[!, Symbol(shift_name, "_r1s1")])
     shift_v = Vector{T}[]
     E_r = T[]
     correlation_estimate = Int[]
     df_se = DataFrame()
     for a in 1:num_reps
-        push!(shift_v, Vector(df[!, Symbol(shift_name, "_", a)]))
+        push!(shift_v, Vector(df[!, Symbol(shift_name, "_r", a, "s", spectral_state)]))
         se = blocking_analysis(shift_v[a]; skip)
         push!(E_r, se.mean)
         push!(correlation_estimate, 2^(se.k - 1))
@@ -652,13 +657,13 @@ function rayleigh_replica_estimator_analysis(
     if isnothing(h_range)
         h_range = determine_h_range(df, skip, minimum(correlation_estimate), h_values)
     end
-    T = eltype(df[!, Symbol("c1_", vec_name, "_c2")])
+    T = eltype(df[!, Symbol("r1s1_", vec_name, "_r2s1")])
     vec_ol_v = Vector{T}[]
-    T = eltype(df[!, Symbol("c1_", op_name, "_c2")])
+    T = eltype(df[!, Symbol("r1s1_", op_name, "_r2s1")])
     op_ol_v = Vector{T}[]
     for a in 1:num_reps, b in a+1:num_reps
-        push!(op_ol_v, Vector(df[!, Symbol("c", a, "_", op_name, "_c" ,b)] .* Anorm))
-        push!(vec_ol_v, Vector(df[!, Symbol("c", a, "_", vec_name, "_c" ,b)]))
+        push!(op_ol_v, Vector(df[!, Symbol("r", a, "s", spectral_state, "_", op_name, "_r" ,b, "s", spectral_state)] .* Anorm))
+        push!(vec_ol_v, Vector(df[!, Symbol("r", a, "s", spectral_state, "_", vec_name, "_r" ,b, "s", spectral_state)]))
     end
 
     df_rre = if threading
