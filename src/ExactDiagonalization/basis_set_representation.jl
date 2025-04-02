@@ -3,11 +3,11 @@
         hamiltonian::AbstractOperator, addr=starting_address(hamiltonian);
         sizelim=10^7, cutoff, filter, max_depth, minimum_size, sort=false, kwargs...
     )
-    BasisSetRepresentation(hamiltonian::AbstractHamiltonian, addresses::AbstractVector; kwargs...)
+    BasisSetRepresentation(hamiltonian::AbstractOperator, addresses::AbstractVector; kwargs...)
 
 Eagerly construct the basis set representation of the operator `hamiltonian` with all
 addresses reachable from `addr`. Instead of a single address, a vector of `addresses` can be
-passed.
+passed. The second argument is mandatory when the operator is not an `AbstractHamiltonian`.
 
 An `ArgumentError` is thrown if `dimension(hamiltonian) > sizelim` in order to prevent
 memory overflow. Set `sizelim = Inf` in order to disable this behaviour.
