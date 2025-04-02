@@ -173,7 +173,7 @@ or [`IsStochasticWithThreshold`](@ref)) by setting `late_compression=false`, or 
 See also [`StochasticStyle`](@ref).
 """
 struct IsDynamicSemistochastic{
-    T<:AbstractFloat,C<:CompressionStrategy,S<:DynamicSemistochastic
+    T<:FloatOrComplexFloat,C<:CompressionStrategy,S<:DynamicSemistochastic
 } <: StochasticStyle{T}
     proj_threshold::T
     compression::C

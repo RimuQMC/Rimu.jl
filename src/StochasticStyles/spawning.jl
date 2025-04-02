@@ -12,8 +12,8 @@ end
 # Non-integer
 @inline function projected_deposit!(
     ::Type{T}, w, add, value, parent, threshold
-) where {T<:Real}
-    thresh = T(threshold)
+) where {T<:Union{AbstractFloat, Complex{<:AbstractFloat}}}
+    thresh = abs(T(threshold))
     val = T(value)
     absval = abs(val)
     if absval < thresh
@@ -26,7 +26,6 @@ end
     if !iszero(val)
         deposit!(w, add, val, parent)
     end
-
     return val
 end
 # Round to integer
