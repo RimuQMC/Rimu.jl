@@ -1,6 +1,6 @@
 """
     BasisSetRepresentation(
-        hamiltonian::AbstractHamiltonian, addr=starting_address(hamiltonian);
+        hamiltonian::AbstractOperator, addr=starting_address(hamiltonian);
         sizelim=10^7, cutoff, filter, max_depth, minimum_size, sort=false, kwargs...
     )
     BasisSetRepresentation(hamiltonian::AbstractHamiltonian, addresses::AbstractVector; kwargs...)
@@ -84,9 +84,11 @@ struct BasisSetRepresentation{A,SM,H}
 end
 
 function BasisSetRepresentation(
-    hamiltonian::AbstractHamiltonian, addr_or_vec=starting_address(hamiltonian);
-    kwargs...
+    hamiltonian::AbstractHamiltonian; kwargs...
 )
+    return BasisSetRepresentation(hamiltonian, starting_address(hamiltonian); kwargs...)
+end
+function BasisSetRepresentation(hamiltonian::AbstractOperator, addr_or_vec; kwargs...)
     # In the default case we pass `AdjointUnknown()` in order to skip the
     # symmetrisation of the sparse matrix
     return _bsr_ensure_symmetry(AdjointUnknown(), hamiltonian, addr_or_vec; kwargs...)
@@ -113,7 +115,7 @@ end
 
 # default, does not enforce symmetries
 function _bsr_ensure_symmetry(
-    ::LOStructure, hamiltonian::AbstractHamiltonian, addr_or_vec;
+    ::LOStructure, hamiltonian::AbstractOperator, addr_or_vec;
     test_approx_symmetry=true, kwargs...
 )
     single_addr = addr_or_vec isa Union{AbstractArray,Tuple} ? addr_or_vec[1] : addr_or_vec
@@ -124,7 +126,7 @@ end
 
 # build the BasisSetRepresentation while enforcing hermitian symmetry
 function _bsr_ensure_symmetry(
-    ::IsHermitian, hamiltonian::AbstractHamiltonian, addr_or_vec;
+    ::IsHermitian, hamiltonian::AbstractOperator, addr_or_vec;
     test_approx_symmetry=true, kwargs...
 )
     single_addr = addr_or_vec isa Union{AbstractArray,Tuple} ? addr_or_vec[1] : addr_or_vec
@@ -289,7 +291,7 @@ Return a sparse matrix representation of `hamiltonian` or `bsr`. `kwargs` are pa
 
 See [`BasisSetRepresentation`](@ref).
 """
-function SparseArrays.sparse(hamiltonian::AbstractHamiltonian, args...; kwargs...)
+function SparseArrays.sparse(hamiltonian::AbstractOperator, args...; kwargs...)
     return sparse(BasisSetRepresentation(hamiltonian, args...; kwargs...))
 end
 SparseArrays.sparse(bsr::BasisSetRepresentation) = bsr.sparse_matrix
@@ -306,7 +308,7 @@ Return a dense matrix representation of `hamiltonian` or `bsr`. `kwargs` are pas
 
 See [`BasisSetRepresentation`](@ref).
 """
-function Base.Matrix(hamiltonian::AbstractHamiltonian, args...; sizelim=1e4, kwargs...)
+function Base.Matrix(hamiltonian::AbstractOperator, args...; sizelim=1e4, kwargs...)
     return Matrix(BasisSetRepresentation(hamiltonian, args...; sizelim, kwargs...))
 end
 Base.Matrix(bsr::BasisSetRepresentation) = Matrix(bsr.sparse_matrix)
