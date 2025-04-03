@@ -256,7 +256,7 @@ complex integer coefficients it reports the one norm separately for the real and
 as a `ComplexF64`. See [`Norm1ProjectorPPop`](@ref).
 """
 walkernumber(v) = norm(v, 1)
-walkernumber(v::AbstractDVec{<:Any,V}) where {I<:Integer,V<:Complex{I}} = dot(Norm1ProjectorPPop(), v)
+walkernumber(v::AbstractDVec{<:Any,<:Complex{<:Integer}}) = dot(Norm1ProjectorPPop(), v)
 # complex walkers as two populations
 # the following default is fast and generic enough to be good for real walkers and
 
