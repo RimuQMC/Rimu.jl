@@ -7,7 +7,7 @@
 
 Eagerly construct the basis set representation of the operator `hamiltonian` with all
 addresses reachable from `addr`. Instead of a single address, a vector of `addresses` can be
-passed. The second argument is mandatory when the operator is not an `AbstractHamiltonian`.
+passed. The second argument is mandatory when the operator is not an [`AbstractHamiltonian`](@ref).
 
 An `ArgumentError` is thrown if `dimension(hamiltonian) > sizelim` in order to prevent
 memory overflow. Set `sizelim = Inf` in order to disable this behaviour.
@@ -75,7 +75,7 @@ DVec{BoseFS{1, 3, BitString{3, 1, UInt8}},Float64} with 3 entries, style = IsDet
 Has methods for [`dimension`](@ref), [`sparse`](@ref), [`Matrix`](@ref),
 [`starting_address`](@ref).
 
-Part of the [`AbstractHamiltonian`](@ref) interface. See also [`build_basis`](@ref).
+Part of the [`AbstractHamiltonian`](@ref) interface. See also [`build_basis`](@ref), [`AbstractOperator`](@ref).
 """
 struct BasisSetRepresentation{A,SM,H}
     sparse_matrix::SM
