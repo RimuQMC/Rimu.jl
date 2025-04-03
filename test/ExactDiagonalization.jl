@@ -25,6 +25,14 @@ using Suppressor
         @test isdiag(ham) == (LOStructure(ham) ≡ IsDiagonal())
         @test ishermitian(ham) == (LOStructure(ham) ≡ IsHermitian())
         @test issymmetric(ham) == (ishermitian(ham) && isreal(ham))
+
+        # Test for non-Hamiltonian
+        g2 = G2RealCorrelator(1)
+        bsr_g2 = BasisSetRepresentation(g2, bsr.basis)
+        @test isdiag(bsr_g2.sparse_matrix)
+
+        bsr_g2 = BasisSetRepresentation(g2, bsr.basis[1])
+        @test size(bsr_g2.sparse_matrix) == (1, 1)
     end
 
     @testset "filtering" begin

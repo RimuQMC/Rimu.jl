@@ -29,7 +29,7 @@ using StaticArrays: setindex
 
 using Rimu: Rimu, DictVectors, Hamiltonians, Interfaces, BitStringAddresses, replace_keys,
     clean_and_warn_if_others_present
-using ..Interfaces: AbstractDVec, AbstractHamiltonian, AdjointUnknown,
+using ..Interfaces: AbstractDVec, AbstractHamiltonian, AbstractOperator, AdjointUnknown,
     diagonal_element, offdiagonals, starting_address, LOStructure, IsHermitian
 using ..BitStringAddresses: AbstractFockAddress, BoseFS, FermiFS, CompositeFS, near_uniform
 using ..DictVectors: FrozenDVec, PDVec, DVec
