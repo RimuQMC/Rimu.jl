@@ -6,7 +6,7 @@ Abstract type for strategies used with [`TimeEvolution`](@ref)
 
 * [`LinearTimeEvolution`](@ref): evolve with a linear approximation ``\exp(-iHdt) \approx 1 - iHdt``.
 * [`SemilinearTimeEvolution`](@ref): evolve with a linear approximation except for diagonal
-elements, which are calculated exactly.
+elements, which are calculated exactly as exponentials.
 * [`QuadraticTimeEvolution`](@ref): evolve with a second order approximation
 ``\exp(-iHdt) \approx 1 - iHdt - \frac{1}{2}H^2dt^2``.
 """
@@ -19,13 +19,12 @@ struct SemilinearTimeEvolution <: TimeEvolutionStrategy end
 struct QuadraticTimeEvolution <: TimeEvolutionStrategy end
 
 """
-    TimeEvolution(h::AbstractHamiltonian,s<:TimeEvolutionStrategy,dt) <: AbstractHamiltonian{ComplexF64}
+    TimeEvolution(h::AbstractHamiltonian,s<:TimeEvolutionStrategy,dt) <: AbstractOperator{ComplexF64}
 
 Time evolution operator that evolves a state forward in time by `dt` using the Hamiltonian
-`H` and the specified [`TimeEvolutionStrategy`](@ref). Implemented as an `AbstractHamiltonian`
-although it is not a Hamiltonian, in order to use stochastic matrix-vector multiplication.
+`H` and the specified [`TimeEvolutionStrategy`](@ref).
 """
-struct TimeEvolution{H<:AbstractHamiltonian,S<:TimeEvolutionStrategy} <: AbstractHamiltonian{ComplexF64}
+struct TimeEvolution{H<:AbstractHamiltonian,S<:TimeEvolutionStrategy} <: AbstractOperator{ComplexF64}
     hamiltonian::H
     strategy::S
     dt::Float64
