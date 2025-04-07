@@ -203,12 +203,13 @@ function PDVec{K,V,N}(
     return PDVec(segments, style, irule, comm)
 end
 function PDVec(pairs; kwargs...)
-    K = eltype(first.(pairs))
-    V = eltype(last.(pairs))
+    # Copies made to get accurate eltype
+    keys = first.(pairs)
+    vals = last.(pairs)
+    K = eltype(keys)
+    V = eltype(vals)
     t = PDVec{K,V}(; kwargs...)
-    for (k, v) in pairs
-        t[k] = v
-    end
+    copyto!(t, keys, vals)
     return t
 end
 function PDVec(pairs::Vararg{Pair}; kwargs...)
@@ -403,6 +404,18 @@ function Base.copyto!(dst::PDVec, src::PDVec)
     check_compatibility(dst, src)
     Folds.foreach(dst.segments, src.segments) do d_seg, s_seg
         copy!(d_seg, s_seg)
+    end
+    return dst
+end
+function Base.copyto!(dst::PDVec, keys, vals)
+    Folds.foreach(eachindex(dst.segments)) do seg_id
+        seg = dst.segments[seg_id]
+        sizehint!(seg, length(keys) ÷ length(dst.segments))
+        for (k, v) in zip(keys, vals)
+            if target_segment(dst, k) == (seg_id, true)
+                seg[k] = v
+            end
+        end
     end
     return dst
 end

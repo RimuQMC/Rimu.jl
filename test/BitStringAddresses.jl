@@ -184,7 +184,7 @@ end
 
         @test_throws ArgumentError BoseFS(10, 11 => 1)
         @test_throws ArgumentError BoseFS(10, 10 => -1)
-        @test_throws MethodError BoseFS(10 => 1)
+        @test_throws ArgumentError BoseFS(10 => 1)
     end
     @testset "onr" begin
         middle_full_onr = onr(middle_full)
@@ -461,7 +461,9 @@ end
     end
 
     @testset "OccupationNumberFS with multiple arguments" begin
-        @test isa(OccupationNumberFS(1, 2, 3), OccupationNumberFS{3, UInt8})
+        @test OccupationNumberFS(i for i in 1:3) == OccupationNumberFS(1, 2, 3)
+        @test isa(OccupationNumberFS{3,UInt32}(i for i in 1:3), OccupationNumberFS{3,UInt32})
+        @test isa(OccupationNumberFS(1, 2, 3), OccupationNumberFS{3,UInt8})
         @test_throws ArgumentError OccupationNumberFS(1.1, 2, 3)
         @test_throws ArgumentError OccupationNumberFS(-1, 2, 3)
         @test_throws ArgumentError OccupationNumberFS(1, 2, 300)
@@ -479,6 +481,20 @@ end
         @test isa(OccupationNumberFS(fs), OccupationNumberFS{2, UInt8})
         fs = BoseFS(1, 333)
         @test isa(OccupationNumberFS(fs), OccupationNumberFS{2,UInt16})
+        fs = BoseFS(0, 0)
+        @test isa(OccupationNumberFS(fs), OccupationNumberFS{2,UInt8})
+    end
+
+    @testset "OccupationNumberFS with sparse constructor" begin
+        @test OccupationNumberFS(2, 2=>4) == OccupationNumberFS(0, 4)
+        @test OccupationNumberFS{2}(2 => 4) == OccupationNumberFS(2, 2 => 4)
+        @test OccupationNumberFS(5, i => i + 1 for i in 1:3) ==
+            OccupationNumberFS{5}(i => i + 1 for i in 1:3) ==
+            OccupationNumberFS{5}(Tuple(i => i + 1 for i in 1:3)) ==
+            OccupationNumberFS(5, 1 => 2, 2 => 3, 3 => 4) ==
+            OccupationNumberFS{5,UInt8}(2, 3, 4, 0, 0)
+        @test OccupationNumberFS{5}(i => i^2 for i in 1:5) ==
+            OccupationNumberFS(5, i => i^2 for i in 1:5)
     end
 
     @testset "Printing and parsing OccupationNumberFS" begin

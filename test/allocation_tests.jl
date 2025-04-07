@@ -90,13 +90,13 @@ end
                     dv = dv_type(addr => 1.0, style=IsDynamicSemistochastic())
                     sizehint!(dv, 500_000)
 
-                    # Warmup for lomc!
-                    _, st = lomc!(
-                        H, dv;
-                        params=RunTillLastStep(;shift=float(diagonal_element(H, addr)), dτ),
-                        maxlength=10_000,
-                        laststep=1,
+                    p = ProjectorMonteCarloProblem(
+                        H;
+                        start_at=dv, last_step=200, time_step=dτ, max_length=10_000
                     )
+                    # Warmup for solve
+                    res = solve!(init(p); last_step=1)
+                    st = res.state
 
                     r = only(only(st.spectral_states).single_states)
 
@@ -111,9 +111,7 @@ end
                     @test allocs_step ≤ 512
 
                     dv = dv_type(addr => 1.0, style=IsDynamicSemistochastic())
-                    allocs_full = @allocated lomc!(
-                        H, dv; dτ, laststep=200, maxlength=10_000
-                    )
+                    allocs_full = @allocated solve(p)
                     @test allocs_full ≤ 1e8 # 100MiB
 
                     # Print out the results to make it easier to find problems.

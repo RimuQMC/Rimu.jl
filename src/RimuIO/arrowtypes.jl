@@ -92,6 +92,20 @@ function ArrowTypes.JuliaType(::Val{FERMIFS_SPL}, ::Type{NTuple{X,Y}}, meta) whe
 end
 
 ###
+### OccupationNumberFS
+###
+const OCCUPATIONNUMBERFS = Symbol("Rimu.OccupationNumberFS")
+ArrowTypes.arrowname(::Type{<:OccupationNumberFS}) = OCCUPATIONNUMBERFS
+ArrowTypes.ArrowType(::Type{OccupationNumberFS{M,T}}) where {M,T} = NTuple{M,T}
+ArrowTypes.toarrow(fs::OccupationNumberFS) = Tuple(fs.onr)
+function ArrowTypes.JuliaType(::Val{OCCUPATIONNUMBERFS}, ::Type{NTuple{M,T}}, _) where {M,T}
+    return OccupationNumberFS{M,T}
+end
+function ArrowTypes.fromarrow(::Type{T}, storage) where {T<:OccupationNumberFS}
+    return T(SVector(storage))
+end
+
+###
 ### CompositeFS
 ###
 const COMPOSITEFS = Symbol("Rimu.CompositeFS")
@@ -115,6 +129,12 @@ end
 function ArrowTypes.JuliaType(
     ::Val{COMPOSITEFS}, ::Type{<:NamedTuple{<:Any,T}}, meta,
 ) where {T}
+    ArrowTypes.JuliaType(Val(COMPOSITEFS), T, meta)
+end
+# This method gets called when all components have the same size.
+function ArrowTypes.JuliaType(
+    ::Val{COMPOSITEFS}, ::Type{T}, meta,
+) where {T<:Tuple}
     metas = split(meta, ';')
 
     comps = map(Tuple(T.parameters), metas) do X, m
@@ -129,9 +149,13 @@ function ArrowTypes.JuliaType(
         Tuple{comps...},
     }
 end
+function ArrowTypes.fromarrow(::Type{C}, chunks...) where {C<:CompositeFS}
+    return ArrowTypes.fromarrow(C, chunks)
+end
 function ArrowTypes.fromarrow(
-    ::Type{C}, chunks...
+    ::Type{C}, chunks::Tuple
 ) where {T,C<:CompositeFS{<:Any,<:Any,<:Any,T}}
     comps = map(ArrowTypes.fromarrow, Tuple(T.parameters), chunks)
+
     return C(comps)
 end

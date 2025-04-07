@@ -175,22 +175,25 @@ end
 """
     ReportingStrategy
 
-Abstract type for strategies for reporting data in a DataFrame with [`report!()`](@ref).
+Abstract type for strategies for reporting data during a simulation of a
+[`ProjectorMonteCarloProblem`](@ref).
+
 
 # Implemented strategies:
 
 * [`ReportDFAndInfo`](@ref)
 * [`ReportToFile`](@ref)
 
-# Interface:
+# Extended help
+## Interface:
 
 A `ReportingStrategy` can define any of the following:
 
-* [`refine_reporting_strategy`](@ref)
-* [`report!`](@ref)
-* [`report_after_step!`](@ref)
-* [`finalize_report!`](@ref)
-* [`reporting_interval`](@ref)
+* [`Rimu.refine_reporting_strategy`](@ref)
+* [`Rimu.report!`](@ref)
+* [`Rimu.report_after_step!`](@ref)
+* [`Rimu.finalize_report!`](@ref)
+* [`Rimu.reporting_interval`](@ref)
 
 """
 abstract type ReportingStrategy end
@@ -208,9 +211,9 @@ refine_reporting_strategy(reporting_strategy::ReportingStrategy) = reporting_str
      report!(::ReportingStrategy, step, report::Report, nt, id="")
 
 Report `keys` and `values` to `report`, which will be converted to a `DataFrame` before
-[`ProjectorMonteCarloProblem`](@ref) exits. Alternatively, a `nt::NamedTuple` can be passed in place of `keys`
-and `values`. If `id` is specified, it is appended to all `keys`. This is used to
-differentiate between values reported by different replicas.
+[`ProjectorMonteCarloProblem`](@ref) exits. Alternatively, a `nt::NamedTuple` can be passed
+in place of `keys` and `values`. If `id` is specified, it is appended to all `keys`. This is
+used to differentiate between values reported by different replicas.
 
 To overload this function for a new `ReportingStrategy`, overload
 `report!(::ReportingStrategy, step, args...)` and apply the report by calling
@@ -224,8 +227,8 @@ end
 """
     report_after_step!(::ReportingStrategy, step, report, state) -> report
 
-This function is called at the very end of a step, after [`reporting_interval`](@ref) steps.
-It may modify the `report`.
+This function is called at the very end of a step, after [`Rimu.reporting_interval`](@ref)
+steps. It may modify the `report`.
 """
 function report_after_step!(::ReportingStrategy, _, report, args...)
     return report
@@ -261,10 +264,13 @@ end
 """
     ReportDFAndInfo(; reporting_interval=1, info_interval=100, io=stdout, writeinfo=false) <: ReportingStrategy
 
-The default [`ReportingStrategy`](@ref). Report every `reporting_interval`th step to a `DataFrame`
-and write info message to `io` every `info_interval`th reported step (unless `writeinfo == false`). The flag
-`writeinfo` is useful for controlling info messages in MPI codes, e.g. by setting
+The default [`ReportingStrategy`](@ref) for [`ProjectorMonteCarloProblem`](@ref). Report
+every `reporting_interval`th step to a `DataFrame` and write info message to `io` every
+`info_interval`th reported step (unless `writeinfo == false`). The flag `writeinfo` is
+useful for controlling info messages in MPI codes, e.g. by setting
 `writeinfo = `[`is_mpi_root()`](@ref Rimu.is_mpi_root).
+
+See also [`ProjectorMonteCarloProblem`](@ref), [`ReportToFile`](@ref).
 """
 @with_kw struct ReportDFAndInfo <: ReportingStrategy
     reporting_interval::Int = 1
@@ -288,9 +294,10 @@ end
 """
     ReportToFile(; kwargs...) <: ReportingStrategy
 
-[`ReportingStrategy`](@ref) that writes the report directly to a file in the
-[`Arrow`](https://arrow.apache.org/julia/dev/) format. Useful when dealing with long
-jobs or large numbers of replicas, when the report can incur a significant memory cost.
+[`ReportingStrategy`](@ref) for [`ProjectorMonteCarloProblem`](@ref) that writes the report
+directly to a file in the [`Arrow`](https://arrow.apache.org/julia/dev/) format. Useful when
+dealing with long jobs or large numbers of replicas, when the report can incur a significant
+memory cost.
 
 The arrow file can be read back in with [`load_df(filename)`](@ref) or
 `using Arrow; Arrow.Table(filename)`.
@@ -311,7 +318,8 @@ The arrow file can be read back in with [`load_df(filename)`](@ref) or
   messages printed out.
 * `compress = :zstd`: compression algorithm to use. Can be `:zstd`, `:lz4` or `nothing`.
 
-See also [`load_df`](@ref) and [`save_df`](@ref).
+See also [`load_df`](@ref), [`save_df`](@ref), [`ReportDFAndInfo`](@ref), and
+[`ProjectorMonteCarloProblem`](@ref).
 """
 mutable struct ReportToFile{C} <: ReportingStrategy
     filename::String

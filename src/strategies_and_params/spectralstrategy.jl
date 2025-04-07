@@ -12,9 +12,11 @@ of spectral states used in the simulation.
 abstract type SpectralStrategy{S} end
 
 """
-    num_spectral_states(state_or_strategy)
+    num_spectral_states(state_or_strategy_or_DataFrame)
 
 Return the number of spectral states used in the simulation.
+
+See also [`ProjectorMonteCarloProblem`](@ref), [`GramSchmidt`](@ref), [`num_replicas`](@ref).
 """
 num_spectral_states(::SpectralStrategy{S}) where {S} = S
 

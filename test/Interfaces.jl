@@ -1,6 +1,7 @@
 using LinearAlgebra
 using Rimu
 using Test
+using DataFrames
 
 @testset "Interface basics" begin
     @test eltype(StyleUnknown{String}()) == String
@@ -36,6 +37,12 @@ using Test
     @test_throws ArgumentError Interfaces.dot_from_right(1, 2, 3)
 end
 
+@testset "DataFrame interfaces" begin
+    @test_throws ArgumentError num_replicas(DataFrame())
+    @test_throws ArgumentError num_spectral_states(DataFrame())
+    @test_throws ArgumentError num_overlaps(DataFrame())
+end
+
 # using lomc! with a matrix was removed in Rimu.jl v0.12.0
 @testset "lomc! with matrix" begin
     ham = [1 1 2 3 2;
@@ -44,7 +51,6 @@ end
            0 0 1 1 2;
            0 1 0 1 0]
     vector = ones(5)
-    @test_throws ArgumentError lomc!(ham, vector; laststep=10_000)
 
     # rephrase with MatrixHamiltonian
     mh = MatrixHamiltonian(ham)
@@ -54,13 +60,10 @@ end
     # solve with new API
     p = ProjectorMonteCarloProblem(mh; start_at=sv, last_step=10_000, post_step_strategy)
     sm = solve(p)
-    last_shift = DataFrame(sm).shift[end]
+    df = DataFrame(sm)
 
-    # solve with old API
-    df, _ = lomc!(mh, sv; laststep=10_000, post_step_strategy)
     eigs = eigen(ham)
 
-    @test eigs.values[1] ≈ last_shift rtol = 0.01
     @test df.shift[end] ≈ eigs.values[1] rtol=0.01
     @test df.hproj[end] / df.vproj[end] ≈ eigs.values[1] rtol=0.01
     @test normalize(state_vectors(sm)[1]) ≈ DVec(pairs(eigs.vectors[:, 1])) rtol = 0.01

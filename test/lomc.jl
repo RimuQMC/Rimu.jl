@@ -53,7 +53,7 @@ Random.seed!(1234)
         address = BoseFS{5,2}((2,3))
         H = HubbardReal1D(address; u=0.1)
         dv = DVec(address => 1; style=IsStochasticInteger())
-        df, state = @test_logs (:warn, Regex("(Simulation)")) lomc!(H, dv; laststep=0, shift=23.1, dτ=0.002)
+        df, state = @test_logs (:warn, Regex("(Simulation)")) match_mode = :any lomc!(H, dv; laststep=0, shift=23.1, dτ=0.002)
         @test state.spectral_states[1].single_states[1].shift_parameters.time_step  == 0.002
         @test state.spectral_states[1].single_states[1].shift_parameters.shift == 23.1
         @test state.replica_strategy == NoStats{1}() # uses getfield method
@@ -91,7 +91,7 @@ Random.seed!(1234)
         walkers = lomc!(H, copy(dv); s_strat, laststep=1000).df.norm
         @test median(walkers) ≈ 1000 rtol=0.1
 
-        _, state = @test_logs (:warn, Regex("(Simulation)")) lomc!(H, copy(dv); targetwalkers=500, laststep=0)
+        _, state = @test_logs (:warn, Regex("(Simulation)")) match_mode = :any lomc!(H, copy(dv); targetwalkers=500, laststep=0)
         @test only(state).algorithm.shift_strategy.target_walkers == 500
     end
 
@@ -105,20 +105,20 @@ Random.seed!(1234)
             @test state.replica_strategy == NoStats(1)
             @test length(state.spectral_states) == 1
             @test "shift" ∈ names(df)
-            @test "shift_1" ∉ names(df)
+            @test "shift_r1s1" ∉ names(df)
 
             df, state = lomc!(H, dv; replica_strategy=NoStats(3))
             @test state.replica_strategy == NoStats(3)
             @test length(state.spectral_states) == 3
-            @test df.shift_1 ≠ df.shift_2 && df.shift_2 ≠ df.shift_3
-            @test "shift_4" ∉ names(df)
+            @test df.shift_r1s1 ≠ df.shift_r2s1 && df.shift_r2s1 ≠ df.shift_r3s1
+            @test "shift_r4s1" ∉ names(df)
 
             @test isnothing(Rimu.check_transform(NoStats(), H))
         end
 
-        # column names are of the form c{i}_dot_c{j} and c{i}_Op{k}_c{j}.
+        # column names are of the form r{i}s{k}_dot_r{j}s{k} and r{i}s{k}_Op{m}_r{j}s{k}.
         function num_stats(df)
-            return length(filter(x -> match(r"^c[0-9]", x) ≠ nothing, names(df)))
+            return length(filter(x -> match(r"^r[0-9]", x) ≠ nothing, names(df)))
         end
         @testset "AllOverlaps" begin
             for dv in (
@@ -183,8 +183,8 @@ Random.seed!(1234)
             G = MatrixHamiltonian(rand(5, 5))
             O = MatrixHamiltonian(rand(ComplexF64, 5, 5))
             df, _ = lomc!(G, v, replica_strategy=AllOverlaps(2; operator=O))
-            @test df.c1_dot_c2 isa Vector{ComplexF64}
-            @test df.c1_Op1_c2 isa Vector{ComplexF64}
+            @test df.r1s1_dot_r2s1 isa Vector{ComplexF64}
+            @test df.r1s1_Op1_r2s1 isa Vector{ComplexF64}
         end
     end
 
@@ -280,14 +280,14 @@ Random.seed!(1234)
         @test df.len[end] > 10
 
         df, state = @suppress_err lomc!(H, copy(dv); maxlength=10, dτ=1e-4, replica_strategy=NoStats(6))
-        @test all(df.len_1[1:end-1] .≤ 10)
-        @test all(df.len_2[1:end-1] .≤ 10)
-        @test all(df.len_3[1:end-1] .≤ 10)
-        @test all(df.len_4[1:end-1] .≤ 10)
-        @test all(df.len_5[1:end-1] .≤ 10)
-        @test all(df.len_6[1:end-1] .≤ 10)
+        @test all(df.len_r1s1[1:end-1] .≤ 10)
+        @test all(df.len_r2s1[1:end-1] .≤ 10)
+        @test all(df.len_r3s1[1:end-1] .≤ 10)
+        @test all(df.len_r4s1[1:end-1] .≤ 10)
+        @test all(df.len_r5s1[1:end-1] .≤ 10)
+        @test all(df.len_r6s1[1:end-1] .≤ 10)
 
-        state.maxlength[] += 1000
+        state.max_length[] += 1000
         df_cont = lomc!(state).df
         @test size(df_cont, 1) == 100 - size(df, 1)
     end
@@ -507,7 +507,9 @@ Random.seed!(1234)
                 @test single_particle_density(address) == (1, 3, 3)
                 @test single_particle_density(address; component=1) == (1, 2, 3)
                 @test single_particle_density(address; component=2) == (0, 1, 0)
-                @test single_particle_density(DVec(address => 1); component=2) == (0, 7, 0)
+                @test single_particle_density(DVec(address => 1); component=0) == (1, 3, 3)
+                @test single_particle_density(DVec(address => 2); component=1) == (1, 2, 3)
+                @test single_particle_density(DVec(address => 3); component=2) == (0, 1, 0)
             end
         end
     end

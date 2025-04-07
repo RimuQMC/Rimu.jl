@@ -170,19 +170,11 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
     end
 
     if len == 0
-        if length(state.spectral_states) > 1
-            @error "population in single state $(s_state.id) is dead. Aborting."
-        else
-            @error "population is dead. Aborting."
-        end
+        @error "Population in state $(s_state.id) is dead. Aborting."
         return false
     end
-    if len > state.maxlength[]
-        if length(state.spectral_states) > 1
-            @error "`maxlength` reached in single state $(s_state.id). Aborting."
-        else
-            @error "`maxlength` reached. Aborting."
-        end
+    if len > state.max_length[]
+        @error "`max_length` reached in state $(s_state.id). Aborting."
         return false
     end
     return proceed # Bool

@@ -675,8 +675,6 @@ end
 end
 
 @testset "MatrixHamiltonian" begin
-    # using lomc! with an `AbstractMatrix` was removed in Rimu.jl v0.12.0
-
     # generate matrix
     ham = HubbardReal1D(BoseFS((1, 1, 1, 1)))
     dim = dimension(ham)
@@ -685,9 +683,9 @@ end
     sparse_matrix, basis = sparse(bsr), bsr.basis
     @test dim == length(basis)
 
-    # run lomc! in deterministic mode with Hamiltonian and DVec
+    # run ProjectorMonteCarloProblem in deterministic mode with Hamiltonian and DVec
     v = DVec(k=>1.0 for k in basis; style=IsDeterministic()) # corresponds to `ones(dim)`
-    a = lomc!(ham, v).df
+    a = solve(ProjectorMonteCarloProblem(ham; start_at=v)).df
 
     # MatrixHamiltonian
     @test_throws ArgumentError MatrixHamiltonian([1 2 3; 4 5 6])
@@ -706,17 +704,26 @@ end
     @test starting_address(mh) == 1
     @test dimension(mh) == dim
 
-    # lomc!
+    # ProjectorMonteCarloProblem with MatrixHamiltonian
     # float walkernumber triggers IsDeterministic algorithm
-    d = lomc!(mh, DVec(pairs(ones(dim)))).df
+    sim = solve(ProjectorMonteCarloProblem(mh; start_at=DVec(pairs(ones(dim)))))
+    @test StochasticStyle(only(state_vectors(sim))) == IsDeterministic()
+    d = DataFrame(sim)
     @test d.shift ≈ a.shift
     # integer walkernumber triggers IsStochasticInteger algorithm
-    Random.seed!(15)
-    e = lomc!(mh, DVec(pairs(ones(Int,dim)))).df
+    sim = solve(
+        ProjectorMonteCarloProblem(mh; start_at=DVec(pairs(ones(Int, dim))), random_seed=18)
+    )
+    @test StochasticStyle(only(state_vectors(sim))) == IsStochasticInteger()
+    e = DataFrame(sim)
     @test ≈(e.shift[end], a.shift[end], atol=0.3)
     # wrap full matrix as MatrixHamiltonian
     fmh =  MatrixHamiltonian(Matrix(sparse_matrix))
-    f = lomc!(fmh, DVec(pairs(ones(dim)))).df
+    sim = solve(
+        ProjectorMonteCarloProblem(fmh; start_at=DVec(pairs(ones(dim))), random_seed=15)
+    )
+    @test StochasticStyle(only(state_vectors(sim))) == IsDeterministic()
+    f = DataFrame(sim)
     @test f.shift ≈ a.shift
 end
 

@@ -1,7 +1,8 @@
 name: Run tests
 
 on:
-  push
+  push:
+  pull_request:
 
 jobs:
   test:
@@ -52,4 +53,4 @@ jobs:
         with:
           github-token: ${{ secrets.github_token }}
           path-to-lcov: ./lcov.info
-        if: ${{ matrix.julia-version == '1' }}
+        if: ${{ (matrix.julia-version == '1') && (matrix.os == 'ubuntu-latest') }}

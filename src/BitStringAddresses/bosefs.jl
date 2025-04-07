@@ -24,7 +24,7 @@ automatically based on the properties of the address.
   particles in `bs` is equal to `N`.
 
 * [`@fs_str`](@ref): Addresses are sometimes printed in a compact manner. This
-  representation can also be used as a constructor. See the last example below.
+  representation can also be used as a constructor. See the examples below.
 
 # Examples
 
@@ -32,7 +32,7 @@ automatically based on the properties of the address.
 julia> BoseFS{6,5}(0, 1, 2, 3, 0)
 BoseFS{6,5}(0, 1, 2, 3, 0)
 
-julia> BoseFS([abs(i - 3) ≤ 1 ? i - 1 : 0 for i in 1:5])
+julia> BoseFS(abs(i - 3) ≤ 1 ? i - 1 : 0 for i in 1:5)
 BoseFS{6,5}(0, 1, 2, 3, 0)
 
 julia> BoseFS(5, 2 => 1, 3 => 2, 4 => 3)
@@ -97,7 +97,8 @@ function BoseFS{N,M}(onr::Union{AbstractArray{<:Integer},NTuple{M,<:Integer}}) w
     end
     return BoseFS{N,M,S}(from_bose_onr(S, onr))
 end
-function BoseFS(onr::Union{AbstractArray,Tuple})
+function BoseFS(onr) # single argument constructor
+    onr = Tuple(onr)
     M = length(onr)
     N = sum(onr)
     return BoseFS{N,M}(onr)
@@ -106,10 +107,13 @@ BoseFS(vals::Integer...) = BoseFS(vals) # specify occupation numbers
 BoseFS(val::Integer) = BoseFS((val,)) # single mode address
 BoseFS{N,M}(vals::Integer...) where {N,M} = BoseFS{N,M}(vals)
 
+# Sparse constructors
 BoseFS(M::Integer, pairs::Pair...) = BoseFS(M, pairs)
 BoseFS(M::Integer, pairs) = BoseFS(sparse_to_onr(M, pairs))
 BoseFS{N,M}(pairs::Pair...) where {N,M} = BoseFS{N,M}(pairs)
 BoseFS{N,M}(pairs) where {N,M} = BoseFS{N,M}(sparse_to_onr(M, pairs))
+BoseFS(pairs::Pair...) = throw(ArgumentError("number of modes must be provided"))
+
 
 function print_address(io::IO, b::BoseFS{N,M}; compact=false) where {N,M}
     if compact && b.bs isa SortedParticleList
@@ -259,7 +263,7 @@ end
 
 Compute the new address of a hopping event for the Hubbard model. Returns the new
 address and the square root of product of occupation numbers of the involved modes
-multiplied by a term consistent with boundary condition as the `value`. 
+multiplied by a term consistent with boundary condition as the `value`.
 The following boundary conditions are supported:
 
 * `:periodic`: hopping over the boundary gives does not change the `value`.

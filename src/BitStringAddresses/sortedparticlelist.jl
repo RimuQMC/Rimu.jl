@@ -1,16 +1,16 @@
 """
-    select_int_type(M)
+    select_int_type(n)
 
-Select unsigned integer type that can hold values up to `M`.
+Select unsigned integer type that can hold values up to `n`.
 """
-function select_int_type(M)
-    if M ≤ 0
-        throw(ArgumentError("`M` must be positive!"))
-    elseif M ≤ typemax(UInt8)
+function select_int_type(n)
+    if n < 0
+        throw(ArgumentError("`n` must be a non-negative integer!"))
+    elseif n ≤ typemax(UInt8)
         return UInt8
-    elseif M ≤ typemax(UInt16)
+    elseif n ≤ typemax(UInt16)
         return UInt16
-    elseif M ≤ typemax(UInt32)
+    elseif n ≤ typemax(UInt32)
         return UInt32
     else
         return UInt64
@@ -20,7 +20,7 @@ end
 """
     SortedParticleList{N,M,T<:Unsigned}
 
-Type for storing sparse fock states. Stores the mode number of each particle as an entry
+Type for storing sparse Fock states. Stores the mode number of each particle as an entry
 with only its mode stored. The entries are always kept sorted.
 
 Iterating over `SortedParticleList`s yields occupied modes as a tuple of occupation number,

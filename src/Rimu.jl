@@ -46,7 +46,7 @@ include("mpi_helpers.jl")
 
 include("Interfaces/Interfaces.jl")
 @reexport using .Interfaces
-using .Interfaces: dot_from_right
+import .Interfaces: dot_from_right, num_replicas, num_overlaps, num_spectral_states
 include("BitStringAddresses/BitStringAddresses.jl")
 @reexport using .BitStringAddresses
 include("Hamiltonians/Hamiltonians.jl")
@@ -78,7 +78,7 @@ export TimeStepStrategy, ConstantTimeStep, OvershootControl
 export localpart, walkernumber
 export smart_logger, default_logger
 export ProjectorMonteCarloProblem, SimulationPlan, state_vectors
-export FCIQMC, num_replicas, num_spectral_states, GramSchmidt
+export FCIQMC, num_replicas, num_spectral_states, num_overlaps, GramSchmidt
 
 function __init__()
     # Turn on smart logging once at runtime. Turn off with `default_logger()`.

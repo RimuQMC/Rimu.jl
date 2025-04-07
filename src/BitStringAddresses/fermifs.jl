@@ -24,7 +24,7 @@ chosen automatically based on the properties of the address.
   particles in `bs` is equal to `N`, or whether each mode only contains one particle.
 
 * [`@fs_str`](@ref): Addresses are sometimes printed in a compact manner. This
-  representation can also be used as a constructor. See the last example below.
+  representation can also be used as a constructor. See the examples below.
 
 # Examples
 
@@ -95,7 +95,8 @@ function FermiFS{N,M}(onr::Union{AbstractArray{<:Integer},NTuple{M,<:Integer}}) 
     end
     return FermiFS{N,M,S}(from_fermi_onr(S, onr))
 end
-function FermiFS(onr::Union{AbstractArray,Tuple})
+function FermiFS(onr)
+    onr = Tuple(onr)
     M = length(onr)
     N = sum(onr)
     return FermiFS{N,M}(onr)
@@ -109,6 +110,7 @@ FermiFS(M::Integer, pairs::Pair...) = FermiFS(M, pairs)
 FermiFS(M::Integer, pairs) = FermiFS(sparse_to_onr(M, pairs))
 FermiFS{N,M}(pairs::Vararg{Pair,N}) where {N,M} = FermiFS{N,M}(pairs)
 FermiFS{N,M}(pairs) where {N,M} = FermiFS{N,M}(sparse_to_onr(M, pairs))
+FermiFS(pairs::Pair...) = throw(ArgumentError("number of modes must be provided"))
 
 function print_address(io::IO, f::FermiFS{N,M}; compact=false) where {N,M}
     if compact && f.bs isa SortedParticleList

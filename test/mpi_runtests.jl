@@ -171,7 +171,7 @@ end
                 Projector(proj_1=Norm2Projector()),
             )
             prob = ProjectorMonteCarloProblem(
-                H; start_at=dv, post_step_strategy, last_step=5000
+                H; start_at=dv, post_step_strategy, last_step=5000, random_seed=13
             )
             df = DataFrame(solve(prob))
 
@@ -194,7 +194,7 @@ end
             dv = PDVec(addr => 3; initiator_threshold=1)
             shift_strategy = DoubleLogUpdate(target_walkers=100)
             prob = ProjectorMonteCarloProblem(
-                H; start_at=dv, last_step=5000, shift_strategy
+                H; start_at=dv, last_step=5000, shift_strategy, random_seed=13
             )
             df = DataFrame(solve(prob))
 
@@ -214,13 +214,13 @@ end
                 # Diagonal
                 replica_strategy = AllOverlaps(2; operator=ntuple(DensityMatrixDiagonal, M))
                 prob = ProjectorMonteCarloProblem(
-                    H; start_at=dv, replica_strategy, last_step=10_000
+                    H; start_at=dv, replica_strategy, last_step=10_000, random_seed=13
                 )
                 df = DataFrame(solve(prob))
 
                 density_sum = sum(1:M) do i
-                    top = df[!, Symbol("c1_Op", i, "_c2")]
-                    bot = df.c1_dot_c2
+                    top = df[!, Symbol("r1s1_Op", i, "_r2s1")]
+                    bot = df.r1s1_dot_r2s1
                     pmean(ratio_of_means(top, bot; skip=5000))
                 end
                 @test density_sum ≈ N rtol=1e-3
@@ -229,13 +229,13 @@ end
                 ops = ntuple(x -> G2MomCorrelator(x - cld(M, 2)), M)
                 replica_strategy = AllOverlaps(2; operator=ops)
                 prob = ProjectorMonteCarloProblem(
-                    H; start_at=dv, replica_strategy, last_step=10_000
+                    H; start_at=dv, replica_strategy, last_step=10_000, random_seed=13
                 )
                 df = DataFrame(solve(prob))
 
                 g2s = map(1:M) do i
-                    top = df[!, Symbol("c1_Op", i, "_c2")]
-                    bot = df.c1_dot_c2
+                    top = df[!, Symbol("r1s1_Op", i, "_r2s1")]
+                    bot = df.r1s1_dot_r2s1
                     pmean(ratio_of_means(top, bot; skip=5000))
                 end
                 for i in 1:cld(M, 2)
@@ -244,6 +244,25 @@ end
                 end
                 @test real(sum(g2s)) ≈ N^2 rtol=1e-2
                 @test imag(sum(g2s)) ≈ 0 atol=1e-3
+            end
+        end
+    end
+
+    @testset "RimuIO" begin
+        @testset "save_state, load_state" begin
+            file = joinpath(mktempdir(), "tmp.arrow")
+            @mpi_root rm(file; force=true)
+
+            @testset "vectors" begin
+                ham = HubbardReal1D(BoseFS(1,1,1,1,1))
+
+                pdvec = ham * PDVec([BoseFS(1,1,1,1,1) => 1.0, BoseFS(0,3,0,1,1) => ℯ])
+                save_state(file, pdvec)
+                output, _ = load_state(file)
+                @test output == pdvec
+                @test output isa PDVec
+
+                @mpi_root rm(file)
             end
         end
     end
