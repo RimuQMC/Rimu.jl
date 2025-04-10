@@ -43,13 +43,15 @@ export ExactDiagonalizationProblem, KrylovKitSolver, LinearAlgebraSolver
 export ArpackSolver, LOBPCGSolver
 export BasisSetRepresentation, build_basis
 
+export OperatorAsMap
+
 export sparse # from SparseArrays
 
 
 include("basis_breadth_first_search.jl")
 include("basis_fock.jl")
 include("basis_set_representation.jl")
-include("multiplier.jl")
+include("operator_as_map.jl")
 include("algorithms.jl")
 include("exact_diagonalization_problem.jl")
 include("init_and_solvers.jl")

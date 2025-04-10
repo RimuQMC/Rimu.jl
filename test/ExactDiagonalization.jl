@@ -180,6 +180,34 @@ using Suppressor
     end
 end
 
+@testset "OperatorAsMap" begin
+    ham = HubbardMom1D(FermiFS2C((0,0,1,0,0), (0,1,0,1,0)))
+    basis = build_basis(ham)
+
+    op = OperatorAsMap(ham, basis)
+
+    @test size(op) == (length(basis), length(basis))
+
+    matrix = sparse(ham, basis)
+
+    v = rand(length(basis)) + rand(length(basis)) .* im
+    w = rand(length(basis)) + rand(length(basis)) .* im
+
+    @test matrix * v ≈ op * v
+    @test op * v == op(v)
+    @test dot(v, matrix, w) ≈ dot(v, op, w)
+
+    # This is provided by LinearMaps and a bit silly, but it's a good test
+    @test Matrix(op) == matrix
+
+    α, β = rand(2)
+    w1 = copy(w)
+    w2 = copy(w)
+    mul!(w1, matrix, v, α, β)
+    @test mul!(w2, op, v, α, β) ≡ w2
+    @test w1 ≈ w2
+end
+
 Random.seed!(123) # for reproducibility, as some solvers start with random vectors
 
 # first we do tests that don't require KrylovKit and the extension
@@ -274,13 +302,14 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
         @test all(energies[1] .≈ energies)
     end
 
-    # wrong starting vector
-    h = HubbardReal1D(BoseFS(1, 2, 3))
-    p = ExactDiagonalizationProblem(h, [1, 2, 3])
-    @test_throws ArgumentError init(p, KrylovKitSolver(true))
-    @test_throws ArgumentError init(p, ArpackSolver())
+    @testset "wrong starting vector" begin
+        h = HubbardReal1D(BoseFS(1, 2, 3))
+        p = ExactDiagonalizationProblem(h, [1, 2, 3])
+        @test_throws ArgumentError init(p, KrylovKitSolver(true))
+        @test_throws ArgumentError init(p, ArpackSolver())
+    end
 
-    # DVec starting vector
+    @testset "DVec starting vector" begin
     v = DVec(BoseFS(1, 2, 3) => 1.0)
     p = ExactDiagonalizationProblem(h, v)
     @test eval(Meta.parse(repr(p))) == p
@@ -288,9 +317,10 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     @test DVec(solver.v0) == v
     solver2 = init(p, ArpackSolver())
     @test DVec(solver2.v0) == v
+    end
 
-    # solve with KrylovKitSolver matrix
     p = ExactDiagonalizationProblem(HubbardReal1D(BoseFS(1,2,3)); which=:SR)
+    # solve with KrylovKitSolver matrix
     @test eval(Meta.parse(repr(p))) == p
     solver = init(p, KrylovKitSolver(false); howmany=2)
     @test dimension(solver.basissetrep) == dimension(p.hamiltonian) == size(solver.basissetrep.sparse_matrix)[1]
@@ -310,8 +340,10 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     @test startswith(repr(solver), "KrylovKitDirectEDSolver")
 
     # solve with LinearAlgebraSolver
-    res = @test_logs((:warn, "The keyword(s) \"which\" are unused and will be ignored."),
-        solve(p, LinearAlgebraSolver()))
+    res = @test_logs(
+        (:warn, "The keyword(s) \"which\" are unused and will be ignored."),
+        solve(p, LinearAlgebraSolver())
+    )
     va_la, ve_la, info_la = res
 
     @test values[1:2] ≈ va_la[1:2]

@@ -15,7 +15,7 @@ non-hermitian matrices.
     will be instantiated. This is typically faster and recommended for small matrices,
     but requires more memory. If `true`, the matrix is not instantiated, which is useful for
     large matrices that would not fit into memory. The calculation will parallelise using
-    threading and MPI if available by making use of [`PDVec`](@ref).
+    threading if available by making use of [`OperatorAsMap`](@ref).
 - `kwargs`: Additional keyword arguments are passed on to the function
     [`KrylovKit.eigsolve()`](https://jutho.github.io/KrylovKit.jl/stable/man/eig/#KrylovKit.eigsolve).
 
