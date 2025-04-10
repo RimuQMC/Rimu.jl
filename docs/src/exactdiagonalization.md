@@ -30,11 +30,10 @@ BasisSetRepresentation
 build_basis
 Matrix
 sparse
+LinearMap
 ```
 
 ## Deprecated
 ```@docs
 BasisSetRep
 ```
-
-

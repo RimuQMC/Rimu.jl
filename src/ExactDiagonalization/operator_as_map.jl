@@ -1,6 +1,28 @@
+struct OperatorAsMap{T,H<:AbstractOperator{T},A} <: LinearMap{T}
+    hamiltonian_adj::H
+    basis::Vector{A}
+    mapping::Dict{A,Int}
+end
+function OperatorAsMap(hamiltonian::AbstractOperator, basis::Vector=build_basis(hamiltonian))
+    if !allows_address_type(hamiltonian, eltype(basis))
+        throw(ArgumentError("basis is incompatible with operator"))
+    end
+    if LOStructure(hamiltonian) == AdjointUnknown()
+        throw(ArgumentError("operator not supported. Please implement `adjoint`"))
+    end
+
+    mapping = Dict(zip(basis, eachindex(basis)))
+    hamiltonian_adj = hamiltonian'
+    H = typeof(hamiltonian_adj)
+    T = eltype(hamiltonian_adj)
+    A = eltype(basis)
+
+    return OperatorAsMap{T,H,A}(hamiltonian, basis, mapping)
+end
+
 """
-    OperatorAsMap(::AbstractOperator{T}, basis; eltype=T)
-    OperatorAsMap(::AbstractHamiltonian{T}, [address]; full_basis=true, eltype=T)
+    LinearMap(::AbstractOperator{T}, basis; eltype=T)
+    LinearMap(::AbstractHamiltonian{T}, [address]; full_basis=true, eltype=T)
 
 Wrapper for an [`AbstractOperator`](@ref) and a basis that allows multiplying regular Julia
 vectors with the operator without storing the matrix representation of the operator in
@@ -37,28 +59,6 @@ julia> dot(w1, bsr.sparse_matrix, v) ≈ dot(w1, op, v)
 true
 ```
 """
-struct OperatorAsMap{T,H<:AbstractOperator{T},A} <: LinearMap{T}
-    hamiltonian_adj::H
-    basis::Vector{A}
-    mapping::Dict{A,Int}
-end
-function OperatorAsMap(hamiltonian::AbstractOperator, basis::Vector=build_basis(hamiltonian))
-    if !allows_address_type(hamiltonian, eltype(basis))
-        throw(ArgumentError("basis is incompatible with operator"))
-    end
-    if LOStructure(hamiltonian) == AdjointUnknown()
-        throw(ArgumentError("operator not supported. Please implement `adjoint`"))
-    end
-
-    mapping = Dict(zip(basis, eachindex(basis)))
-    hamiltonian_adj = hamiltonian'
-    H = typeof(hamiltonian_adj)
-    T = eltype(hamiltonian_adj)
-    A = eltype(basis)
-
-    return OperatorAsMap{T,H,A}(hamiltonian, basis, mapping)
-end
-
 LinearMaps.LinearMap(op::AbstractOperator, basis=build_basis(op)) = OperatorAsMap(op)
 
 Base.size(op::OperatorAsMap) = (length(op.basis), length(op.basis))
