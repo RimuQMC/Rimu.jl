@@ -184,28 +184,35 @@ end
     ham = HubbardMom1D(FermiFS2C((0,0,1,0,0), (0,1,0,1,0)))
     basis = build_basis(ham)
 
-    op = OperatorAsMap(ham, basis)
+    op = LinearMap(ham, basis)
 
-    @test size(op) == (length(basis), length(basis))
+    @testset "basic properties" begin
+        @test size(op) == (length(basis), length(basis))
+        @test isreal(op)
+        @test ishermitian(op)
+        @test issymmetric(op)
+        @test op' ≡ op
+    end
+    @testset "mul, dot" begin
+        matrix = sparse(ham, basis)
 
-    matrix = sparse(ham, basis)
+        v = rand(length(basis)) + rand(length(basis)) .* im
+        w = rand(length(basis)) + rand(length(basis)) .* im
 
-    v = rand(length(basis)) + rand(length(basis)) .* im
-    w = rand(length(basis)) + rand(length(basis)) .* im
+        @test matrix * v ≈ op * v
+        @test op * v == op(v)
+        @test dot(v, matrix, w) ≈ dot(v, op, w)
 
-    @test matrix * v ≈ op * v
-    @test op * v == op(v)
-    @test dot(v, matrix, w) ≈ dot(v, op, w)
+        # This is provided by LinearMaps and a bit silly, but it's a good test
+        @test Matrix(op) == matrix
 
-    # This is provided by LinearMaps and a bit silly, but it's a good test
-    @test Matrix(op) == matrix
-
-    α, β = rand(2)
-    w1 = copy(w)
-    w2 = copy(w)
-    mul!(w1, matrix, v, α, β)
-    @test mul!(w2, op, v, α, β) ≡ w2
-    @test w1 ≈ w2
+        α, β = rand(2)
+        w1 = copy(w)
+        w2 = copy(w)
+        mul!(w1, matrix, v, α, β)
+        @test mul!(w2, op, v, α, β) ≡ w2
+        @test w1 ≈ w2
+    end
 end
 
 Random.seed!(123) # for reproducibility, as some solvers start with random vectors

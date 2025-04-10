@@ -43,7 +43,7 @@ export ExactDiagonalizationProblem, KrylovKitSolver, LinearAlgebraSolver
 export ArpackSolver, LOBPCGSolver
 export BasisSetRepresentation, build_basis
 
-export OperatorAsMap
+export LinearMap
 
 export sparse # from SparseArrays
 

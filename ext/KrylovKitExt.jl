@@ -5,6 +5,7 @@ using LinearAlgebra: LinearAlgebra, mul!, ishermitian, issymmetric
 using CommonSolve: CommonSolve
 using Setfield: Setfield, @set
 using NamedTupleTools: NamedTupleTools, delete
+using LinearMaps: LinearMap
 
 using Rimu: Rimu, AbstractDVec, AbstractHamiltonian, AbstractOperator, IsDeterministic,
     starting_address, PDVec, DVec, PDWorkingMemory,
@@ -12,7 +13,7 @@ using Rimu: Rimu, AbstractDVec, AbstractHamiltonian, AbstractOperator, IsDetermi
 
 using Rimu.ExactDiagonalization: MatrixEDSolver, KrylovKitSolver,
     KrylovKitDirectEDSolver,
-    LazyDVecs, EDResult, LazyCoefficientVectorsDVecs, OperatorAsMap, build_basis
+    LazyDVecs, EDResult, LazyCoefficientVectorsDVecs, build_basis
 
 const U = Union{Symbol,EigSorter}
 
@@ -69,7 +70,7 @@ function _prepare_linear_map(
     elseif isnothing(basis)
         basis = build_basis(ham, starting_address; sort=true)
     end
-    return OperatorAsMap(ham, basis)
+    return LinearMap(ham, basis)
 end
 
 function KrylovKit.eigsolve(
