@@ -285,7 +285,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     p = ExactDiagonalizationProblem(h, v)
     @test eval(Meta.parse(repr(p))) == p
     solver = init(p, KrylovKitSolver(true))
-    @test solver.v0 == v
+    @test DVec(solver.v0) == v
     solver2 = init(p, ArpackSolver())
     @test DVec(solver2.v0) == v
 

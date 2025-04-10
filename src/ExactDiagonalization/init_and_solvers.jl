@@ -19,11 +19,32 @@ function CommonSolve.init( # no algorithm specified as positional argument
     return init(new_prp, algorithm)
 end
 
+function _set_up_initial_vector(v0, hamiltonian)
+    if isnothing(v0)
+        addr_or_vec = starting_address(hamiltonian)
+    elseif v0 isa Union{
+        NTuple{<:Any,<:AbstractFockAddress},
+        AbstractVector{<:AbstractFockAddress}
+    }
+        addr_or_vec = v0
+        v0 = FrozenDVec([addr => 1.0 for addr in v0])
+    elseif v0 isa AbstractFockAddress
+        addr_or_vec = v0
+        v0 = FrozenDVec([v0 => 1.0])
+    elseif v0 isa DictVectors.FrozenDVec{<:AbstractFockAddress}
+        addr_or_vec = keys(v0)
+    else
+        throw(ArgumentError("Invalid starting vector in `ExactDiagonalizationProblem`."))
+    end
+    @assert v0 isa Union{FrozenDVec{<:AbstractFockAddress},Nothing}
+    return v0, addr_or_vec
+end
 
-struct KrylovKitDirectEDSolver{A<:KrylovKitSolver,P,V<:PDVec,K<:NamedTuple}
+struct KrylovKitDirectEDSolver{A<:KrylovKitSolver,P,V,B,K<:NamedTuple}
     algorithm::A
     problem::P
     v0::V
+    addr_or_vec::B
     kw_nt::K
 end
 function Base.show(io::IO, s::KrylovKitDirectEDSolver)
@@ -42,24 +63,10 @@ function CommonSolve.init(
     kwargs...
 )
     kw = (; p.kw_nt..., algorithm.kw_nt..., kwargs...) # remove duplicates
-    # set up the starting vector
-    vec = if isnothing(p.v0)
-        FrozenDVec([starting_address(p.hamiltonian) => 1.0])
-    elseif p.v0 isa AbstractFockAddress
-        FrozenDVec([p.v0 => 1.0])
-    elseif p.v0 isa Union{
-        NTuple{<:Any,<:AbstractFockAddress},
-        AbstractVector{<:AbstractFockAddress},
-    }
-        FrozenDVec([addr => 1.0 for addr in p.v0])
-    elseif p.v0 isa FrozenDVec{<:AbstractFockAddress}
-        p.v0
-    else
-        throw(ArgumentError("Invalid starting vector in `ExactDiagonalizationProblem`."))
-    end
-    svec = PDVec(vec)
 
-    return KrylovKitDirectEDSolver(algorithm, p, svec, kw)
+    v0, addr_or_vec = _set_up_initial_vector(p.v0, p.hamiltonian)
+
+    return KrylovKitDirectEDSolver(algorithm, p, v0, addr_or_vec, kw)
 end
 
 struct MatrixEDSolver{A,P,BSR<:BasisSetRepresentation,V<:Union{Nothing,FrozenDVec}}
@@ -118,24 +125,7 @@ function CommonSolve.init(
     minimum_size = get(kw, :minimum_size, Inf)
 
     # determine the starting address or vector
-    v0 = p.v0
-    if isnothing(p.v0)
-        addr_or_vec = starting_address(p.hamiltonian)
-    elseif p.v0 isa Union{
-        NTuple{<:Any,<:AbstractFockAddress},
-        AbstractVector{<:AbstractFockAddress}
-    }
-        addr_or_vec = p.v0
-        v0 = FrozenDVec([addr => 1.0 for addr in p.v0])
-    elseif p.v0 isa AbstractFockAddress
-        addr_or_vec = p.v0
-        v0 = FrozenDVec([p.v0 => 1.0])
-    elseif p.v0 isa DictVectors.FrozenDVec{<:AbstractFockAddress}
-        addr_or_vec = keys(p.v0)
-    else
-        throw(ArgumentError("Invalid starting vector in `ExactDiagonalizationProblem`."))
-    end
-    @assert v0 isa Union{FrozenDVec{<:AbstractFockAddress},Nothing}
+    v0, addr_or_vec = _set_up_initial_vector(p.v0, p.hamiltonian)
 
     # create the BasisSetRepresentation
     bsr = BasisSetRepresentation(

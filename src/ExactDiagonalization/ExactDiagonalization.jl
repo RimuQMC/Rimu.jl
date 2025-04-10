@@ -20,12 +20,14 @@ provided by external packages.
 module ExactDiagonalization
 
 using LinearAlgebra: LinearAlgebra, eigen!, issymmetric, ishermitian, Matrix, dot
+using LinearMaps: LinearMaps, LinearMap
 using SparseArrays: SparseArrays, nnz, nzrange, sparse
 using CommonSolve: CommonSolve, solve, init
 using VectorInterface: VectorInterface, add
 using OrderedCollections: freeze
 using NamedTupleTools: delete
 using StaticArrays: setindex
+import Folds
 
 using Rimu: Rimu, DictVectors, Hamiltonians, Interfaces, BitStringAddresses, replace_keys,
     clean_and_warn_if_others_present

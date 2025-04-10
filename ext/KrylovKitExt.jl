@@ -12,43 +12,43 @@ using Rimu: Rimu, AbstractDVec, AbstractHamiltonian, AbstractOperator, IsDetermi
 
 using Rimu.ExactDiagonalization: MatrixEDSolver, KrylovKitSolver,
     KrylovKitDirectEDSolver,
-    LazyDVecs, EDResult, LazyCoefficientVectorsDVecs, Multiplier
+    LazyDVecs, EDResult, LazyCoefficientVectorsDVecs, OperatorAsMap, build_basis
 
 const U = Union{Symbol,EigSorter}
 
 """
-    OperatorMultiplier
+    OperatorWithWorkingMemory
 
 A struct that holds the working memory for repeatedly multiplying vectors with an operator.
 """
-struct OperatorMultiplier{H,W<:PDWorkingMemory}
+struct OperatorWithWorkingMemory{H,W<:PDWorkingMemory}
     hamiltonian::H
     working_memory::W
 end
-function OperatorMultiplier(hamiltonian, vector::PDVec)
-    return OperatorMultiplier(hamiltonian, PDWorkingMemory(vector; style=IsDeterministic()))
+function OperatorWithWorkingMemory(hamiltonian, vector::PDVec)
+    return OperatorWithWorkingMemory(hamiltonian, PDWorkingMemory(vector; style=IsDeterministic()))
 end
 
-function (o::OperatorMultiplier)(v)
+function (o::OperatorWithWorkingMemory)(v)
     result = zerovector(v)
     return mul!(result, o.hamiltonian, v, o.working_memory)
 end
 
 function KrylovKit.eigsolve(
-    ham::AbstractHamiltonian, vec::PDVec, howmany::Int=1, which::U=:LR; kwargs...
+    ham::AbstractOperator, vec::PDVec, howmany::Int=1, which::U=:LR; kwargs...
 )
     # Change the type of `vec` to float, if needed.
     v = scale!!(vec, 1.0)
-    prop = OperatorMultiplier(ham, v)
+    op = OperatorWithWorkingMemory(ham, v)
     return eigsolve(
-        prop, v, howmany, which;
+        op, v, howmany, which;
         ishermitian=ishermitian(ham), issymmetric=issymmetric(ham), kwargs...
     )
 end
 
 # This method only exists to detect whether a Hamiltonian is Hermitian or not.
 function KrylovKit.eigsolve(
-    ham::AbstractHamiltonian, vec::AbstractDVec, howmany::Int=1, which::U=:LR; kwargs...
+    ham::AbstractOperator, vec::AbstractDVec, howmany::Int=1, which::U=:LR; kwargs...
 )
     return @invoke eigsolve(
         ham::Any, vec::Any, howmany, which;
@@ -56,19 +56,20 @@ function KrylovKit.eigsolve(
     )
 end
 
-function _prepare_multiplier(
+function _prepare_linear_map(
     ham, vec; basis=nothing, starting_address=starting_address(ham), full_basis=false
 )
-    if issymmetric(ham) && (isnothing(vec) || isreal(vec))
+    if issymmetric(ham) && (isnothing(vec) || valtype(vec) <: Real)
         eltype = Float64
     else
         eltype = ComplexF64
     end
-    if isnothing(basis)
-        prop = Multiplier(ham, starting_address; full_basis, eltype)
-    else
-        prop = Multiplier(ham, basis; eltype)
+    if isnothing(basis) && full_basis
+        basis = build_basis(starting_address)
+    elseif isnothing(basis)
+        basis = build_basis(ham, starting_address; sort=true)
     end
+    return OperatorAsMap(ham, basis)
 end
 
 function KrylovKit.eigsolve(
@@ -77,9 +78,9 @@ function KrylovKit.eigsolve(
 )
     # Change the type of `vec` to float, if needed.
     v = scale!!(vec, 1.0)
-    prop = _prepare_multiplier(ham, v; basis, starting_address, full_basis)
+    linmap = _prepare_linear_map(ham, v; basis, starting_address, full_basis)
     return eigsolve(
-        prop, v, howmany, which;
+        linmap, v, howmany, which;
         ishermitian=ishermitian(ham), issymmetric=issymmetric(ham), kwargs...
     )
 end
@@ -87,10 +88,10 @@ function KrylovKit.eigsolve(
     ham::AbstractOperator, howmany::Int=1, which::U=:LR;
     basis=nothing, starting_address=starting_address(ham), full_basis=true, kwargs...
     )
-    prop = _prepare_multiplier(ham, nothing; basis, starting_address, full_basis)
-    v = rand(eltype(prop), size(prop, 1))
+    linmap = _prepare_linear_map(ham, nothing; basis, starting_address, full_basis)
+    v = rand(eltype(linmap), size(linmap, 1))
     return eigsolve(
-        prop, v, howmany, which;
+        linmap, v, howmany, which;
         ishermitian=ishermitian(ham), issymmetric=issymmetric(ham), kwargs...
     )
 end
@@ -122,12 +123,12 @@ end
 function _kk_eigsolve(s::MatrixEDSolver{<:KrylovKitSolver}, howmany, which, kw_nt)
     # set up the starting vector
     T = eltype(s.basissetrep.sparse_matrix)
-    x0 = if isnothing(s.v0)
-            rand(T, dimension(s.basissetrep)) # random initial guess
+    if isnothing(s.v0)
+        x0 = rand(T, dimension(s.basissetrep)) # random initial guess
     else
-            # convert v0 to a DVec to use it like a dictionary
-            dvec = DVec(s.v0)
-            [dvec[a] for a in s.basissetrep.basis]
+        # convert v0 to a DVec to use it like a dictionary
+        dvec = DVec(s.v0)
+        x0 = [dvec[a] for a in s.basissetrep.basis]
     end
     # solve the problem
     vals, vecs, info = eigsolve(s.basissetrep.sparse_matrix, x0, howmany, which; kw_nt...)
@@ -149,21 +150,21 @@ end
 
 # solve with KrylovKit direct
 function _kk_eigsolve(s::KrylovKitDirectEDSolver, howmany, which, kw_nt)
-    prop = _prepare_multiplier(s.problem.hamiltonian, s.v0#=TODO: new args go here=#)
+    linmap = _prepare_linear_map(s.problem.hamiltonian, s.v0#=TODO: new args go here=#)
     if isnothing(s.v0)
-        x0 = rand(size(prop, 1))
+        x0 = rand(size(linmap, 1))
     else
-        x0 = zeros(eltype(prop), size(prop, 1))
+        x0 = zeros(eltype(linmap), size(linmap, 1))
         for (k, v) in pairs(s.v0)
-            x0[prop.mapping[k]] = v
+            x0[linmap.mapping[k]] = v
         end
     end
     vals, vecs, info = eigsolve(
-        prop, x0, howmany, which;
-        issymmetric=issymmetric(prop), ishermitian=ishermitian(prop), kw_nt...
+        linmap, x0, howmany, which;
+        issymmetric=issymmetric(linmap), ishermitian=ishermitian(linmap), kw_nt...
     )
     success = info.converged ≥ howmany
-    basis = prop.basis
+    basis = linmap.basis
 
     return EDResult(
         s.algorithm,
