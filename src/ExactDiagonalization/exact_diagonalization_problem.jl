@@ -93,8 +93,7 @@ julia> using KrylovKit # an external package has to be installed and loaded
 julia> s = init(p; algorithm = KrylovKitSolver(true)) # solve without building a matrix
 KrylovKitDirectEDSolver
  with algorithm KrylovKitSolver(matrix_free = true,) for hamiltonian = HubbardReal1D(fs"|1 1 1⟩"; u=1.0, t=1.0),
-  v0 = 1-element PDVec: style = IsDeterministic{Float64}()
-  fs"|1 1 1⟩" => 1.0,
+  v0 = nothing,
   kwargs = NamedTuple()
 )
 
