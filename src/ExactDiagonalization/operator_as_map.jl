@@ -59,7 +59,7 @@ julia> dot(w1, bsr.sparse_matrix, v) ≈ dot(w1, op, v)
 true
 ```
 """
-LinearMaps.LinearMap(op::AbstractOperator, basis=build_basis(op)) = OperatorAsMap(op)
+LinearMaps.LinearMap(op::AbstractOperator, basis=build_basis(op)) = OperatorAsMap(op, basis)
 
 Base.size(op::OperatorAsMap) = (length(op.basis), length(op.basis))
 Base.size(op::OperatorAsMap, i) = length(op.basis)
@@ -92,7 +92,11 @@ end
 
 function LinearMaps._unsafe_mul!(dst, op::OperatorAsMap, src::AbstractVector, α=1, β=0)
     Folds.foreach(eachindex(dst)) do i
-        dst[i] = row_dot_vector(op, i, src) * α + dst[i] * β
+        if iszero(β) # needs special case in case dst contains NaN or ±Inf
+            dst[i] = row_dot_vector(op, i, src) * α
+        else
+            dst[i] = row_dot_vector(op, i, src) * α + dst[i] * β
+        end
     end
     return dst
 end

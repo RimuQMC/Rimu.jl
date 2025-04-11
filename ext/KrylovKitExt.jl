@@ -58,7 +58,7 @@ function KrylovKit.eigsolve(
 end
 
 function _prepare_linear_map(
-    ham, vec; basis=nothing, starting_address=starting_address(ham), full_basis=false
+    ham, vec; starting_address=starting_address(ham), basis=nothing, full_basis=false
 )
     if issymmetric(ham) && (isnothing(vec) || valtype(vec) <: Real)
         eltype = Float64
@@ -125,9 +125,8 @@ function _kk_eigsolve(s::MatrixEDSolver{<:KrylovKitSolver}, howmany, which, kw_n
     # set up the starting vector
     T = eltype(s.basissetrep.sparse_matrix)
     if isnothing(s.v0)
-        x0 = rand(T, dimension(s.basissetrep)) # random initial guess
+        x0 = rand(T, dimension(s.basissetrep))
     else
-        # convert v0 to a DVec to use it like a dictionary
         dvec = DVec(s.v0)
         x0 = [dvec[a] for a in s.basissetrep.basis]
     end
@@ -140,18 +139,22 @@ function _kk_eigsolve(s::MatrixEDSolver{<:KrylovKitSolver}, howmany, which, kw_n
         s.problem,
         vals,
         LazyDVecs(vecs, s.basissetrep.basis),
-        vecs, # coefficient_vectors
+        vecs,
         s.basissetrep.basis,
         info,
         howmany,
         nothing,
-        success
+        success,
     )
 end
 
 # solve with KrylovKit direct
 function _kk_eigsolve(s::KrylovKitDirectEDSolver, howmany, which, kw_nt)
-    linmap = _prepare_linear_map(s.problem.hamiltonian, s.v0#=TODO: new args go here=#)
+    basis = get(kw_nt, :basis, nothing)
+    full_basis = get(kw_nt, :full_basis, false)
+    kw_nt = delete(kw_nt, (:basis, :full_basis))
+
+    linmap = _prepare_linear_map(s.problem.hamiltonian, s.v0; basis, full_basis)
     if isnothing(s.v0)
         x0 = rand(size(linmap, 1))
     else
@@ -177,7 +180,7 @@ function _kk_eigsolve(s::KrylovKitDirectEDSolver, howmany, which, kw_nt)
         info,
         howmany,
         nothing,
-        success
+        success,
     )
 end
 

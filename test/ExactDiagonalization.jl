@@ -338,8 +338,11 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     @test length(values) == length(vectors) == info.converged ≥ 2
 
     # solve with KrylovKitSolver
-    solver = init(p, KrylovKitSolver(true); howmany=2)
-    va_kd, ve_kd, info_kd = solve(solver)
+    basis = shuffle!(build_basis(p.hamiltonian))
+    solver = init(p, KrylovKitSolver(true); howmany=2, basis)
+    solution = solve(solver)
+    @test solution.basis == basis
+    va_kd, ve_kd, info_kd = solution
     @test values ≈ va_kd
     addr = starting_address(res_km.problem.hamiltonian)
     factor = vectors[1][addr] / ve_kd[1][addr]
