@@ -48,7 +48,7 @@ julia> v = ones(length(bsr.basis));
 
 julia> w1 = bsr.sparse_matrix * v;
 
-julia> op = OperatorAsMap(H, bsr.basis);
+julia> op = LinearMap(H, bsr.basis);
 
 julia> w2 = op * v;
 
@@ -73,12 +73,8 @@ function Base.adjoint(op::OperatorAsMap{T,<:Any,A}) where {T,A}
     return OperatorAsMap{T,H,A}(hamiltonian_adj, op.basis, op.mapping)
 end
 
-"""
-    row_dot_vector(op::OperatorAsMap, row_index, vector)
-
-Compute `dot(H[i, :], v)` where `H` is the Hamiltonian stored in `op`.
-"""
-function row_dot_vector(op::OperatorAsMap, row_index, vector)
+# Compute `dot(H[i, :], v)` where `H` is the Hamiltonian stored in `op`.
+function _row_dot_vector(op::OperatorAsMap, row_index, vector)
     row = op.basis[row_index]
     row_result = diagonal_element(op.hamiltonian_adj, row) * vector[row_index]
     for (col, val) in offdiagonals(op.hamiltonian_adj', row)
@@ -93,9 +89,9 @@ end
 function LinearMaps._unsafe_mul!(dst, op::OperatorAsMap, src::AbstractVector, α=1, β=0)
     Folds.foreach(eachindex(dst)) do i
         if iszero(β) # needs special case in case dst contains NaN or ±Inf
-            dst[i] = row_dot_vector(op, i, src) * α
+            dst[i] = _row_dot_vector(op, i, src) * α
         else
-            dst[i] = row_dot_vector(op, i, src) * α + dst[i] * β
+            dst[i] = _row_dot_vector(op, i, src) * α + dst[i] * β
         end
     end
     return dst
@@ -103,6 +99,6 @@ end
 
 function LinearAlgebra.dot(dst, op::OperatorAsMap, src)
     Folds.sum(eachindex(dst)) do i
-        conj(dst[i]) * row_dot_vector(op, i, src)
+        conj(dst[i]) * _row_dot_vector(op, i, src)
     end
 end

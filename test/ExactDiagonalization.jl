@@ -309,14 +309,11 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
         @test all(energies[1] .≈ energies)
     end
 
-    @testset "wrong starting vector" begin
-        h = HubbardReal1D(BoseFS(1, 2, 3))
-        p = ExactDiagonalizationProblem(h, [1, 2, 3])
-        @test_throws ArgumentError init(p, KrylovKitSolver(true))
-        @test_throws ArgumentError init(p, ArpackSolver())
-    end
+    h = HubbardReal1D(BoseFS(1, 2, 3))
+    p = ExactDiagonalizationProblem(h, [1, 2, 3])
+    @test_throws ArgumentError init(p, KrylovKitSolver(true))
+    @test_throws ArgumentError init(p, ArpackSolver())
 
-    @testset "DVec starting vector" begin
     v = DVec(BoseFS(1, 2, 3) => 1.0)
     p = ExactDiagonalizationProblem(h, v)
     @test eval(Meta.parse(repr(p))) == p
@@ -324,7 +321,6 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     @test DVec(solver.v0) == v
     solver2 = init(p, ArpackSolver())
     @test DVec(solver2.v0) == v
-    end
 
     p = ExactDiagonalizationProblem(HubbardReal1D(BoseFS(1,2,3)); which=:SR)
     # solve with KrylovKitSolver matrix
