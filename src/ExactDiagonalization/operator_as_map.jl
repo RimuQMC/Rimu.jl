@@ -23,8 +23,8 @@ If an [`AbstractHamiltonian`](@ref) with no `basis` is passed, the basis is cons
 automatically. In that case, when `full_basis=true` the entire basis is constructed from an
 address as [`build_basis`](@ref)`(address)`, otherwise it is constructed as
 [`build_basis`](@ref)`(hamiltonian, address)`. You may want to set `full_basis=false` when
-dealing with Hamiltonians that block, such as [`HubbardMom1D`](@ref), otherwise setting
-`full_basis=true` is more efficient.
+dealing with Hamiltonians that block, such as [`HubbardMom1D`](@ref Main.HubbardMom1D),
+otherwise setting `full_basis=true` is more efficient.
 
 Implements the [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl)
 interface, and can be used in `Base.:*`, `mul!` and the three-argument `dot`.

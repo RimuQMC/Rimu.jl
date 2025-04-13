@@ -31,6 +31,7 @@ build_basis
 Matrix
 sparse
 LinearMap
+Rimu.ExactDiagonalization.OperatorAsMap
 ```
 
 ## Deprecated
