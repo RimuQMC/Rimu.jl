@@ -1,28 +1,19 @@
+"""
+    OperatorAsMap <: LinearMap
+
+Wrapper over [`AbstractOperator`](@ref) that allows it to be used as a [`LinearMap`](@ref) from [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl).
+
+See [`LinearMap`](@ref) for usage.
+"""
 struct OperatorAsMap{T,H<:AbstractOperator{T},A} <: LinearMap{T}
     hamiltonian_adj::H
     basis::Vector{A}
     mapping::Dict{A,Int}
 end
-function OperatorAsMap(hamiltonian::AbstractOperator, basis::Vector=build_basis(hamiltonian))
-    if !allows_address_type(hamiltonian, eltype(basis))
-        throw(ArgumentError("basis is incompatible with operator"))
-    end
-    if LOStructure(hamiltonian) == AdjointUnknown()
-        throw(ArgumentError("operator not supported. Please implement `adjoint`"))
-    end
-
-    mapping = Dict(zip(basis, eachindex(basis)))
-    hamiltonian_adj = hamiltonian'
-    H = typeof(hamiltonian_adj)
-    T = eltype(hamiltonian_adj)
-    A = eltype(basis)
-
-    return OperatorAsMap{T,H,A}(hamiltonian, basis, mapping)
-end
 
 """
-    LinearMap(::AbstractOperator{T}, basis; eltype=T)
-    LinearMap(::AbstractHamiltonian{T}, [address]; full_basis=true, eltype=T)
+    LinearMap(::AbstractOperator{T}, basis)
+    LinearMap(::AbstractHamiltonian{T}, [address]; full_basis=true)
 
 Wrapper for an [`AbstractOperator`](@ref) and a basis that allows multiplying regular Julia
 vectors with the operator without storing the matrix representation of the operator in
@@ -32,10 +23,11 @@ If an [`AbstractHamiltonian`](@ref) with no `basis` is passed, the basis is cons
 automatically. In that case, when `full_basis=true` the entire basis is constructed from an
 address as [`build_basis`](@ref)`(address)`, otherwise it is constructed as
 [`build_basis`](@ref)`(hamiltonian, address)`. You may want to set `full_basis=false` when
-dealing with Hamiltonians that block, such as [`HubbardMom1D`](@ref).
+dealing with Hamiltonians that block, such as [`HubbardMom1D`](@ref), otherwise setting
+`full_basis=true` is more efficient.
 
-Implements the [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl), and can
-be used in `Base.:*`, `mul!` and the three-argument `dot`.
+Implements the [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl)
+interface, and can be used in `Base.:*`, `mul!` and the three-argument `dot`.
 
 ## Example
 
@@ -59,7 +51,34 @@ julia> dot(w1, bsr.sparse_matrix, v) ≈ dot(w1, op, v)
 true
 ```
 """
-LinearMaps.LinearMap(op::AbstractOperator, basis=build_basis(op)) = OperatorAsMap(op, basis)
+function LinearMaps.LinearMap(
+    op::AbstractOperator, address::AbstractFockAddress=starting_address(op);
+    full_basis=false
+)
+    if full_basis
+        basis = build_basis(op, address)
+    else
+        basis = build_basis(address)
+    end
+    return LinearMaps.LinearMap(op, basis)
+end
+function LinearMaps.LinearMap(op::AbstractOperator, basis)
+    if !allows_address_type(hamiltonian, eltype(basis))
+        throw(ArgumentError("basis is incompatible with operator"))
+    end
+    if LOStructure(hamiltonian) == AdjointUnknown()
+        throw(ArgumentError("operator not supported. Please implement `adjoint`"))
+    end
+
+    mapping = Dict(zip(basis, eachindex(basis)))
+    hamiltonian_adj = hamiltonian'
+    H = typeof(hamiltonian_adj)
+    T = eltype(hamiltonian_adj)
+    A = eltype(basis)
+
+    return OperatorAsMap{T,H,A}(hamiltonian, basis, mapping)
+end
+
 
 Base.size(op::OperatorAsMap) = (length(op.basis), length(op.basis))
 Base.size(op::OperatorAsMap, i) = length(op.basis)
