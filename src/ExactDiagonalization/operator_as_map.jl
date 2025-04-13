@@ -52,31 +52,31 @@ true
 ```
 """
 function LinearMaps.LinearMap(
-    op::AbstractOperator, address::AbstractFockAddress=starting_address(op);
+    operator::AbstractOperator, address::AbstractFockAddress=starting_address(operator);
     full_basis=false
 )
     if full_basis
-        basis = build_basis(op, address)
+        basis = build_basis(operator, address)
     else
         basis = build_basis(address)
     end
-    return LinearMaps.LinearMap(op, basis)
+    return LinearMaps.LinearMap(operator, basis)
 end
-function LinearMaps.LinearMap(op::AbstractOperator, basis)
-    if !allows_address_type(hamiltonian, eltype(basis))
+function LinearMaps.LinearMap(operator::AbstractOperator, basis)
+    if !allows_address_type(operator, eltype(basis))
         throw(ArgumentError("basis is incompatible with operator"))
     end
-    if LOStructure(hamiltonian) == AdjointUnknown()
+    if LOStructure(operator) == AdjointUnknown()
         throw(ArgumentError("operator not supported. Please implement `adjoint`"))
     end
 
     mapping = Dict(zip(basis, eachindex(basis)))
-    hamiltonian_adj = hamiltonian'
-    H = typeof(hamiltonian_adj)
-    T = eltype(hamiltonian_adj)
+    operator_adj = operator'
+    H = typeof(operator_adj)
+    T = eltype(operator_adj)
     A = eltype(basis)
 
-    return OperatorAsMap{T,H,A}(hamiltonian, basis, mapping)
+    return OperatorAsMap{T,H,A}(operator, basis, mapping)
 end
 
 
