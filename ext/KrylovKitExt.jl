@@ -89,8 +89,8 @@ function KrylovKit.eigsolve(
     ham::AbstractOperator, howmany::Int=1, which::U=:LR;
     basis=nothing, starting_address=starting_address(ham), full_basis=true, kwargs...
     )
-    linmap = _prepare_linear_map(ham, nothing; basis, starting_address, full_basis)
     v = rand(eltype(linmap), size(linmap, 1))
+    linmap = _prepare_linear_map(ham, v; basis, starting_address, full_basis)
     return eigsolve(
         linmap, v, howmany, which;
         ishermitian=ishermitian(ham), issymmetric=issymmetric(ham), kwargs...
