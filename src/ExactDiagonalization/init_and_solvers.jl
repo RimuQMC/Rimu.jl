@@ -9,135 +9,158 @@ For a description of the keyword arguments, see the documentation for
 [`ExactDiagonalizationProblem`](@ref).
 """
 function CommonSolve.init( # no algorithm specified as positional argument
-    p::ExactDiagonalizationProblem;
+    prob::ExactDiagonalizationProblem;
     kwargs...
 )
-    kw_nt = (; p.kw_nt..., kwargs...) # remove duplicates
-    algorithm = get(kw_nt, :algorithm, LinearAlgebraSolver())
-    kw_nt = delete(kw_nt, (:algorithm,))
-    new_prp = ExactDiagonalizationProblem(p.hamiltonian, p.v0; kw_nt...)
-    return init(new_prp, algorithm)
+    kwargs = (; prob.kwargs..., kwargs...) # remove duplicates
+    algorithm = get(kwargs, :algorithm, LinearAlgebraSolver())
+    delete(kwargs, :algorithm)
+    new_prob = ExactDiagonalizationProblem(prob.hamiltonian, prob.initial_vector; kwargs...)
+    return init(new_prob, algorithm)
 end
 
-function _set_up_initial_vector(v0, hamiltonian)
+# TODO since this is the same for all solvers, maybe move it to ExactDiagonalizationProblem?
+function _set_up_starting_address(v0, hamiltonian)
     if isnothing(v0)
         addr_or_vec = starting_address(hamiltonian)
-    elseif v0 isa Union{
-        NTuple{<:Any,<:AbstractFockAddress},
-        AbstractVector{<:AbstractFockAddress}
-    }
+    elseif v0 isa AbstractFockAddress || v0 isa Vector{<:AbstractFockAddress}
         addr_or_vec = v0
-        v0 = FrozenDVec([addr => 1.0 for addr in v0])
-    elseif v0 isa AbstractFockAddress
-        addr_or_vec = v0
-        v0 = FrozenDVec([v0 => 1.0])
-    elseif v0 isa DictVectors.FrozenDVec{<:AbstractFockAddress}
+    elseif v0 isa FrozenDVec
         addr_or_vec = keys(v0)
     else
         throw(ArgumentError("Invalid starting vector in `ExactDiagonalizationProblem`."))
     end
-    @assert v0 isa Union{FrozenDVec{<:AbstractFockAddress},Nothing}
-    return v0, addr_or_vec
+
+    return addr_or_vec
+end
+function _set_up_initial_vector(v0, basis)
+    if isnothing(v0)
+        return rand(length(basis))
+    end
+
+    if v0 isa Union{
+        NTuple{<:Any,<:AbstractFockAddress},
+        AbstractVector{<:AbstractFockAddress}
+    }
+        v0_dvec = Dict(addr => 1.0 for addr in v0)
+    elseif v0 isa AbstractFockAddress
+        v0_dvec = Dict(v0 => 1.0)
+    elseif v0 isa DictVectors.FrozenDVec{<:AbstractFockAddress}
+        v0_dvec = Dict(pairs(v0))
+    else
+        throw(ArgumentError("Invalid starting vector in `ExactDiagonalizationProblem`."))
+    end
+
+    return [get(v0_dvec, b, zero(valtype(v0_dvec))) for b in basis]
 end
 
-struct KrylovKitDirectEDSolver{A<:KrylovKitSolver,P,V,B,K<:NamedTuple}
+struct IterativeEDSolver{A,P,LM,T<:Number,F}
     algorithm::A
     problem::P
-    v0::V
-    addr_or_vec::B
-    kw_nt::K
+    linear_map::LM
+    initial_vector::Vector{T}
+    basis::Vector{F}
+    solver_kwargs::NamedTuple
 end
-function Base.show(io::IO, s::KrylovKitDirectEDSolver)
+function Base.show(io::IO, s::IterativeEDSolver)
     io = IOContext(io, :compact => true)
-    print(io, "KrylovKitDirectEDSolver\n with algorithm $(s.algorithm) for hamiltonian = ")
+    print(io, "IterativeEDSolver\n with algorithm $(s.algorithm) for hamiltonian = ")
     show(io, s.problem.hamiltonian)
-    print(io, ",\n  v0 = ")
-    show(io, s.v0)
     print(io, ",\n  kwargs = ")
-    show(io, s.kw_nt)
+    show(io, s.solver_kwargs)
     print(io, "\n)")
 end
 
 function CommonSolve.init(
-    p::ExactDiagonalizationProblem, algorithm::KrylovKitSolver{true};
-    kwargs...
+    prob::ExactDiagonalizationProblem, algorithm::AbstractAlgorithm{true}; kwargs...
 )
-    kw = (; p.kw_nt..., algorithm.kw_nt..., kwargs...) # remove duplicates
-
-    v0, addr_or_vec = _set_up_initial_vector(p.v0, p.hamiltonian)
-
-    return KrylovKitDirectEDSolver(algorithm, p, v0, addr_or_vec, kw)
-end
-
-struct MatrixEDSolver{A,P,BSR<:BasisSetRepresentation,V<:Union{Nothing,FrozenDVec}}
-    algorithm::A
-    problem::P
-    basissetrep::BSR
-    v0::V
-    kw_nt::NamedTuple
-end
-
-function Base.show(io::IO, s::MatrixEDSolver)
-    io = IOContext(io, :compact => true)
-    b = s.basissetrep
-    print(io, "MatrixEDSolver\n  with algorithm = ")
-    show(io, s.algorithm)
-    print(io, "\n for hamiltonian  = ")
-    show(io, s.problem.hamiltonian)
-    print(io, ":\n  ")
-    show(io, MIME"text/plain"(), b.sparse_matrix)
-    print(io, ",\n  v0 = ")
-    show(io, s.v0)
-    print(io, ",\n  kwargs = ")
-    show(io, NamedTuple(s.kw_nt))
-    print(io, "\n)")
-end
-
-# init with matrix-based algorithms
-function CommonSolve.init(
-    p::ExactDiagonalizationProblem, algorithm::ALG;
-    kwargs...
-) where {ALG<:Union{KrylovKitSolver{false},LinearAlgebraSolver,ArpackSolver,LOBPCGSolver}}
-    !ishermitian(p.hamiltonian) && algorithm isa LOBPCGSolver &&
+    !ishermitian(prob.hamiltonian) && algorithm isa LOBPCGSolver &&
         @warn "LOBPCGSolver() is not suitable for non-hermitian matrices."
 
-    # set keyword arguments for BasisSetRepresentation
-    kw = (; p.kw_nt..., algorithm.kw_nt..., kwargs...) # remove duplicates
-    if isdefined(kw, :sizelim)
-        sizelim = kw.sizelim
-    elseif algorithm isa LinearAlgebraSolver
-        sizelim = 10^5 # default for dense matrices
-    else
-        sizelim = 10^6 # default for sparse matrices
-    end
-    cutoff = get(kw, :cutoff, nothing)
-    filter = if isdefined(kw, :filter)
-        kw.filter
-    elseif isnothing(cutoff)
-        nothing
-    else
-        a -> diagonal_element(p.hamiltonian, a) ≤ cutoff
-    end
-    nnzs = get(kw, :nnzs, 0)
-    col_hint = get(kw, :col_hint, 0)
-    sort = get(kw, :sort, false)
-    max_depth = get(kw, :max_depth, Inf)
-    minimum_size = get(kw, :minimum_size, Inf)
+    # Merge keyword arguments from problem, algorithm and ones passed to this function
+    # and split them into sets that are passed to LinearMap and ones that
+    # are left for the solver.
 
-    # determine the starting address or vector
-    v0, addr_or_vec = _set_up_initial_vector(p.v0, p.hamiltonian)
+    kwargs = (; prob.kwargs..., algorithm.kwargs..., kwargs...)
+    linmap_kwargs, solver_kwargs = extract_and_delete_keys(kwargs, :basis, :full_basis)
+
+    # determine the starting address or vector and seed address to build the matrix from
+    addr_or_vec = _set_up_starting_address(
+        prob.initial_vector, prob.hamiltonian
+    )
+
+    # create the LinearMap
+    linmap = LinearMap(prob.hamiltonian; starting_address=addr_or_vec, linmap_kwargs...)
+    basis = linmap.basis
+
+    initial_vector = _set_up_initial_vector(prob.initial_vector, basis)
+
+    return IterativeEDSolver(algorithm, prob, linmap, initial_vector, basis, solver_kwargs)
+end
+function CommonSolve.init(
+    prob::ExactDiagonalizationProblem, algorithm::AbstractAlgorithm{false}; kwargs...
+)
+    !ishermitian(prob.hamiltonian) && algorithm isa LOBPCGSolver &&
+        @warn "LOBPCGSolver() is not suitable for non-hermitian matrices."
+
+    # Merge keyword arguments from problem, algorithm and ones passed to this function
+    # and split them into sets that are passed to BasisSetRepresentation and ones that
+    # are left for the solver.
+    kwargs = (; prob.kwargs..., algorithm.kwargs..., kwargs...)
+    bsr_kwargs, solver_kwargs = extract_and_delete_keys(
+        kwargs,
+        :sizelim, :cutoff, :filter, :nnzs, :col_hint, :sort, :max_depth, :minimum_size
+    )
+
+    # determine the starting address or vector and seed address to build the matrix from
+    addr_or_vec = _set_up_starting_address(
+        prob.initial_vector, prob.hamiltonian
+    )
 
     # create the BasisSetRepresentation
-    bsr = BasisSetRepresentation(
-        p.hamiltonian, addr_or_vec;
-        sizelim, filter, nnzs, col_hint, sort, max_depth, minimum_size,
+    bsr = BasisSetRepresentation(prob.hamiltonian, addr_or_vec; bsr_kwargs...)
+    matrix = bsr.sparse_matrix
+    basis = bsr.basis
+
+    initial_vector = _set_up_initial_vector(prob.initial_vector, basis)
+
+    return IterativeEDSolver(algorithm, prob, matrix, initial_vector, basis, solver_kwargs)
+end
+
+struct DenseEDSolver{P,A,BSR}
+    problem::P
+    algorithm::A
+    basis_set_rep::BSR
+    solver_kwargs::NamedTuple
+end
+function Base.show(io::IO, s::DenseEDSolver)
+    io = IOContext(io, :compact => true)
+    print(io, "DenseEDSolver\n for hamiltonian = ")
+    show(io, s.problem.hamiltonian)
+    print(io, ",\n  kwargs = ")
+    show(io, s.solver_kwargs)
+    print(io, "\n)")
+end
+
+function CommonSolve.init(
+    prob::ExactDiagonalizationProblem, algorithm::LinearAlgebraSolver; kwargs...
+)
+    # Merge keyword arguments from problem, algorithm and ones passed to this function
+    # and split them into sets that are passed to BasisSetRepresentation and ones that
+    # are left for the solver.
+    kwargs = (; sizelim=1e5, prob.kwargs..., algorithm.kwargs..., kwargs...)
+    bsr_kwargs, solver_kwargs = extract_and_delete_keys(
+        kwargs,
+        :sizelim, :cutoff, :filter, :nnzs, :col_hint, :sort, :max_depth, :minimum_size
     )
 
-    # prepare kwargs for the solver
-    kw = (; kw..., sizelim, cutoff, filter, nnzs, col_hint, sort)
-    kw_nt = delete(
-        kw, (:sizelim, :cutoff, :filter, :nnzs, :col_hint, :sort, :max_depth, :minimum_size)
+    # determine the seed address to build the matrix from
+    addr_or_vec = _set_up_starting_address(
+        prob.initial_vector, prob.hamiltonian
     )
 
-    return MatrixEDSolver(algorithm, p, bsr, v0, kw_nt)
+    # create the BasisSetRepresentation
+    bsr = BasisSetRepresentation(prob.hamiltonian, addr_or_vec; bsr_kwargs...)
+
+    return DenseEDSolver(prob, algorithm, bsr, solver_kwargs)
 end

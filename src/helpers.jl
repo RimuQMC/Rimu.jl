@@ -100,6 +100,31 @@ function replace_keys(nt::NamedTuple, pairs)
 end
 
 """
+    extract_and_delete_keys(nt::NamedTuple, selected_keys...) -> extracted, rest
+
+Find keys from `selected_keys` that have values in `nt`. Return them as `extracted` and
+return `nt` with those keys deleted as `rest`.
+
+# Example
+```jldoctest
+julia> nt = (;a=1, b=2, d=3);
+
+julia> Rimu.extract_and_delete_keys(nt, (:a, :c))
+((a = 1,), (b = 2, d = 3))
+```
+"""
+function extract_and_delete_keys(nt::NamedTuple, selected_keys...)
+    available = Tuple(keys(nt) ∩ selected_keys)
+    extracted = NamedTupleTools.select(nt, available)
+    rest = delete(nt, available)
+
+    return extracted, rest
+end
+function extract_and_delete_keys(::Tuple{}, args...)
+    return NamedTuple(), NamedTuple()
+end
+
+"""
     delete_and_warn_if_present(nt::NamedTuple, keys)
 
 Delete keys from a `NamedTuple` and issue a warning if they are present. This is useful for
@@ -124,5 +149,5 @@ function clean_and_warn_if_others_present(nt::NamedTuple{names}, keys) where {na
     if !isempty(unused)
         @warn "The keyword(s) \"$(join(unused, "\", \""))\" are unused and will be ignored."
     end
-    return NamedTuple{filter(x -> x ∈ keys, names)}(nt)
+    return NamedTupleTools.select(nt, keys)
 end

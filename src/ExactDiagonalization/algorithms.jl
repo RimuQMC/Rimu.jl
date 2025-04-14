@@ -12,29 +12,29 @@ non-hermitian matrices.
 
 # Arguments
 - `matrix_free = false`: Whether to use a matrix-free algorithm. If `false`, a sparse matrix
-    will be instantiated. This is typically faster and recommended for small matrices,
-    but requires more memory. If `true`, the matrix is not instantiated, which is useful for
-    large matrices that would not fit into memory. The calculation will parallelise using
-    threading if available by making use of [`OperatorAsMap`](@ref).
+  will be instantiated. This is typically faster and recommended for small matrices,
+  but requires more memory. If `true`, the matrix is not instantiated, which is useful for
+  large matrices that would not fit into memory. The calculation will parallelise using
+  threading if available by making use of [`LinearMap`](@ref).
 - `kwargs`: Additional keyword arguments are passed on to the function
     [`KrylovKit.eigsolve()`](https://jutho.github.io/KrylovKit.jl/stable/man/eig/#KrylovKit.eigsolve).
 
 See also [`ExactDiagonalizationProblem`](@ref),
-[`solve`](@ref solve(::ExactDiagonalizationProblem)).
+[`solve`](@ref solve(::ExactDiagonalizationProblem)), [`ArpackSolver`](@ref),
+[`LOBPCGSolver`](@ref).
 
 !!! note
     Requires the KrylovKit.jl package to be loaded with `using KrylovKit`.
 """
 struct KrylovKitSolver{MatrixFree} <: AbstractAlgorithm{MatrixFree}
-    kw_nt::NamedTuple
+    kwargs::NamedTuple
     # the inner constructor checks if KrylovKit is loaded
-    function KrylovKitSolver{MF}(; kwargs...) where MF
+    function KrylovKitSolver{MF}(; kwargs...) where {MF}
         ext = Base.get_extension(@__MODULE__, :KrylovKitExt)
         if ext === nothing
             error("KrylovKitSolver requires that KrylovKit is loaded, i.e. `using KrylovKit`")
         else
-            kw_nt = NamedTuple(kwargs)
-            return new{MF}(kw_nt)
+            return new{MF}(NamedTuple(kwargs))
         end
     end
 end
@@ -42,12 +42,11 @@ KrylovKitSolver(matrix_free::Bool; kwargs...) = KrylovKitSolver{matrix_free}(; k
 KrylovKitSolver(; matrix_free=true, kwargs...) = KrylovKitSolver(matrix_free; kwargs...)
 
 function Base.show(io::IO, s::KrylovKitSolver)
-    nt = (; matrix_free=ismatrixfree(s), s.kw_nt...)
+    nt = (; matrix_free=ismatrixfree(s), s.kwargs...)
     io = IOContext(io, :compact => true)
     print(io, "KrylovKitSolver")
     show(io, nt)
 end
-
 
 """
     ArpackSolver(; kwargs...)
@@ -58,35 +57,42 @@ non-hermitian problems, using the Arpack Fortran library. This is faster than
 [`KrylovKitSolver(; matrix_free=true)`](@ref), but it requires more memory and will only be
 useful if the matrix fits into memory.
 
-The `kwargs` are passed on to the function
-[`Arpack.eigs()`](https://arpack.julialinearalgebra.org/stable/eigs/).
+# Arguments
+- `matrix_free = false`: Whether to use a matrix-free algorithm. If `false`, a sparse matrix
+  will be instantiated. This is typically faster and recommended for small matrices,
+  but requires more memory. If `true`, the matrix is not instantiated, which is useful for
+  large matrices that would not fit into memory. The calculation will parallelise using
+  threading if available by making use of [`LinearMap`](@ref).
+- Additional `kwargs` are passed on to the function
+  [`Arpack.eigs()`](https://arpack.julialinearalgebra.org/stable/eigs/).
 
 See also [`ExactDiagonalizationProblem`](@ref),
-[`solve`](@ref solve(::ExactDiagonalizationProblem)).
+[`solve`](@ref solve(::ExactDiagonalizationProblem)), [`KrylovKitSolver`](@ref),
+[`LOBPCGSolver`](@ref).
+
 !!! note
     Requires the Arpack.jl package to be loaded with `using Arpack`.
 """
-struct ArpackSolver <: AbstractAlgorithm{false}
-    kw_nt::NamedTuple
+struct ArpackSolver{MatrixFree} <: AbstractAlgorithm{MatrixFree}
+    kwargs::NamedTuple
     # the inner constructor checks if Arpack is loaded
-    function ArpackSolver(; kwargs...)
+    function ArpackSolver{MF}(; kwargs...) where {MF}
         ext = Base.get_extension(@__MODULE__, :ArpackExt)
         if ext === nothing
             error("ArpackSolver() requires that Arpack.jl is loaded, i.e. `using Arpack`")
         else
-            kw_nt = NamedTuple(kwargs)
-            return new(kw_nt)
+            return new{MF}(NamedTuple(kwargs))
         end
     end
 end
+ArpackSolver(matrix_free::Bool; kwargs...) = ArpackSolver{matrix_free}(; kwargs...)
+ArpackSolver(; matrix_free=true, kwargs...) = ArpackSolver(matrix_free; kwargs...)
+
 function Base.show(io::IO, s::ArpackSolver)
+    nt = (; matrix_free=ismatrixfree(s), s.kwargs...)
     io = IOContext(io, :compact => true)
-    if isempty(s.kw_nt)
-        print(io, "ArpackSolver()")
-    else
-        print(io, "ArpackSolver")
-        show(io, s.kw_nt)
-    end
+    print(io, "ArpackSolver")
+    show(io, nt)
 end
 
 """
@@ -98,37 +104,43 @@ sparse matrix.
 
 LOBPCG is not suitable for non-hermitian eigenvalue problems.
 
-The `kwargs` are passed on to the function
+# Arguments
+- `matrix_free = false`: Whether to use a matrix-free algorithm. If `false`, a sparse matrix
+  will be instantiated. This is typically faster and recommended for small matrices,
+  but requires more memory. If `true`, the matrix is not instantiated, which is useful for
+  large matrices that would not fit into memory. The calculation will parallelise using
+  threading if available by making use of [`LinearMap`](@ref).
+- Additional `kwargs` are passed on to the function
 [`IterativeSolvers.lobpcg()`](https://iterativesolvers.julialinearalgebra.org/dev/eigenproblems/lobpcg/).
 
 See also [`ExactDiagonalizationProblem`](@ref),
-[`solve`](@ref solve(::ExactDiagonalizationProblem)).
+[`solve`](@ref solve(::ExactDiagonalizationProblem)), [`KrylovKitSolver`](@ref),
+[`ArpackSolver`](@ref).
+
 !!! note
     Requires the IterativeSolvers.jl package to be loaded with `using IterativeSolvers`.
 """
-struct LOBPCGSolver <: AbstractAlgorithm{false}
-    kw_nt::NamedTuple
+struct LOBPCGSolver{MatrixFree} <: AbstractAlgorithm{MatrixFree}
+    kwargs::NamedTuple
     # the inner constructor checks if LinearSolvers is loaded
-    function LOBPCGSolver(; kwargs...)
+    function LOBPCGSolver{MF}(; kwargs...) where {MF}
         ext = Base.get_extension(@__MODULE__, :IterativeSolversExt)
         if ext === nothing
             error("LOBPCGSolver() requires that IterativeSolvers.jl is loaded, i.e. `using IterativeSolvers`")
         else
-            kw_nt = NamedTuple(kwargs)
-            return new(kw_nt)
+            return new{MF}(NamedTuple(kwargs))
         end
     end
 end
-function Base.show(io::IO, s::LOBPCGSolver)
-    io = IOContext(io, :compact => true)
-    if isempty(s.kw_nt)
-        print(io, "LOBPCGSolver()")
-    else
-        print(io, "LOBPCGSolver")
-        show(io, s.kw_nt)
-    end
-end
+LOBPCGSolver(matrix_free::Bool; kwargs...) = LOBPCGSolver{matrix_free}(; kwargs...)
+LOBPCGSolver(; matrix_free=true, kwargs...) = LOBPCGSolver(matrix_free; kwargs...)
 
+function Base.show(io::IO, s::LOBPCGSolver)
+    nt = (; matrix_free=ismatrixfree(s), s.kwargs...)
+    io = IOContext(io, :compact => true)
+    print(io, "LOBPCGSolver")
+    show(io, nt)
+end
 
 """
     LinearAlgebraSolver(; kwargs...)
@@ -148,16 +160,16 @@ See also [`ExactDiagonalizationProblem`](@ref),
 [`solve`](@ref solve(::ExactDiagonalizationProblem)).
 """
 struct LinearAlgebraSolver <: AbstractAlgorithm{false}
-    kw_nt::NamedTuple
+    kwargs::NamedTuple
 end
 LinearAlgebraSolver(; kwargs...) = LinearAlgebraSolver(NamedTuple(kwargs))
 
 function Base.show(io::IO, s::LinearAlgebraSolver)
     io = IOContext(io, :compact => true)
-    if isempty(s.kw_nt)
+    if isempty(s.kwargs)
         print(io, "LinearAlgebraSolver()")
     else
         print(io, "LinearAlgebraSolver")
-        show(io, s.kw_nt)
+        show(io, s.kwargs)
     end
 end

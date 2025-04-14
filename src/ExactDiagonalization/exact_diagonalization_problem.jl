@@ -113,14 +113,15 @@ See also [`solve(::ExactDiagonalizationProblem)`](@ref),
     Using the `LOBPCGSolver()` algorithm requires the IterativeSolvers.jl package. The package
     can be loaded with `using IterativeSolvers`.
 """
-struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V, K<:NamedTuple}
+struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V}
     hamiltonian::H
-    v0::V
-    kw_nt::K # NamedTuple
+    initial_vector::V
+    kwargs::NamedTuple
 
-    function ExactDiagonalizationProblem(hamiltonian::AbstractHamiltonian, v0=nothing; kwargs...)
-        kw_nt = NamedTuple(kwargs)
-        return new{typeof(hamiltonian),typeof(v0),typeof(kw_nt)}(hamiltonian, v0, kw_nt)
+    function ExactDiagonalizationProblem(
+        hamiltonian::H, initial_vector::V=nothing; kwargs...
+    ) where {H<:AbstractHamiltonian,V}
+        return new{H,V}(hamiltonian, initial_vector, NamedTuple(kwargs))
     end
 end
 function ExactDiagonalizationProblem(hamiltonian::AbstractHamiltonian, v0::AbstractDVec; kwargs...)
@@ -132,9 +133,9 @@ function Base.show(io::IO, p::ExactDiagonalizationProblem)
     print(io, "ExactDiagonalizationProblem(\n  ")
     show(io, p.hamiltonian)
     print(io, ",\n  ")
-    show(io, p.v0)
+    show(io, p.initial_vector)
     print(io, ";\n  ")
-    show(io, p.kw_nt)
+    show(io, p.kwargs)
     print(io, "...\n)")
 end
 function Base.:(==)(p1::ExactDiagonalizationProblem, p2::ExactDiagonalizationProblem)

@@ -30,7 +30,7 @@ using StaticArrays: setindex
 import Folds
 
 using Rimu: Rimu, DictVectors, Hamiltonians, Interfaces, BitStringAddresses, replace_keys,
-    clean_and_warn_if_others_present
+    clean_and_warn_if_others_present, extract_and_delete_keys
 using ..Interfaces: AbstractDVec, AbstractHamiltonian, AbstractOperator, AdjointUnknown,
     diagonal_element, offdiagonals, starting_address, LOStructure, IsHermitian
 using ..BitStringAddresses: AbstractFockAddress, BoseFS, FermiFS, CompositeFS,

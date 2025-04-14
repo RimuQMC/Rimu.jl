@@ -9,11 +9,11 @@ using LinearMaps: LinearMap
 
 using Rimu: Rimu, AbstractDVec, AbstractHamiltonian, AbstractOperator, IsDeterministic,
     starting_address, PDVec, DVec, PDWorkingMemory,
-    scale!!, working_memory, zerovector, dimension, replace_keys
+    scale!!, working_memory, zerovector, dimension, replace_keys, extract_and_delete_keys,
+    clean_and_warn_if_others_present
 
-using Rimu.ExactDiagonalization: MatrixEDSolver, KrylovKitSolver,
-    KrylovKitDirectEDSolver,
-    LazyDVecs, EDResult, LazyCoefficientVectorsDVecs, build_basis
+using Rimu.ExactDiagonalization: IterativeEDSolver, KrylovKitSolver,
+    LazyDVecs, EDResult, LazyCoefficientVectorsDVecs
 
 const U = Union{Symbol,EigSorter}
 
@@ -57,29 +57,13 @@ function KrylovKit.eigsolve(
     )
 end
 
-function _prepare_linear_map(
-    ham, vec; starting_address=starting_address(ham), basis=nothing, full_basis=false
-)
-    if issymmetric(ham) && (isnothing(vec) || valtype(vec) <: Real)
-        eltype = Float64
-    else
-        eltype = ComplexF64
-    end
-    if isnothing(basis) && full_basis
-        basis = build_basis(starting_address)
-    elseif isnothing(basis)
-        basis = build_basis(ham, starting_address; sort=true)
-    end
-    return LinearMap(ham, basis)
-end
-
 function KrylovKit.eigsolve(
     ham::AbstractOperator, vec::Vector, howmany::Int=1, which::U=:LR;
     basis=nothing, starting_address=starting_address(ham), full_basis=true, kwargs...
 )
     # Change the type of `vec` to float, if needed.
     v = scale!!(vec, 1.0)
-    linmap = _prepare_linear_map(ham, v; basis, starting_address, full_basis)
+    linmap = LinearMap(ham; basis, starting_address, full_basis)
     return eigsolve(
         linmap, v, howmany, which;
         ishermitian=ishermitian(ham), issymmetric=issymmetric(ham), kwargs...
@@ -90,7 +74,7 @@ function KrylovKit.eigsolve(
     basis=nothing, starting_address=starting_address(ham), full_basis=true, kwargs...
     )
     v = rand(eltype(linmap), size(linmap, 1))
-    linmap = _prepare_linear_map(ham, v; basis, starting_address, full_basis)
+    linmap = LinearMap(ham; basis, starting_address, full_basis)
     return eigsolve(
         linmap, v, howmany, which;
         ishermitian=ishermitian(ham), issymmetric=issymmetric(ham), kwargs...
@@ -98,85 +82,45 @@ function KrylovKit.eigsolve(
 end
 
 # solve for KrylovKit solvers: prepare arguments for `KrylovKit.eigsolve`
-function CommonSolve.solve(s::S; kwargs...
-) where {S<:Union{MatrixEDSolver{<:KrylovKitSolver},KrylovKitDirectEDSolver}}
-    # combine keyword arguments and set defaults for `howmany` and `which`
-    kw_nt = (; howmany = 1, which = :SR, s.kw_nt..., kwargs...)
-    # check if universal keyword arguments are present
-    if isdefined(kw_nt, :verbose)
-        if kw_nt.verbose
-            kw_nt = (; kw_nt..., verbosity = 1)
-        else
-            kw_nt = (; kw_nt..., verbosity = 0)
-        end
-        kw_nt = delete(kw_nt, (:verbose,))
-    end
-    kw_nt = replace_keys(kw_nt, (:abstol => :tol, :maxiters => :maxiter))
+function CommonSolve.solve(s::IterativeEDSolver{<:KrylovKitSolver}; kwargs...)
+    # Combine keyword arguments and set defaults for `howmany` and `which`
+    kwargs = (; howmany=1, which=:SR, s.solver_kwargs..., kwargs...)
+    kwargs = replace_keys(kwargs, (:abstol => :tol, :maxiters => :maxiter))
 
-    # Remove the `howmany` and `which` keys from the kwargs.
-    howmany, which = kw_nt.howmany, kw_nt.which
-    kw_nt = delete(kw_nt, (:howmany, :which))
-
-    return _kk_eigsolve(s, howmany, which, kw_nt)
-end
-
-# solve with KrylovKit and matrix
-function _kk_eigsolve(s::MatrixEDSolver{<:KrylovKitSolver}, howmany, which, kw_nt)
-    # set up the starting vector
-    T = eltype(s.basissetrep.sparse_matrix)
-    if isnothing(s.v0)
-        x0 = rand(T, dimension(s.basissetrep))
+    # Set verbosity - added at the beginning so it can stille be manually set to 2 or 4 by
+    # the user.
+    if get(kwargs, :verbose, false)
+        kwargs = (; verbosity=3, kwargs...)
     else
-        dvec = DVec(s.v0)
-        x0 = [dvec[a] for a in s.basissetrep.basis]
+        kwargs = (; verbosity=0, kwargs...)
     end
-    # solve the problem
-    vals, vecs, info = eigsolve(s.basissetrep.sparse_matrix, x0, howmany, which; kw_nt...)
+    delete(kwargs, :verbose)
+
+    # Split kwargs into ones passed to KrylovKit and the rest
+    kk_kwargs, rest = extract_and_delete_keys(
+        kwargs, :tol, :maxiter, :krylovdim, :orth, :eager, :verbosity
+    )
+
+    # Check for unused arguments and extract the `howmany` and `which` keys.
+    (; howmany, which) = clean_and_warn_if_others_present(rest, (:howmany, :which))
+
+    eigenvalues, coefficient_vectors, info = eigsolve(
+        s.linear_map, s.initial_vector, howmany, which; kk_kwargs...
+    )
     success = info.converged ≥ howmany
+
+    if !success
+        @warn "KrylovKit.eigsolve did not converge for all requested eigenvalues:" *
+              " $(info.converged) converged out of $howmany requested value(s)."
+    end
 
     return EDResult(
         s.algorithm,
         s.problem,
-        vals,
-        LazyDVecs(vecs, s.basissetrep.basis),
-        vecs,
-        s.basissetrep.basis,
-        info,
-        howmany,
-        nothing,
-        success,
-    )
-end
-
-# solve with KrylovKit direct
-function _kk_eigsolve(s::KrylovKitDirectEDSolver, howmany, which, kw_nt)
-    basis = get(kw_nt, :basis, nothing)
-    full_basis = get(kw_nt, :full_basis, false)
-    kw_nt = delete(kw_nt, (:basis, :full_basis))
-
-    linmap = _prepare_linear_map(s.problem.hamiltonian, s.v0; basis, full_basis)
-    if isnothing(s.v0)
-        x0 = rand(size(linmap, 1))
-    else
-        x0 = zeros(eltype(linmap), size(linmap, 1))
-        for (k, v) in pairs(s.v0)
-            x0[linmap.mapping[k]] = v
-        end
-    end
-    vals, vecs, info = eigsolve(
-        linmap, x0, howmany, which;
-        issymmetric=issymmetric(linmap), ishermitian=ishermitian(linmap), kw_nt...
-    )
-    success = info.converged ≥ howmany
-    basis = linmap.basis
-
-    return EDResult(
-        s.algorithm,
-        s.problem,
-        vals,
-        LazyDVecs(vecs, basis),
-        vecs,
-        basis,
+        eigenvalues,
+        LazyDVecs(coefficient_vectors, s.basis),
+        coefficient_vectors,
+        s.basis,
         info,
         howmany,
         nothing,
