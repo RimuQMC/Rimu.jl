@@ -9,11 +9,11 @@ using Rimu: Rimu, DVec, replace_keys, split_keys, clean_and_warn_if_others_prese
 using Rimu.ExactDiagonalization: ArpackSolver, IterativeEDSolver,
     LazyDVecs, EDResult
 
-struct ArpackConvergenceInfo
+struct ArpackConvergenceInfo{T}
     converged::Int
     numiter::Int
     numops::Int
-    residual::Vector{Float64}
+    residual::Vector{T}
 end
 function Base.show(io::IO, info::ArpackConvergenceInfo)
     print(io, "converged = $(info.converged), ")

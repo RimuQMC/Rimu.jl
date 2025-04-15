@@ -74,7 +74,7 @@ function CommonSolve.init(
     prob::ExactDiagonalizationProblem, algorithm::AbstractAlgorithm{true}; kwargs...
 )
     !ishermitian(prob.hamiltonian) && algorithm isa LOBPCGSolver &&
-        @warn "LOBPCGSolver() is not suitable for non-hermitian matrices."
+        throw(ArgumentError("LOBPCGSolver() is not suitable for non-hermitian matrices."))
 
     # Merge keyword arguments from problem, algorithm and ones passed to this function
     # and split them into sets that are passed to LinearMap and ones that
@@ -100,7 +100,7 @@ function CommonSolve.init(
     prob::ExactDiagonalizationProblem, algorithm::AbstractAlgorithm{false}; kwargs...
 )
     !ishermitian(prob.hamiltonian) && algorithm isa LOBPCGSolver &&
-        @warn "LOBPCGSolver() is not suitable for non-hermitian matrices."
+        throw(ArgumentError("LOBPCGSolver() is not suitable for non-hermitian matrices."))
 
     # Merge keyword arguments from problem, algorithm and ones passed to this function
     # and split them into sets that are passed to BasisSetRepresentation and ones that
