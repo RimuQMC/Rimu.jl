@@ -6,7 +6,7 @@ Wrapper over [`AbstractOperator`](@ref) that allows it to be used as a [`LinearM
 See [`LinearMap`](@ref) for usage.
 """
 struct OperatorAsMap{T,H<:AbstractOperator{T},A} <: LinearMap{T}
-    hamiltonian_adj::H
+    operator_adj::H
     basis::Vector{A}
     mapping::Dict{A,Int}
 end
@@ -14,16 +14,21 @@ end
 """
     LinearMap(::AbstractOperator{T}, basis)
     LinearMap(::AbstractOperator{T}; basis)
-    LinearMap(::AbstractHamiltonian{T}; starting_address, full_basis=false)
+    LinearMap(
+        op::AbstractOperator{T};
+        starting_address=starting_address(op),
+        full_basis=false
+    )
 
 Wrapper for an [`AbstractOperator`](@ref) and a basis that allows multiplying regular Julia
 vectors with the operator without storing the matrix representation of the operator in
 memory.
 
-If an [`AbstractHamiltonian`](@ref) with no `basis` is passed, the basis is constructed
-automatically. In that case, when `full_basis=true` the entire basis is constructed from an
-address as [`build_basis`](@ref)`(starting_address)`, otherwise it is constructed as
-[`build_basis`](@ref)`(hamiltonian, starting_address)`. You may want to set
+If an `op::`[`AbstractOperator`](@ref) with no `basis` is passed, the basis is constructed
+automatically from the [`starting_address`](@ref) (note that function is only defined for
+[`AbstractHamiltonian`](@ref)s). In that case, when `full_basis=true` the entire basis is
+constructed from an address as [`build_basis`](@ref)`(starting_address)`, otherwise it is
+constructed as [`build_basis`](@ref)`(op, starting_address)`. You may want to set
 `full_basis=false` when dealing with Hamiltonians that block, such as
 [`HubbardMom1D`](@ref Main.HubbardMom1D), otherwise setting `full_basis=true` is more
 efficient.
@@ -88,25 +93,25 @@ end
 Base.size(op::OperatorAsMap) = (length(op.basis), length(op.basis))
 Base.size(op::OperatorAsMap, i) = length(op.basis)
 Base.eltype(::Type{OperatorAsMap{H}}) where {H} = eltype(H)
-LinearAlgebra.ishermitian(op::OperatorAsMap) = ishermitian(op.hamiltonian_adj)
-LinearAlgebra.issymmetric(op::OperatorAsMap) = issymmetric(op.hamiltonian_adj)
+LinearAlgebra.ishermitian(op::OperatorAsMap) = ishermitian(op.operator_adj)
+LinearAlgebra.issymmetric(op::OperatorAsMap) = issymmetric(op.operator_adj)
 
 function Base.:(==)(op1::OperatorAsMap, op2::OperatorAsMap)
-    return op1.hamiltonian_adj == op2.hamiltonian_adj && op1.basis == op2.basis
+    return op1.operator_adj == op2.operator_adj && op1.basis == op2.basis
 end
 
 function Base.adjoint(op::OperatorAsMap{T,<:Any,A}) where {T,A}
-    hamiltonian_adj = op.hamiltonian_adj'
-    H = typeof(hamiltonian_adj)
-    return OperatorAsMap{T,H,A}(hamiltonian_adj, op.basis, op.mapping)
+    operator_adj = op.operator_adj'
+    H = typeof(operator_adj)
+    return OperatorAsMap{T,H,A}(operator_adj, op.basis, op.mapping)
 end
 
 # Compute `dot(H[i, :], v)` where `H` is the Hamiltonian stored in `op`. H' needs to be
 # conj-ed everywhere since we actually want the transpose, not the adjoint.
 function _row_dot_vector(op::OperatorAsMap, row_index, vector)
     row = op.basis[row_index]
-    row_result = conj(diagonal_element(op.hamiltonian_adj, row)) * vector[row_index]
-    for (col, val) in offdiagonals(op.hamiltonian_adj, row)
+    row_result = conj(diagonal_element(op.operator_adj, row)) * vector[row_index]
+    for (col, val) in offdiagonals(op.operator_adj, row)
         if !iszero(val)
             j = op.mapping[col]
             row_result += conj(val) * vector[j]

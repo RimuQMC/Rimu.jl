@@ -100,7 +100,7 @@ function replace_keys(nt::NamedTuple, pairs)
 end
 
 """
-    extract_and_delete_keys(nt::NamedTuple, selected_keys...) -> extracted, rest
+    split_keys(nt::NamedTuple, selected_keys...) -> extracted, rest
 
 Find keys from `selected_keys` that have values in `nt`. Return them as `extracted` and
 return `nt` with those keys deleted as `rest`.
@@ -109,20 +109,21 @@ return `nt` with those keys deleted as `rest`.
 ```jldoctest
 julia> nt = (;a=1, b=2, d=3);
 
-julia> Rimu.extract_and_delete_keys(nt, (:a, :c))
-((a = 1,), (b = 2, d = 3))
+julia> Rimu.split_keys(nt, :a, :c)
+((a = 1,), (a = 1, b = 2, d = 3))
 ```
 """
-function extract_and_delete_keys(nt::NamedTuple, selected_keys...)
+function split_keys(nt::NamedTuple, selected_keys...)
     available = Tuple(keys(nt) ∩ selected_keys)
     extracted = NamedTupleTools.select(nt, available)
     rest = delete(nt, available)
 
     return extracted, rest
 end
-function extract_and_delete_keys(::Tuple{}, args...)
+function split_keys(::Tuple{}, args...)
     return NamedTuple(), NamedTuple()
 end
+split_keys(nt::NamedTuple, selected::Tuple) = split_keys(nt, selected...)
 
 """
     delete_and_warn_if_present(nt::NamedTuple, keys)

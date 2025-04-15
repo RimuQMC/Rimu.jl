@@ -3,13 +3,12 @@ module KrylovKitExt
 using KrylovKit: KrylovKit, EigSorter, eigsolve
 using LinearAlgebra: LinearAlgebra, mul!, ishermitian, issymmetric
 using CommonSolve: CommonSolve
-using Setfield: Setfield, @set
-using NamedTupleTools: NamedTupleTools, delete
+using NamedTupleTools: delete
 using LinearMaps: LinearMap
 
-using Rimu: Rimu, AbstractDVec, AbstractHamiltonian, AbstractOperator, IsDeterministic,
+using Rimu: Rimu, AbstractDVec, AbstractOperator, IsDeterministic,
     starting_address, PDVec, DVec, PDWorkingMemory,
-    scale!!, working_memory, zerovector, dimension, replace_keys, extract_and_delete_keys,
+    scale!!, zerovector, replace_keys, split_keys,
     clean_and_warn_if_others_present
 
 using Rimu.ExactDiagonalization: IterativeEDSolver, KrylovKitSolver,
@@ -98,7 +97,7 @@ function CommonSolve.solve(s::IterativeEDSolver{<:KrylovKitSolver}; kwargs...)
 
     # Split kwargs into ones passed to KrylovKit and the rest. Add information regarding
     # hermiticity.
-    kk_kwargs, rest = extract_and_delete_keys(
+    kk_kwargs, rest = split_keys(
         kwargs, :tol, :maxiter, :krylovdim, :orth, :eager, :verbosity
     )
     kk_kwargs = (

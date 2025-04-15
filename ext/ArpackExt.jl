@@ -5,8 +5,7 @@ using CommonSolve: CommonSolve, solve
 using NamedTupleTools: delete
 using LinearAlgebra: norm
 
-using Rimu: Rimu, DVec, replace_keys, extract_and_delete_keys,
-    clean_and_warn_if_others_present
+using Rimu: Rimu, DVec, replace_keys, split_keys, clean_and_warn_if_others_present
 using Rimu.ExactDiagonalization: ArpackSolver, IterativeEDSolver,
     LazyDVecs, EDResult
 
@@ -34,7 +33,7 @@ function CommonSolve.solve(s::IterativeEDSolver{<:ArpackSolver}; kwargs...)
     verbose = get(kwargs, :verbose, false)
     kwargs = delete(kwargs, :verbose)
 
-    arpack_kwargs, rest = extract_and_delete_keys(
+    arpack_kwargs, rest = split_keys(
         kwargs,
         :nev, :ncv, :which, :tol, :maxiter, :sigma, :ritzvec, :explicittransform, :check
     )

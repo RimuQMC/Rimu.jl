@@ -81,7 +81,7 @@ function CommonSolve.init(
     # are left for the solver.
 
     kwargs = (; prob.kwargs..., algorithm.kwargs..., kwargs...)
-    linmap_kwargs, solver_kwargs = extract_and_delete_keys(kwargs, :basis, :full_basis)
+    linmap_kwargs, solver_kwargs = split_keys(kwargs, :basis, :full_basis)
 
     # determine the starting address or vector and seed address to build the matrix from
     addr_or_vec = _set_up_starting_address(
@@ -106,7 +106,7 @@ function CommonSolve.init(
     # and split them into sets that are passed to BasisSetRepresentation and ones that
     # are left for the solver.
     kwargs = (; prob.kwargs..., algorithm.kwargs..., kwargs...)
-    bsr_kwargs, solver_kwargs = extract_and_delete_keys(
+    bsr_kwargs, solver_kwargs = split_keys(
         kwargs,
         :sizelim, :cutoff, :filter, :nnzs, :col_hint, :sort, :max_depth, :minimum_size
     )
@@ -148,7 +148,7 @@ function CommonSolve.init(
     # and split them into sets that are passed to BasisSetRepresentation and ones that
     # are left for the solver.
     kwargs = (; sizelim=1e5, prob.kwargs..., algorithm.kwargs..., kwargs...)
-    bsr_kwargs, solver_kwargs = extract_and_delete_keys(
+    bsr_kwargs, solver_kwargs = split_keys(
         kwargs,
         :sizelim, :cutoff, :filter, :nnzs, :col_hint, :sort, :max_depth, :minimum_size
     )

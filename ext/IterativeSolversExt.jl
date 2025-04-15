@@ -3,8 +3,7 @@ module IterativeSolversExt
 using IterativeSolvers: IterativeSolvers, lobpcg, LOBPCGResults
 using CommonSolve: CommonSolve, solve
 using NamedTupleTools: delete
-using Rimu: Rimu, DVec, replace_keys, extract_and_delete_keys,
-    clean_and_warn_if_others_present
+using Rimu: Rimu, DVec, replace_keys, split_keys, clean_and_warn_if_others_present
 using Rimu.ExactDiagonalization: IterativeEDSolver, LOBPCGSolver,
     LazyDVecs, EDResult
 
@@ -31,7 +30,7 @@ function CommonSolve.solve(s::IterativeEDSolver{<:LOBPCGSolver}; kwargs...)
     kwargs = replace_keys(
         kwargs, (:abstol => :tol, :maxiters => :maxiter, :howmany => :nev)
     )
-    lobpcg_kwargs, rest = extract_and_delete_keys(kwargs, :log, :P, :C, :maxiter, :tol)
+    lobpcg_kwargs, rest = split_keys(kwargs, :log, :P, :C, :maxiter, :tol)
 
     verbose = get(rest, :verbose, false)
     rest = delete(rest, :verbose)
