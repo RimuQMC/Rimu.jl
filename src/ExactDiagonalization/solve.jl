@@ -88,7 +88,7 @@ end
 function CommonSolve.solve(s::DenseEDSolver; kwargs...)
     # Combine and clean keyword arguments
     kwargs = (; verbose=false, s.solver_kwargs..., kwargs...)
-    eigen_kwargs, rest = extract_and_delete_keys(kwargs, :permute, :scale, :sortby)
+    eigen_kwargs, rest = split_keys(kwargs, :permute, :scale, :sortby)
     (; verbose) = clean_and_warn_if_others_present(rest, (:verbose,))
 
     eigen_factorization = eigen!(Matrix(s.basis_set_rep.sparse_matrix); eigen_kwargs...)

@@ -110,7 +110,7 @@ return `nt` with those keys deleted as `rest`.
 julia> nt = (;a=1, b=2, d=3);
 
 julia> Rimu.split_keys(nt, :a, :c)
-((a = 1,), (a = 1, b = 2, d = 3))
+((a = 1,), (b = 2, d = 3))
 ```
 """
 function split_keys(nt::NamedTuple, selected_keys...)

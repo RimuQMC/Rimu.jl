@@ -83,17 +83,15 @@ ExactDiagonalizationProblem(
 
 julia> result = solve(p) # convert to dense matrix and solve with LinearAlgebra.eigen
 EDResult for algorithm LinearAlgebraSolver() with 10 eigenvalue(s),
-  values = [-5.09593, -1.51882, -1.51882, 1.55611, 1.6093, 1.6093, 4.0, 4.53982, 4.90952, 4.90952],
-  and vectors of length 10.
+  values = [-5.09593, -1.51882, -1.51882, 1.55611, 1.6093, 1.6093, 4.0, 4.53982, 4.90952, 4.90952]
   Convergence info: "Dense matrix eigensolver solution from `LinearAlgebra.eigen`", with howmany = 10 eigenvalues requested.
   success = true.
 
 julia> using KrylovKit # an external package has to be installed and loaded
 
 julia> s = init(p; algorithm = KrylovKitSolver(true)) # solve without building a matrix
-KrylovKitDirectEDSolver
+IterativeEDSolver
  with algorithm KrylovKitSolver(matrix_free = true,) for hamiltonian = HubbardReal1D(fs"|1 1 1⟩"; u=1.0, t=1.0),
-  v0 = nothing,
   kwargs = NamedTuple()
 )
 
