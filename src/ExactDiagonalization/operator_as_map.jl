@@ -67,7 +67,7 @@ function LinearMaps.LinearMap(operator::AbstractOperator, basis)
     T = eltype(operator_adj)
     A = eltype(basis)
 
-    return OperatorAsMap{T,H,A}(operator, basis, mapping)
+    return OperatorAsMap{T,H,A}(operator_adj, basis, mapping)
 end
 function LinearMaps.LinearMap(
     operator::AbstractOperator;
@@ -91,20 +91,25 @@ Base.eltype(::Type{OperatorAsMap{H}}) where {H} = eltype(H)
 LinearAlgebra.ishermitian(op::OperatorAsMap) = ishermitian(op.hamiltonian_adj)
 LinearAlgebra.issymmetric(op::OperatorAsMap) = issymmetric(op.hamiltonian_adj)
 
+function Base.:(==)(op1::OperatorAsMap, op2::OperatorAsMap)
+    return op1.hamiltonian_adj == op2.hamiltonian_adj && op1.basis == op2.basis
+end
+
 function Base.adjoint(op::OperatorAsMap{T,<:Any,A}) where {T,A}
     hamiltonian_adj = op.hamiltonian_adj'
     H = typeof(hamiltonian_adj)
     return OperatorAsMap{T,H,A}(hamiltonian_adj, op.basis, op.mapping)
 end
 
-# Compute `dot(H[i, :], v)` where `H` is the Hamiltonian stored in `op`.
+# Compute `dot(H[i, :], v)` where `H` is the Hamiltonian stored in `op`. H' needs to be
+# conj-ed everywhere since we actually want the transpose, not the adjoint.
 function _row_dot_vector(op::OperatorAsMap, row_index, vector)
     row = op.basis[row_index]
-    row_result = diagonal_element(op.hamiltonian_adj, row) * vector[row_index]
-    for (col, val) in offdiagonals(op.hamiltonian_adj', row)
+    row_result = conj(diagonal_element(op.hamiltonian_adj, row)) * vector[row_index]
+    for (col, val) in offdiagonals(op.hamiltonian_adj, row)
         if !iszero(val)
             j = op.mapping[col]
-            row_result += val * vector[j]
+            row_result += conj(val) * vector[j]
         end
     end
     return row_result

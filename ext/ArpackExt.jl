@@ -32,7 +32,7 @@ function CommonSolve.solve(s::IterativeEDSolver{<:ArpackSolver}; kwargs...)
     kwargs = replace_keys(kwargs, (:abstol => :tol, :maxiters => :maxiter, :howmany => :nev))
 
     verbose = get(kwargs, :verbose, false)
-    delete(kwargs, :verbose)
+    kwargs = delete(kwargs, :verbose)
 
     arpack_kwargs, rest = extract_and_delete_keys(
         kwargs,

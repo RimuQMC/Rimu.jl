@@ -139,7 +139,9 @@ function Base.show(io::IO, p::ExactDiagonalizationProblem)
     print(io, "...\n)")
 end
 function Base.:(==)(p1::ExactDiagonalizationProblem, p2::ExactDiagonalizationProblem)
-    return p1.hamiltonian == p2.hamiltonian && p1.v0 == p2.v0 && p1.kw_nt == p2.kw_nt
+    return p1.hamiltonian == p2.hamiltonian &&
+        p1.initial_vector == p2.initial_vector &&
+        p1.kwargs == p2.kwargs
 end
 
 Rimu.Hamiltonians.dimension(p::ExactDiagonalizationProblem) = dimension(p.hamiltonian)

@@ -181,37 +181,59 @@ using Suppressor
 end
 
 @testset "OperatorAsMap" begin
-    ham = HubbardMom1D(FermiFS2C((0,0,1,0,0), (0,1,0,1,0)))
-    basis = build_basis(ham)
+    for ham in (
+        HubbardMom1D(FermiFS2C((0,0,1,0,0), (0,1,0,1,0))),       # real symmetric
+        GutzwillerSampling(HubbardReal1D(BoseFS(1,1,1,1)), 0.5), # real non-hermitian
+        ExtendedHubbardReal1D(FermiFS(1,0,1,0,0); t=im),         # complex hermitian
+        MatrixHamiltonian(rand(ComplexF64, 10, 10)),             # complex non-hermitian
+        )
+        @testset "on $ham" begin
+            basis = build_basis(ham; sort=true)
+            op = LinearMap(ham, basis)
 
-    op = LinearMap(ham, basis)
+            @testset "basic properties" begin
+                @test size(op) == (length(basis), length(basis))
+                @test isreal(op) == isreal(ham)
+                @test ishermitian(op) == ishermitian(ham)
+                @test issymmetric(op) == issymmetric(ham)
+                @test op' == LinearMap(ham', basis)
+            end
+            @testset "Other constructors" begin
+                op_alt1 = LinearMap(ham; full_basis=false)
+                @test size(op_alt1) == size(op)
+                @test sort(op_alt1.basis) == basis
 
-    @testset "basic properties" begin
-        @test size(op) == (length(basis), length(basis))
-        @test isreal(op)
-        @test ishermitian(op)
-        @test issymmetric(op)
-        @test op' ≡ op
-    end
-    @testset "mul, dot" begin
-        matrix = sparse(ham, basis)
+                op_alt2 = LinearMap(ham; basis)
+                @test size(op_alt2) == size(op)
+                @test op_alt2.basis == basis
 
-        v = rand(length(basis)) + rand(length(basis)) .* im
-        w = rand(length(basis)) + rand(length(basis)) .* im
+                if !isa(ham, MatrixHamiltonian)
+                    op_alt3 = LinearMap(ham; full_basis=true)
+                    @test size(op_alt3, 1) ≥ size(op, 1)
+                    @test issubset(basis, op_alt3.basis)
+                end
+            end
+            @testset "*, mul!, dot, LinearMaps stuff" begin
+                matrix = sparse(ham, basis)
 
-        @test matrix * v ≈ op * v
-        @test op * v == op(v)
-        @test dot(v, matrix, w) ≈ dot(v, op, w)
+                v = rand(length(basis)) + rand(length(basis)) .* im
+                w = rand(length(basis)) + rand(length(basis)) .* im
 
-        # This is provided by LinearMaps and a bit silly, but it's a good test
-        @test Matrix(op) == matrix
+                @test matrix * v ≈ op * v
+                @test op * v == op(v)
+                @test dot(v, matrix, w) ≈ dot(v, op, w)
 
-        α, β = rand(2)
-        w1 = copy(w)
-        w2 = copy(w)
-        mul!(w1, matrix, v, α, β)
-        @test mul!(w2, op, v, α, β) ≡ w2
-        @test w1 ≈ w2
+                # This is provided by LinearMaps and a bit silly, but it's a good test
+                @test Matrix(op) == matrix
+
+                α, β = rand(2)
+                w1 = copy(w)
+                w2 = copy(w)
+                mul!(w1, matrix, v, α, β)
+                @test mul!(w2, op, v, α, β) ≡ w2
+                @test w1 ≈ w2
+            end
+        end
     end
 end
 
@@ -392,4 +414,71 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     @test solver.kw_nt == (howmany=3,)
     res = solve(solver)
     @test res.success
+end
+
+Random.seed!(1337)
+
+@testset "ExactDiagonalizationProblem" begin
+    hams = (
+        HubbardMom1D(FermiFS2C((0,0,1,0,0), (0,1,0,1,0))),       # real symmetric
+        GutzwillerSampling(HubbardReal1D(BoseFS(1,1,1,1)), 0.5), # real non-hermitian
+        ExtendedHubbardReal1D(FermiFS(1,0,1,0,0); t=im),         # complex hermitian
+        MatrixHamiltonian(rand(ComplexF64, 3, 3)),               # complex non-hermitian
+    )
+    algs = (
+        LinearAlgebraSolver(),
+        KrylovKitSolver(true),
+        KrylovKitSolver(false),
+        ArpackSolver(true),
+        ArpackSolver(false),
+        LOBPCGSolver(true),
+        LOBPCGSolver(false),
+    )
+
+    for ham in hams, alg in algs
+        if !ishermitian(ham) && alg isa LOBPCGSolver
+            continue
+        end
+        @testset "$ham with $alg" begin
+            addr = starting_address(ham)
+            eig = eigen(Matrix(ham))
+
+            @testset "initial_vector" begin
+                for v0 in (addr, [addr], (addr,), DVec(addr=>1.0), freeze(DVec([addr=>1])))
+                    prob = ExactDiagonalizationProblem(ham, v0)
+                    result = solve(prob, alg)
+                    @test result.values[1] ≈ eig.values[1]
+                end
+            end
+        end
+        if alg ∉ algs[[1, 2, 4]]
+            # break here so that testing doesn't take too long. We test the DenseEDSolver
+            # and two versions of IterativeEDSolver.
+            continue
+        end
+        @testset "set algorithm in different places" begin
+            prob = ExactDiagonalizationProblem(ham; algorithm=alg)
+            @test init(prob).algorithm == alg
+            @test init(prob, LinearAlgebraSolver()).algorithm == LinearAlgebraSolver()
+
+            @test_logs(
+                (:warn, "The keyword(s) \"algorithm\" are unused and will be ignored."),
+                solve(p, KrylovKitSolver())
+            )
+        end
+        @testset "unused kwargs" begin
+            prob = ExactDiagonalizationProblem(ham; one=1)
+            solver = init(prob, alg; two=2)
+            @test_logs(
+                (:warn, "The keyword(s) \"one\", \"two\", \"three\" are unused and will be ignored."),
+                solve(solver; three=3)
+            )
+        end
+        @testset "verbose" begin
+            prob = ExactDiagonalizationProblem(ham; verbose=true)
+            err = @capture_err solve(prob, alg)
+            @test err ≠ ""
+            @test !occursin("Warning", err)
+        end
+    end
 end

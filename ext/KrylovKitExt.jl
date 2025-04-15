@@ -94,11 +94,16 @@ function CommonSolve.solve(s::IterativeEDSolver{<:KrylovKitSolver}; kwargs...)
     else
         kwargs = (; verbosity=0, kwargs...)
     end
-    delete(kwargs, :verbose)
+    kwargs = delete(kwargs, :verbose)
 
-    # Split kwargs into ones passed to KrylovKit and the rest
+    # Split kwargs into ones passed to KrylovKit and the rest. Add information regarding
+    # hermiticity.
     kk_kwargs, rest = extract_and_delete_keys(
         kwargs, :tol, :maxiter, :krylovdim, :orth, :eager, :verbosity
+    )
+    kk_kwargs = (
+        ; ishermitian=ishermitian(s.linear_map), issymmetric=issymmetric(s.linear_map),
+        kk_kwargs...
     )
 
     # Check for unused arguments and extract the `howmany` and `which` keys.

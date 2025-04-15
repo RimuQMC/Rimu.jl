@@ -14,16 +14,17 @@ function CommonSolve.init( # no algorithm specified as positional argument
 )
     kwargs = (; prob.kwargs..., kwargs...) # remove duplicates
     algorithm = get(kwargs, :algorithm, LinearAlgebraSolver())
-    delete(kwargs, :algorithm)
+    kwargs = delete(kwargs, :algorithm)
     new_prob = ExactDiagonalizationProblem(prob.hamiltonian, prob.initial_vector; kwargs...)
     return init(new_prob, algorithm)
 end
 
 # TODO since this is the same for all solvers, maybe move it to ExactDiagonalizationProblem?
-function _set_up_starting_address(v0, hamiltonian)
+function _set_up_starting_address(v0, ham)
     if isnothing(v0)
-        addr_or_vec = starting_address(hamiltonian)
-    elseif v0 isa AbstractFockAddress || v0 isa Vector{<:AbstractFockAddress}
+        addr_or_vec = starting_address(ham)
+    elseif allows_address_type(ham, v0) ||
+            v0 isa Union{NTuple,Vector} && allows_address_type(ham, eltype(v0))
         addr_or_vec = v0
     elseif v0 isa FrozenDVec
         addr_or_vec = keys(v0)
@@ -33,25 +34,23 @@ function _set_up_starting_address(v0, hamiltonian)
 
     return addr_or_vec
 end
-function _set_up_initial_vector(v0, basis)
+function _set_up_initial_vector(ham, v0, basis)
+    T = float(eltype(ham))
     if isnothing(v0)
-        return rand(length(basis))
+        return rand(T, length(basis))
     end
 
-    if v0 isa Union{
-        NTuple{<:Any,<:AbstractFockAddress},
-        AbstractVector{<:AbstractFockAddress}
-    }
+    if v0 isa Union{NTuple, AbstractVector} && eltype(v0) == eltype(basis)
         v0_dvec = Dict(addr => 1.0 for addr in v0)
-    elseif v0 isa AbstractFockAddress
+    elseif v0 isa eltype(basis)
         v0_dvec = Dict(v0 => 1.0)
-    elseif v0 isa DictVectors.FrozenDVec{<:AbstractFockAddress}
+    elseif v0 isa FrozenDVec
         v0_dvec = Dict(pairs(v0))
     else
         throw(ArgumentError("Invalid starting vector in `ExactDiagonalizationProblem`."))
     end
 
-    return [get(v0_dvec, b, zero(valtype(v0_dvec))) for b in basis]
+    return [T(get(v0_dvec, b, zero(valtype(v0_dvec)))) for b in basis]
 end
 
 struct IterativeEDSolver{A,P,LM,T<:Number,F}
@@ -93,7 +92,7 @@ function CommonSolve.init(
     linmap = LinearMap(prob.hamiltonian; starting_address=addr_or_vec, linmap_kwargs...)
     basis = linmap.basis
 
-    initial_vector = _set_up_initial_vector(prob.initial_vector, basis)
+    initial_vector = _set_up_initial_vector(prob.hamiltonian, prob.initial_vector, basis)
 
     return IterativeEDSolver(algorithm, prob, linmap, initial_vector, basis, solver_kwargs)
 end
@@ -122,7 +121,7 @@ function CommonSolve.init(
     matrix = bsr.sparse_matrix
     basis = bsr.basis
 
-    initial_vector = _set_up_initial_vector(prob.initial_vector, basis)
+    initial_vector = _set_up_initial_vector(prob.hamiltonian, prob.initial_vector, basis)
 
     return IterativeEDSolver(algorithm, prob, matrix, initial_vector, basis, solver_kwargs)
 end
