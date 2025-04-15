@@ -18,17 +18,23 @@ end
 if VERSION ≥ v"1.9"
     @testset "KrylovKit Extension" begin
         add = FermiFS2C((0,1,0,1,0), (0,0,1,0,0))
-        ham_bm = HubbardMom1D(add)
+        ham_bh = HubbardRealSpace(add)
         ham_tc = Transcorrelated1D(add)
 
-        true_bm = eigen(Matrix(ham_bm)).values[1]
-        res1 = eigsolve(ham_bm, DVec(add => 1.0), 1, :SR)
-        res2 = eigsolve(ham_bm, PDVec(add => 1.0), 1, :SR)
+        true_bh = eigen(Matrix(ham_bh)).values[1]
+        res1 = eigsolve(ham_bh, DVec(add => 1.0), 1, :SR)
+        res2 = eigsolve(ham_bh, PDVec(add => 1.0), 1, :SR)
+        res3 = eigsolve(ham_bh, 1, :SR)
+        res4 = eigsolve(ham_bh, ones(dimension(ham_bh)), 1, :SR)
 
-        @test res1[1][1] ≈ true_bm
-        @test res1[1][1] ≈ res2[1][1]
+        @test res1[1][1] ≈ true_bh
+        @test res2[1][1] ≈ true_bh
+        @test res3[1][1] ≈ true_bh
+        @test res4[1][1] ≈ true_bh
         @test res1[1][1] isa Real
         @test res2[1][1] isa Real
+        @test res3[1][1] isa Real
+        @test res4[1][1] isa Real
 
         true_tc = eigen(Matrix(ham_tc)).values[1]
         res3 = eigsolve(ham_tc, DVec(add => 1), 1, :SR)

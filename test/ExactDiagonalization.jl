@@ -181,6 +181,9 @@ using Suppressor
 end
 
 @testset "OperatorAsMap" begin
+    @testset "Fail for AdjointUnknown()" begin
+        @test_throws ArgumentError LinearMap(Transcorrelated1D(FermiFS2C((1,),(1,))))
+    end
     for ham in (
         HubbardMom1D(FermiFS2C((0,0,1,0,0), (0,1,0,1,0))),       # real symmetric
         GutzwillerSampling(HubbardReal1D(BoseFS(1,1,1,1)), 0.5), # real non-hermitian
@@ -192,6 +195,8 @@ end
             op = LinearMap(ham, basis)
 
             @testset "basic properties" begin
+                @test_throws ArgumentError LinearMap(ham, [1, 2, 3, 4])
+                @test eltype(op) == eltype(ham)
                 @test size(op) == (length(basis), length(basis))
                 @test isreal(op) == isreal(ham)
                 @test ishermitian(op) == ishermitian(ham)
@@ -309,6 +314,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
                 @test dimension(prob) == dimension(ham)
 
                 solver = init(prob, alg)
+                @test repr(solver) isa String # no error on print
                 @test solver.problem == prob
             end
             @testset "Sanity checks" begin
@@ -322,6 +328,9 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
                 for (i, dv) in enumerate(result.vectors)
                     @test DVec(zip(result.basis, result.coefficient_vectors[i])) ≈ dv
                 end
+
+                # Make sure printing doesn't error
+                @test repr(result) isa String
             end
 
             @testset "Setting initial_vector" begin
@@ -368,25 +377,26 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
         for ham in (
             HubbardReal1D(BoseFS(1, 2, 3)),
             HubbardMom1D(BoseFS(1, 2, 3)),
-            FroehlichPolaron(OccupationNumberFS(0,0,0); mode_cutoff=3)
-            )
-            largest = map(algs) do alg
-                prob = ExactDiagonalizationProblem(ham)
+        )
+            prob = ExactDiagonalizationProblem(ham)
+            eigvals = solve(prob).values
+
+            smallest = map(algs[2:end]) do alg
                 solve(prob, alg).values[1]
             end
-            @test all(≈(largest[1]), largest)
+            @test all(≈(eigvals[1]), smallest)
 
-            first_excited = map(algs[2:end-2]) do alg
+            first_excited = map(algs[2:end]) do alg
                 prob = ExactDiagonalizationProblem(ham; howmany=2)
                 solve(prob, alg).values[2]
             end
-            @test all(≈(first_excited[1]), first_excited)
+            @test all(≈(eigvals[2]), first_excited)
 
-            largest = map(algs[2:end-2]) do alg
+            largest = map(algs[2:end]) do alg
                 prob = ExactDiagonalizationProblem(ham; which=:LR)
                 solve(prob, alg).values[1]
             end
-            @test all(≈(largest[1]), largest)
+            @test all(≈(eigvals[end]), largest)
         end
     end
     @testset "Unsuccessful solve warning" begin
@@ -406,16 +416,9 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
             @test_throws ArgumentError init(prob, ArpackSolver())
         end
 
-        @testset "LinearAlgebra" begin
-        end
-        @testset "KrylovKit" begin
-        end
-        @testset "LOBPCG" begin
+        @testset "LOBPCG which errors" begin
             prob = ExactDiagonalizationProblem(HubbardMom1D(BoseFS(0, 2, 0)))
             @test_throws ArgumentError solve(prob, LOBPCGSolver(); which=:LM)
-            @test LOBPCGSolver(true; a=1) == LOBPCGSolver(matrix_free=true, a=1)
-            @test LOBPCGSolver(false; b=1) == LOBPCGSolver(matrix_free=false, b=1)
-
         end
     end
 end

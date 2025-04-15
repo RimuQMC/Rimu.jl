@@ -47,7 +47,7 @@ function _set_up_initial_vector(ham, v0, basis)
     elseif v0 isa FrozenDVec
         v0_dvec = Dict(pairs(v0))
     else
-        throw(ArgumentError("Invalid starting vector in `ExactDiagonalizationProblem`."))
+        @assert false # this should be unreachable
     end
 
     return [T(get(v0_dvec, b, zero(valtype(v0_dvec)))) for b in basis]
