@@ -150,5 +150,5 @@ function clean_and_warn_if_others_present(nt::NamedTuple{names}, keys) where {na
     if !isempty(unused)
         @warn "The keyword(s) \"$(join(unused, "\", \""))\" are unused and will be ignored."
     end
-    return NamedTupleTools.select(nt, keys)
+    return NamedTuple{filter(x -> x ∈ keys, names)}(nt)
 end
