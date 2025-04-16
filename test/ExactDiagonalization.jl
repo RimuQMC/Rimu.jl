@@ -231,7 +231,7 @@ end
             @testset "*, mul!, dot, LinearMaps stuff" begin
                 matrix = sparse(op)
                 matrix_dense = Matrix(op)
-                @test matrix isa SparseMatrixCSC
+                @test issparse(matrix)
                 @test matrix_dense isa Matrix
                 @test matrix == matrix_dense
 
