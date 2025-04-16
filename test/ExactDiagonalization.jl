@@ -216,6 +216,10 @@ end
                     op_alt3 = LinearMap(ham; full_basis=true)
                     @test size(op_alt3, 1) ≥ size(op, 1)
                     @test issubset(basis, op_alt3.basis)
+
+                    op_alt4 = LinearMap(ham, basis[1])
+                    @test size(op_alt4, 1) == size(op, 1)
+                    @test sort(op_alt4.basis) == basis
                 end
             end
             @testset "*, mul!, dot, LinearMaps stuff" begin
@@ -331,6 +335,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
 
                 # Make sure printing doesn't error
                 @test repr(result) isa String
+                @test repr(result.info) isa String
             end
 
             @testset "Setting initial_vector" begin

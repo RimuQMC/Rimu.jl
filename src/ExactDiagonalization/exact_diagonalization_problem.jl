@@ -122,7 +122,9 @@ struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V}
         return new{H,V}(hamiltonian, initial_vector, NamedTuple(kwargs))
     end
 end
-function ExactDiagonalizationProblem(hamiltonian::AbstractHamiltonian, v0::AbstractDVec; kwargs...)
+function ExactDiagonalizationProblem(
+    hamiltonian::AbstractHamiltonian, v0::AbstractDVec; kwargs...
+)
     return ExactDiagonalizationProblem(hamiltonian, freeze(v0); kwargs...)
 end
 

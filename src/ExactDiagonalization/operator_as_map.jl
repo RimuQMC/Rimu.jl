@@ -89,10 +89,16 @@ function LinearMaps.LinearMap(
     end
     return LinearMap(operator, basis)
 end
+function LinearMaps.LinearMap(
+    operator::AbstractOperator,
+    starting_address::AbstractFockAddress;
+    full_basis::Bool=false,
+    )
+    return LinearMap(operator; starting_address, full_basis)
+end
 
 Base.size(op::OperatorAsMap) = (length(op.basis), length(op.basis))
 Base.size(op::OperatorAsMap, i) = length(op.basis)
-Base.eltype(::Type{OperatorAsMap{H}}) where {H} = eltype(H)
 LinearAlgebra.ishermitian(op::OperatorAsMap) = ishermitian(op.operator_adj)
 LinearAlgebra.issymmetric(op::OperatorAsMap) = issymmetric(op.operator_adj)
 

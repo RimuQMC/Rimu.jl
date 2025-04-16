@@ -120,9 +120,7 @@ function split_keys(nt::NamedTuple, selected_keys...)
 
     return extracted, rest
 end
-function split_keys(::Tuple{}, args...)
-    return NamedTuple(), NamedTuple()
-end
+split_keys(::Tuple{}, args...) = NamedTuple(), NamedTuple()
 split_keys(nt::NamedTuple, selected::Tuple) = split_keys(nt, selected...)
 
 """

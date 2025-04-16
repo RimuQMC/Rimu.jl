@@ -119,9 +119,7 @@ using Rimu: replace_keys, delete_and_warn_if_present, clean_and_warn_if_others_p
         @test split == (; a=1, b=2)
         @test rest == (; c=3, d=4)
 
-        split, rest = split_keys((;), :a, :b, :c)
-        @test isempty(split)
-        @test isempty(rest)
+        @test split_keys((;), :a, :b, :c) == split_keys((), :a, :b, :c) == ((;), (;))
     end
 end
 
