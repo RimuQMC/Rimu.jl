@@ -34,7 +34,8 @@ constructed as [`build_basis`](@ref)`(op, starting_address)`. You may want to se
 efficient.
 
 Implements the [LinearMaps.jl](https://github.com/JuliaLinearAlgebra/LinearMaps.jl)
-interface, and can be used in `Base.:*`, `mul!` and the three-argument `dot`.
+interface, and can be used in `Base.:*`, `mul!` and the three-argument `dot`. These
+functions are multithreaded.
 
 ## Example
 
