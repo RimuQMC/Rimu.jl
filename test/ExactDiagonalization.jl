@@ -2,6 +2,7 @@ using Rimu
 using Test
 using Random
 using Suppressor
+using SparseArrays
 
 @testset "BasisSetRepresentation" begin
     @testset "basics" begin
@@ -222,8 +223,17 @@ end
                     @test sort(op_alt4.basis) == basis
                 end
             end
+            @testset "BasisSetRepresentation" begin
+                bsr = BasisSetRepresentation(op)
+                @test bsr.basis == op.basis
+                @test bsr.sparse_matrix == sparse(ham, basis)
+            end
             @testset "*, mul!, dot, LinearMaps stuff" begin
-                matrix = sparse(ham, basis)
+                matrix = sparse(op)
+                matrix_dense = Matrix(op)
+                @test matrix isa SparseMatrixCSC
+                @test matrix_dense isa Matrix
+                @test matrix == matrix_dense
 
                 v = rand(length(basis)) + rand(length(basis)) .* im
                 w = rand(length(basis)) + rand(length(basis)) .* im
@@ -231,9 +241,7 @@ end
                 @test matrix * v ≈ op * v
                 @test op * v == op(v)
                 @test dot(v, matrix, w) ≈ dot(v, op, w)
-
-                # This is provided by LinearMaps and a bit silly, but it's a good test
-                @test Matrix(op) == matrix
+                @test dot(v, matrix, w) ≈ dot(v, op, w)
 
                 α, β = rand(2)
                 w1 = copy(w)

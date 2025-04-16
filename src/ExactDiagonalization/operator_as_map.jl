@@ -143,3 +143,13 @@ function LinearAlgebra.dot(dst, op::OperatorAsMap, src)
         conj(dst[i]) * _row_dot_vector(op, i, src)
     end
 end
+
+function SparseArrays.sparse(op::OperatorAsMap; kwargs...)
+    return build_sparse_matrix_from_LO(op.operator_adj', op.basis; kwargs...)[1]
+end
+function Base.Matrix(op::OperatorAsMap; kwargs...)
+    return Matrix(sparse(op; kwargs...))
+end
+function BasisSetRepresentation(op::OperatorAsMap; kwargs...)
+    return BasisSetRepresentation(sparse(op; kwargs...), op.basis, op.operator_adj')
+end
