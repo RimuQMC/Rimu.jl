@@ -190,12 +190,12 @@ end
         ExtendedHubbardReal1D(FermiFS(1,0,1,0,0); t=im),         # complex hermitian
         MatrixHamiltonian(rand(ComplexF64, 10, 10)),             # complex non-hermitian
         )
-        @testset "on $ham" begin
+        @testset "on $(typeof(ham))" begin
             basis = build_basis(ham; sort=true)
             op = LinearMap(ham, basis)
 
             @testset "basic properties" begin
-                @test_throws ArgumentError LinearMap(ham, [1, 2, 3, 4])
+                @test_throws ArgumentError LinearMap(ham, [:a, :b, :c])
                 @test eltype(op) == eltype(ham)
                 @test size(op) == (length(basis), length(basis))
                 @test isreal(op) == isreal(ham)
@@ -297,7 +297,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     )
 
     for ham in hams, alg in algs
-        @testset "$ham with $alg" begin
+        @testset "$(typeof(ham)) with $alg" begin
             if !ishermitian(ham) && alg isa LOBPCGSolver
                 prob = ExactDiagonalizationProblem(ham)
                 @test_throws ArgumentError init(prob, alg)
