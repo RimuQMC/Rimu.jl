@@ -341,7 +341,11 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
             @testset "Setting initial_vector" begin
                 eig = eigen(Matrix(ham))
                 addr = starting_address(ham)
-                for v0 in (addr, [addr], (addr,), DVec(addr=>1.0), freeze(DVec([addr=>1])))
+                for v0 in (
+                    addr, [addr], (addr,),
+                    DVec(addr=>1.0), PDVec(addr=>1.0),
+                    freeze(DVec([addr=>1])),
+                )
                     prob = ExactDiagonalizationProblem(ham, v0)
                     result = solve(prob, alg)
                     @test result.values[1] ≈ eig.values[1]

@@ -125,7 +125,9 @@ end
 function ExactDiagonalizationProblem(
     hamiltonian::AbstractHamiltonian, v0::AbstractDVec; kwargs...
 )
-    return ExactDiagonalizationProblem(hamiltonian, freeze(v0); kwargs...)
+    return ExactDiagonalizationProblem(
+        hamiltonian, FrozenDVec(collect(pairs(v0))); kwargs...
+    )
 end
 
 function Base.show(io::IO, p::ExactDiagonalizationProblem)
