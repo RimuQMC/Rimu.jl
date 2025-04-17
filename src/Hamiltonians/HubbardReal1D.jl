@@ -60,3 +60,12 @@ function get_offdiagonal(h::HubbardReal1D, add::SingleComponentFockAddress, chos
     naddress, onproduct = hopnextneighbour(add, chosen)
     return naddress, - h.t * onproduct
 end
+
+function get_offdiagonal(h::HubbardReal1D{<:Complex}, add::SingleComponentFockAddress, chosen)
+    naddress, onproduct = hopnextneighbour(add, chosen)
+    if chosen % 2 == 0
+        return naddress, - conj(h.t) * onproduct
+    else
+        return naddress, - h.t * onproduct
+    end
+end

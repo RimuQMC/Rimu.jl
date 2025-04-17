@@ -152,7 +152,7 @@ function ProjectorMonteCarloProblem(
     n_replicas = 1,
     start_at = starting_address(hamiltonian),
     shift = nothing,
-    style = IsDynamicSemistochastic(),
+    style = IsDynamicSemistochastic{eltype(hamiltonian)}(),
     initiator = false,
     threading = nothing,
     time_step = 0.01,
@@ -259,10 +259,14 @@ function ProjectorMonteCarloProblem(
         post_step_strategy = (post_step_strategy,)
     end
 
-    if !(eltype(hamiltonian)<: Real)
-        throw(ArgumentError("Only real-valued Hamiltonians are currently supported "*
-            "for ProjectorMonteCarloProblem. Please get in touch with the Rimu.jl " *
-            "developers if you need a complex-valued Hamiltonian!"))
+    if eltype(hamiltonian) <: Complex
+        if (start_at isa AbstractDVec && valtype(start_at) <: Real ||
+            start_at isa Union{AbstractMatrix, AbstractVector} &&
+            eltype(start_at) <: AbsractDVec && valtype(eltype(start_at)) <: Real)
+            throw(ArgumentError(
+                "The starting vector(s) provided are not compatible with a complex Hamiltonian."
+            ))
+        end
     end
 
     return ProjectorMonteCarloProblem{n_replicas,num_spectral_states(spectral_strategy)}(
