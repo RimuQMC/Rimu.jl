@@ -152,7 +152,7 @@ function ProjectorMonteCarloProblem(
     n_replicas = 1,
     start_at = starting_address(hamiltonian),
     shift = nothing,
-    style = IsDynamicSemistochastic{eltype(hamiltonian)}(),
+    style = IsDynamicSemistochastic{float(eltype(hamiltonian))}(),
     initiator = false,
     threading = nothing,
     time_step = 0.01,
