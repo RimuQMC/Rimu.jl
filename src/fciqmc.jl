@@ -53,7 +53,7 @@ function _determine_initial_shift(hamiltonian, starting_vectors)
         if v isa FrozenDVec
             v = DVec(v)
         end
-        dot(v, hamiltonian, v) / (v ⋅ v)
+        real(dot(v, hamiltonian, v) / (v ⋅ v))
         ## or
         # minimum(a -> diagonal_element(hamiltonian, a), keys(v))
     end
