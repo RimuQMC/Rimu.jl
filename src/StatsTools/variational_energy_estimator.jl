@@ -22,7 +22,8 @@ Ē_{v}  =  \\frac{\\sum_{a<b}^R \\overline{(S_a+S_b) \\mathbf{c}_a^† \\mathbf
                {2\\sum_{a<b}^R \\overline{\\mathbf{c}_a^† \\mathbf{c}_b}} ,
 ```
 where the sum goes over distinct pairs out of the ``R`` replicas. See
-[arXiv:2103.07800](http://arxiv.org/abs/2103.07800).
+[arXiv:2103.07800](http://arxiv.org/abs/2103.07800). In the case of a non-Hermitian
+Hamiltonian, ``Ē_{v}`` provides an estimator only for the real part of the energy.
 
 The `DataFrame` and [`PMCSimulation`](@ref Main.Rimu.PMCSimulation) versions can extract
 the relevant information from the result of
@@ -42,7 +43,7 @@ function variational_energy_estimator(shifts, overlaps; kwargs...)
         ))
     end
     denominator = sum(overlaps)
-    numerator = zero(shifts[1])
+    numerator = zero(first(shifts)) .* zero(first(overlaps))
     count_overlaps = 0
     for i in 1:num_replicas, j in i+1:num_replicas
         count_overlaps += 1
