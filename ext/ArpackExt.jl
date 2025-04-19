@@ -5,15 +5,15 @@ using CommonSolve: CommonSolve, solve
 using NamedTupleTools: delete
 using LinearAlgebra: norm
 
-using Rimu: Rimu, DVec, replace_keys
-using Rimu.ExactDiagonalization: ArpackSolver, MatrixEDSolver,
+using Rimu: Rimu, DVec, replace_keys, split_keys, clean_and_warn_if_others_present
+using Rimu.ExactDiagonalization: ArpackSolver, IterativeEDSolver,
     LazyDVecs, EDResult
 
-struct ArpackConvergenceInfo
+struct ArpackConvergenceInfo{T}
     converged::Int
     numiter::Int
     numops::Int
-    residual::Vector{Float64}
+    residual::Vector{T}
 end
 function Base.show(io::IO, info::ArpackConvergenceInfo)
     print(io, "converged = $(info.converged), ")
@@ -23,50 +23,53 @@ function Base.show(io::IO, info::ArpackConvergenceInfo)
     show(io, norm(info.residual))
 end
 
-function CommonSolve.solve(s::S; kwargs...
-) where {S<:MatrixEDSolver{<:ArpackSolver}}
-    # combine keyword arguments and set defaults for `howmany` and `which`
-    kw_nt = (; howmany=1, which=:SR, s.kw_nt..., kwargs...)
-    # check if universal keyword arguments are present
-    kw_nt = replace_keys(kw_nt, (:abstol=>:tol, :maxiters=>:maxiter))
-    verbose = get(kw_nt, :verbose, false)
-    kw_nt = delete(kw_nt, (:verbose,))
+function CommonSolve.solve(s::IterativeEDSolver{<:ArpackSolver}; kwargs...)
+    # Combine keyword arguments and set defaults for `howmany` and `which` and rename
+    # arguments to fit Arpack's interface. Setting `check=2` turns off errors and warnings
+    # on non-convergence since we already check for that later on.
+    kwargs = (; howmany=1, which=:SR, check=2, s.solver_kwargs..., kwargs...)
+    kwargs = replace_keys(kwargs, (:abstol => :tol, :maxiters => :maxiter, :howmany => :nev))
 
-    # Remove the `howmany` key from the kwargs.
-    kw_nt = (; nev=kw_nt.howmany, kw_nt..., ritzvec=true)
-    kw_nt = delete(kw_nt, (:howmany,))
-    howmany = kw_nt.nev
+    verbose = get(kwargs, :verbose, false)
+    kwargs = delete(kwargs, :verbose)
+
+    arpack_kwargs, rest = split_keys(
+        kwargs,
+        :nev, :ncv, :which, :tol, :maxiter, :sigma, :ritzvec, :explicittransform, :check
+    )
+    clean_and_warn_if_others_present(rest, ())
 
     # set up the starting vector
-    v0 = if isnothing(s.v0)
-        zeros((0,))
-    else
-        # convert v0 to a DVec to use it like a dictionary
-        dvec = DVec(s.v0)
-        [dvec[a] for a in s.basissetrep.basis]
-    end
+    v0 = s.initial_vector
+
     # solve the problem
-    vals, vec_matrix, nconv, niter, nmult, resid = eigs(s.basissetrep.sparse_matrix; v0, kw_nt...)
+    eigenvalues, vec_matrix, nconv, niter, nmult, resid = eigs(
+        s.linear_map; v0, arpack_kwargs...
+    )
 
     verbose && @info "Arpack.eigs: $nconv converged out of $howmany requested eigenvalues,"*
         " $niter iterations," *
         " $nmult matrix vector multiplications, norm of residual = $(norm(resid))"
+    howmany = arpack_kwargs.nev
     success = nconv ≥ howmany
-    # vecs = [view(vec_matrix, :, i) for i in 1:length(vals)] # convert to array of vectors
-    coefficient_vectors = eachcol(vec_matrix)
-    vectors = LazyDVecs(coefficient_vectors, s.basissetrep.basis)
-    info = ArpackConvergenceInfo(nconv, niter, nmult, resid)
-    if !success
+
+    if success
+        coefficient_vectors = eachcol(vec_matrix)
+    else
         @warn "Arpack.eigs did not converge for all requested eigenvalues:" *
               " $nconv converged out of $howmany requested value(s)."
+        coefficient_vectors = eachcol(vec_matrix[:,1:nconv])
     end
+
+    info = ArpackConvergenceInfo(nconv, niter, nmult, resid)
+
     return EDResult(
         s.algorithm,
         s.problem,
-        vals,
-        vectors,
+        eigenvalues,
+        LazyDVecs(coefficient_vectors, s.basis),
         coefficient_vectors,
-        s.basissetrep.basis,
+        s.basis,
         info,
         howmany,
         vec_matrix,

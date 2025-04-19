@@ -72,7 +72,8 @@ end
     include("StatsTools.jl")
 end
 
-using Rimu: replace_keys, delete_and_warn_if_present, clean_and_warn_if_others_present
+using Rimu: replace_keys, delete_and_warn_if_present, clean_and_warn_if_others_present,
+    split_keys
 @testset "helpers" begin
     @testset "walkernumber" begin
         v = [1,2,3]
@@ -103,7 +104,7 @@ using Rimu: replace_keys, delete_and_warn_if_present, clean_and_warn_if_others_p
     end
 
     @testset "keyword helpers" begin
-        nt = (; a=1, b=2, c = 3, d = 4)
+        nt = (; a=1, b=2, c=3, d=4)
         nt2 = replace_keys(nt, (:a => :x, :b => :y, :u => :v))
         @test nt2 == (c=3, d=4, x=1, y=2)
         nt3 = @test_logs((:warn, "The keyword(s) \"a\", \"b\" are unused and will be ignored."),
@@ -112,6 +113,13 @@ using Rimu: replace_keys, delete_and_warn_if_present, clean_and_warn_if_others_p
         nt4 = @test_logs((:warn, "The keyword(s) \"c\", \"d\" are unused and will be ignored."),
             clean_and_warn_if_others_present(nt, (:a, :b, :u)))
         @test nt4 == (; a = 1, b = 2)
+
+        split, rest = split_keys(nt, :a, :b, :e)
+        @test split_keys(nt, :a) == split_keys(nt, (:a,))
+        @test split == (; a=1, b=2)
+        @test rest == (; c=3, d=4)
+
+        @test split_keys((;), :a, :b, :c) == split_keys((), :a, :b, :c) == ((;), (;))
     end
 end
 

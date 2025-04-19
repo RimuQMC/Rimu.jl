@@ -19,27 +19,31 @@ provided by external packages.
 """
 module ExactDiagonalization
 
-using LinearAlgebra: LinearAlgebra, eigen!, ishermitian, Matrix
+using LinearAlgebra: LinearAlgebra, eigen!, issymmetric, ishermitian, Matrix, dot
+using LinearMaps: LinearMaps, LinearMap
 using SparseArrays: SparseArrays, nnz, nzrange, sparse
 using CommonSolve: CommonSolve, solve, init
 using VectorInterface: VectorInterface, add
 using OrderedCollections: freeze
 using NamedTupleTools: delete
 using StaticArrays: setindex
+import Folds
 
 using Rimu: Rimu, DictVectors, Hamiltonians, Interfaces, BitStringAddresses, replace_keys,
-    clean_and_warn_if_others_present
+    clean_and_warn_if_others_present, split_keys
 using ..Interfaces: AbstractDVec, AbstractHamiltonian, AbstractOperator, AdjointUnknown,
     diagonal_element, offdiagonals, starting_address, LOStructure, IsHermitian
-using ..BitStringAddresses: AbstractFockAddress, BoseFS, FermiFS, CompositeFS, near_uniform
+using ..BitStringAddresses: AbstractFockAddress, BoseFS, FermiFS, CompositeFS,
+    OccupationNumberFS, near_uniform
 using ..DictVectors: FrozenDVec, PDVec, DVec
 using ..Hamiltonians: allows_address_type, check_address_type, dimension,
-    ParitySymmetry, TimeReversalSymmetry
-
+    ParitySymmetry, TimeReversalSymmetry, AbstractOperator
 
 export ExactDiagonalizationProblem, KrylovKitSolver, LinearAlgebraSolver
 export ArpackSolver, LOBPCGSolver
 export BasisSetRepresentation, build_basis
+
+export LinearMap
 
 export sparse # from SparseArrays
 
@@ -47,6 +51,7 @@ export sparse # from SparseArrays
 include("basis_breadth_first_search.jl")
 include("basis_fock.jl")
 include("basis_set_representation.jl")
+include("operator_as_map.jl")
 include("algorithms.jl")
 include("exact_diagonalization_problem.jl")
 include("init_and_solvers.jl")

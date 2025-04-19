@@ -18,7 +18,9 @@ struct LazyDVecs{DV,C<:AbstractVector{<:AbstractVector},B} <: AbstractVector{DV}
     basis::B
 end
 function LazyDVecs(vs::LCV, basis::B) where {LCV,B}
-    return LazyDVecs{typeof(PDVec(zip(basis, vs[1]))),LCV,B}(vs, basis)
+    K = eltype(basis)
+    V = eltype(eltype(vs))
+    return LazyDVecs{typeof(PDVec{K,V}()),LCV,B}(vs, basis)
 end
 Base.size(lv::LazyDVecs) = size(lv.coefficient_vecs)
 Base.getindex(lv::LazyDVecs, i::Int) = PDVec(zip(lv.basis, lv.coefficient_vecs[i]))
@@ -48,7 +50,6 @@ function Base.show(io::IO, r::EDResult)
     println(io, "EDResult for algorithm $(r.algorithm) with $n eigenvalue(s),")
     print(io, "  values = ")
     show(io, r.values)
-    print(io, ",\n  and vectors of length $(length(r.vectors[1])).")
     print(io, "\n  Convergence info: ")
     show(io, r.info)
     print(io, ", with howmany = $(r.howmany) eigenvalues requested.")
@@ -78,34 +79,33 @@ function CommonSolve.solve(p::ExactDiagonalizationProblem, algorithm; kwargs...)
     return solve(s)
 end
 
-# The code for `CommonSolve.solve(::MatrixEDSolver{<:ALG}; ...)` for
-# - ALG<:KrylovKitMatrix is part of the `KrylovKitExt.jl` extension
+# The code for `CommonSolve.solve(::IterativeEDSolver{<:ALG}; ...)` for
+# - ALG<:KrylovKitSolver is part of the `KrylovKitExt.jl` extension
 # - ALG<:ArpackSolver is part of the `ArpackExt.jl` extension
 # - ALG<:LOBPCGSolver is part of the `IterativeSolversExt.jl` extension
 
-# The code for `CommonSolve.solve(::KrylovKitDirectEDSolver; ...)` is part of the
-# `KrylovKitExt.jl` extension.
 
-function CommonSolve.solve(s::MatrixEDSolver{<:LinearAlgebraSolver};
-    kwargs...
-)
-    # combine keyword arguments
-    kw_nt = (; s.kw_nt..., kwargs...)
-    kw_nt = clean_and_warn_if_others_present(kw_nt, (:permute, :scale, :sortby))
+function CommonSolve.solve(s::DenseEDSolver; kwargs...)
+    # Combine and clean keyword arguments
+    kwargs = (; verbose=false, s.solver_kwargs..., kwargs...)
+    eigen_kwargs, rest = split_keys(kwargs, :permute, :scale, :sortby)
+    (; verbose) = clean_and_warn_if_others_present(rest, (:verbose,))
 
-    eigen_factorization = eigen!(Matrix(s.basissetrep.sparse_matrix); kw_nt...)
+    eigen_factorization = eigen!(Matrix(s.basis_set_rep.sparse_matrix); eigen_kwargs...)
+
+    verbose && @info "LinearAlgebra.eigen: success"
 
     coefficient_vectors = eachcol(eigen_factorization.vectors)
-    vectors = LazyDVecs(coefficient_vectors, s.basissetrep.basis)
+    vectors = LazyDVecs(coefficient_vectors, s.basis_set_rep.basis)
     return EDResult(
         s.algorithm,
         s.problem,
         eigen_factorization.values,
         vectors,
         coefficient_vectors,
-        s.basissetrep.basis,
+        s.basis_set_rep.basis,
         "Dense matrix eigensolver solution from `LinearAlgebra.eigen`",
-        dimension(s.basissetrep),
+        dimension(s.basis_set_rep),
         eigen_factorization.vectors,
         true # successful if no exception was thrown
     )

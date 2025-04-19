@@ -166,9 +166,6 @@ julia> dot(dvec_b, Op1, dvec_b)
 julia> Op2 = ReducedDensityMatrix{Float32}(2)
 ReducedDensityMatrix{Float32}(2)
 
-julia> dot(dvec_b, Op2, dvec_b)
-ERROR: ArgumentError: ReducedDensityMatrix(p) with `p > 1` requires `FermiFS` addresses
-
 julia> dvec_f = PDVec(FermiFS(1,1,0,0) => 0.5, FermiFS(0,1,1,0) => 0.5)
 2-element PDVec: style = IsDeterministic{Float64}()
   fs"|⋅↑↑⋅⟩" => 0.5

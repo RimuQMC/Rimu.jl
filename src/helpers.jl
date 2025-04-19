@@ -100,6 +100,30 @@ function replace_keys(nt::NamedTuple, pairs)
 end
 
 """
+    split_keys(nt::NamedTuple, selected_keys...) -> extracted, rest
+
+Find keys from `selected_keys` that have values in `nt`. Return them as `extracted` and
+return `nt` with those keys deleted as `rest`.
+
+# Example
+```jldoctest
+julia> nt = (;a=1, b=2, d=3);
+
+julia> Rimu.split_keys(nt, :a, :c)
+((a = 1,), (b = 2, d = 3))
+```
+"""
+function split_keys(nt::NamedTuple, selected_keys...)
+    available = Tuple(keys(nt) ∩ selected_keys)
+    extracted = NamedTupleTools.select(nt, available)
+    rest = delete(nt, available)
+
+    return extracted, rest
+end
+split_keys(::Tuple{}, args...) = NamedTuple(), NamedTuple()
+split_keys(nt::NamedTuple, selected::Tuple) = split_keys(nt, selected...)
+
+"""
     delete_and_warn_if_present(nt::NamedTuple, keys)
 
 Delete keys from a `NamedTuple` and issue a warning if they are present. This is useful for

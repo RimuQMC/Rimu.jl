@@ -3,8 +3,8 @@ module IterativeSolversExt
 using IterativeSolvers: IterativeSolvers, lobpcg, LOBPCGResults
 using CommonSolve: CommonSolve, solve
 using NamedTupleTools: delete
-using Rimu: Rimu, DVec, replace_keys, delete_and_warn_if_present
-using Rimu.ExactDiagonalization: MatrixEDSolver, LOBPCGSolver,
+using Rimu: Rimu, DVec, replace_keys, split_keys, clean_and_warn_if_others_present
+using Rimu.ExactDiagonalization: IterativeEDSolver, LOBPCGSolver,
     LazyDVecs, EDResult
 
 struct LOBPCGConvergenceInfo
@@ -23,30 +23,40 @@ function Base.show(io::IO, info::LOBPCGConvergenceInfo)
     show(io, maximum(info.residual_norms))
 end
 
-function CommonSolve.solve(s::S; kwargs...) where {S<:MatrixEDSolver{<:LOBPCGSolver}}
-    # combine keyword arguments and set defaults for `howmany` and `which`
-    kw_nt = (; howmany=1, which=:SR, s.kw_nt..., kwargs...)
-    # check if universal keyword arguments are present
-    kw_nt = replace_keys(kw_nt, (:abstol=>:tol, :maxiters=>:maxiter))
-    kw_nt = delete_and_warn_if_present(kw_nt, (:verbose, :reltol))
+function CommonSolve.solve(s::IterativeEDSolver{<:LOBPCGSolver}; kwargs...)
+    # Combine keyword arguments and set defaults for `howmany` and `which` and split out
+    # the arguments the are accepted by `lobpcg`
+    kwargs = (; howmany=1, which=:SR, s.solver_kwargs..., kwargs...)
+    kwargs = replace_keys(
+        kwargs, (:abstol => :tol, :maxiters => :maxiter, :howmany => :nev)
+    )
+    lobpcg_kwargs, rest = split_keys(kwargs, :log, :P, :C, :maxiter, :tol)
 
-    # Remove the `howmany` and `which` keys from the kwargs.
-    largest = (kw_nt.which == :SR) ? false : true
-    kw_nt = (; nev=kw_nt.howmany, kw_nt...) # if nev was passed, it will overwrite howmany
-    nev = kw_nt.nev # number of eigenvalues
-    kw_nt = delete(kw_nt, (:howmany, :which, :nev))
+    verbose = get(rest, :verbose, false)
+    rest = delete(rest, :verbose)
 
-    # solve the problem
-    results = lobpcg(s.basissetrep.sparse_matrix, largest, nev; kw_nt...)
+    # Check that only `which` and `nev` remain in `rest` and extract them.
+    (; nev, which) = clean_and_warn_if_others_present(
+        rest, (:nev, :which)
+    )
+    if which == :SR
+        largest = false
+    elseif which == :LR
+        largest = true
+    else
+        throw(ArgumentError("unsupported `which` argument! Only `:SR` and `:LR` are supported."))
+    end
 
-    success = all(results.converged)
-    if !success
-        @warn "IterativeSolvers.lobpcg did not converge for all requested eigenvalues:" *
-              " $(sum(results.converged)) converged out of $nev requested value(s)."
+    results = lobpcg(s.linear_map, largest, nev; lobpcg_kwargs...)
+    success = results.converged
+
+    if success
+        verbose && @info "IterativeSolvers.lobpcg: $nev requested eigenvalue(s) converged in $(results.iterations) iterations, norm(s) of residuals = $(results.residual_norms)"
+    else
+        @warn "IterativeSolvers.lobpcg did not converge for all requested eigenvalues."
     end
 
     coefficient_vectors = eachcol(results.X)
-    vectors = LazyDVecs(coefficient_vectors, s.basissetrep.basis)
     info = LOBPCGConvergenceInfo(
         results.tolerance,
         results.iterations,
@@ -59,9 +69,9 @@ function CommonSolve.solve(s::S; kwargs...) where {S<:MatrixEDSolver{<:LOBPCGSol
         s.algorithm,
         s.problem,
         results.λ,
-        vectors,
+        LazyDVecs(coefficient_vectors, s.basis),
         coefficient_vectors,
-        s.basissetrep.basis,
+        s.basis,
         info,
         nev,
         results,

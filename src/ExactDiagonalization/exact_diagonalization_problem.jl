@@ -83,18 +83,15 @@ ExactDiagonalizationProblem(
 
 julia> result = solve(p) # convert to dense matrix and solve with LinearAlgebra.eigen
 EDResult for algorithm LinearAlgebraSolver() with 10 eigenvalue(s),
-  values = [-5.09593, -1.51882, -1.51882, 1.55611, 1.6093, 1.6093, 4.0, 4.53982, 4.90952, 4.90952],
-  and vectors of length 10.
+  values = [-5.09593, -1.51882, -1.51882, 1.55611, 1.6093, 1.6093, 4.0, 4.53982, 4.90952, 4.90952]
   Convergence info: "Dense matrix eigensolver solution from `LinearAlgebra.eigen`", with howmany = 10 eigenvalues requested.
   success = true.
 
 julia> using KrylovKit # an external package has to be installed and loaded
 
 julia> s = init(p; algorithm = KrylovKitSolver(true)) # solve without building a matrix
-KrylovKitDirectEDSolver
+IterativeEDSolver
  with algorithm KrylovKitSolver(matrix_free = true,) for hamiltonian = HubbardReal1D(fs"|1 1 1⟩"; u=1.0, t=1.0),
-  v0 = 1-element PDVec: style = IsDeterministic{Float64}()
-  fs"|1 1 1⟩" => 1.0,
   kwargs = NamedTuple()
 )
 
@@ -114,18 +111,23 @@ See also [`solve(::ExactDiagonalizationProblem)`](@ref),
     Using the `LOBPCGSolver()` algorithm requires the IterativeSolvers.jl package. The package
     can be loaded with `using IterativeSolvers`.
 """
-struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V, K<:NamedTuple}
+struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V}
     hamiltonian::H
-    v0::V
-    kw_nt::K # NamedTuple
+    initial_vector::V
+    kwargs::NamedTuple
 
-    function ExactDiagonalizationProblem(hamiltonian::AbstractHamiltonian, v0=nothing; kwargs...)
-        kw_nt = NamedTuple(kwargs)
-        return new{typeof(hamiltonian),typeof(v0),typeof(kw_nt)}(hamiltonian, v0, kw_nt)
+    function ExactDiagonalizationProblem(
+        hamiltonian::H, initial_vector::V=nothing; kwargs...
+    ) where {H<:AbstractHamiltonian,V}
+        return new{H,V}(hamiltonian, initial_vector, NamedTuple(kwargs))
     end
 end
-function ExactDiagonalizationProblem(hamiltonian::AbstractHamiltonian, v0::AbstractDVec; kwargs...)
-    return ExactDiagonalizationProblem(hamiltonian, freeze(v0); kwargs...)
+function ExactDiagonalizationProblem(
+    hamiltonian::AbstractHamiltonian, v0::AbstractDVec; kwargs...
+)
+    return ExactDiagonalizationProblem(
+        hamiltonian, FrozenDVec(collect(pairs(v0))); kwargs...
+    )
 end
 
 function Base.show(io::IO, p::ExactDiagonalizationProblem)
@@ -133,13 +135,15 @@ function Base.show(io::IO, p::ExactDiagonalizationProblem)
     print(io, "ExactDiagonalizationProblem(\n  ")
     show(io, p.hamiltonian)
     print(io, ",\n  ")
-    show(io, p.v0)
+    show(io, p.initial_vector)
     print(io, ";\n  ")
-    show(io, p.kw_nt)
+    show(io, p.kwargs)
     print(io, "...\n)")
 end
 function Base.:(==)(p1::ExactDiagonalizationProblem, p2::ExactDiagonalizationProblem)
-    return p1.hamiltonian == p2.hamiltonian && p1.v0 == p2.v0 && p1.kw_nt == p2.kw_nt
+    return p1.hamiltonian == p2.hamiltonian &&
+        p1.initial_vector == p2.initial_vector &&
+        p1.kwargs == p2.kwargs
 end
 
 Rimu.Hamiltonians.dimension(p::ExactDiagonalizationProblem) = dimension(p.hamiltonian)
