@@ -25,10 +25,7 @@ struct OperatorMultiplier{H,W<:PDWorkingMemory}
     working_memory::W
 end
 function OperatorMultiplier(hamiltonian, vector::PDVec)
-    return OperatorMultiplier(
-        hamiltonian,
-        PDWorkingMemory(vector; style=IsDeterministic{eltype(hamiltonian)}())
-    )
+    return OperatorMultiplier(hamiltonian, PDWorkingMemory(vector; style=IsDeterministic()))
 end
 
 function (o::OperatorMultiplier)(v)

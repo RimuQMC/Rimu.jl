@@ -635,7 +635,7 @@ end
             @test LOStructure(GutzwillerSampling(M, 0.2)) isa AdjointKnown
             @test LOStructure(
                 GutzwillerSampling(HubbardReal1D(BoseFS((1,2)),t=0+2im), 0.2)
-            ) isa AdjointKnown
+            ) isa AdjointUnknown
         end
         @testset "GuidingVector adjoint" begin
             v = DVec(starting_address(M) => 10; capacity=10)
@@ -646,7 +646,7 @@ end
                 HubbardReal1D(BoseFS((1,2)),t=0+2im),
                 DVec(BoseFS((1,2)) => 1.1; capacity=10),
                 0.2,
-            )) isa AdjointKnown
+            )) isa AdjointUnknown
         end
     end
 

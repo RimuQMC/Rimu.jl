@@ -13,7 +13,7 @@ struct ArpackConvergenceInfo
     converged::Int
     numiter::Int
     numops::Int
-    residual::Vector{ComplexF64}
+    residual::Vector{Float64}
 end
 function Base.show(io::IO, info::ArpackConvergenceInfo)
     print(io, "converged = $(info.converged), ")

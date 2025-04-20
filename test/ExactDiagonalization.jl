@@ -242,8 +242,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     hamiltonians = [
         HubbardReal1D(BoseFS(1, 2, 3)),
         HubbardMom1D(BoseFS(1, 2, 3)),
-        FroehlichPolaron(OccupationNumberFS(0,0,0); mode_cutoff=3),
-        HubbardReal1D(BoseFS(1, 2, 3);t=1.0im)
+        FroehlichPolaron(OccupationNumberFS(0,0,0); mode_cutoff=3)
     ]
     for h in hamiltonians
         p = ExactDiagonalizationProblem(h)

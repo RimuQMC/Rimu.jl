@@ -44,14 +44,14 @@ function CommonSolve.init(
     kw = (; p.kw_nt..., algorithm.kw_nt..., kwargs...) # remove duplicates
     # set up the starting vector
     vec = if isnothing(p.v0)
-        FrozenDVec([starting_address(p.hamiltonian) => one(eltype(p.hamiltonian))])
+        FrozenDVec([starting_address(p.hamiltonian) => 1.0])
     elseif p.v0 isa AbstractFockAddress
-        FrozenDVec([p.v0 => one(eltype(p.hamiltonian))])
+        FrozenDVec([p.v0 => 1.0])
     elseif p.v0 isa Union{
         NTuple{<:Any,<:AbstractFockAddress},
         AbstractVector{<:AbstractFockAddress},
     }
-        FrozenDVec([addr => one(eltype(p.hamiltonian)) for addr in p.v0])
+        FrozenDVec([addr => 1.0 for addr in p.v0])
     elseif p.v0 isa FrozenDVec{<:AbstractFockAddress}
         p.v0
     else
