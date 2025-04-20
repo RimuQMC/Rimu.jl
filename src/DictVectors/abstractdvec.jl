@@ -318,9 +318,5 @@ function Interfaces.dot_from_right(target, op, source::AbstractDVec)
         end
         res
     end
-    if iszero(imag(result))
-        return real(result::T)
-    else
-        return result::T
-    end
+    return result::T
 end

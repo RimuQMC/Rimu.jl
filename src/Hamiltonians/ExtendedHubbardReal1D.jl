@@ -5,8 +5,8 @@ Implements the extended Hubbard model on a one-dimensional chain in real space. 
 Hamiltonian can be either real or complex, depending on the choice of `boundary_condition`.
 
 ```math
-\\hat{H} = -t \\sum_{\\langle i,j\\rangle} a_i^† a_j + \\frac{u}{2}\\sum_i n_i (n_i-1) +
-v \\sum_{\\langle i,j\\rangle} n_i n_j
+\\hat{H} = - \\sum_i \\left(t^* a_i^† a_{i+1} + t a_i a_{i+1}^†\\right) + 
+\\frac{u}{2}\\sum_i n_i (n_i-1) + v \\sum_{\\langle i,j\\rangle} n_i n_j
 ```
 
 # Arguments

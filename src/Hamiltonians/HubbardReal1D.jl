@@ -4,7 +4,8 @@
 Implements a one-dimensional Bose Hubbard chain in real space.
 
 ```math
-\\hat{H} = -t \\sum_{\\langle i,j\\rangle} a_i^† a_j + \\frac{u}{2}\\sum_i n_i (n_i-1)
+\\hat{H} = - \\sum_i \\left(t^* a_i^† a_{i+1} + t a_i a_{i+1}^†\\right) + 
+\\frac{u}{2}\\sum_i n_i (n_i-1)
 ```
 
 # Arguments
@@ -42,6 +43,15 @@ end
 dimension(::HubbardReal1D, address) = number_conserving_dimension(address)
 
 LOStructure(::Type{<:HubbardReal1D{<:Real}}) = IsHermitian()
+function LOStructure(::Type{<:HubbardReal1D{<:Complex,<:Any,U,T}}) where {U,T}
+    if iszero(T)
+        return IsDiagonal() # TODO: implement adjoint
+    elseif iszero(imag(U))
+        return IsHermitian() # still Hermitian with complex t
+    else
+        return AdjointUnknown() # diagonal elements are complex; TODO: implement adjoint
+    end
+end
 
 Base.getproperty(h::HubbardReal1D, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::HubbardReal1D{<:Any,<:Any,U}, ::Val{:u}) where U = U
