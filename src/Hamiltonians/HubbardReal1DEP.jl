@@ -24,8 +24,8 @@ shift_lattice_inv(js) = circshift(js, fld(length(js),2))
 Implements a one-dimensional Bose Hubbard chain in real space with external potential.
 
 ```math
-\\hat{H} = -t \\sum_{\\langle i,j\\rangle} a_i^† a_j + \\sum_i ϵ_i n_i
-+ \\frac{u}{2}\\sum_i n_i (n_i-1)
+\\hat{H} = - \\sum_i \\left(t^* a_i^† a_{i+1} + t a_i a_{i+1}^†\\right) + 
+\\sum_i ϵ_i n_i + \\frac{u}{2}\\sum_i n_i (n_i-1)
 ```
 
 # Arguments
@@ -64,6 +64,15 @@ function Base.show(io::IO, h::HubbardReal1DEP)
 end
 
 LOStructure(::Type{<:HubbardReal1DEP{<:Real}}) = IsHermitian()
+function LOStructure(::Type{<:HubbardReal1DEP{<:Complex,<:Any,U,T}}) where {U,T}
+    if iszero(T)
+        return IsDiagonal() # TODO: implement adjoint
+    elseif iszero(imag(U))
+        return IsHermitian() # still Hermitian with complex t
+    else
+        return AdjointUnknown() # diagonal elements are complex; TODO: implement adjoint
+    end
+end
 
 Base.getproperty(h::HubbardReal1DEP, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::HubbardReal1DEP{<:Any,<:Any,U}, ::Val{:u}) where U = U
@@ -89,4 +98,13 @@ end
 function get_offdiagonal(h::HubbardReal1DEP, address::SingleComponentFockAddress, chosen)
     naddress, onproduct = hopnextneighbour(address, chosen)
     return naddress, - h.t * onproduct
+end
+
+function get_offdiagonal(h::HubbardReal1DEP{<:Complex}, add::SingleComponentFockAddress, chosen)
+    naddress, onproduct = hopnextneighbour(add, chosen)
+    if chosen % 2 == 0
+        return naddress, - conj(h.t) * onproduct
+    else
+        return naddress, - h.t * onproduct
+    end
 end
