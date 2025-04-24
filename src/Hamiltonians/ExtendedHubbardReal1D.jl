@@ -72,7 +72,9 @@ function LOStructure(::Type{<:ExtendedHubbardReal1D{<:Complex,<:Any,U,V,T}}) whe
 end
 
 function LinearAlgebra.adjoint(h::ExtendedHubbardReal1D{TT,A,U,V,T,B}) where {TT<:Complex,A,U,V,T,B}
-    return ExtendedHubbardReal1D{TT,A,conj(U),conj(V),T,B}(h.address)
+    CU = imag(U) == 0 ? U : real(U) - im*imag(U)
+    CV = imag(V) == 0 ? V : real(V) - im*imag(V)
+    return ExtendedHubbardReal1D{TT,A,CU,CV,T,B}(h.address)
 end
 
 Base.getproperty(h::ExtendedHubbardReal1D, s::Symbol) = getproperty(h, Val(s))

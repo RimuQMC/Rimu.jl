@@ -1621,7 +1621,7 @@ end
     h2 = ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1); u=6 + 3im, t=0)
     # diagonal and non-Hermitian
     @test LOStructure(h) isa IsDiagonal
-    @test_throws ArgumentError adjoint(h2)
+    @test LOStructure(h2) isa AdjointKnown
 end
 
 @testset "Comparison of ExtendedHubbardMom1D with ExtendedHubbardReal1D" begin
