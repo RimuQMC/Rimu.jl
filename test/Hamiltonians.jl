@@ -19,7 +19,11 @@ end
 @testset "Hamiltonian interface tests" begin
     for H in (
         HubbardReal1D(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0),
+        HubbardReal1D(BoseFS(1, 2, 3, 4);t=1.0im),
+        HubbardReal1D(BoseFS(1, 2, 3, 4);u=1.0im),
         HubbardReal1DEP(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0, v_ho=3.0),
+        HubbardReal1DEP(BoseFS(1, 2, 3, 4); t=1.0im),
+        HubbardReal1DEP(BoseFS(1, 2, 3, 4); u=1.0im),
         HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
         HubbardMom1D(OccupationNumberFS(6, 0, 0, 4); t=1.0, u=0.5),
         HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5 + im),
@@ -1603,7 +1607,7 @@ end
     @test_throws ArgumentError ExtendedHubbardReal1D(BoseFS(1,1,1,1); boundary_condition=:hrad_wall)
 end
 
-@testset "Small ExtendedHubbardReal1D with complex parameters" begin
+@testset "Small 1D Hubbard with complex parameters" begin
     for H in (
         ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), boundary_condition=:twisted), # Hermitian
         ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), boundary_condition=0.5), # Hermitian
@@ -1612,6 +1616,10 @@ end
         ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), u=6 + 3im, t=2.0), # non-Hermitian
         ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), u=6 + 3im, t=0), # diagonal and non-Hermitian
         ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), t=0), # diagonal and Hermitian
+        HubbardReal1D(BoseFS(1,1,1),t=1.0im),
+        HubbardReal1D(BoseFS(1,1,1),u=1.0im),
+        ExtendedHubbardReal1D(BoseFS(1,1,1),t=1.0im),
+        ExtendedHubbardReal1D(BoseFS(1,1,1),u=1.0im),
     )
         test_hamiltonian_structure(H)
     end
@@ -1622,6 +1630,16 @@ end
     # diagonal and non-Hermitian
     @test LOStructure(h) isa IsDiagonal
     @test LOStructure(h2) isa AdjointKnown
+    @test h2'.u == conj(h2.u)
+    @test diagonal_element(h2, OccupationNumberFS(3,0,1)) == 21 + 9im
+    h3 = HubbardReal1D(BoseFS(1,1,1),u=1.0im)
+    @test h3'.u == -1.0im
+    @test diagonal_element(h3, BoseFS(2,1,0)) == 1.0im
+    @test diagonal_element(h3', BoseFS(2,1,0)) == -1.0im
+    h4 = HubbardReal1DEP(BoseFS(1,1,1),u=1.0im,v_ho=1.0)
+    @test h4'.u == -1.0im
+    @test diagonal_element(h4, BoseFS(0,1,2)) == 3 + 1.0im
+    @test diagonal_element(h4', BoseFS(0,1,2)) == 3 - 1.0im
 end
 
 @testset "Comparison of ExtendedHubbardMom1D with ExtendedHubbardReal1D" begin

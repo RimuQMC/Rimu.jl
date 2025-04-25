@@ -52,7 +52,7 @@ function LOStructure(::Type{<:HubbardReal1D{<:Complex,<:Any,U,T}}) where {U,T}
 end
 
 function LinearAlgebra.adjoint(h::HubbardReal1D{TT,A,U,T}) where {TT<:Complex,A,U,T}
-    CU = imag(U) == 0 ? U : real(U) - im*imag(U)
+    CU = imag(U) == 0 ? U : conj(U)
     return HubbardReal1D{TT,A,CU,T}(h.add)
 end
 

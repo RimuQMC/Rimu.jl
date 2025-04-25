@@ -73,8 +73,9 @@ function LOStructure(::Type{<:HubbardReal1DEP{<:Complex,<:Any,U,T}}) where {U,T}
 end
 
 function LinearAlgebra.adjoint(h::HubbardReal1DEP{TT,A,U,T,M}) where {TT<:Complex,A,U,T,M}
-    CU = imag(U) == 0 ? U : real(U) - im*imag(U)
-    return HubbardReal1DEP{TT,A,CU,T,M}(h.address, conj(h.ep))
+    CU = imag(U) == 0 ? U : conj(U)
+    ep = SVector{M,TT}(imag(h.ep[i]) == 0 ? h.ep[i] : conj(h.ep[i]) for i in 1:M)
+    return HubbardReal1DEP{TT,A,CU,T,M}(h.address, ep)
 end
 
 Base.getproperty(h::HubbardReal1DEP, s::Symbol) = getproperty(h, Val(s))
