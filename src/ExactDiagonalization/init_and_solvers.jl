@@ -19,21 +19,6 @@ function CommonSolve.init( # no algorithm specified as positional argument
     return init(new_prob, algorithm)
 end
 
-# TODO since this is the same for all solvers, maybe move it to ExactDiagonalizationProblem?
-function _set_up_starting_address(v0, ham)
-    if isnothing(v0)
-        addr_or_vec = starting_address(ham)
-    elseif allows_address_type(ham, v0) ||
-            v0 isa Union{NTuple,Vector} && allows_address_type(ham, eltype(v0))
-        addr_or_vec = v0
-    elseif v0 isa FrozenDVec
-        addr_or_vec = keys(v0)
-    else
-        throw(ArgumentError("Invalid starting vector in `ExactDiagonalizationProblem`."))
-    end
-
-    return addr_or_vec
-end
 function _set_up_initial_vector(ham, v0, basis)
     T = float(eltype(ham))
     if isnothing(v0)
@@ -83,13 +68,11 @@ function CommonSolve.init(
     kwargs = (; prob.kwargs..., algorithm.kwargs..., kwargs...)
     linmap_kwargs, solver_kwargs = split_keys(kwargs, :basis, :full_basis)
 
-    # determine the starting address or vector and seed address to build the matrix from
-    addr_or_vec = _set_up_starting_address(
-        prob.initial_vector, prob.hamiltonian
+    # create the LinearMap
+    linmap = LinearMap(prob.hamiltonian;
+        starting_address=prob.addr_or_vec, linmap_kwargs...
     )
 
-    # create the LinearMap
-    linmap = LinearMap(prob.hamiltonian; starting_address=addr_or_vec, linmap_kwargs...)
     basis = linmap.basis
 
     initial_vector = _set_up_initial_vector(prob.hamiltonian, prob.initial_vector, basis)
@@ -111,13 +94,8 @@ function CommonSolve.init(
         :sizelim, :cutoff, :filter, :nnzs, :col_hint, :sort, :max_depth, :minimum_size
     )
 
-    # determine the starting address or vector and seed address to build the matrix from
-    addr_or_vec = _set_up_starting_address(
-        prob.initial_vector, prob.hamiltonian
-    )
-
     # create the BasisSetRepresentation
-    bsr = BasisSetRepresentation(prob.hamiltonian, addr_or_vec; bsr_kwargs...)
+    bsr = BasisSetRepresentation(prob.hamiltonian, prob.addr_or_vec; bsr_kwargs...)
     matrix = bsr.sparse_matrix
     basis = bsr.basis
 
@@ -153,13 +131,8 @@ function CommonSolve.init(
         :sizelim, :cutoff, :filter, :nnzs, :col_hint, :sort, :max_depth, :minimum_size
     )
 
-    # determine the seed address to build the matrix from
-    addr_or_vec = _set_up_starting_address(
-        prob.initial_vector, prob.hamiltonian
-    )
-
     # create the BasisSetRepresentation
-    bsr = BasisSetRepresentation(prob.hamiltonian, addr_or_vec; bsr_kwargs...)
+    bsr = BasisSetRepresentation(prob.hamiltonian, prob.addr_or_vec; bsr_kwargs...)
 
     return DenseEDSolver(prob, algorithm, bsr, solver_kwargs)
 end

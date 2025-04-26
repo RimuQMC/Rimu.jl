@@ -12,7 +12,7 @@ collection of addresses can be passed as `v0`.
 - `algorithm=LinearAlgebraSolver()`: The algorithm to use for solving the problem. The
     algorithm can also be specified as the second positional argument in the `init`
     function.
-- `dimension=dimension(hamiltonian)`: The estimated dimension of the problem. This is
+- `linear_dimension` (optional): The estimated dimension of the problem. This is
     usually automatically determined from the Hamiltonian.
 - Optional keyword arguments will be passed on to the `init` and `solve` functions.
 
@@ -80,7 +80,7 @@ julia> p = ExactDiagonalizationProblem(HubbardReal1D(BoseFS(1,1,1)))
 ExactDiagonalizationProblem(
   HubbardReal1D(fs"|1 1 1⟩"; u=1.0, t=1.0),
   nothing;
-  dimension=10,
+  linear_dimension=10,
   NamedTuple()...
 )
 
@@ -114,18 +114,27 @@ See also [`solve(::ExactDiagonalizationProblem)`](@ref),
     Using the `LOBPCGSolver()` algorithm requires the IterativeSolvers.jl package. The package
     can be loaded with `using IterativeSolvers`.
 """
-struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V, D}
+struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V, D, AV}
     hamiltonian::H
     initial_vector::V
-    dimension::D
+    linear_dimension::D
+    addr_or_vec::AV # starting address or iterable of addresses
     kwargs::NamedTuple
 end
 
 function ExactDiagonalizationProblem(
-    hamiltonian::H, initial_vector::V=nothing; dimension=dimension(hamiltonian), kwargs...
+    hamiltonian::H, initial_vector::V=nothing; linear_dimension=nothing, kwargs...
 ) where {H<:AbstractHamiltonian,V}
-    return ExactDiagonalizationProblem{H,V,typeof(dimension)}(
-        hamiltonian, initial_vector, dimension, NamedTuple(kwargs)
+    # Set up the starting address or vector
+    addr_or_vec = _set_up_starting_address(initial_vector, hamiltonian)
+    if linear_dimension === nothing
+        linear_dimension = dimension(
+            hamiltonian,
+            addr_or_vec isa AbstractFockAddress ? addr_or_vec : first(addr_or_vec)
+        )
+    end
+    return ExactDiagonalizationProblem{H,V,typeof(linear_dimension), typeof(addr_or_vec)}(
+        hamiltonian, initial_vector, linear_dimension, addr_or_vec, NamedTuple(kwargs)
     )
 end
 
@@ -144,7 +153,7 @@ function Base.show(io::IO, p::ExactDiagonalizationProblem)
     print(io, ",\n  ")
     show(io, p.initial_vector)
     print(io, ";\n  ")
-    print(io, "dimension=$(p.dimension),\n  ")
+    print(io, "linear_dimension=$(p.linear_dimension),\n  ")
     show(io, p.kwargs)
     print(io, "...\n)")
 end
@@ -154,4 +163,19 @@ function Base.:(==)(p1::ExactDiagonalizationProblem, p2::ExactDiagonalizationPro
         p1.kwargs == p2.kwargs
 end
 
-Rimu.Hamiltonians.dimension(p::ExactDiagonalizationProblem) = p.dimension
+Rimu.Hamiltonians.dimension(p::ExactDiagonalizationProblem) = p.linear_dimension
+
+function _set_up_starting_address(v0, ham)
+    if isnothing(v0)
+        addr_or_vec = starting_address(ham)
+    elseif allows_address_type(ham, v0) ||
+           v0 isa Union{NTuple,Vector} && allows_address_type(ham, eltype(v0))
+        addr_or_vec = v0
+    elseif v0 isa FrozenDVec
+        addr_or_vec = keys(v0)
+    else
+        throw(ArgumentError("Invalid starting vector in `ExactDiagonalizationProblem`."))
+    end
+
+    return addr_or_vec # single address or iterable of addresses
+end
