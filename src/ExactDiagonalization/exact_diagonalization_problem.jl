@@ -12,6 +12,8 @@ collection of addresses can be passed as `v0`.
 - `algorithm=LinearAlgebraSolver()`: The algorithm to use for solving the problem. The
     algorithm can also be specified as the second positional argument in the `init`
     function.
+- `dimension=dimension(hamiltonian)`: The estimated dimension of the problem. This is
+    usually automatically determined from the Hamiltonian.
 - Optional keyword arguments will be passed on to the `init` and `solve` functions.
 
 # Algorithms
@@ -78,6 +80,7 @@ julia> p = ExactDiagonalizationProblem(HubbardReal1D(BoseFS(1,1,1)))
 ExactDiagonalizationProblem(
   HubbardReal1D(fs"|1 1 1⟩"; u=1.0, t=1.0),
   nothing;
+  dimension=10,
   NamedTuple()...
 )
 
@@ -111,17 +114,21 @@ See also [`solve(::ExactDiagonalizationProblem)`](@ref),
     Using the `LOBPCGSolver()` algorithm requires the IterativeSolvers.jl package. The package
     can be loaded with `using IterativeSolvers`.
 """
-struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V}
+struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V, D}
     hamiltonian::H
     initial_vector::V
+    dimension::D
     kwargs::NamedTuple
-
-    function ExactDiagonalizationProblem(
-        hamiltonian::H, initial_vector::V=nothing; kwargs...
-    ) where {H<:AbstractHamiltonian,V}
-        return new{H,V}(hamiltonian, initial_vector, NamedTuple(kwargs))
-    end
 end
+
+function ExactDiagonalizationProblem(
+    hamiltonian::H, initial_vector::V=nothing; dimension=dimension(hamiltonian), kwargs...
+) where {H<:AbstractHamiltonian,V}
+    return ExactDiagonalizationProblem{H,V,typeof(dimension)}(
+        hamiltonian, initial_vector, dimension, NamedTuple(kwargs)
+    )
+end
+
 function ExactDiagonalizationProblem(
     hamiltonian::AbstractHamiltonian, v0::AbstractDVec; kwargs...
 )
@@ -137,6 +144,7 @@ function Base.show(io::IO, p::ExactDiagonalizationProblem)
     print(io, ",\n  ")
     show(io, p.initial_vector)
     print(io, ";\n  ")
+    print(io, "dimension=$(p.dimension),\n  ")
     show(io, p.kwargs)
     print(io, "...\n)")
 end
@@ -146,4 +154,4 @@ function Base.:(==)(p1::ExactDiagonalizationProblem, p2::ExactDiagonalizationPro
         p1.kwargs == p2.kwargs
 end
 
-Rimu.Hamiltonians.dimension(p::ExactDiagonalizationProblem) = dimension(p.hamiltonian)
+Rimu.Hamiltonians.dimension(p::ExactDiagonalizationProblem) = p.dimension
