@@ -163,3 +163,5 @@ function CommonSolve.init(
 
     return DenseEDSolver(prob, algorithm, bsr, solver_kwargs)
 end
+
+Rimu.Hamiltonians.dimension(s::DenseEDSolver) = dimension(s.basis_set_rep)
