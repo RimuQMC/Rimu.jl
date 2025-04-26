@@ -37,8 +37,8 @@ function ExtendedHubbardReal1D(addr; u=1.0, v=1.0, t=1.0, boundary_condition = :
         U, V, T = promote(float(u), float(v), float(t))
         return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition}(addr)
     elseif boundary_condition isa Number
-        U, V, T = promote(float(u), float(v), float(t))
-        return ExtendedHubbardReal1D{typeof(complex(U)),typeof(addr),U,V,T,boundary_condition}(addr)
+        U, V, T = complex.(promote(float(u), float(v), float(t)))
+        return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition}(addr)
     else
         throw(ArgumentError("invalid boundary condition"))
     end
@@ -72,9 +72,7 @@ function LOStructure(::Type{<:ExtendedHubbardReal1D{<:Complex,<:Any,U,V,T}}) whe
 end
 
 function LinearAlgebra.adjoint(h::ExtendedHubbardReal1D{TT,A,U,V,T,B}) where {TT<:Complex,A,U,V,T,B}
-    CU = imag(U) == 0 ? U : conj(U)
-    CV = imag(V) == 0 ? V : conj(V)
-    return ExtendedHubbardReal1D{TT,A,CU,CV,T,B}(h.address)
+    return ExtendedHubbardReal1D{TT,A,conj(U)+0im,conj(V)+0im,T,B}(h.address)
 end
 
 Base.getproperty(h::ExtendedHubbardReal1D, s::Symbol) = getproperty(h, Val(s))
