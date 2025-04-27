@@ -13,9 +13,14 @@ function CommonSolve.init( # no algorithm specified as positional argument
     kwargs...
 )
     kwargs = (; prob.kwargs..., kwargs...) # remove duplicates
-    algorithm = get(kwargs, :algorithm, LinearAlgebraSolver())
+    # algorithm = kwargs[:algorithm]::AbstractAlgorithm # get the algorithm from kwargs
+    # return init(prob, algorithm; kwargs...)
+    algorithm = get(kwargs, :algorithm, prob.algorithm)
     kwargs = delete(kwargs, :algorithm)
-    new_prob = ExactDiagonalizationProblem(prob.hamiltonian, prob.initial_vector; kwargs...)
+    new_prob = ExactDiagonalizationProblem(
+        prob.hamiltonian, prob.initial_vector;
+        algorithm, kwargs...
+    )
     return init(new_prob, algorithm)
 end
 

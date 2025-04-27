@@ -80,6 +80,7 @@ julia> p = ExactDiagonalizationProblem(HubbardReal1D(BoseFS(1,1,1)))
 ExactDiagonalizationProblem(
   HubbardReal1D(fs"|1 1 1⟩"; u=1.0, t=1.0),
   nothing;
+  algorithm=LinearAlgebraSolver(),
   linear_dimension=10,
   NamedTuple()...
 )
@@ -114,17 +115,19 @@ See also [`solve(::ExactDiagonalizationProblem)`](@ref),
     Using the `LOBPCGSolver()` algorithm requires the IterativeSolvers.jl package. The package
     can be loaded with `using IterativeSolvers`.
 """
-struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V, D, AV}
+struct ExactDiagonalizationProblem{H<:AbstractHamiltonian,V,ALG<:AbstractAlgorithm,AV}
     hamiltonian::H
     initial_vector::V
-    linear_dimension::D
+    algorithm::ALG
+    linear_dimension::Number
     addr_or_vec::AV # starting address or iterable of addresses
     kwargs::NamedTuple
 end
 
 function ExactDiagonalizationProblem(
-    hamiltonian::H, initial_vector::V=nothing; linear_dimension=nothing, kwargs...
-) where {H<:AbstractHamiltonian,V}
+    hamiltonian::H, initial_vector::V=nothing;
+    linear_dimension=nothing, algorithm::ALG=LinearAlgebraSolver(), kwargs...
+) where {H<:AbstractHamiltonian,V,ALG<:AbstractAlgorithm}
     # Set up the starting address or vector
     addr_or_vec = _set_up_starting_address(initial_vector, hamiltonian)
     if linear_dimension === nothing
@@ -133,8 +136,9 @@ function ExactDiagonalizationProblem(
             addr_or_vec isa AbstractFockAddress ? addr_or_vec : first(addr_or_vec)
         )
     end
-    return ExactDiagonalizationProblem{H,V,typeof(linear_dimension), typeof(addr_or_vec)}(
-        hamiltonian, initial_vector, linear_dimension, addr_or_vec, NamedTuple(kwargs)
+    return ExactDiagonalizationProblem{H,V,ALG,typeof(addr_or_vec)}(
+        hamiltonian, initial_vector, algorithm, linear_dimension, addr_or_vec,
+        NamedTuple(kwargs)
     )
 end
 
@@ -153,6 +157,7 @@ function Base.show(io::IO, p::ExactDiagonalizationProblem)
     print(io, ",\n  ")
     show(io, p.initial_vector)
     print(io, ";\n  ")
+    print(io, "algorithm=$(p.algorithm),\n  ")
     print(io, "linear_dimension=$(p.linear_dimension),\n  ")
     show(io, p.kwargs)
     print(io, "...\n)")
