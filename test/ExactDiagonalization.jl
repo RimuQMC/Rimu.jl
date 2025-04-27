@@ -368,11 +368,6 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
                 prob = ExactDiagonalizationProblem(ham; algorithm=alg)
                 @test init(prob).algorithm == alg
                 @test init(prob, LinearAlgebraSolver()).algorithm == LinearAlgebraSolver()
-
-                @test_logs(
-                    (:warn, "The keyword(s) \"algorithm\" are unused and will be ignored."),
-                    solve(prob, KrylovKitSolver())
-                )
             end
             @testset "Unused kwargs" begin
                 prob = ExactDiagonalizationProblem(ham; one=1)
@@ -428,9 +423,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     @testset "General" begin
         @testset "Bad starting vector" begin
             ham = HubbardReal1D(BoseFS(1, 2, 3))
-            prob = ExactDiagonalizationProblem(ham, [1, 2, 3])
-            @test_throws ArgumentError init(prob, KrylovKitSolver(true))
-            @test_throws ArgumentError init(prob, ArpackSolver())
+            @test_throws ArgumentError ExactDiagonalizationProblem(ham, [1, 2, 3])
         end
 
         @testset "LOBPCG which errors" begin
