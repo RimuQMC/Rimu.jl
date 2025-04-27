@@ -43,6 +43,7 @@ using ..Hamiltonians: allows_address_type, check_address_type, dimension,
 export ExactDiagonalizationProblem, KrylovKitSolver, LinearAlgebraSolver
 export ArpackSolver, LOBPCGSolver
 export BasisSetRepresentation, build_basis
+export estimate_memory_requirement
 
 export LinearMap
 

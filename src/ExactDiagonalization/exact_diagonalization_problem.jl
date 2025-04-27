@@ -140,7 +140,7 @@ function ExactDiagonalizationProblem(
         )
     end
     dense, matrix_free, sparse = estimate_memory_requirement(
-        linear_dimension, hamiltonian
+        hamiltonian, linear_dimension
     )
     free_memory = Sys.free_memory() # available memory in bytes
     total_memory = Sys.total_memory() # total memory in bytes
@@ -223,12 +223,13 @@ function _set_up_starting_address(v0, ham)
 end
 
 """
-    estimate_memory_requirement(prob::ExactDiagonalizationProblem)
+    estimate_memory_requirement(::ExactDiagonalizationProblem)
+    estimate_memory_requirement(h::AbstractHamiltonian, linear_dimension=dimension(h))
     -> (; dense, matrix_free, sparse)
 
-Estimate the memory requirement for the given [`ExactDiagonalizationProblem`](@ref).
+Estimate the memory requirement for an [`ExactDiagonalizationProblem`](@ref).
 This function estimates the memory requirement based on the linear dimension and the
-the Hamiltonian. It returns an estimate of the memory size in bytes for three
+Hamiltonian. It returns an estimate of the memory size in bytes for three
 different types of algorithms:
 - `dense`: The memory requirement for [`LinearAlgebraSolver()`](@ref) using a dense matrix.
 - `matrix_free`: The memory requirement for [`KrylovKitSolver(; matrix_free=true)`](@ref)
@@ -240,13 +241,16 @@ The memory requirements for other sparse solvers are expected to be similar to t
 `KrylovKitSolver` estimates.
 """
 function estimate_memory_requirement(prob::ExactDiagonalizationProblem)
-    return estimate_memory_requirement(prob.linear_dimension, prob.hamiltonian)
+    return estimate_memory_requirement(prob.hamiltonian, prob.linear_dimension)
 end
 
 function estimate_memory_requirement(
-    linear_dimension::Number,
-    hamiltonian::AbstractHamiltonian
+    hamiltonian::AbstractHamiltonian,
+    linear_dimension=dimension(hamiltonian)
 )
+    krylovdim = 30
+    # standard Krylov dimension in KrylovKit, could be read from the algorithm
+    # LOBPCG should need much less memory
     address_size = sizeof(starting_address(hamiltonian))
     column_size = Rimu.num_offdiagonals(hamiltonian, starting_address(hamiltonian))
     coefficient_size = sizeof(eltype(hamiltonian))
@@ -254,12 +258,12 @@ function estimate_memory_requirement(
     dense = 2 * linear_dimension^2 * coefficient_size + # for dense matrix and QR
         linear_dimension * address_size # for basis
 
-    matrix_free = 30 * linear_dimension * coefficient_size + # for solver algorithm
+    matrix_free = krylovdim * linear_dimension * coefficient_size + # for solver algorithm
         2 * linear_dimension * (address_size + coefficient_size) # for LinearMap
 
     sparse = linear_dimension * column_size * coefficient_size + # for sparse matrix
         linear_dimension * address_size + # for basis
-        30 * linear_dimension * coefficient_size # for solver algorithm
+        krylovdim * linear_dimension * coefficient_size # for solver algorithm
 
     return (; dense, matrix_free, sparse)
 end
