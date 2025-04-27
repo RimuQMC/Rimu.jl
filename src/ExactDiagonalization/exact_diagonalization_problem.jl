@@ -14,6 +14,8 @@ collection of addresses can be passed as `v0`.
     function.
 - `linear_dimension` (optional): The estimated dimension of the problem. This is
     usually automatically determined from the Hamiltonian.
+- `info=false`: Whether to print additional information about memory requirements.
+- `warn=true`: Whether to print warnings if available memory is insufficient.
 - Optional keyword arguments will be passed on to the `init` and `solve` functions.
 
 # Algorithms

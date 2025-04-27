@@ -391,7 +391,10 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
             HubbardMom1D(BoseFS(1, 2, 3)),
         )
             prob = ExactDiagonalizationProblem(ham)
-            eigvals = solve(prob).values
+            @test dimension(prob) == dimension(ham)
+            solver = init(prob)
+            @test dimension(solver) ≤ dimension(ham)
+            eigvals = solve(solver).values
 
             smallest = map(algs[2:end]) do alg
                 solve(prob, alg).values[1]
@@ -414,7 +417,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     @testset "Unsuccessful solve warning" begin
         ham = HubbardMom1D(BoseFS(10, 5 => 10); u=6.0)
         for alg in algs[2:end]
-            prob = ExactDiagonalizationProblem(ham; howmany=10)
+            prob = ExactDiagonalizationProblem(ham; warn=false, howmany=10)
             result = @test_logs((:warn,), solve(prob, alg; maxiters=1))
             @test !result.success
         end
@@ -429,6 +432,15 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
         @testset "LOBPCG which errors" begin
             prob = ExactDiagonalizationProblem(HubbardMom1D(BoseFS(0, 2, 0)))
             @test_throws ArgumentError solve(prob, LOBPCGSolver(); which=:LM)
+        end
+
+        @testset "Memory info and warning" begin
+            @test_logs((:info,),
+                ExactDiagonalizationProblem(HubbardMom1D(BoseFS(0, 2, 0)); info=true)
+            )
+            @test_logs((:warn,),
+                ExactDiagonalizationProblem(HubbardReal1D(BoseFS(100, 1 => 100)))
+            )
         end
     end
 end
