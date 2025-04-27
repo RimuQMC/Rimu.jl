@@ -108,6 +108,7 @@ function CommonSolve.init(
 
     return IterativeEDSolver(algorithm, prob, matrix, initial_vector, basis, solver_kwargs)
 end
+Hamiltonians.dimension(s::IterativeEDSolver) = dimension(s.linear_map)
 
 struct DenseEDSolver{P,A,BSR}
     problem::P

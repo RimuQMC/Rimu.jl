@@ -69,6 +69,14 @@ dimension(h::AbstractHamiltonian) = dimension(h, starting_address(h))
 dimension(::AbstractObservable, addr) = dimension(addr)
 dimension(addr::AbstractFockAddress) = dimension(typeof(addr))
 dimension(::T) where {T<:Number} = typemax(T) # e.g. integer addresses
+function dimension(m::AbstractMatrix)
+    r,c = size(m)
+    if r == c
+        return r
+    else
+        throw(ArgumentError("Matrix is not square"))
+    end
+end
 
 function dimension(::Type{<:BoseFS{N,M}}) where {N,M}
     return number_conserving_bose_dimension(N,M)

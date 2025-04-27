@@ -328,6 +328,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
                 solver = init(prob, alg)
                 @test repr(solver) isa String # no error on print
                 @test solver.problem == prob
+                @test dimension(solver) ≤ dimension(ham)
             end
             @testset "Sanity checks" begin
                 prob = ExactDiagonalizationProblem(ham)
@@ -336,6 +337,8 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
                 @test result.success
                 @test length(result.values) == length(result.vectors)
                 @test length(result.coefficient_vectors) == length(result.vectors)
+                @test dimension(result) ≤ dimension(ham)
+                @test dimension(result) == length(result.basis) == length(result.vectors[1])
 
                 for (i, dv) in enumerate(result.vectors)
                     @test DVec(zip(result.basis, result.coefficient_vectors[i])) ≈ dv
@@ -391,10 +394,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
             HubbardMom1D(BoseFS(1, 2, 3)),
         )
             prob = ExactDiagonalizationProblem(ham)
-            @test dimension(prob) == dimension(ham)
-            solver = init(prob)
-            @test dimension(solver) ≤ dimension(ham)
-            eigvals = solve(solver).values
+            eigvals = solve(prob).values
 
             smallest = map(algs[2:end]) do alg
                 solve(prob, alg).values[1]

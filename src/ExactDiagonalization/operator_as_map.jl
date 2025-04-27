@@ -98,6 +98,8 @@ function LinearMaps.LinearMap(
     return LinearMap(operator; starting_address, full_basis)
 end
 
+Hamiltonians.dimension(op::LinearMap) = size(op, 1)
+
 Base.size(op::OperatorAsMap) = (length(op.basis), length(op.basis))
 Base.size(op::OperatorAsMap, i) = length(op.basis)
 LinearAlgebra.ishermitian(op::OperatorAsMap) = ishermitian(op.operator_adj)
