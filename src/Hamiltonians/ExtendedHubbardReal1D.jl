@@ -5,8 +5,8 @@ Implements the extended Hubbard model on a one-dimensional chain in real space. 
 Hamiltonian can be either real or complex, depending on the choice of `boundary_condition`.
 
 ```math
-\\hat{H} = -t \\sum_{\\langle i,j\\rangle} a_i^† a_j + \\frac{u}{2}\\sum_i n_i (n_i-1) +
-v \\sum_{\\langle i,j\\rangle} n_i n_j
+\\hat{H} = - \\sum_i \\left(t a_i^† a_{i+1} + t^* a_{i+1}^† a_i \\right) + 
+\\frac{u}{2}\\sum_i n_i (n_i-1) + v \\sum_{\\langle i,j\\rangle} n_i n_j
 ```
 
 # Arguments
@@ -37,8 +37,8 @@ function ExtendedHubbardReal1D(addr; u=1.0, v=1.0, t=1.0, boundary_condition = :
         U, V, T = promote(float(u), float(v), float(t))
         return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition}(addr)
     elseif boundary_condition isa Number
-        U, V, T = promote(float(u), float(v), float(t))
-        return ExtendedHubbardReal1D{typeof(complex(U)),typeof(addr),U,V,T,boundary_condition}(addr)
+        U, V, T = complex.(promote(float(u), float(v), float(t)))
+        return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition}(addr)
     else
         throw(ArgumentError("invalid boundary condition"))
     end
@@ -64,13 +64,15 @@ function LOStructure(::Type{<:ExtendedHubbardReal1D{<:Real,<:Any,<:Any,<:Any,T}}
     end
 end
 function LOStructure(::Type{<:ExtendedHubbardReal1D{<:Complex,<:Any,U,V,T}}) where {U,V,T}
-    if iszero(T)
-        return IsDiagonal() # TODO: implement adjoint
-    elseif iszero(imag(U)) && iszero(imag(V))
-        return IsHermitian() # still Hermitian with complex t and twisted boundaries
+    if iszero(imag(U)) && iszero(imag(V))
+        return IsHermitian() # still Hermitian with complex t
     else
-        return AdjointUnknown() # diagonal elements are complex; TODO: implement adjoint
+        return AdjointKnown()
     end
+end
+
+function LinearAlgebra.adjoint(h::ExtendedHubbardReal1D{TT,A,U,V,T,B}) where {TT<:Complex,A,U,V,T,B}
+    return ExtendedHubbardReal1D{TT,A,conj(U)+0im,conj(V)+0im,T,B}(h.address)
 end
 
 Base.getproperty(h::ExtendedHubbardReal1D, s::Symbol) = getproperty(h, Val(s))
@@ -126,10 +128,5 @@ function diagonal_element(h::ExtendedHubbardReal1D, b::SingleComponentFockAddres
 end
 
 function get_offdiagonal(h::ExtendedHubbardReal1D, address::SingleComponentFockAddress, chosen)
-    naddress, onproduct = hopnextneighbour(address, chosen, h.boundary_condition)
-    if h.t isa Complex && chosen%2 == 0
-        return naddress, convert(eltype(h), - conj(h.t) * onproduct)
-    else
-        return naddress, convert(eltype(h), - h.t * onproduct)
-    end
+    return _get_offdiagonal_hubbard_real_1D(h, address, chosen)
 end

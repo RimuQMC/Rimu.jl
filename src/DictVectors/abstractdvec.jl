@@ -232,9 +232,9 @@ LinearAlgebra.dot(v::AbstractDVec, w::AbstractDVec) = inner(v, w)
 function LinearAlgebra.norm(v::AbstractDVec, p::Real=2)
     T = float(promote_type(valtype(v), typeof(p)))
     if p === 1
-        return sum(abs, values(v); init=zero(T))
+        return sum(abs, values(v); init=real(zero(T)))
     elseif p === 2
-        return sqrt(sum(abs2, values(v); init=zero(T)))
+        return sqrt(sum(abs2, values(v); init=real(zero(T))))
     elseif p === Inf
         return mapreduce(abs, max, values(v), init=real(zero(T)))
     else
@@ -252,14 +252,12 @@ Compute the number of walkers in `v`. It is used for updating the shift. Overloa
 function for modifying population control.
 
 In most cases `walkernumber(v)` is identical to `norm(v, 1)`. For `AbstractDVec`s with
-complex coefficients it reports the one norm separately for the real and the imaginary part
+complex integer coefficients it reports the one norm separately for the real and the imaginary part
 as a `ComplexF64`. See [`Norm1ProjectorPPop`](@ref).
 """
-walkernumber(v) = walkernumber(StochasticStyle(v), v)
-# use StochasticStyle trait for dispatch
-walkernumber(::StochasticStyle, v) = dot(Norm1ProjectorPPop(), v)
-# complex walkers as two populations
-# the following default is fast and generic enough to be good for real walkers and
+walkernumber(v) = norm(v, 1)
+walkernumber(v::AbstractDVec{<:Any,<:Complex{<:Integer}}) = dot(Norm1ProjectorPPop(), v)
+# complex integer walkers as two populations
 
 """
     walkernumber_and_length(v)
