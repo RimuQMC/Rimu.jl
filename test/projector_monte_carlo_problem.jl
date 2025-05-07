@@ -180,6 +180,10 @@ end
         @test sm.state[1].shift_parameters.shift isa Real
         @test sm.state[1].shift_parameters.pnorm isa Real
         @test_throws ArgumentError ProjectorMonteCarloProblem(h; start_at=DVec(BoseFS(1,3)=>1.0))
+        start_at = [DVec(BoseFS(1, 3) => 1.0im)]
+        p = ProjectorMonteCarloProblem(h; start_at)
+        sm = init(p)
+        @test only(state_vectors(sm)) == start_at[1]
     end
 end
 
