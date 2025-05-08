@@ -262,7 +262,7 @@ function ProjectorMonteCarloProblem(
     if eltype(hamiltonian) <: Complex
         if (start_at isa AbstractDVec && valtype(start_at) <: Real ||
             start_at isa Union{AbstractMatrix, AbstractVector} &&
-            eltype(start_at) <: AbsractDVec && valtype(eltype(start_at)) <: Real)
+            eltype(start_at) <: AbstractDVec && valtype(eltype(start_at)) <: Real)
             throw(ArgumentError(
                 "The starting vector(s) provided are not compatible with a complex Hamiltonian."
             ))

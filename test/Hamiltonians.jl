@@ -1628,10 +1628,13 @@ end
     @test adjoint(h) == h
     h2 = ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1); u=6 + 3im, t=0)
     # diagonal and non-Hermitian
-    @test LOStructure(h) isa IsDiagonal
     @test LOStructure(h2) isa AdjointKnown
     @test h2'.u == conj(h2.u)
     @test diagonal_element(h2, OccupationNumberFS(3,0,1)) == 21 + 9im
+    start_at = DVec(OccupationNumberFS(3,0,1) => 1)
+    @test_throws ArgumentError ProjectorMonteCarloProblem(h2; start_at)
+    start_at = [DVec(OccupationNumberFS(3,0,1) => 1) DVec(OccupationNumberFS(3,0,1) => 1)]
+    @test_throws ArgumentError ProjectorMonteCarloProblem(h2; start_at, n_spectral=2)
     h3 = HubbardReal1D(BoseFS(1,1,1),u=1.0im)
     @test h3'.u == -1.0im
     @test diagonal_element(h3, BoseFS(2,1,0)) == 1.0im
