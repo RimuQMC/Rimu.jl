@@ -87,7 +87,7 @@ function FroehlichPolaron(
     if !isnothing(momentum_cutoff)
         momentum_cutoff = typeof(v)(momentum_cutoff)
         momentum = dot(ks,onr(addr))
-        if momentum > momentum_cutoff
+        if abs(momentum) > momentum_cutoff
             throw(ArgumentError("Starting address has momentum $momentum which cannot exceed momentum_cutoff $momentum_cutoff"))
         end
     end
@@ -137,7 +137,7 @@ function get_offdiagonal(h::FroehlichPolaron{T,M,<:Any,T}, addr::OccupationNumbe
     naddress, value = _froehlich_offdiag(h, addr, chosen)
 
     new_p_tot = dot(h.ks, onr(naddress))
-    if (M/h.l) * new_p_tot > h.momentum_cutoff # check if momentum of new address exceeds momentum_cutoff
+    if abs(new_p_tot) > h.momentum_cutoff # check if momentum of new address exceeds momentum_cutoff
         return addr, 0.0
     else
         return naddress, - h.v * value

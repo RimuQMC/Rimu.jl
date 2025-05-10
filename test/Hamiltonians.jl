@@ -1116,6 +1116,7 @@ end
     addr2 = OccupationNumberFS(1,2,3)
     @test_throws ArgumentError FroehlichPolaron(addr2; mode_cutoff=1.0)
     @test_throws ArgumentError FroehlichPolaron(addr2; momentum_cutoff=10.0)
+    @test_throws ArgumentError FroehlichPolaron(OccupationNumberFS(3,2,1); momentum_cutoff=10.0)
 
     addr3 = OccupationNumberFS(1,2,3,4)
     f2 = FroehlichPolaron(addr2)
@@ -1154,6 +1155,16 @@ end
     addr4 = OccupationNumberFS(1,2,1)
     f4 = FroehlichPolaron(addr4; momentum_cutoff=10.0)
     @test get_offdiagonal(f4, addr2, 3)[2] == 0.0
+
+    m = 5; l = 6
+    addr5 = OccupationNumberFS{5}()
+    mom_unit = 2π/l
+    momentum_cutoff = 1.5 * mom_unit
+    f5 = FroehlichPolaron(addr5; l, mode_cutoff=1, momentum_cutoff)
+    basis5 = build_basis(f5)
+    mom_vec = map(o -> dot(o, f5.ks), onr.(basis5))
+    @test all(abs.(mom_vec) .≤ momentum_cutoff) == true
+    @test length(basis5) == 20
 end
 
 """
