@@ -73,7 +73,7 @@ export DontUpdate, DoubleLogUpdate, DoubleLogUpdateAfterTargetWalkers
 export ReportingStrategy, ReportDFAndInfo, ReportToFile
 export ReplicaStrategy, NoStats, AllOverlaps
 export PostStepStrategy, Projector, ProjectedEnergy, SignCoherence, WalkerLoneliness, Timer,
-    SingleParticleDensity, single_particle_density
+    SingleParticleDensity, single_particle_density, VMSize
 export TimeStepStrategy, ConstantTimeStep, OvershootControl
 export localpart, walkernumber
 export smart_logger, default_logger
@@ -88,6 +88,7 @@ function __init__()
     MPI.Initialized() || MPI.Init(threadlevel=:funneled)
 end
 
+include("strategies_and_params/get_vmsize.jl")
 include("strategies_and_params/fciqmcrunstrategy.jl")
 include("strategies_and_params/poststepstrategy.jl")
 include("strategies_and_params/replicastrategy.jl")

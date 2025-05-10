@@ -141,7 +141,7 @@ function report!(report::Report, nt::NamedTuple, postfix::SymbolOrString="")
     report!(report, pairs(nt), postfix)
     return report
 end
-function report!(report::Report, kvpairs, postfix::SymbolOrString="")
+function report!(report::Report, kvpairs::Union{Tuple,Base.Pairs}, postfix::SymbolOrString="")
     for (k, v) in kvpairs
         report!(report, k, v, postfix)
     end
