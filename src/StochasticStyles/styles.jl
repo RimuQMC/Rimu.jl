@@ -173,7 +173,7 @@ or [`IsStochasticWithThreshold`](@ref)) by setting `late_compression=false`, or 
 See also [`StochasticStyle`](@ref).
 """
 struct IsDynamicSemistochastic{
-    T<:AbstractFloat,C<:CompressionStrategy,S<:DynamicSemistochastic
+    T<:FloatOrComplexFloat,C<:CompressionStrategy,S<:DynamicSemistochastic
 } <: StochasticStyle{T}
     proj_threshold::T
     compression::C
@@ -201,7 +201,7 @@ end
 CompressionStrategy(s::IsDynamicSemistochastic) = s.compression
 
 function step_stats(::IsDynamicSemistochastic{T}) where {T}
-    z = zero(T)
+    z = real(zero(T))
     return (
         (:exact_steps, :inexact_steps, :spawn_attempts, :spawns),
         MultiScalar(0, 0, 0, z),

@@ -4,7 +4,8 @@
 Implements a one-dimensional Bose Hubbard chain in real space.
 
 ```math
-\\hat{H} = -t \\sum_{\\langle i,j\\rangle} a_i^† a_j + \\frac{u}{2}\\sum_i n_i (n_i-1)
+\\hat{H} = - \\sum_i \\left(t a_i^† a_{i+1} + t^* a_{i+1}^† a_i \\right) + 
+\\frac{u}{2}\\sum_i n_i (n_i-1)
 ```
 
 # Arguments
@@ -42,11 +43,23 @@ end
 dimension(::HubbardReal1D, address) = number_conserving_dimension(address)
 
 LOStructure(::Type{<:HubbardReal1D{<:Real}}) = IsHermitian()
+function LOStructure(::Type{<:HubbardReal1D{<:Complex,<:Any,U,T}}) where {U,T}
+    if iszero(imag(U))
+        return IsHermitian() # still Hermitian with complex t
+    else
+        return AdjointKnown()
+    end
+end
+
+function LinearAlgebra.adjoint(h::HubbardReal1D{TT,A,U,T}) where {TT<:Complex,A,U,T}
+    return HubbardReal1D{TT,A,conj(U)+0im,T}(h.add)
+end
 
 Base.getproperty(h::HubbardReal1D, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::HubbardReal1D{<:Any,<:Any,U}, ::Val{:u}) where U = U
 Base.getproperty(h::HubbardReal1D{<:Any,<:Any,<:Any,T}, ::Val{:t}) where T = T
 Base.getproperty(h::HubbardReal1D, ::Val{:add}) = getfield(h, :add)
+Base.getproperty(h::HubbardReal1D, ::Val{:boundary_condition}) = :periodic
 
 function num_offdiagonals(::HubbardReal1D, address::SingleComponentFockAddress)
     return 2 * num_occupied_modes(address)
@@ -57,6 +70,14 @@ function diagonal_element(h::HubbardReal1D, address::SingleComponentFockAddress)
 end
 
 function get_offdiagonal(h::HubbardReal1D, add::SingleComponentFockAddress, chosen)
-    naddress, onproduct = hopnextneighbour(add, chosen)
-    return naddress, - h.t * onproduct
+    return _get_offdiagonal_hubbard_real_1D(h, add, chosen)
+end
+
+function _get_offdiagonal_hubbard_real_1D(h, add, chosen)
+    naddress, onproduct = hopnextneighbour(add, chosen, h.boundary_condition)
+    if h.t isa Complex && chosen % 2 != 0
+        return naddress, - conj(h.t) * onproduct
+    else
+        return naddress, - h.t * onproduct
+    end
 end
