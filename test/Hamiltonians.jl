@@ -1165,6 +1165,11 @@ end
     mom_vec = map(o -> dot(o, f5.ks), onr.(basis5))
     @test all(abs.(mom_vec) .≤ momentum_cutoff) == true
     @test length(basis5) == 20
+
+    # with and without momentum cutoff
+    f6 = FroehlichPolaron(addr5; v=10, mode_cutoff=1)
+    f7 = FroehlichPolaron(addr5; v=10, mode_cutoff=1, momentum_cutoff=100)
+    @test get_offdiagonal(f6, addr5, 1) == get_offdiagonal(f7, addr5, 1)
 end
 
 """

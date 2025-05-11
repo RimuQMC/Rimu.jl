@@ -82,10 +82,10 @@ function FroehlichPolaron(
         start = -π + step
     end
     kr = (M/l)*range(start; step = step, length = M)
-    ks = SVector{M}(kr)
+    ks = SVector{M,typeof(v)}(kr)
 
     if !isnothing(momentum_cutoff)
-        momentum_cutoff = typeof(v)(momentum_cutoff)
+        momentum_cutoff = typeof(v)(momentum_cutoff)ß
         momentum = dot(ks,onr(addr))
         if abs(momentum) > momentum_cutoff
             throw(ArgumentError("Starting address has momentum $momentum which cannot exceed momentum_cutoff $momentum_cutoff"))
