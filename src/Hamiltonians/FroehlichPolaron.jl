@@ -140,7 +140,7 @@ function get_offdiagonal(h::FroehlichPolaron{T,M,<:Any,T}, addr::OccupationNumbe
     if abs(new_p_tot) > h.momentum_cutoff # check if momentum of new address exceeds momentum_cutoff
         return addr, 0.0
     else
-        return naddress, - h.v * value
+        return naddress, value
     end
 end
 
