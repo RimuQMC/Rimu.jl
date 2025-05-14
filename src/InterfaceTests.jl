@@ -13,7 +13,7 @@ module InterfaceTests
 
 using Test: Test, @test, @testset, @test_throws
 using Rimu: Rimu, DVec, Interfaces, LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
-    Hamiltonians, num_offdiagonals, allows_address_type, offdiagonals, random_offdiagonal,
+    Hamiltonians, num_offdiagonals, allows_address_type, offdiagonals, random_element,
     diagonal_element, dimension, dot_from_right, IsDeterministic, starting_address, PDVec,
     sparse, scale!, scalartype
 using Rimu.Hamiltonians: AbstractHamiltonian, AbstractOperator, AbstractObservable,
@@ -91,7 +91,7 @@ The following properties are tested:
 - `diagonal_element` returns a value of the same type as the `eltype` of the operator
 - `offdiagonals` behaves like an `AbstractVector`
 - `num_offdiagonals` returns the correct number of offdiagonals
-- `random_offdiagonal` returns a tuple with the correct types
+- `random_element` returns a tuple with the correct types
 - `mul!` and `dot` work as expected
 - `dimension` returns a consistent value
 - the [`AbstractObservable`](@ref) interface is tested
@@ -138,7 +138,7 @@ function test_operator_interface(op, addr; test_spawning=true)
                     @test ods isa AbstractVector
                     @test size(ods) == (num_offdiagonals(op, addr),)
                     if length(ods) > 0
-                        @test random_offdiagonal(op, addr) isa Tuple{typeof(addr),<:Real,eltype(op)}
+                        @test random_element(op, addr) isa Tuple{typeof(addr),<:Real,eltype(op)}
                     end
                 end
             end

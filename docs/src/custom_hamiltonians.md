@@ -30,22 +30,23 @@ model Hamiltonian should subtype to `AbstractHamiltonian` and implement the rele
 
 ```@docs
 AbstractHamiltonian
-offdiagonals
-diagonal_element
+operator_column
 starting_address
 ```
 
-The following functions may be implemented instead of [`offdiagonals`](@ref).
+The following functions may be implemented instead of [`operator_column`](@ref).
 
 ```@docs
+diagonal_element
 num_offdiagonals
 get_offdiagonal
+offdiagonals
 ```
 
 The following functions come with default implementations, but may be customized.
 
 ```@docs
-random_offdiagonal
+random_element
 Hamiltonians.LOStructure
 dimension
 has_adjoint

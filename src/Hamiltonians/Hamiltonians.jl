@@ -65,7 +65,7 @@ using ..BitStringAddresses
 using ..Interfaces
 using ..Interfaces: sum_mutating!
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
-    offdiagonals, random_offdiagonal, LOStructure, allows_address_type
+    offdiagonals, random_element, LOStructure, allows_address_type, operator_column
 
 export dimension, rayleigh_quotient, momentum
 

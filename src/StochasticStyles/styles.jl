@@ -99,8 +99,7 @@ function apply_column!(::IsDeterministic, w, op::AbstractMatrix, add, val, boost
     return (1,)
 end
 function apply_column!(::IsDeterministic, w, op, add, val, boost=1)
-    diagonal_step!(w, op, add, val)
-    spawn!(Exact(), w, op, add, val)
+    spawn!(Exact(), w, operator_column(op, add), add, val)
     return (1,)
 end
 
@@ -124,8 +123,7 @@ function step_stats(::IsStochasticWithThreshold{T}) where {T}
     return ((:spawn_attempts, :spawns), MultiScalar(0, zero(T)))
 end
 function apply_column!(s::IsStochasticWithThreshold, w, op, add, val, boost=1)
-    diagonal_step!(w, op, add, val, s.threshold)
-    attempts, spawns = spawn!(WithReplacement(s.threshold), w, op, add, val, boost)
+    attempts, spawns = spawn!(WithReplacement(s.threshold), w, operator_column(op,add), add, val, boost)
     return (attempts, spawns)
 end
 
@@ -208,8 +206,7 @@ function step_stats(::IsDynamicSemistochastic{T}) where {T}
     )
 end
 function apply_column!(s::IsDynamicSemistochastic, w, op, add, val, boost=1)
-    diagonal_step!(w, op, add, val, s.proj_threshold)
-    exact, inexact, attempts, spawns = spawn!(s.spawning, w, op, add, val, boost)
+    exact, inexact, attempts, spawns = spawn!(s.spawning, w, operator_column(op, add), add, val, boost)
     return (exact, inexact, attempts, spawns)
 end
 

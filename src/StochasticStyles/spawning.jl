@@ -70,8 +70,8 @@ Perform diagonal step on a walker `add => val`. Optional argument `threshold` se
 projection threshold. If `eltype(w)` is an `Integer`, the `val` is rounded to the nearest
 integer stochastically.
 """
-@inline function diagonal_step!(w, op, add, val, threshold=0)
-    new_val = diagonal_element(op, add) * val
+@inline function diagonal_step!(w, column, add, val, threshold=0)
+    new_val = first(column).second*val
     res = projected_deposit!(w, add, new_val, add => val, threshold)
     return clones_deaths_zombies(res, typeof(res)(val))
 end
@@ -150,7 +150,7 @@ This function should be overloaded in the second form, with `offdiags` as an arg
 See [`SpawningStrategy`](@ref).
 """
 @inline function spawn!(s::SpawningStrategy, w, op::AbstractOperator, add, val, boost=1)
-    return spawn!(s, w, offdiagonals(op, add), add, val, boost)
+    return spawn!(s, w, operator_column(op, add), add, val, boost)
 end
 
 """
@@ -171,14 +171,14 @@ struct Exact{T} <: SpawningStrategy
     Exact(threshold::T=0.0) where {T} = new{T}(threshold)
 end
 
-@inline function spawn!(s::Exact, w, offdiags::AbstractVector, add, val, boost=1)
+@inline function spawn!(s::Exact, w, column::AbstractVector, add, val, boost=1)
     T = valtype(w)
-    spawns = sum(offdiags; init=zero(T)) do (new_add, mat_elem)
+    spawns = sum(column; init=zero(T)) do (new_add, mat_elem)#wouldn't work if diagonal element already spawned separately
         abs(projected_deposit!(
             w, new_add, val * mat_elem, add => val, s.threshold
         ))
     end
-    return (length(offdiags), spawns)
+    return (length(column), spawns)#length might not be known
 end
 
 """
@@ -199,11 +199,11 @@ struct SingleSpawn{T} <: SpawningStrategy
     SingleSpawn(threshold::T=0.0) where {T} = new{T}(threshold)
 end
 
-@inline function spawn!(s::SingleSpawn, w, offdiags::AbstractVector, add, val, boost=1)
+@inline function spawn!(s::SingleSpawn, w, column::AbstractVector, add, val, boost=1)
     if iszero(val)
         return (1, zero(valtype(w)))
     else
-        new_add, prob, mat_elem = random_offdiagonal(offdiags)
+        new_add, prob, mat_elem = random_element(column)
         new_val = val * mat_elem / prob
         spawns = abs(projected_deposit!(w, new_add, new_val, add => val, s.threshold))
         return (1, spawns)
@@ -229,13 +229,13 @@ struct WithReplacement{T} <: SpawningStrategy
     WithReplacement(threshold::T=0) where {T} = new{T}(threshold)
 end
 
-@inline function spawn!(s::WithReplacement, w, offdiags::AbstractVector, add, val, boost=1)
+@inline function spawn!(s::WithReplacement, w, column::AbstractVector, add, val, boost=1)
     spawns = zero(valtype(w))
     num_attempts = max(floor(Int, abs(val) * boost), 1)
     magnitude = val / num_attempts
 
     for _ in 1:num_attempts
-        new_add, prob, mat_elem = random_offdiagonal(offdiags)
+        new_add, prob, mat_elem  = random_element(column)
         new_val = mat_elem * magnitude / prob
         spawns += abs(projected_deposit!(w, new_add, new_val, add => val, s.threshold))
     end
@@ -361,18 +361,18 @@ Base.@kwdef struct DynamicSemistochastic{T,S<:SpawningStrategy} <: SpawningStrat
     abs_threshold::T = Inf
 end
 
-@inline function spawn!(s::DynamicSemistochastic, w, offdiags::AbstractVector, add, val, boost)
+@inline function spawn!(s::DynamicSemistochastic, w, column::AbstractVector, add, val, boost)
     # assumes that s.strat.threshold is defined
     # special-case substrategies that don't fit the pattern?
-    thresh = min(s.abs_threshold, length(offdiags))
+    thresh = min(s.abs_threshold, length(column))#length might not be known
     amount = boost * abs(val) * s.rel_threshold
     if amount ≥ thresh
         # Exact multiplication.
-        attempts, spawns = spawn!(Exact(s.strat.threshold), w, offdiags, add, val)
+        attempts, spawns = spawn!(Exact(s.strat.threshold), w, column, add, val)
         return (1, 0, attempts, spawns)
     else
         # Regular spawns.
-        attempts, spawns = spawn!(s.strat, w, offdiags, add, val, boost)
+        attempts, spawns = spawn!(s.strat, w, column, add, val, boost)
         return (0, 1, attempts, spawns)
     end
 end

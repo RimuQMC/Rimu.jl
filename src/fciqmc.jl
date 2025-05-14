@@ -90,6 +90,8 @@ function FirstOrderTransitionOperator(sp::DefaultShiftParameters, hamiltonian)
     return FirstOrderTransitionOperator(hamiltonian, sp.shift, sp.time_step)
 end
 
+#TODO: replace with column, needs to work without offdiagonals
+
 function Hamiltonians.diagonal_element(t::FirstOrderTransitionOperator, add)
     diag = diagonal_element(t.hamiltonian, add)
     return 1 - t.time_step * (diag - t.shift)

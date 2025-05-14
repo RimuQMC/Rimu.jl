@@ -90,11 +90,18 @@ implement a Hamiltonian for use in [`ProjectorMonteCarloProblem`](@ref) or
 
 # Interface
 
-Basic interface methods to implement:
+There are two options for which methods need to be implemented.
+
+If the number of non-zero matrix elements that can be reached from any address is known,
+and they can be separately generated:
 - [`allows_address_type(op, type)`](@ref)
 - [`diagonal_element(op, address)`](@ref)
 - [`num_offdiagonals(op, address)`](@ref) and
 - [`get_offdiagonal(op, address, chosen)`](@ref) or [`offdiagonals`](@ref)
+
+Alternatively, if the generation of matrix elements is more complicated:
+- [`allows_address_type(op, type)`](@ref)
+- [`operator_column(op, address)`](@ref)
 
 Optional additional methods to implement:
 - [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
@@ -159,13 +166,18 @@ For available implementations see [`Hamiltonians`](@ref Main.Hamiltonians).
 
 # Interface
 
-Basic interface methods to implement:
+There are two options for which methods need to be implemented.
 
+If the number of non-zero matrix elements that can be reached from any address is known,
+and they can be separately generated:
 * [`starting_address(::AbstractHamiltonian)`](@ref)
-* [`diagonal_element(::AbstractHamiltonian, address)`](@ref)
-* [`num_offdiagonals(::AbstractHamiltonian, address)`](@ref)
-* [`get_offdiagonal(::AbstractHamiltonian, address, chosen::Integer)`](@ref) (optional, see
-    below)
+* [`diagonal_element(op, address)`](@ref)
+* [`num_offdiagonals(op, address)`](@ref) and
+* [`get_offdiagonal(op, address, chosen)`](@ref) or [`offdiagonals`](@ref)
+
+Alternatively, if the generation of matrix elements is more complicated:
+* [`starting_address(::AbstractHamiltonian)`](@ref)
+* [`operator_column(op, address)`](@ref)
 
 Optional additional methods to implement:
 
@@ -179,7 +191,8 @@ Optional additional methods to implement:
 Provides the following functions and methods:
 
 * [`offdiagonals`](@ref): iterator over reachable off-diagonal matrix elements
-* [`random_offdiagonal`](@ref): function to generate random off-diagonal matrix element
+* [`operator_column`](@ref): iterator over reachable matrix elements
+* [`random_element`](@ref): function to generate random matrix element
 * `*(H, v)`: deterministic matrix-vector multiply (allocating)
 * `H(v)`: equivalent to `H * v`.
 * `mul!(w, H, v)`: mutating matrix-vector multiply.
@@ -348,8 +361,8 @@ function offdiagonals(m::AbstractMatrix, i)
 end
 
 """
-    random_offdiagonal(offdiagonals::AbstractOffdiagonals)
-    random_offdiagonal(ham::AbstractHamiltonian, address)
+    random_element(column)
+    random_element(ham::AbstractHamiltonian, address)
     -> newaddress, probability, matrixelement
 
 Generate a single random excitation, i.e. choose from one of the accessible off-diagonal
@@ -358,15 +371,15 @@ by `ham`. Alternatively, pass as argument an iterator over the accessible matrix
 
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
-function random_offdiagonal(offdiagonals::AbstractVector)
-    nl = length(offdiagonals) # check how many sites we could get_offdiagonal to
+function random_element(column::AbstractVector)
+    nl = length(column) # check how many sites we could reach
     chosen = rand(1:nl) # choose one of them
-    naddress, melem = offdiagonals[chosen]
+    naddress, melem = column[chosen]
     return naddress, 1.0/nl, melem
 end
 
-function random_offdiagonal(ham, address)
-    return random_offdiagonal(offdiagonals(ham, address))
+function random_element(ham, address)
+    return random_element(operator_column(ham, address))
 end
 
 @doc """
@@ -419,3 +432,35 @@ See also [`LOStructure`](@ref Main.Hamiltonians.LOStructure).
 has_adjoint(op) = has_adjoint(LOStructure(op))
 has_adjoint(::AdjointUnknown) = false
 has_adjoint(::LOStructure) = true
+
+"""
+    OperatorColumn(op::AbstractOperator{T}, address::A) <: AbstractVector{Pair{A,T}}
+
+Default column, using offdiagonals and diagonal_element.
+"""
+struct OperatorColumn{A,T,O<:AbstractOperator{T}} <: AbstractVector{Pair{A,T}}
+    operator::O
+    address::A
+    length::Int
+    diagonal::T
+end
+
+"""
+    operator_column(O::AbstractOperator, address) = column
+
+Returns an iterable object that iterates through pairs of non-zero matrix elements
+add => val in the column of `O` given by `address`.
+"""
+operator_column(o, a) = OperatorColumn(o, a, length(offdiagonals(o,a))+1, diagonal_element(o,a))
+
+function Base.getindex(c::OperatorColumn{A,T}, i)::Pair{A,T} where {A,T}
+    @boundscheck 1 ≤ i ≤ c.length || throw(BoundsError(c, i))
+    if i == 1
+        return c.address => c.diagonal
+    else
+        add, val = offdiagonals(c.operator, c.address)[i-1]
+        return add => val
+    end
+end
+
+Base.size(c::OperatorColumn) = (c.length,)
