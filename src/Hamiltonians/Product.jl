@@ -22,9 +22,9 @@ end
 
 operator_column(o::OperatorProduct, a) = ProductColumn(o, a, operator_column(o.op2, a))
 
-function random_element(c::ProductColumn)
-    b_add, b_prob, b_elem = random_element(c.col2)
-    a_add, a_prob, a_elem = random_element(operator_column(c.operator.op1, b_add))
+function random_offdiagonal(c::ProductColumn)
+    b_add, b_prob, b_elem = random_offdiagonal(c.col2)
+    a_add, a_prob, a_elem = random_offdiagonal(operator_column(c.operator.op1, b_add))
     return a_add, a_prob*b_prob, a_elem*b_elem
 end
 

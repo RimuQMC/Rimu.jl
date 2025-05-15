@@ -28,7 +28,7 @@ using ..Rimu: MultiScalar
 
 using ..Interfaces
 import ..Interfaces:
-    deposit!, diagonal_element, offdiagonals, random_element, default_style,
+    deposit!, diagonal_element, offdiagonals, random_offdiagonal, default_style,
     apply_column!, step_stats, compress!, localpart, CompressionStrategy
 export
     StochasticStyle, IsStochasticInteger, IsDeterministic, IsStochasticWithThreshold,

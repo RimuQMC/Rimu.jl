@@ -90,27 +90,39 @@ function FirstOrderTransitionOperator(sp::DefaultShiftParameters, hamiltonian)
     return FirstOrderTransitionOperator(hamiltonian, sp.shift, sp.time_step)
 end
 
-#TODO: replace with column, needs to work without offdiagonals
-
-function Hamiltonians.diagonal_element(t::FirstOrderTransitionOperator, add)
-    diag = diagonal_element(t.hamiltonian, add)
-    return 1 - t.time_step * (diag - t.shift)
+struct FirstOrderTransitionOperatorColumn{A,T,O<:FirstOrderTransitionOperator{T},C}
+    operator::O
+    address::A
+    ham_column::C
 end
 
-struct FirstOrderOffdiagonals{
-    A,V,O<:AbstractVector{Tuple{A,V}}
-} <: AbstractVector{Tuple{A,V}}
-    time_step::Float64
-    offdiagonals::O
+function Hamiltonians.operator_column(t::FirstOrderTransitionOperator, add)
+    return FirstOrderTransitionOperatorColumn(t, add, operator_column(t.hamiltonian, add))
 end
-function Hamiltonians.offdiagonals(t::FirstOrderTransitionOperator, add)
-    return FirstOrderOffdiagonals(t.time_step, offdiagonals(t.hamiltonian, add))
-end
-Base.size(o::FirstOrderOffdiagonals) = size(o.offdiagonals)
 
-function Base.getindex(o::FirstOrderOffdiagonals, i)
-    add, val = o.offdiagonals[i]
-    return add, -val * o.time_step
+function Hamiltonians.random_offdiagonal(c::FirstOrderTransitionOperatorColumn)
+    add, prob, val = random_offdiagonal(c.ham_column)
+    return add, prob, -c.operator.time_step*val
+end
+
+function Base.length(c::FirstOrderTransitionOperatorColumn)
+    return length(c.ham_column)
+end
+
+function Base.iterate(c::FirstOrderTransitionOperatorColumn)
+    (add, val), state = iterate(c.ham_column)
+    diag = 1 - c.operator.time_step*(val - c.operator.shift)
+    return (add => diag, state)
+end
+
+function Base.iterate(c::FirstOrderTransitionOperatorColumn, state)
+    new = iterate(c.ham_column, state)
+    if isnothing(new)
+        return nothing
+    end
+    (add, val), state = new
+    od = -val*c.operator.time_step
+    return (add => od, state)
 end
 
 """

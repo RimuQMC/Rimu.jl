@@ -22,7 +22,7 @@ end
     @test offdiagonals(matrix, 1) == [(2, 4), (3, 7)]
     @test offdiagonals(matrix, 2) == [(1, 2), (3, 8)]
 
-    add, prob, val = random_element(matrix, 1)
+    add, prob, val = random_offdiagonal(matrix, 1)
     @test add in (2, 3)
     @test prob == 1/2
     @test val in (4, 7)

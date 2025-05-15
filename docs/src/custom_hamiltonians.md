@@ -46,7 +46,7 @@ offdiagonals
 The following functions come with default implementations, but may be customized.
 
 ```@docs
-random_element
+random_offdiagonal
 Hamiltonians.LOStructure
 dimension
 has_adjoint

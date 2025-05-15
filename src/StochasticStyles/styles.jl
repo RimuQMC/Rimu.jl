@@ -123,7 +123,9 @@ function step_stats(::IsStochasticWithThreshold{T}) where {T}
     return ((:spawn_attempts, :spawns), MultiScalar(0, zero(T)))
 end
 function apply_column!(s::IsStochasticWithThreshold, w, op, add, val, boost=1)
-    attempts, spawns = spawn!(WithReplacement(s.threshold), w, operator_column(op,add), add, val, boost)
+    column = operator_column(op, add)
+    diagonal_step!(w, column, add, val)
+    attempts, spawns = spawn!(WithReplacement(s.threshold), w, column, add, val, boost)
     return (attempts, spawns)
 end
 

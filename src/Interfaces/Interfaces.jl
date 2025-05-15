@@ -19,7 +19,7 @@ Follow the links for the definitions of the interfaces!
 * [`num_offdiagonals`](@ref)
 * [`get_offdiagonal`](@ref)
 * [`offdiagonals`](@ref).
-* [`random_element`](@ref)
+* [`random_offdiagonal`](@ref)
 * [`starting_address`](@ref)
 * [`LOStructure`](@ref)
 * [`allows_address_type`](@ref)
@@ -58,7 +58,7 @@ export
     apply_operator!, sort_into_targets!, sum_mutating!
 export
     AbstractHamiltonian, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
-    random_element, starting_address, allows_address_type,
+    random_offdiagonal, starting_address, allows_address_type,
     LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint,
     AbstractOperator, AbstractObservable, operator_column
 export
