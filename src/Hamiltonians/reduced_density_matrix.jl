@@ -168,8 +168,8 @@ ReducedDensityMatrix{Float32}(2)
 
 julia> dvec_f = PDVec(FermiFS(1,1,0,0) => 0.5, FermiFS(0,1,1,0) => 0.5)
 2-element PDVec: style = IsDeterministic{Float64}()
-  fs"|↑↑⋅⋅⟩" => 0.5
   fs"|⋅↑↑⋅⟩" => 0.5
+  fs"|↑↑⋅⋅⟩" => 0.5
 
 julia> dot(dvec_f, Op2, dvec_f)
 6×6 Hermitian{Float32, Matrix{Float32}}:
