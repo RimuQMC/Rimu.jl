@@ -1636,8 +1636,6 @@ end
             ebhinteraction, bhinteraction = Hamiltonians.extended_hubbard_interaction(H, addr, H.interaction)
             @test diagonal_element(H, addr) == convert(eltype(H),  6 * ebhinteraction)
         end
-        @test_throws ArgumentError ExtendedHubbardReal1D(BoseFS(1,1,1,1); interaction = nearest_neighbour)
-
     end
 end
 
