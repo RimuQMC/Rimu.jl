@@ -1,5 +1,5 @@
 """
-    ExtendedHubbardReal1D(address; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, interaction = :nearest_neighbour)
+    ExtendedHubbardReal1D(address; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, interaction=:nearest_neighbour)
 
 Implements the extended Hubbard model on a one-dimensional chain in real space. This
 Hamiltonian can be either real or complex, depending on the choice of `boundary_condition`.
@@ -35,7 +35,7 @@ struct ExtendedHubbardReal1D{TT,A<:SingleComponentFockAddress,U,V,T,BOUNDARY_CON
 end
 
 # addr for compatibility.
-function ExtendedHubbardReal1D(addr; u=1.0, v=1.0, t=1.0, boundary_condition = :periodic, interaction = :nearest_neighbour)
+function ExtendedHubbardReal1D(addr; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, interaction=:nearest_neighbour)
     if boundary_condition == :periodic || boundary_condition == :twisted || boundary_condition == :hard_wall
         U, V, T = promote(float(u), float(v), float(t))
         return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition,interaction}(addr)
