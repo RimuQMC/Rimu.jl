@@ -1633,7 +1633,7 @@ end
             addr = starting_address(H)
             H1 = ExtendedHubbardReal1D(addr; v=6, t=2.0)
             @test get_offdiagonal(H, addr, 2) == get_offdiagonal(H1, addr, 2)
-            ebhinteraction, bhinteraction = Hamiltonians.extended_hubbard_interaction(H, b, H.interaction)
+            ebhinteraction, bhinteraction = Hamiltonians.extended_hubbard_interaction(H, addr, H.interaction)
             @test diagonal_element(H, addr) == convert(eltype(H),  6 * ebhinteraction)
         end
         @test_throws ArgumentError ExtendedHubbardReal1D(BoseFS(1,1,1,1); interaction = nearest_neighbour)
