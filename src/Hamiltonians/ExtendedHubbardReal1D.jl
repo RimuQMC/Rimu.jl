@@ -35,15 +35,19 @@ struct ExtendedHubbardReal1D{TT,A<:SingleComponentFockAddress,U,V,T,BOUNDARY_CON
 end
 
 # addr for compatibility.
-function ExtendedHubbardReal1D(addr; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, interaction=:nearest_neighbour)
-    if boundary_condition == :periodic || boundary_condition == :twisted || boundary_condition == :hard_wall
-        U, V, T = promote(float(u), float(v), float(t))
-        return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition,interaction}(addr)
-    elseif boundary_condition isa Number
-        U, V, T = complex.(promote(float(u), float(v), float(t)))
-        return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition,interaction}(addr)
+function ExtendedHubbardReal1D(addr; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, interaction=:nearest_neighbor)
+    if interaction isa Number || interaction == :nearest_neighbor
+        if boundary_condition == :periodic || boundary_condition == :twisted || boundary_condition == :hard_wall
+            U, V, T = promote(float(u), float(v), float(t))
+            return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition,interaction}(addr)
+        elseif boundary_condition isa Number
+            U, V, T = complex.(promote(float(u), float(v), float(t)))
+            return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition,interaction}(addr)
+        else
+            throw(ArgumentError("invalid boundary condition"))
+        end
     else
-        throw(ArgumentError("invalid boundary condition"))
+         throw(ArgumentError("invalid interaction"))
     end
 end
 
@@ -112,7 +116,7 @@ where ``f_{i-j} = 1`` for nearest neighbors (interaction = :nearest_neighbour) a
 
 See [`ExtendedHubbardReal1D`](@ref) and [`hopnextneighbour`](@ref).
 """
-function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleComponentFockAddress, _::Symbol)
+function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleComponentFockAddress, ::Symbol)
     omm = OccupiedModeMap(b)
 
     prev = zero(eltype(omm))
