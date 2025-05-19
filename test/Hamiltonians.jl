@@ -1626,17 +1626,17 @@ end
 
     @testset "interaction" begin
         for H in (
-            ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, interaction = :nearest_neighbor),
-            ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, interaction = 3)
+            ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, power = nothing),
+            ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, power = 3)
         )
 
             addr = starting_address(H)
             H1 = ExtendedHubbardReal1D(addr; v=6, t=2.0)
             @test get_offdiagonal(H, addr, 2) == get_offdiagonal(H1, addr, 2)
-            ebhinteraction, bhinteraction = Hamiltonians.extended_hubbard_interaction(H, addr, H.interaction)
+            ebhinteraction, bhinteraction = Hamiltonians.extended_hubbard_interaction(H, addr, H.power)
             @test diagonal_element(H, addr) == convert(eltype(H),  6 * ebhinteraction)
         end
-        @test_throws ArgumentError ExtendedHubbardReal1D(BoseFS(1,1,1,1); interaction = :neaerst_neighbor)
+        @test_throws ArgumentError ExtendedHubbardReal1D(BoseFS(1,1,1,1); power = :nearest_neighbor)
     end
 end
 
