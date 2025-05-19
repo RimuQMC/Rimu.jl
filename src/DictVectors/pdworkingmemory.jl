@@ -192,7 +192,7 @@ function _spawn_column!(ham, column, segment, boost)
     empty!(column)
     _, stats = step_stats(column.style)
     for (k, v) in segment
-        stats += apply_column!(column, ham, k, v, boost)
+        stats += apply_column!(column, operator_column(ham, k), v, boost)
     end
     return stats
 end

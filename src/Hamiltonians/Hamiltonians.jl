@@ -81,7 +81,6 @@ export Transcorrelated1D
 export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron
 export ParticleNumberOperator
-export OperatorProduct
 
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
@@ -138,6 +137,4 @@ include("HOCartesianCentralImpurity.jl")
 include("vertices.jl")
 include("ho-cart-tools.jl")
 include("angular_momentum.jl")
-
-include("Product.jl")
 end

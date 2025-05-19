@@ -41,7 +41,7 @@ end
 
     w = [1.0, 2.0, 3.0]
 
-    @test apply_column!(w, matrix, 1, 2) == (1, )
+    @test apply_column!(w, operator_column(matrix, 1), 2) == (1, )
     @test w[1] == 1.0 + 2 * matrix[1, 1]
     @test w[2] == 2.0 + 2 * matrix[2, 1]
     @test w[3] == 3.0 + 2 * matrix[3, 1]
@@ -96,14 +96,14 @@ end
     @testset "Integer" begin
         # Single death
         dv = DVec(add => 0)
-        @test diagonal_step!(dv, H, add, 1, 0) == (0, 1, 0)
+        @test diagonal_step!(dv, operator_column(H, add), 1, 0) == (0, 1, 0)
         @test dv[add] == 0
 
         # clones
         for _ in 1:20
             dv = DVec(add => 0)
             T = Rimu.FirstOrderTransitionOperator(H, 10, 0.5)
-            st = diagonal_step!(dv, T, BoseFS((2,0,1)), 1, 0)
+            st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1, 0)
             @test st[1] == 4 || st[1] == 5
             @test dv[BoseFS((2,0,1))] == st[1] + 1 # original value + clones
         end
@@ -111,7 +111,7 @@ end
         for _ in 1:20
             dv = DVec(BoseFS((2,0,1)) => 0)
             T = Rimu.FirstOrderTransitionOperator(H, -1.0, 0.125)
-            st = diagonal_step!(dv, T, BoseFS((2,0,1)), 2, 0)
+            st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 2, 0)
             @test st[2] == 0 || st[2] == 1
             @test dv[BoseFS((2,0,1))] == 2 - st[2] # original value - deaths
         end
@@ -119,7 +119,7 @@ end
         for _ in 1:20
             dv = DVec(BoseFS((2,0,1)) => 0)
             T = Rimu.FirstOrderTransitionOperator(H, -10, 0.5)
-            st = diagonal_step!(dv, T, BoseFS((2,0,1)), 1, 0)
+            st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1, 0)
             @test st[2] == 1
             @test st[3] == 4 || st[3] == 5
             @test dv[BoseFS((2,0,1))] == 1 - st[2] - st[3] # original value - death - zombie
@@ -129,24 +129,24 @@ end
         # nothing happens - one annihilation
         dv = DVec(add => -1.0)
         T = Rimu.FirstOrderTransitionOperator(H, 0, 1)
-        @test diagonal_step!(dv, T, add, 1.0, 0) == (0, 0, 0)
+        @test diagonal_step!(dv, operator_column(T, add), 1.0, 0) == (0, 0, 0)
         @test dv[add] == 0
         # clones
         dv = DVec(add => 0.0)
         T = Rimu.FirstOrderTransitionOperator(H, 10, 1)
-        st = diagonal_step!(dv, T, BoseFS((2,0,1)), 2.5, 0)
+        st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 2.5, 0)
         @test st[1] == 22.5
         @test dv[BoseFS((2,0,1))] == 25.0
         # deaths
         dv = DVec(add => 0.0)
         T = Rimu.FirstOrderTransitionOperator(H, -0.5, 0.5)
-        st = diagonal_step!(dv, T, BoseFS((2,0,1)), 1.0, 0)
+        st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1.0, 0)
         @test st[2] == 0.75
         @test dv[BoseFS((2,0,1))] == 0.25
         # zombies
         dv = DVec(add => 0.0)
         T = Rimu.FirstOrderTransitionOperator(H, -10, 0.5)
-        st = diagonal_step!(dv, T, BoseFS((2,0,1)), 1.0, 0)
+        st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1.0, 0)
         @test st[2] == 1
         @test st[3] == 4.5
         @test dv[BoseFS((2,0,1))] == -4.5
@@ -155,7 +155,7 @@ end
         # nothing happens but may be projected anyway resulting in either a clone or a death
         for _ in 1:20
             dv = DVec(add => 0.0)
-            st = diagonal_step!(dv, H, BoseFS((2,0,1)), 1.0, 1.5) # diagonal element is 1
+            st = diagonal_step!(dv, operator_column(H, BoseFS((2,0,1))), 1.0, 1.5) # diagonal element is 1
             @test st[1] == 0.5 || st[2] == 1
             @test dv[BoseFS((2,0,1))] == 1 + st[1] - st[2]
         end
@@ -163,21 +163,21 @@ end
         # clones - above projection threshold
         dv = DVec(add => 0.0)
         T = Rimu.FirstOrderTransitionOperator(H, 10, 0.5)
-        st = diagonal_step!(dv, T, BoseFS((2,0,1)), 1, 1)
+        st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1, 1)
         @test st[1] == 4.5
         @test dv[BoseFS((2,0,1))] == 5.5
         # deaths - below threshold
         for _ in 1:20
             dv = DVec(add => 0.0)
             T = Rimu.FirstOrderTransitionOperator(H, -0.5, 0.5)
-            st = diagonal_step!(dv, T, BoseFS((2,0,1)), 1.0, 1)
+            st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1.0, 1)
             @test st[2] == 0.0 || st[2] == 1.0
             @test dv[BoseFS((2,0,1))] == 1 - st[2]
         end
         # zombies
         dv = DVec(add => 0.0)
         T = Rimu.FirstOrderTransitionOperator(H, -10, 0.5)
-        st = diagonal_step!(dv, T, BoseFS((2,0,1)), 1, 1)
+        st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1, 1)
         @test st[2] == 1
         @test st[3] == 4.5
         @test dv[BoseFS((2,0,1))] == -4.5
@@ -209,18 +209,19 @@ end
         semi_wo_strong = DVec(add => 1.0)
         semi_single = DVec(add => 1.0)
 
+        column = operator_column(H, add)
         for _ in 1:10000
-            val = rand() * num_offdiagonals(H, add) * 1.2
-            spawn!(Exact(), exact, H, add, val)
-            spawn!(WithReplacement(), vanilla, H, add, val)
-            spawn!(WithReplacement(0.0), strong, H, add, val, 2.0)
-            spawn!(SingleSpawn(), single, H, add, val)
-            spawn!(dss_r, semi_rep, H, add, val)
-            spawn!(dss_w, semi_wo, H, add, val)
-            spawn!(dss_b, semi_bern, H, add, val)
-            spawn!(dss_ws, semi_wo_strong, H, add, val, 1.1)
-            spawn!(dss_bs, semi_bern_strong, H, add, val, 1.5)
-            spawn!(dss_s, semi_single, H, add, val)
+            val = rand() * num_offdiagonals(column) * 1.2
+            spawn!(Exact(), exact, column, val)
+            spawn!(WithReplacement(), vanilla, column, val)
+            spawn!(WithReplacement(0.0), strong, column, val, 2.0)
+            spawn!(SingleSpawn(), single, column, val)
+            spawn!(dss_r, semi_rep, column, val)
+            spawn!(dss_w, semi_wo, column, val)
+            spawn!(dss_b, semi_bern, column, val)
+            spawn!(dss_ws, semi_wo_strong, column, val, 1.1)
+            spawn!(dss_bs, semi_bern_strong, column, val, 1.5)
+            spawn!(dss_s, semi_single, column, val)
         end
 
         for k in keys(exact)
@@ -277,11 +278,12 @@ end
 @testset "Exact substrategy to DynamicSemistochastic" begin
     dss_e = DynamicSemistochastic(Exact(), 1.0, Inf)
     add, H = (BoseFS((0,0,0,3,1,1)), HubbardMom1D(BoseFS((0,0,0,3,1,1)); u=6.0))
-    val = rand() * num_offdiagonals(H, add) * 1.2
+    column = operator_column(H, add)
+    val = rand() * num_offdiagonals(column) * 1.2
     exact = DVec(add => 1.0)
     ds_exact = DVec(add => 1.0)
-    spawn!(Exact(), exact, H, add, val)
-    spawn!(dss_e, ds_exact, H, add, val)
+    spawn!(Exact(), exact, column, val)
+    spawn!(dss_e, ds_exact, column, val)
     @test keys(exact) == keys(ds_exact)
     for k in keys(exact)
         @test exact[k] ≈ ds_exact[k]

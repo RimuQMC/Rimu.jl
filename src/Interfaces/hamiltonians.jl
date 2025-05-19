@@ -102,6 +102,10 @@ and they can be separately generated:
 Alternatively, if the generation of matrix elements is more complicated:
 - [`allows_address_type(op, type)`](@ref)
 - [`operator_column(op, address)`](@ref)
+- [`diagonal_element(column)`](@ref)
+- [`num_offdiagonals(column)`](@ref) (this can be an estimate)
+- [`offdiagonals(column)`](@ref)
+- [`random_offdiagonal(column)`](@ref)
 
 Optional additional methods to implement:
 - [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
@@ -178,6 +182,10 @@ and they can be separately generated:
 Alternatively, if the generation of matrix elements is more complicated:
 * [`starting_address(::AbstractHamiltonian)`](@ref)
 * [`operator_column(op, address)`](@ref)
+* [`diagonal_element(column)`](@ref)
+* [`num_offdiagonals(column)`](@ref) (this can be an estimate)
+* [`offdiagonals(column)`](@ref)
+* [`random_offdiagonal(column)`](@ref)
 
 Optional additional methods to implement:
 
@@ -191,7 +199,6 @@ Optional additional methods to implement:
 Provides the following functions and methods:
 
 * [`offdiagonals`](@ref): iterator over reachable off-diagonal matrix elements
-* [`operator_column`](@ref): iterator over reachable matrix elements
 * [`random_offdiagonal`](@ref): function to generate random matrix element
 * `*(H, v)`: deterministic matrix-vector multiply (allocating)
 * `H(v)`: equivalent to `H * v`.
@@ -319,6 +326,7 @@ Part of the [`AbstractHamiltonian`](@ref) interface.
 starting_address(m::AbstractMatrix) = findmin(real.(diag(m)))[2]
 
 """
+    offdiagonals(column)
     offdiagonals(h::AbstractHamiltonian, address)
 
 Return an iterator over nonzero off-diagonal matrix elements of `h` in the same column as
@@ -344,10 +352,13 @@ julia> h = offdiagonals(H, address)
 ```
 Part of the [`AbstractHamiltonian`](@ref) interface.
 
-# Extemded help
+# Extended help
 
-`offdiagonals` return and iterator of type `<:AbstractOffdiagonals`. It defaults to
-returning `Offdiagonals(h, a)`
+`offdiagonals(h, address)` returns an iterator of type `<:AbstractOffdiagonals`. It defaults to
+returning `Offdiagonals(h, a)`.
+`offdiagonals(column)` returns `offdiagonals(column.operator, column.address)` if `column` is a
+defualt `OperatorColumn`. Otherwise, it should be implemented as an iterator over non-zero
+elements of the column, `newaddress => matrixelement`.
 
 See also [`Offdiagonals`](@ref Main.Hamiltonians.Offdiagonals),
 [`AbstractOffdiagonals`](@ref Main.Hamiltonians.AbstractOffdiagonals).
@@ -438,7 +449,7 @@ has_adjoint(::LOStructure) = true
 
 Default column, using offdiagonals and diagonal_element.
 """
-struct OperatorColumn{A,T,O<:AbstractOperator{T},OD} <: AbstractVector{Pair{A,T}}
+struct OperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} <: AbstractVector{Pair{A,T}}
     operator::O
     address::A
     ods::OD
@@ -446,10 +457,10 @@ struct OperatorColumn{A,T,O<:AbstractOperator{T},OD} <: AbstractVector{Pair{A,T}
 end
 
 """
-    operator_column(O::AbstractOperator, address) = column
+    operator_column(O::AbstractOperator, address)
 
-Returns an iterable object that iterates through pairs of non-zero matrix elements
-add => val in the column of `O` given by `address`.
+Returns an object representing the column of `O` given by `address`.
+The column must have a field `address`.
 """
 operator_column(o, a) = OperatorColumn(o, a, offdiagonals(o,a), diagonal_element(o,a))
 
@@ -464,3 +475,6 @@ function Base.getindex(c::OperatorColumn{A,T}, i)::Pair{A,T} where {A,T}
 end
 
 Base.size(c::OperatorColumn) = (length(c.ods) + 1,)
+diagonal_element(c::OperatorColumn) = c.diagonal
+num_offdiagonals(c::OperatorColumn) = length(c.ods)
+offdiagonals(c::OperatorColumn) = c.ods

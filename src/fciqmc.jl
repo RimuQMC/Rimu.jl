@@ -94,34 +94,63 @@ struct FirstOrderTransitionOperatorColumn{A,T,O<:FirstOrderTransitionOperator{T}
     operator::O
     address::A
     ham_column::C
+    time_step::Float64
 end
 
 function Hamiltonians.operator_column(t::FirstOrderTransitionOperator, add)
-    return FirstOrderTransitionOperatorColumn(t, add, operator_column(t.hamiltonian, add))
+    return FirstOrderTransitionOperatorColumn(t, add, operator_column(t.hamiltonian, add), t.time_step)
 end
-
+function Hamiltonians.diagonal_element(c::FirstOrderTransitionOperatorColumn)
+    return 1 - c.time_step*(diagonal_element(c.ham_column) - c.operator.shift)
+end
 function Hamiltonians.random_offdiagonal(c::FirstOrderTransitionOperatorColumn)
     add, prob, val = random_offdiagonal(c.ham_column)
-    return add, prob, -c.operator.time_step*val
+    return add, prob, -c.time_step*val
+end
+Hamiltonians.num_offdiagonals(c::FirstOrderTransitionOperatorColumn) = num_offdiagonals(c.ham_column)
+
+struct FirstOrderOffdiagonalsVector{
+    A,V,O<:AbstractVector{Tuple{A,V}}
+} <: AbstractVector{Pair{A,V}}
+    time_step::Float64
+    offdiagonals::O
+end
+function Hamiltonians.offdiagonals(c::FirstOrderTransitionOperatorColumn{<:Any,<:Any,<:Any,<:AbstractVector})
+    return FirstOrderOffdiagonalsVector(c.time_step, offdiagonals(c.ham_column))
+end
+Base.size(o::FirstOrderOffdiagonalsVector) = size(o.offdiagonals)
+
+function Base.getindex(o::FirstOrderOffdiagonalsVector{A,V}, i)::Pair{A,V} where {A,V}
+    add, val = o.offdiagonals[i]
+    return add => -val * o.time_step
 end
 
-function Base.length(c::FirstOrderTransitionOperatorColumn)
-    return length(c.ham_column)
+struct FirstOrderOffdiagonals{C}
+    time_step::Float64
+    ham_column::C
+end
+function Hamiltonians.offdiagonals(c::FirstOrderTransitionOperatorColumn{<:Any,<:Any,<:Any,<:Any})
+    return FirstOrderOffdiagonals(c.time_step, c.ham_column)
 end
 
-function Base.iterate(c::FirstOrderTransitionOperatorColumn)
-    (add, val), state = iterate(c.ham_column)
-    diag = 1 - c.operator.time_step*(val - c.operator.shift)
-    return (add => diag, state)
+function Base.iterate(o::FirstOrderOffdiagonals)
+    first, state = iterate(o.ham_column)
+    second = iterate(o.ham_column, state)
+    if isnothing(second)
+        return nothing
+    end
+    (add, val), state = second
+    od = -val*o.time_step
+    return (add => od, state)
 end
 
-function Base.iterate(c::FirstOrderTransitionOperatorColumn, state)
-    new = iterate(c.ham_column, state)
+function Base.iterate(o::FirstOrderOffdiagonals, state)
+    new = iterate(o.ham_column, state)
     if isnothing(new)
         return nothing
     end
     (add, val), state = new
-    od = -val*c.operator.time_step
+    od = -val*o.time_step
     return (add => od, state)
 end
 
