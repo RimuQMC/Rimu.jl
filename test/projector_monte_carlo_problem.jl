@@ -73,10 +73,6 @@ using OrderedCollections: freeze
     @test state_vectors(sm)[2] === dv2
     @test_throws BoundsError sm.state.spectral_states[3]
 
-    # complex Hamiltonian
-    h = HubbardReal1D(BoseFS(1, 3); u=1.0 + 1.0im)
-    @test scalartype(h) <: Complex
-    @test_throws ArgumentError ProjectorMonteCarloProblem(h)
 end
 
 @testset "PMCSimulation" begin
@@ -165,6 +161,30 @@ end
             @test r == rand(Int)
         end
     end
+    @testset "complex walkers" begin
+        p = ProjectorMonteCarloProblem(h; start_at=DVec(BoseFS(1,3) => 1.0im))
+        sm = init(p)
+        @test StochasticStyle(only(state_vectors(sm))) isa IsDeterministic{ComplexF64}
+        @test walkernumber(only(state_vectors(sm))) isa Real
+        @test sm.state[1].shift_parameters.pnorm isa Real
+        @test walkernumber(only(state_vectors(sm))) == sm.state[1].shift_parameters.pnorm
+        @test sm.state[1].shift_parameters.shift isa Real
+    end
+    @testset "complex Hamiltonian" begin
+        h = HubbardReal1D(BoseFS(1, 3); t=1.0 + 1.0im)
+        @test scalartype(h) <: Complex
+        p = ProjectorMonteCarloProblem(h)
+        sm = init(p)
+        @test valtype(only(state_vectors(sm))) <: Complex
+        @test StochasticStyle(only(state_vectors(sm))) isa IsDynamicSemistochastic
+        @test sm.state[1].shift_parameters.shift isa Real
+        @test sm.state[1].shift_parameters.pnorm isa Real
+        @test_throws ArgumentError ProjectorMonteCarloProblem(h; start_at=DVec(BoseFS(1,3)=>1.0))
+        start_at = [DVec(BoseFS(1, 3) => 1.0im)]
+        p = ProjectorMonteCarloProblem(h; start_at)
+        sm = init(p)
+        @test only(state_vectors(sm)) == start_at[1]
+    end
 end
 
 using Rimu: num_replicas, num_spectral_states
@@ -249,6 +269,31 @@ using Rimu: num_replicas, num_spectral_states
     @test size(sm.df)[1] == 100 # the report was emptied
     @test solve!(sm; last_step=300, reporting_strategy=ReportDFAndInfo()) === sm
     @test size(sm.df)[1] == 200 # the report was not emptied
+
+    @testset "complex walkers" begin
+        p = ProjectorMonteCarloProblem(
+            h;
+            start_at=DVec(BoseFS(1,3)=>1.0im, style=IsDynamicSemistochastic{ComplexF64}())
+        )
+        sm = solve(p)
+        @test real(dot(Norm1ProjectorPPop(), only(state_vectors(sm)))) == 0
+        df = DataFrame(sm)
+        @test valtype(df.shift) <: Real
+        @test valtype(df.norm) <: Real
+
+        p1 = ProjectorMonteCarloProblem(h; start_at=DVec(BoseFS(1,3)=>1.0im))
+        p2 = ProjectorMonteCarloProblem(h; start_at=DVec(BoseFS(1,3)=>1.0))
+        s1 = solve(p1)
+        s2 = solve(p2)
+        @test im*only(state_vectors(s2)) == only(state_vectors(s1))
+    end
+    @testset "complex Hamiltonian" begin
+        h = HubbardReal1D(BoseFS(1, 3); t=1.0im)
+        p = ProjectorMonteCarloProblem(h)
+        sm = solve(p)
+        @test sm.state[1].shift_parameters.shift isa Real
+        @test sm.state[1].shift_parameters.pnorm isa Real
+    end
 end
 
 @testset "Dead population" begin

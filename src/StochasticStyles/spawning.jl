@@ -12,8 +12,8 @@ end
 # Non-integer
 @inline function projected_deposit!(
     ::Type{T}, w, add, value, parent, threshold
-) where {T<:Real}
-    thresh = T(threshold)
+) where {T<:Union{AbstractFloat, Complex{<:AbstractFloat}}}
+    thresh = abs(T(threshold))
     val = T(value)
     absval = abs(val)
     if absval < thresh
@@ -166,7 +166,7 @@ See [`SpawningStrategy`](@ref).
 """
 @inline function spawn!(s::Exact, w, column, val, boost=1)
     T = valtype(w)
-    spawns = sum(offdiagonals(column); init=zero(T)) do (new_add, mat_elem)
+    spawns = sum(offdiagonals(column); init=real(zero(T))) do (new_add, mat_elem)
         abs(projected_deposit!(
             w, new_add, val * mat_elem, column.address => val, s.threshold
         ))
@@ -194,7 +194,7 @@ end
 
 @inline function spawn!(s::SingleSpawn, w, column, val, boost=1)
     if iszero(val)
-        return (1, zero(valtype(w)))
+        return (1, real(zero(valtype(w))))
     else
         new_add, prob, mat_elem = random_offdiagonal(column)
         new_val = val * mat_elem / prob
@@ -223,7 +223,7 @@ struct WithReplacement{T} <: SpawningStrategy
 end
 
 @inline function spawn!(s::WithReplacement, w, column, val, boost=1)
-    spawns = zero(valtype(w))
+    spawns = real(zero(valtype(w)))
     num_attempts = max(floor(Int, abs(val) * boost), 1)
     magnitude = val / num_attempts
 
