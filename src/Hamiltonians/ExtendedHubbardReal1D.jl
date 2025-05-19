@@ -1,5 +1,5 @@
 """
-    ExtendedHubbardReal1D(address; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, interaction=:nearest_neighbour)
+    ExtendedHubbardReal1D(address; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, power=:nearest_neighbour)
 
 Implements the extended Hubbard model on a one-dimensional chain in real space. This
 Hamiltonian can be either real or complex, depending on the choice of `boundary_condition`.
@@ -24,25 +24,25 @@ Hamiltonian can be either real or complex, depending on the choice of `boundary_
     factor ``\\exp(iθ)`` for a hop to the right and ``\\exp(−iθ)`` for a hop to the left.
     With this choice the Hamiltonian will have a complex `eltype` whereas otherwise the
     `eltype` is determined by the type of the parameters `t`, `u`, and `v`.
-* `interaction`: the interaction type. The following values are supported:
-  * `:nearest_neighbour`: nearest neighbour interaction (default), i.e. ``f_{i-j} = δ_{i,j-1}``.
-  * `<:Number`: inverse distance interaction, i.e. ``f_{i-j} = (|i-j|)^{-interaction}``.
+* `power`: the interaction type. The following values are supported:
+  * `nothing`: nearest neighbour interaction (default), i.e. ``f_{i-j} = δ_{j-i,1}``.
+  * `p<:Number`: inverse distance interaction, i.e. ``f_{i-j} = (|i-j|)^{-p}``.
 
 See also [`HubbardRealSpace`](@ref).
 """
-struct ExtendedHubbardReal1D{TT,A<:SingleComponentFockAddress,U,V,T,BOUNDARY_CONDITION,INTERACTION} <: AbstractHamiltonian{TT}
+struct ExtendedHubbardReal1D{TT,A<:SingleComponentFockAddress,U,V,T,BOUNDARY_CONDITION,POWER} <: AbstractHamiltonian{TT}
     address::A
 end
 
 # addr for compatibility.
-function ExtendedHubbardReal1D(addr; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, interaction=:nearest_neighbor)
-    if interaction isa Number || interaction == :nearest_neighbor
+function ExtendedHubbardReal1D(addr; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, power = nothing)
+    if power isa Number || power == nothing
         if boundary_condition == :periodic || boundary_condition == :twisted || boundary_condition == :hard_wall
             U, V, T = promote(float(u), float(v), float(t))
-            return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition,interaction}(addr)
+            return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition,power}(addr)
         elseif boundary_condition isa Number
             U, V, T = complex.(promote(float(u), float(v), float(t)))
-            return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition,interaction}(addr)
+            return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition,power}(addr)
         else
             throw(ArgumentError("invalid boundary condition"))
         end
@@ -54,7 +54,7 @@ end
 function Base.show(io::IO, h::ExtendedHubbardReal1D)
     compact_addr = repr(h.address, context=:compact => true) # compact print address
     print(io, "ExtendedHubbardReal1D($(compact_addr); u=$(h.u), v=$(h.v), t=$(h.t), ")
-    print(io, "boundary_condition=$(repr(h.boundary_condition)), interaction=$(repr(h.interaction)))")
+    print(io, "boundary_condition=$(repr(h.boundary_condition)), power=$(repr(h.power)))")
 end
 
 function starting_address(h::ExtendedHubbardReal1D)
@@ -94,10 +94,10 @@ function Base.getproperty(
     BOUNDARY_CONDITION
 end
 function Base.getproperty(
-    ::ExtendedHubbardReal1D{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,INTERACTION},
-    ::Val{:interaction}
-) where INTERACTION
-    INTERACTION
+    ::ExtendedHubbardReal1D{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,POWER},
+    ::Val{:power}
+) where POWER
+    POWER
 end
 
 function num_offdiagonals(::ExtendedHubbardReal1D, address::SingleComponentFockAddress)
@@ -105,18 +105,18 @@ function num_offdiagonals(::ExtendedHubbardReal1D, address::SingleComponentFockA
 end
 
 """
-    extended_hubbard_interaction(h::ExtendedHubbardReal1D, address, interaction)
+    extended_hubbard_interaction(h::ExtendedHubbardReal1D, address, power)
 
 Compute and return both the extended range occupation number product
 ``\\sum_j f_{i-j} n_i n_{j}`` (according to the boundary conditions of `h`) as well as the on-site
 product ``\\sum_j n_j (n_j - 1)`` treating the `address` as a one-dimensional chain.
 
-where ``f_{i-j} = 1`` for nearest neighbors (interaction = :nearest_neighbour) and 
-``f_{i-j} = (|i-j|)^{-interaction}`` for inverse distance interaction (interaction = <:Number).
+where ``f_{i-j} = 1`` for nearest neighbors (power = nothing) and 
+``f_{i-j} = (|i-j|)^{-p}`` for inverse distance interaction (power = p<:Number).
 
 See [`ExtendedHubbardReal1D`](@ref) and [`hopnextneighbour`](@ref).
 """
-function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleComponentFockAddress, ::Symbol)
+function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleComponentFockAddress, ::Nothing)
     omm = OccupiedModeMap(b)
 
     prev = zero(eltype(omm))
@@ -138,7 +138,7 @@ function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleCompone
     return ext_result, reg_result
 end
 
-function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleComponentFockAddress, interaction::Number)
+function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleComponentFockAddress, power::Number)
     omm = OccupiedModeMap(b)
     M = num_modes(b)
     ext_result = 0
@@ -150,9 +150,9 @@ function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleCompone
             occ_j = omm[j].occnum
             m_ij = omm[i].mode - omm[j].mode
             if (m_ij > M/2 && h.boundary_condition != :hard_wall)
-                ext_result += occ_i * occ_j/ ((M - m_ij)^(interaction))
+                ext_result += occ_i * occ_j/ ((M - m_ij)^(power))
             else
-                ext_result += occ_i * occ_j/ (m_ij^(interaction))
+                ext_result += occ_i * occ_j/ (m_ij^(power))
             end
         end
     end
@@ -160,7 +160,7 @@ function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleCompone
 end
 
 function diagonal_element(h::ExtendedHubbardReal1D, b::SingleComponentFockAddress)
-    ebhinteraction, bhinteraction = extended_hubbard_interaction(h, b, h.interaction)
+    ebhinteraction, bhinteraction = extended_hubbard_interaction(h, b, h.power)
     return convert(eltype(h), h.u * bhinteraction / 2 + h.v * ebhinteraction)
 end
 
