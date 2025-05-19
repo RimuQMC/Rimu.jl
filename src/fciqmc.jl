@@ -120,7 +120,7 @@ function Hamiltonians.offdiagonals(c::FirstOrderTransitionOperatorColumn{<:Any,<
 end
 Base.size(o::FirstOrderOffdiagonalsVector) = size(o.offdiagonals)
 
-function Base.getindex(o::FirstOrderOffdiagonalsVector{A,V}, i)::Pair{A,V} where {A,V}
+function Base.getindex(o::FirstOrderOffdiagonalsVector, i)
     add, val = o.offdiagonals[i]
     return add => -val * o.time_step
 end
