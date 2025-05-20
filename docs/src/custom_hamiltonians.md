@@ -30,11 +30,15 @@ model Hamiltonian should subtype to `AbstractHamiltonian` and implement the rele
 
 ```@docs
 AbstractHamiltonian
-operator_column
 starting_address
+operator_column
+diagonal_element
+num_offdiagonals
+offdiagonals
 ```
 
-The following functions may be implemented instead of [`operator_column`](@ref).
+Instead of implementing [`operator_column`](@ref), the following functions can be
+implemented with the Hamiltonian as an argument.
 
 ```@docs
 diagonal_element
@@ -62,6 +66,7 @@ Hamiltonians.adjoint
 Hamiltonians.dot
 Hamiltonians.AbstractOffdiagonals
 Hamiltonians.Offdiagonals
+Hamiltonians.OperatorColumn
 Hamiltonians.check_address_type
 Hamiltonians.number_conserving_dimension
 Hamiltonians.number_conserving_bose_dimension

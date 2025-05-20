@@ -125,27 +125,31 @@ function Base.getindex(o::FirstOrderOffdiagonalsVector, i)
     return add => -val * o.time_step
 end
 
-struct FirstOrderOffdiagonals{C}
+struct FirstOrderOffdiagonals{O}
     time_step::Float64
-    ham_column::C
+    offdiagonals::O
 end
 function Hamiltonians.offdiagonals(c::FirstOrderTransitionOperatorColumn{<:Any,<:Any,<:Any,<:Any})
-    return FirstOrderOffdiagonals(c.time_step, c.ham_column)
+    return FirstOrderOffdiagonals(c.time_step, offdiagonals(c.ham_column))
 end
+function Base.eltype(o::FirstOrderOffdiagonals)
+    odtypes = fieldtypes(eltype(o.offdiagonals))
+    return Pair{odtypes[1], float(odtypes[2])}
+end
+Base.IteratorSize(::FirstOrderOffdiagonals) = Base.SizeUnknown()
 
 function Base.iterate(o::FirstOrderOffdiagonals)
-    first, state = iterate(o.ham_column)
-    second = iterate(o.ham_column, state)
-    if isnothing(second)
+    first = iterate(o.offdiagonals)
+    if isnothing(first)
         return nothing
     end
-    (add, val), state = second
+    (add, val), state = first
     od = -val*o.time_step
     return (add => od, state)
 end
 
 function Base.iterate(o::FirstOrderOffdiagonals, state)
-    new = iterate(o.ham_column, state)
+    new = iterate(o.offdiagonals, state)
     if isnothing(new)
         return nothing
     end

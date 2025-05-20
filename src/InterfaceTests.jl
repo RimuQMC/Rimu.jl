@@ -15,7 +15,7 @@ using Test: Test, @test, @testset, @test_throws
 using Rimu: Rimu, DVec, Interfaces, LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     Hamiltonians, num_offdiagonals, allows_address_type, offdiagonals, random_offdiagonal,
     diagonal_element, dimension, dot_from_right, IsDeterministic, starting_address, PDVec,
-    sparse, scale!, scalartype
+    sparse, scale!, scalartype, operator_column
 using Rimu.Hamiltonians: AbstractHamiltonian, AbstractOperator, AbstractObservable,
     AbstractOffdiagonals
 using LinearAlgebra: dot, mul!, isdiag, ishermitian
@@ -139,6 +139,29 @@ function test_operator_interface(op, addr; test_spawning=true)
                     @test size(ods) == (num_offdiagonals(op, addr),)
                     if length(ods) > 0
                         @test random_offdiagonal(op, addr) isa Tuple{typeof(addr),<:Real,eltype(op)}
+                    end
+                end
+                @testset "operator_column" begin
+                    column = operator_column(op, addr)
+                    offdiags = offdiagonals(column)
+                    if hasmethod(diagonal_element, (typeof(op), typeof(addr)))
+                        @test diagonal_element(column) == diagonal_element(op, addr)
+                    end
+                    if hasmethod(num_offdiagonals, (typeof(op), typeof(addr)))
+                        @test num_offdiagonals(column) == num_offdiagonals(op, addr)
+                    end
+                    if num_offdiagonals(column) > 0
+                        @test random_offdiagonal(column) isa Tuple{typeof(addr),<:Real,eltype(op)}
+                        @test iterate(offdiags)[1] isa Union{Tuple{typeof(addr),eltype(op)},Pair{typeof(addr),eltype(op)}}
+                    end
+                    if column isa AbstractVector
+                        @test column[1].second == diagonal_element(column)
+                        @test length(column) == num_offdiagonals(column) + 1
+                        @test length(offdiags) == num_offdiagonals(column)
+                        first_order_ods_vec = collect(Rimu.FirstOrderOffdiagonalsVector(0.1, offdiags))
+                        first_order_ods = collect(Rimu.FirstOrderOffdiagonals(0.1, offdiags))
+                        @test length(first_order_ods_vec) == length(first_order_ods)
+                        @test Set(first_order_ods_vec) == Set(first_order_ods)
                     end
                 end
             end

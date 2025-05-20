@@ -239,10 +239,11 @@ function allows_address_type(op, address)
 end
 
 """
+    diagonal_element(column)
     diagonal_element(ham, address)
 
 Compute the diagonal matrix element of the linear operator `ham` at
-address `address`.
+address `address`, where `column = operator_column(ham, address)`.
 
 # Example
 
@@ -261,9 +262,11 @@ Part of the [`AbstractHamiltonian`](@ref) interface.
 diagonal_element(m::AbstractMatrix, i) = m[i, i]
 
 """
+    num_offdiagonals(column)
     num_offdiagonals(ham, address)
 
-Compute the number of number of reachable configurations from address `address`.
+Compute the number of number of reachable configurations from address `address`,
+where `column = operator_column(ham, address)`. If necessary, this may be an estimate.
 
 # Example
 
@@ -354,11 +357,12 @@ Part of the [`AbstractHamiltonian`](@ref) interface.
 
 # Extended help
 
-`offdiagonals(h, address)` returns an iterator of type `<:AbstractOffdiagonals`. It defaults to
-returning `Offdiagonals(h, a)`.
-`offdiagonals(column)` returns `offdiagonals(column.operator, column.address)` if `column` is a
-defualt `OperatorColumn`. Otherwise, it should be implemented as an iterator over non-zero
-elements of the column, `newaddress => matrixelement`.
+`offdiagonals(h, address)` returns an iterator of type `<:AbstractOffdiagonals`. It defaults
+to returning `Offdiagonals(h, a)`.
+`offdiagonals(column)` returns `offdiagonals(column.operator, column.address)` if `column`
+is a default [`OperatorColumn`](@ref). Otherwise, it returns an iterator over non-zero
+off-diagonal elements of the column as pairs, `newaddress => matrixelement`, and is not
+necessarily a vector.
 
 See also [`Offdiagonals`](@ref Main.Hamiltonians.Offdiagonals),
 [`AbstractOffdiagonals`](@ref Main.Hamiltonians.AbstractOffdiagonals).
@@ -378,14 +382,15 @@ end
 
 Generate a single random excitation, i.e. choose from one of the accessible off-diagonal
 elements in the column corresponding to `address` in the Hamiltonian matrix represented
-by `ham`. Alternatively, pass as argument an iterator over the accessible matrix elements.
+by `ham`. Alternatively, pass as argument a column `operator_column(ham, address)`.
 
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
 function random_offdiagonal(column::AbstractVector)
-    nl = length(column) - 1 # check how many sites we could reach
+    offdiags = offdiagonals(column)
+    nl = length(offdiags) # check how many sites we could reach
     chosen = rand(1:nl) # choose one of them
-    naddress, melem = column[chosen + 1]
+    naddress, melem = offdiags[chosen]
     return naddress, 1.0/nl, melem
 end
 
@@ -447,7 +452,7 @@ has_adjoint(::LOStructure) = true
 """
     OperatorColumn(op::AbstractOperator{T}, address::A) <: AbstractVector{Pair{A,T}}
 
-Default column, using offdiagonals and diagonal_element.
+Default column, using `offdiagonals(op, address)` and `diagonal_element(op, address)`.
 """
 struct OperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} <: AbstractVector{Pair{A,T}}
     operator::O
@@ -457,10 +462,19 @@ struct OperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} <:
 end
 
 """
-    operator_column(O::AbstractOperator, address)
+    operator_column(op::AbstractOperator, address)
 
-Returns an object representing the column of `O` given by `address`.
-The column must have a field `address`.
+Return an object representing the column of `op` given by `address`. By default, returns
+[`OperatorColumn(op, address, offdiagonals(op, address), diagonal_element(op, address))`](@ref).
+
+A custom column must have a field `address`, and the following methods should be implemented:
+
+* [`diagonal_element(column)`](@ref)
+* [`num_offdiagonals(column)`](@ref)
+* [`offdiagonals(column)`](@ref)
+
+Additionally, if the column is not an `AbstractVector`, [`random_offdiagonal(column)`](@ref)
+should be implemented.
 """
 operator_column(o, a) = OperatorColumn(o, a, offdiagonals(o,a), diagonal_element(o,a))
 
