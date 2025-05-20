@@ -24,8 +24,8 @@ shift_lattice_inv(js) = circshift(js, fld(length(js),2))
 Implements a one-dimensional Bose Hubbard chain in real space with external potential.
 
 ```math
-\\hat{H} = -t \\sum_{\\langle i,j\\rangle} a_i^† a_j + \\sum_i ϵ_i n_i
-+ \\frac{u}{2}\\sum_i n_i (n_i-1)
+\\hat{H} = - \\sum_i \\left(t a_i^† a_{i+1} + t^* a_{i+1}^† a_i \\right) + 
+\\sum_i ϵ_i n_i + \\frac{u}{2}\\sum_i n_i (n_i-1)
 ```
 
 # Arguments
@@ -64,12 +64,24 @@ function Base.show(io::IO, h::HubbardReal1DEP)
 end
 
 LOStructure(::Type{<:HubbardReal1DEP{<:Real}}) = IsHermitian()
+function LOStructure(::Type{<:HubbardReal1DEP{<:Complex,<:Any,U,T}}) where {U,T}
+    if iszero(imag(U))
+        return IsHermitian() # still Hermitian with complex t
+    else
+        return AdjointKnown()
+    end
+end
+
+function LinearAlgebra.adjoint(h::HubbardReal1DEP{TT,A,U,T,M}) where {TT<:Complex,A,U,T,M}
+    return HubbardReal1DEP{TT,A,conj(U)+0im,T,M}(h.address, conj(h.ep).+0im)
+end
 
 Base.getproperty(h::HubbardReal1DEP, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::HubbardReal1DEP{<:Any,<:Any,U}, ::Val{:u}) where U = U
 Base.getproperty(h::HubbardReal1DEP{<:Any,<:Any,<:Any,T}, ::Val{:t}) where T = T
 Base.getproperty(h::HubbardReal1DEP, ::Val{:address}) = getfield(h, :address)
 Base.getproperty(h::HubbardReal1DEP, ::Val{:ep}) = getfield(h, :ep)
+Base.getproperty(h::HubbardReal1DEP, ::Val{:boundary_condition}) = :periodic
 
 starting_address(h::HubbardReal1DEP) = h.address
 
@@ -87,6 +99,5 @@ function diagonal_element(h::HubbardReal1DEP, address::SingleComponentFockAddres
 end
 
 function get_offdiagonal(h::HubbardReal1DEP, address::SingleComponentFockAddress, chosen)
-    naddress, onproduct = hopnextneighbour(address, chosen)
-    return naddress, - h.t * onproduct
+    return _get_offdiagonal_hubbard_real_1D(h, address, chosen)
 end
