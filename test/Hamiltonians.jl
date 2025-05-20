@@ -1644,7 +1644,7 @@ end
     for H in (
         ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), boundary_condition=:twisted), # Hermitian
         ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), boundary_condition=0.5), # Hermitian
-        ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), interaction=3), # Hermitian
+        ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), t=2.0+3im, power=3), # Hermitian
         ExtendedHubbardReal1D(BoseFS(1, 0, 1, 0), v=6, t=2.0+3im), # Hermitian
         ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), v=6 + 0.5im, t=2.0), # non-Hermitian
         ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), u=6 + 3im, t=2.0), # non-Hermitian
