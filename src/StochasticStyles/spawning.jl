@@ -71,7 +71,7 @@ sets the projection threshold. If `eltype(w)` is an `Integer`, the `val` is roun
 nearest integer stochastically.
 """
 @inline function diagonal_step!(w, column, val, threshold=0)
-    new_val = diagonal_element(column)*val
+    new_val = diagonal_element(column) * val
     res = projected_deposit!(w, column.address, new_val, column.address => val, threshold)
     return clones_deaths_zombies(res, typeof(res)(val))
 end
@@ -228,7 +228,7 @@ end
     magnitude = val / num_attempts
 
     for _ in 1:num_attempts
-        new_add, prob, mat_elem  = random_offdiagonal(column)
+        new_add, prob, mat_elem = random_offdiagonal(column)
         new_val = mat_elem * magnitude / prob
         spawns += abs(projected_deposit!(w, new_add, new_val, column.address => val, s.threshold))
     end
