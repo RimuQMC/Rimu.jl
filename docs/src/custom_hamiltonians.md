@@ -35,16 +35,7 @@ operator_column
 diagonal_element
 num_offdiagonals
 offdiagonals
-```
-
-Instead of implementing [`operator_column`](@ref), the following functions can be
-implemented with the Hamiltonian as an argument.
-
-```@docs
-diagonal_element
-num_offdiagonals
 get_offdiagonal
-offdiagonals
 ```
 
 The following functions come with default implementations, but may be customized.
