@@ -199,7 +199,7 @@ Optional additional methods to implement:
 Provides the following functions and methods:
 
 * [`offdiagonals`](@ref): iterator over reachable off-diagonal matrix elements
-* [`random_offdiagonal`](@ref): function to generate random matrix element
+* [`random_offdiagonal`](@ref): function to generate random off-diagonal matrix element
 * `*(H, v)`: deterministic matrix-vector multiply (allocating)
 * `H(v)`: equivalent to `H * v`.
 * `mul!(w, H, v)`: mutating matrix-vector multiply.
@@ -333,7 +333,7 @@ starting_address(m::AbstractMatrix) = findmin(real.(diag(m)))[2]
     offdiagonals(h::AbstractHamiltonian, address)
 
 Return an iterator over nonzero off-diagonal matrix elements of `h` in the same column as
-`address`. Will iterate over pairs `(newaddress, matrixelement)`.
+`address`. Will iterate over pairs `(newaddress, matrixelement)` or `newaddress => matrixelement`.
 
 # Example
 
@@ -359,6 +359,7 @@ Part of the [`AbstractHamiltonian`](@ref) interface.
 
 `offdiagonals(h, address)` returns an iterator of type `<:AbstractOffdiagonals`. It defaults
 to returning `Offdiagonals(h, a)`.
+
 `offdiagonals(column)` returns `offdiagonals(column.operator, column.address)` if `column`
 is a default [`OperatorColumn`](@ref). Otherwise, it returns an iterator over non-zero
 off-diagonal elements of the column as pairs, `newaddress => matrixelement`, and is not
