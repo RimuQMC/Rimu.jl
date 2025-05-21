@@ -25,8 +25,8 @@ Hamiltonian can be either real or complex, depending on the choice of `boundary_
     With this choice the Hamiltonian will have a complex `eltype` whereas otherwise the
     `eltype` is determined by the type of the parameters `t`, `u`, and `v`.
 * `power`: the interaction type. The following values are supported:
-  * `nothing`: nearest neighbour interaction (default), i.e. ``f_{i-j} = δ_{j-i,1}``.
-  * `p<:Number`: inverse distance interaction, i.e. ``f_{i-j} = (|i-j|)^{-p}``.
+  * `nothing`: nearest neighbour interaction (default), i.e. ``f_{j-i} = δ_{j-i,1}``.
+  * `p<:Number`: inverse distance interaction, i.e. ``f_{j-i} = (j-i)^{-p}``.
 
 See also [`HubbardRealSpace`](@ref).
 """
@@ -108,11 +108,11 @@ end
     extended_hubbard_interaction(h::ExtendedHubbardReal1D, address, power)
 
 Compute and return both the extended range occupation number product
-``\\sum_j f_{i-j} n_i n_{j}`` (according to the boundary conditions of `h`) as well as the on-site
+``\\sum_{i,j>i} f_{j-i} n_i n_{j}`` (according to the boundary conditions of `h`) as well as the on-site
 product ``\\sum_j n_j (n_j - 1)`` treating the `address` as a one-dimensional chain.
 
-where ``f_{i-j} = 1`` for nearest neighbors (power = nothing) and 
-``f_{i-j} = (|i-j|)^{-p}`` for inverse distance interaction (power = p<:Number).
+where ``f_{j-i} = 1`` for nearest neighbors (power = nothing) and 
+``f_{j-i} = (|j-i|)^{-p}`` for inverse distance interaction (power = p<:Number).
 
 See [`ExtendedHubbardReal1D`](@ref) and [`hopnextneighbour`](@ref).
 """
