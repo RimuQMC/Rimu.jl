@@ -83,13 +83,13 @@ This function tests compliance with the [`AbstractOperator`](@ref) interface for
 [`<: AbstractFockAddress`](@ref Rimu.BitStringAddresses.AbstractFockAddress)) by
 checking that all required methods are defined.
 
-If `test_spawning` is `true`, tests are performed that require `offdiagonals` to return an
-`Hamiltonians.AbstractOffDiagonals`, which is a prerequisite for using the `spawn!`
-function. Otherwise, the spawning tests are skipped.
+If `test_spawning` is `true`, tests are performed that require `num_offdiagonals(column)`
+(which by default requires that `offdiagonals(column)` has a known length) and
+`random_offdiagonal(column)`, which are prerequisites for using the `spawn!` function.
+Otherwise, the spawning tests are skipped.
 
 The following properties are tested:
 - `diagonal_element` returns a value of the same type as the `eltype` of the operator
-- `offdiagonals` behaves like an `AbstractVector`
 - `num_offdiagonals` returns the correct number of offdiagonals
 - `random_offdiagonal` returns a tuple with the correct types
 - `mul!` and `dot` work as expected
@@ -119,34 +119,28 @@ function test_operator_interface(op, addr; test_spawning=true)
         @testset "allows_address_type" begin
             @test allows_address_type(op, addr)
         end
+        column = operator_column(op, addr)
         @testset "Operator interface: $(nameof(typeof(op)))" begin
             @testset "diagonal_element" begin
-                @test diagonal_element(op, addr) isa eltype(op)
-                @test eltype(diagonal_element(op, addr)) == scalartype(op)
+                @test diagonal_element(column) isa eltype(op)
+                @test eltype(diagonal_element(column)) == scalartype(op)
+                if hasmethod(diagonal_element, (typeof(op), typeof(addr)))
+                    @test diagonal_element(column) == diagonal_element(op, addr)
+                end
             end
             @testset "offdiagonals" begin
                 # `get_offdiagonal` is not mandatory and thus not tested
-                ods = offdiagonals(op, addr)
+                ods = offdiagonals(column)
                 vec_ods = collect(ods)
-                eltype(vec_ods) == Tuple{typeof(addr),eltype(op)} == eltype(ods)
-                @test length(vec_ods) ≤ num_offdiagonals(op, addr)
+                @test eltype(vec_ods) <: Union{Tuple{typeof(addr),eltype(op)},Pair{typeof(addr),eltype(op)}}
+                @test eltype(vec_ods) == eltype(ods)
+                if hasmethod(num_offdiagonals, (typeof(op), typeof(addr)))
+                    @test length(vec_ods) ≤ num_offdiagonals(op, addr)
+                end
             end
             if test_spawning
-                @testset "spawning" begin
-                    ods = offdiagonals(op, addr)
-                    @test ods isa AbstractOffdiagonals{typeof(addr),eltype(op)}
-                    @test ods isa AbstractVector
-                    @test size(ods) == (num_offdiagonals(op, addr),)
-                    if length(ods) > 0
-                        @test random_offdiagonal(op, addr) isa Tuple{typeof(addr),<:Real,eltype(op)}
-                    end
-                end
                 @testset "operator_column" begin
-                    column = operator_column(op, addr)
                     offdiags = offdiagonals(column)
-                    if hasmethod(diagonal_element, (typeof(op), typeof(addr)))
-                        @test diagonal_element(column) == diagonal_element(op, addr)
-                    end
                     if hasmethod(num_offdiagonals, (typeof(op), typeof(addr)))
                         @test num_offdiagonals(column) == num_offdiagonals(op, addr)
                     end
@@ -156,8 +150,11 @@ function test_operator_interface(op, addr; test_spawning=true)
                     end
                     if column isa AbstractVector
                         @test column[1].second == diagonal_element(column)
-                        @test length(column) == num_offdiagonals(column) + 1
-                        @test length(offdiags) == num_offdiagonals(column)
+                        @test size(column) == (num_offdiagonals(column) + 1,)
+                        @test size(offdiags) == (num_offdiagonals(column),)
+                        if num_offdiagonals(column) > 0
+                            @test column[2] in offdiagonals(column) || Tuple(column[2]) in offdiagonals(column)
+                        end
                         first_order_ods_vec = collect(Rimu.FirstOrderOffdiagonalsVector(0.1, offdiags))
                         first_order_ods = collect(Rimu.FirstOrderOffdiagonals(0.1, offdiags))
                         @test length(first_order_ods_vec) == length(first_order_ods)
@@ -240,8 +237,9 @@ function test_hamiltonian_interface(h, addr=starting_address(h); test_spawning=t
             h(v3, v)
             v4 = h(v)
             @test v1 == v2 == v3 == v4
-            v5 = DVec(addr => diagonal_element(h, addr))
-            for (addr, val) in offdiagonals(h, addr)
+            column = operator_column(h, addr)
+            v5 = DVec(addr => diagonal_element(column))
+            for (addr, val) in offdiagonals(column)
                 v5[addr] += val
             end
             scale!(v5, scalartype(h)(2))

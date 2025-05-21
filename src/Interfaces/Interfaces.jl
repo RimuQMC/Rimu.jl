@@ -15,6 +15,7 @@ Follow the links for the definitions of the interfaces!
 # Additional exports
 
 ## Interface functions for[`AbstractHamiltonian`](@ref)s:
+* [`operator_column`](@ref)
 * [`diagonal_element`](@ref)
 * [`num_offdiagonals`](@ref)
 * [`get_offdiagonal`](@ref)

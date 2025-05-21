@@ -129,7 +129,7 @@ be [`<:IsDeterministic`](@ref Rimu.StochasticStyles.IsDeterministic).
 
 Part of the [`AbstractOperator`](@ref) interface.
 
-The default implementation relies of [`diagonal_element`](@ref) and [`offdiagonals`](@ref)
+The default implementation relies on [`diagonal_element`](@ref) and [`offdiagonals`](@ref)
 to access the elements of the operator. The function can be overloaded for custom operators.
 """
 LinearAlgebra.mul!
@@ -476,7 +476,7 @@ A custom column must have a field `address`, and the following methods should be
 Additionally, if the column is not an `AbstractVector`, [`random_offdiagonal(column)`](@ref)
 should be implemented.
 """
-operator_column(o, a) = OperatorColumn(o, a, offdiagonals(o,a), diagonal_element(o,a))
+operator_column(o, a) = OperatorColumn(o, a, offdiagonals(o,a), eltype(o)(diagonal_element(o,a)))
 
 function Base.getindex(c::OperatorColumn{A,T}, i)::Pair{A,T} where {A,T}
     @boundscheck 1 ≤ i ≤ length(c.ods) + 1 || throw(BoundsError(c, i))
