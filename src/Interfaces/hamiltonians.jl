@@ -463,19 +463,33 @@ struct OperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} <:
 end
 
 """
-    operator_column(op::AbstractOperator, address)
+    operator_column(operator::AbstractOperator, address) -> column
 
-Return an object representing the column of `op` given by `address`. By default, returns
-[`OperatorColumn(op, address, offdiagonals(op, address), diagonal_element(op, address))`](@ref).
+Return an object representing the column of `operator` given by `address`. In quantum
+notation, the `column` represents the object
+```math
+    Ĥ|α⟩ = ∑ᵦ|β⟩⟨β|Ĥ|α⟩,
+```
+where ``α`` is the  `address` and ``β`` represents all reachable addresses with nonzero
+matrix element ``⟨β|Ĥ|α⟩`` of the `operator` ``Ĥ``.
 
-A custom column must have a field `address`, and the following methods should be implemented:
+A `column` can be accessed with the following functions:
 
-* [`diagonal_element(column)`](@ref)
-* [`num_offdiagonals(column)`](@ref)
-* [`offdiagonals(column)`](@ref)
+* [`starting_address(column)`](@ref) - returns `address`,
+* [`diagonal_element(column)`](@ref) - returns the diagonal element ``⟨α|Ĥ|α⟩`` of `address`
+  in `operator`,
+* [`num_offdiagonals(column)`](@ref) - returns an estimate of the number of
+  off-diagonal elements in the `column`,
+* [`offdiagonals(column)`](@ref) - returns an object representing the off-diagonal
+  elements of the `column`,
+* [`random_offdiagonal(column)`](@ref) - returns a random off-diagonal element in the
+  `column`.
 
-Additionally, if the column is not an `AbstractVector`, [`random_offdiagonal(column)`](@ref)
-should be implemented.
+Methods for these functions need to be implemented for a new type of `AbstractOperator`.
+Implementing [`random_offdiagonal(column)`](@ref) is optional if `offdiagonals(column)`
+returns an `AbstractVector`.
+
+Part of the [`AbstractHamiltonian`](@ref) interface.
 """
 operator_column(o, a) = OperatorColumn(o, a, offdiagonals(o,a), eltype(o)(diagonal_element(o,a)))
 
