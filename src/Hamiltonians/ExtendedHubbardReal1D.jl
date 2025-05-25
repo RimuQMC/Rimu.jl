@@ -1,5 +1,5 @@
 """
-    ExtendedHubbardReal1D(address; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, power=:nearest_neighbour)
+    ExtendedHubbardReal1D(address; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, power=nothing)
 
 Implements the extended Hubbard model on a one-dimensional chain in real space. This
 Hamiltonian can be either real or complex, depending on the choice of `boundary_condition`.
