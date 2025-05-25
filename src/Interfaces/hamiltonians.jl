@@ -129,8 +129,6 @@ be [`<:IsDeterministic`](@ref Rimu.StochasticStyles.IsDeterministic).
 
 Part of the [`AbstractOperator`](@ref) interface.
 
-The default implementation relies on [`diagonal_element`](@ref) and [`offdiagonals`](@ref)
-to access the elements of the operator. The function can be overloaded for custom operators.
 """
 LinearAlgebra.mul!
 
@@ -240,7 +238,7 @@ end
 
 """
     diagonal_element(column)
-    diagonal_element(ham, address)
+    diagonal_element(ham, address) # (deprecated)
 
 Compute the diagonal matrix element of the linear operator `ham` at
 address `address`, where `column = operator_column(ham, address)`.
@@ -263,7 +261,7 @@ diagonal_element(m::AbstractMatrix, i) = m[i, i]
 
 """
     num_offdiagonals(column)
-    num_offdiagonals(ham, address)
+    num_offdiagonals(ham, address) # (deprecated)
 
 Compute the number of number of reachable configurations from address `address`,
 where `column = operator_column(ham, address)`. If necessary, this may be an estimate.
@@ -330,7 +328,7 @@ starting_address(m::AbstractMatrix) = findmin(real.(diag(m)))[2]
 
 """
     offdiagonals(column)
-    offdiagonals(h::AbstractHamiltonian, address)
+    offdiagonals(h::AbstractHamiltonian, address) # (deprecated)
 
 Return an iterator over nonzero off-diagonal matrix elements of `h` in the same column as
 `address`. Will iterate over pairs `(newaddress, matrixelement)` or `newaddress => matrixelement`.
@@ -451,11 +449,13 @@ has_adjoint(::AdjointUnknown) = false
 has_adjoint(::LOStructure) = true
 
 """
-    OperatorColumn(op::AbstractOperator{T}, address::A) <: AbstractVector{Pair{A,T}}
+    OffdiagonalsOperatorColumn(op::AbstractOperator{T}, address::A)
 
-Default column, using `offdiagonals(op, address)` and `diagonal_element(op, address)`.
+Default column, using [`offdiagonals(op, address)`](@ref) and [`diagonal_element(op, address)`](@ref).
+
+See also [`operator_column`](@ref).
 """
-struct OperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} <: AbstractVector{Pair{A,T}}
+struct OffdiagonalsOperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} 
     operator::O
     address::A
     ods::OD
@@ -493,17 +493,7 @@ Part of the [`AbstractHamiltonian`](@ref) interface.
 """
 operator_column(o, a) = OperatorColumn(o, a, offdiagonals(o,a), eltype(o)(diagonal_element(o,a)))
 
-function Base.getindex(c::OperatorColumn{A,T}, i)::Pair{A,T} where {A,T}
-    @boundscheck 1 ≤ i ≤ length(c.ods) + 1 || throw(BoundsError(c, i))
-    if i == 1
-        return c.address => c.diagonal
-    else
-        add, val = c.ods[i-1]
-        return add => val
-    end
-end
 
-Base.size(c::OperatorColumn) = (length(c.ods) + 1,)
 diagonal_element(c::OperatorColumn) = c.diagonal
-num_offdiagonals(c::OperatorColumn) = length(c.ods)
+num_offdiagonals(c::OperatorColumn) = num_offdiagonals(c.operator, c.address)
 offdiagonals(c::OperatorColumn) = c.ods
