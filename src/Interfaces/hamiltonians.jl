@@ -416,14 +416,18 @@ has_adjoint(::AdjointUnknown) = false
 has_adjoint(::LOStructure) = true
 
 """
-    AbstractOperatorColumn
+    AbstractOperatorColumn{A,T,O}
 
-Abstract type for columns. See [`operator_column`](@ref).
+Abstract type for operator columns returned by [`operator_column`](@ref). 
+The type parameters represent the address type (`A`), the eltype (`T`), and the
+type of the operator (`O`).
+
+Part of the  [`AbstractHamiltonian`](@ref) and  [`AbstractOperator`](@ref) interface.
 """
 abstract type AbstractOperatorColumn{A,T,O} end
 
 """
-    OffdiagonalsOperatorColumn(op::AbstractOperator{T}, address::A)
+    OffdiagonalsOperatorColumn <: AbstractOperatorColumn
 
 Default column, using [`offdiagonals(op, address)`](@ref) and [`diagonal_element(op, address)`](@ref).
 
@@ -437,7 +441,7 @@ struct OffdiagonalsOperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatri
 end
 
 """
-    operator_column(operator::AbstractOperator, address) -> column
+    operator_column(operator::AbstractOperator, address) -> column <: AbstractOperatorColumn
 
 Return an object representing the column of `operator` given by `address`. In quantum
 notation, the `column` represents the object
@@ -463,7 +467,7 @@ Methods for these functions need to be implemented for a new type of `AbstractOp
 Implementing [`random_offdiagonal(column)`](@ref) is optional if `offdiagonals(column)`
 returns an `AbstractVector`.
 
-Part of the [`AbstractHamiltonian`](@ref) interface.
+Part of the [`AbstractHamiltonian`](@ref) interface. See also [`AbstractOperatorColumn](@ref).
 """
 operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a), eltype(o)(diagonal_element(o,a)))
 
@@ -474,7 +478,7 @@ offdiagonals(c::OffdiagonalsOperatorColumn) = c.ods
 
 """
     random_offdiagonal(column)
-    random_offdiagonal(ham::AbstractHamiltonian, address)
+    random_offdiagonal(ham::AbstractHamiltonian, address) # deprecated
     -> newaddress, probability, matrixelement
 
 Generate a single random excitation, i.e. choose from one of the accessible off-diagonal

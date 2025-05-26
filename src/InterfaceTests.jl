@@ -76,21 +76,24 @@ function test_observable_interface(obs, addr)
 end
 
 """
-    test_operator_interface(op, addr; test_iterable_offdiagonals=true, test_random_offdiagonal=trure)
+    test_operator_interface(op, addr; test_iterable_offdiagonals=true, test_random_offdiagonal=true)
 
 This function tests compliance with the [`AbstractOperator`](@ref) interface for an operator
 `op` at address `addr` (typically
 [`<: AbstractFockAddress`](@ref Rimu.BitStringAddresses.AbstractFockAddress)) by
 checking that all required methods are defined.
 
+The following properties are tested:
+- `operator_column(op, addr)` returns a `column` object that is subtype to [`AbstractOperatorColumn`](@ref)
+
 If `test_random_offdiagonal` is `true`, tests are performed that require `random_offdiagonal(column)`
 to be defined. If `test_iterate_offdiagonals` is `true`, tests are performed that require
 `offdiagonals(column)` to be iterable.
 
-The following properties are tested:
-- `diagonal_element` returns a value of the same type as the `eltype` of the operator
+- `diagonal_element(column)` returns a value of the same type as the `eltype` of the operator
+- `offdiagonals` iterates `address => value` pairs of consistent type (only if `test_iterate_offdiagonals==true`)
 - `num_offdiagonals` returns the correct number of offdiagonals
-- `random_offdiagonal` returns a tuple with the correct types
+- `random_offdiagonal` returns a tuple with the correct types (only if `test_random_offdiagonal==true`)
 - `mul!` and `dot` work as expected
 - `dimension` returns a consistent value
 - the [`AbstractObservable`](@ref) interface is tested
@@ -119,6 +122,7 @@ function test_operator_interface(op, addr; test_iterable_offdiagonals=true, test
             @test allows_address_type(op, addr)
         end
         column = operator_column(op, addr)
+        @test column isa AbstractOperatorColumn
         @testset "Operator interface: $(nameof(typeof(op)))" begin
             @testset "starting_address(column)" begin
                 @test starting_address(column) == addr
