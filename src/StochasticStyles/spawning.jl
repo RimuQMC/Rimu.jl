@@ -168,10 +168,10 @@ See [`SpawningStrategy`](@ref).
     T = valtype(w)
     attempts = 0
     spawns = sum(offdiagonals(column); init=real(zero(T))) do (new_add, mat_elem)
+        attempts += 1
         abs(projected_deposit!(
             w, new_add, val * mat_elem, starting_address(column) => val, s.threshold
         ))
-        attempts += 1
     end
     return (attempts, spawns)
 end
@@ -262,6 +262,12 @@ struct WithoutReplacement{T} <: SpawningStrategy
 end
 
 @inline function spawn!(s::WithoutReplacement, w, column, val, boost=1)
+    offdiags = offdiagonals(column)
+    if !(offdiags isa AbstractVector)
+        throw(ArgumentError(
+            "The WithoutReplacement strategy requires offdiagonals to be an AbstractVector. Please use a different strategy."
+        ))
+    end
     spawns = zero(valtype(w))
     num_attempts = max(floor(Int, abs(val) * boost), 1)
 
@@ -269,15 +275,8 @@ end
         spawn!(SingleSpawn(s.threshold), w, column, val)
     else
         magnitude = val / num_attempts
-
         num_offdiags = num_offdiagonals(column)
         prob = 1 / num_offdiags
-        offdiags = offdiagonals(column)
-        if !(offdiags isa AbstractVector)
-            throw(ArgumentError(
-                "The WithoutReplacement strategy requires offdiagonals to be an AbstractVector. Please use a different strategy."
-            ))
-        end
         for i in sample(1:num_offdiags, num_attempts; replace=false)
             new_add, mat_elem = offdiags[i]
             new_val = mat_elem * magnitude / prob
@@ -313,12 +312,17 @@ struct Bernoulli{T} <: SpawningStrategy
 end
 
 @inline function spawn!(s::Bernoulli, w, column, val, boost=1)
+    offdiags = offdiagonals(column)
+    if !(offdiags isa AbstractVector)
+        throw(ArgumentError(
+            "The Bernoulli strategy requires offdiagonals to be an AbstractVector. Please use a different strategy."
+        ))
+    end
     spawns = zero(valtype(w))
     # General case.
     num_offdiags = num_offdiagonals(column)
     prob = abs(val) * boost / num_offdiags
     num_attempts = 0
-    offdiags = offdiagonals(column)
     for i in 1:num_offdiags
         if rand() < prob
             new_add, mat_elem = offdiags[i]

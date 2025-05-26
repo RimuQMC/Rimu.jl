@@ -87,11 +87,11 @@ The following properties are tested:
 - `operator_column(op, addr)` returns a `column` object that is subtype to [`AbstractOperatorColumn`](@ref)
 
 If `test_random_offdiagonal` is `true`, tests are performed that require `random_offdiagonal(column)`
-to be defined. If `test_iterate_offdiagonals` is `true`, tests are performed that require
+to be defined. If `test_iterable_offdiagonals` is `true`, tests are performed that require
 `offdiagonals(column)` to be iterable.
 
 - `diagonal_element(column)` returns a value of the same type as the `eltype` of the operator
-- `offdiagonals` iterates `address => value` pairs of consistent type (only if `test_iterate_offdiagonals==true`)
+- `offdiagonals` iterates `address => value` pairs of consistent type (only if `test_iterable_offdiagonals==true`)
 - `num_offdiagonals` returns the correct number of offdiagonals
 - `random_offdiagonal` returns a tuple with the correct types (only if `test_random_offdiagonal==true`)
 - `mul!` and `dot` work as expected
@@ -167,13 +167,14 @@ function test_operator_interface(op, addr; test_iterable_offdiagonals=true, test
 end
 
 """
-    test_hamiltonian_interface(h, addr=starting_address(h); test_spawning=true)
+    test_hamiltonian_interface(h, addr=starting_address(h); test_iterable_offdiagonals=true, test_random_offdiagonal=true)
 
 The main purpose of this test function is to check that all required methods of the
 [`AbstractHamiltonian`](@ref) interface are defined and work as expected.
 
-Set `test_spawning=false` to skip tests that require [`offdiagonals`](@ref) to return an
-`AbstractVector`.
+Set `test_iterable_offdiagonals=false` to skip tests that require [`offdiagonals(column)`](@ref)
+to be iterable. Set `test_random_offdiagonal=false` to skip tests that require
+[`random_offdiagonal(column)`](@ref) to be defined.
 
 This function also tests the following properties of the Hamiltonian:
 - `dimension(h) ≥ dimension(h, addr)`
