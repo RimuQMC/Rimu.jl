@@ -115,10 +115,16 @@ struct FirstOrderOffdiagonalsVector{
     time_step::Float64
     offdiagonals::O
 end
-function Hamiltonians.offdiagonals(c::FirstOrderTransitionOperatorColumn{<:Any,<:Any,<:Any,<:AbstractVector})
-    return FirstOrderOffdiagonalsVector(c.time_step, offdiagonals(c.ham_column))
-end
 Base.size(o::FirstOrderOffdiagonalsVector) = size(o.offdiagonals)
+
+function Hamiltonians.offdiagonals(c::FirstOrderTransitionOperatorColumn)
+    ods = offdiagonals(c.ham_column)
+    if ods isa AbstractVector
+        return FirstOrderOffdiagonalsVector(c.time_step, ods)
+    else
+        return FirstOrderOffdiagonals(c.time_step, ods)
+    end
+end
 
 function Base.getindex(o::FirstOrderOffdiagonalsVector, i)
     add, val = o.offdiagonals[i]
@@ -128,9 +134,6 @@ end
 struct FirstOrderOffdiagonals{O}
     time_step::Float64
     offdiagonals::O
-end
-function Hamiltonians.offdiagonals(c::FirstOrderTransitionOperatorColumn{<:Any,<:Any,<:Any,<:Any})
-    return FirstOrderOffdiagonals(c.time_step, offdiagonals(c.ham_column))
 end
 function Base.eltype(o::FirstOrderOffdiagonals)
     odtypes = fieldtypes(eltype(o.offdiagonals))

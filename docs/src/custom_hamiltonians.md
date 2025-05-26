@@ -57,7 +57,6 @@ Hamiltonians.adjoint
 Hamiltonians.dot
 Hamiltonians.AbstractOffdiagonals
 Hamiltonians.Offdiagonals
-Hamiltonians.OperatorColumn
 Hamiltonians.check_address_type
 Hamiltonians.number_conserving_dimension
 Hamiltonians.number_conserving_bose_dimension

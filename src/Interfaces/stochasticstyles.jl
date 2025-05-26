@@ -137,7 +137,7 @@ Apply the product of `column` and the scalar `num` to the vector `v` according t
 [`StochasticStyle`](@ref) of `v`. By expectation value this should be equivalent to
 
 ```
-v .+= column.operator[:, column.address] .* num
+v .+= column.operator[:, starting_address(column)] .* num
 ```
 
 This is used to perform the spawning step in FCIQMC and to implement operator-vector

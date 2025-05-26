@@ -128,7 +128,6 @@ of `eltype(op)` and `valtype(v)`. Moreover, the [`StochasticStyle`](@ref) of `w`
 be [`<:IsDeterministic`](@ref Rimu.StochasticStyles.IsDeterministic).
 
 Part of the [`AbstractOperator`](@ref) interface.
-
 """
 LinearAlgebra.mul!
 
@@ -305,9 +304,10 @@ get_offdiagonal(m::AbstractMatrix, i, n) = offdiagonals(m, i)[n]
 
 """
     starting_address(h)
+    starting_address(column)
 
-Return the starting address for Hamiltonian `h`. When called on an `AbstractMatrix`,
-`starting_address` returns the index of the lowest diagonal
+Return the starting address for Hamiltonian `h`, or for `OperatorColumn` `column`. When
+called on an `AbstractMatrix`, `starting_address` returns the index of the lowest diagonal
 element.
 
 # Example
@@ -352,16 +352,6 @@ julia> h = offdiagonals(H, address)
  (fs"|3 3 0⟩", -1.7320508075688772)
 ```
 Part of the [`AbstractHamiltonian`](@ref) interface.
-
-# Extended help
-
-`offdiagonals(h, address)` returns an iterator of type `<:AbstractOffdiagonals`. It defaults
-to returning `Offdiagonals(h, a)`.
-
-`offdiagonals(column)` returns `offdiagonals(column.operator, column.address)` if `column`
-is a default [`OperatorColumn`](@ref). Otherwise, it returns an iterator over non-zero
-off-diagonal elements of the column as pairs, `newaddress => matrixelement`, and is not
-necessarily a vector.
 
 See also [`Offdiagonals`](@ref Main.Hamiltonians.Offdiagonals),
 [`AbstractOffdiagonals`](@ref Main.Hamiltonians.AbstractOffdiagonals).
@@ -449,13 +439,20 @@ has_adjoint(::AdjointUnknown) = false
 has_adjoint(::LOStructure) = true
 
 """
+    OperatorColumn
+
+Abstract type for columns. See [`operator_column`](@ref).
+"""
+abstract type OperatorColumn{A,T,O} end
+
+"""
     OffdiagonalsOperatorColumn(op::AbstractOperator{T}, address::A)
 
 Default column, using [`offdiagonals(op, address)`](@ref) and [`diagonal_element(op, address)`](@ref).
 
 See also [`operator_column`](@ref).
 """
-struct OffdiagonalsOperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} 
+struct OffdiagonalsOperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} <: OperatorColumn{A,T,O}
     operator::O
     address::A
     ods::OD
@@ -491,9 +488,9 @@ returns an `AbstractVector`.
 
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
-operator_column(o, a) = OperatorColumn(o, a, offdiagonals(o,a), eltype(o)(diagonal_element(o,a)))
+operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a), eltype(o)(diagonal_element(o,a)))
 
-
-diagonal_element(c::OperatorColumn) = c.diagonal
-num_offdiagonals(c::OperatorColumn) = num_offdiagonals(c.operator, c.address)
-offdiagonals(c::OperatorColumn) = c.ods
+starting_address(c::OperatorColumn) = c.address
+diagonal_element(c::OffdiagonalsOperatorColumn) = c.diagonal
+num_offdiagonals(c::OffdiagonalsOperatorColumn) = num_offdiagonals(c.operator, c.address)
+offdiagonals(c::OffdiagonalsOperatorColumn) = c.ods

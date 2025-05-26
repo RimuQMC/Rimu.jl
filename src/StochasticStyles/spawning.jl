@@ -66,13 +66,13 @@ end
 """
     diagonal_step!(w, column, val, threshold=0) -> (clones, deaths, zombies)
 
-Perform diagonal step on a walker `column.address => val`. Optional argument `threshold`
-sets the projection threshold. If `eltype(w)` is an `Integer`, the `val` is rounded to the
-nearest integer stochastically.
+Perform diagonal step on a walker `starting_address(column) => val`. Optional argument
+`threshold` sets the projection threshold. If `eltype(w)` is an `Integer`, the `val` is
+rounded to the nearest integer stochastically.
 """
 @inline function diagonal_step!(w, column, val, threshold=0)
     new_val = diagonal_element(column) * val
-    res = projected_deposit!(w, column.address, new_val, column.address => val, threshold)
+    res = projected_deposit!(w, starting_address(column), new_val, starting_address(column) => val, threshold)
     return clones_deaths_zombies(res, typeof(res)(val))
 end
 
@@ -166,12 +166,14 @@ See [`SpawningStrategy`](@ref).
 """
 @inline function spawn!(s::Exact, w, column, val, boost=1)
     T = valtype(w)
+    attempts = 0
     spawns = sum(offdiagonals(column); init=real(zero(T))) do (new_add, mat_elem)
         abs(projected_deposit!(
-            w, new_add, val * mat_elem, column.address => val, s.threshold
+            w, new_add, val * mat_elem, starting_address(column) => val, s.threshold
         ))
+        attempts += 1
     end
-    return (num_offdiagonals(column), spawns)
+    return (attempts, spawns)
 end
 
 """
@@ -198,7 +200,7 @@ end
     else
         new_add, prob, mat_elem = random_offdiagonal(column)
         new_val = val * mat_elem / prob
-        spawns = abs(projected_deposit!(w, new_add, new_val, column.address => val, s.threshold))
+        spawns = abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
         return (1, spawns)
     end
 end
@@ -230,7 +232,7 @@ end
     for _ in 1:num_attempts
         new_add, prob, mat_elem = random_offdiagonal(column)
         new_val = mat_elem * magnitude / prob
-        spawns += abs(projected_deposit!(w, new_add, new_val, column.address => val, s.threshold))
+        spawns += abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
     end
     return (num_attempts, spawns)
 end
@@ -271,10 +273,15 @@ end
         num_offdiags = num_offdiagonals(column)
         prob = 1 / num_offdiags
         offdiags = offdiagonals(column)
+        if !(offdiags isa AbstractVector)
+            throw(ArgumentError(
+                "The WithoutReplacement strategy requires offdiagonals to be an AbstractVector. Please use a different strategy."
+            ))
+        end
         for i in sample(1:num_offdiags, num_attempts; replace=false)
             new_add, mat_elem = offdiags[i]
             new_val = mat_elem * magnitude / prob
-            spawns += abs(projected_deposit!(w, new_add, new_val, column.address => val, s.threshold))
+            spawns += abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
         end
     end
     return (num_attempts, spawns)
@@ -316,7 +323,7 @@ end
         if rand() < prob
             new_add, mat_elem = offdiags[i]
             new_val = mat_elem / prob * val
-            spawns += abs(projected_deposit!(w, new_add, new_val, column.address => val, s.threshold))
+            spawns += abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
             num_attempts += 1
         end
     end

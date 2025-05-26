@@ -93,8 +93,8 @@ end
 function step_stats(::IsDeterministic)
     return (:exact_steps,), MultiScalar(0,)
 end
-function apply_column!(::IsDeterministic, w, column::OperatorColumn{<:Any,<:Any,<:AbstractMatrix}, val, boost=1)
-    w .+= column.operator[:, column.address] .* val
+function apply_column!(::IsDeterministic, w, column::OffdiagonalsOperatorColumn{<:Any,<:Any,<:AbstractMatrix}, val, boost=1)
+    w .+= column.operator[:, starting_address(column)] .* val
     return (1,)
 end
 function apply_column!(::IsDeterministic, w, column, val, boost=1)
