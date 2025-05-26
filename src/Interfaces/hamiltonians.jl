@@ -306,7 +306,7 @@ get_offdiagonal(m::AbstractMatrix, i, n) = offdiagonals(m, i)[n]
     starting_address(h)
     starting_address(column)
 
-Return the starting address for Hamiltonian `h`, or for `OperatorColumn` `column`. When
+Return the starting address for Hamiltonian `h`, or for `AbstractOperatorColumn` `column`. When
 called on an `AbstractMatrix`, `starting_address` returns the index of the lowest diagonal
 element.
 
@@ -416,11 +416,11 @@ has_adjoint(::AdjointUnknown) = false
 has_adjoint(::LOStructure) = true
 
 """
-    OperatorColumn
+    AbstractOperatorColumn
 
 Abstract type for columns. See [`operator_column`](@ref).
 """
-abstract type OperatorColumn{A,T,O} end
+abstract type AbstractOperatorColumn{A,T,O} end
 
 """
     OffdiagonalsOperatorColumn(op::AbstractOperator{T}, address::A)
@@ -429,7 +429,7 @@ Default column, using [`offdiagonals(op, address)`](@ref) and [`diagonal_element
 
 See also [`operator_column`](@ref).
 """
-struct OffdiagonalsOperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} <: OperatorColumn{A,T,O}
+struct OffdiagonalsOperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} <: AbstractOperatorColumn{A,T,O}
     operator::O
     address::A
     ods::OD
@@ -467,7 +467,7 @@ Part of the [`AbstractHamiltonian`](@ref) interface.
 """
 operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a), eltype(o)(diagonal_element(o,a)))
 
-starting_address(c::OperatorColumn) = c.address
+starting_address(c::AbstractOperatorColumn) = c.address
 diagonal_element(c::OffdiagonalsOperatorColumn) = c.diagonal
 num_offdiagonals(c::OffdiagonalsOperatorColumn) = num_offdiagonals(c.operator, c.address)
 offdiagonals(c::OffdiagonalsOperatorColumn) = c.ods
@@ -483,7 +483,7 @@ by `ham`. Alternatively, pass as argument a column `operator_column(ham, address
 
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
-function random_offdiagonal(column::OperatorColumn)
+function random_offdiagonal(column::AbstractOperatorColumn)
     offdiags = offdiagonals(column)
     nl = length(offdiags) # check how many sites we could reach
     chosen = rand(1:nl) # choose one of them

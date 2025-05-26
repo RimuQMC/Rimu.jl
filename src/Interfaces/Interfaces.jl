@@ -61,7 +61,7 @@ export
     AbstractHamiltonian, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
     random_offdiagonal, starting_address, allows_address_type,
     LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint,
-    AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn, OperatorColumn
+    AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn, AbstractOperatorColumn
 export
     num_replicas, num_spectral_states, num_overlaps
 

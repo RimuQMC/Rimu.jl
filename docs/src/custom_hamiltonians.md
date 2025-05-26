@@ -32,6 +32,7 @@ model Hamiltonian should subtype to `AbstractHamiltonian` and implement the rele
 AbstractHamiltonian
 starting_address
 operator_column
+AbstractOperatorColumn
 diagonal_element
 num_offdiagonals
 offdiagonals
