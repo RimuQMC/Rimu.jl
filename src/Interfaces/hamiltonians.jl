@@ -364,29 +364,6 @@ function offdiagonals(m::AbstractMatrix, i)
     end
 end
 
-"""
-    random_offdiagonal(column)
-    random_offdiagonal(ham::AbstractHamiltonian, address)
-    -> newaddress, probability, matrixelement
-
-Generate a single random excitation, i.e. choose from one of the accessible off-diagonal
-elements in the column corresponding to `address` in the Hamiltonian matrix represented
-by `ham`. Alternatively, pass as argument a column `operator_column(ham, address)`.
-
-Part of the [`AbstractHamiltonian`](@ref) interface.
-"""
-function random_offdiagonal(column::AbstractVector)
-    offdiags = offdiagonals(column)
-    nl = length(offdiags) # check how many sites we could reach
-    chosen = rand(1:nl) # choose one of them
-    naddress, melem = offdiags[chosen]
-    return naddress, 1.0/nl, melem
-end
-
-function random_offdiagonal(ham, address)
-    return random_offdiagonal(operator_column(ham, address))
-end
-
 @doc """
     LOStructure(op::AbstractHamiltonian)
     LOStructure(typeof(op))
@@ -494,3 +471,26 @@ starting_address(c::OperatorColumn) = c.address
 diagonal_element(c::OffdiagonalsOperatorColumn) = c.diagonal
 num_offdiagonals(c::OffdiagonalsOperatorColumn) = num_offdiagonals(c.operator, c.address)
 offdiagonals(c::OffdiagonalsOperatorColumn) = c.ods
+
+"""
+    random_offdiagonal(column)
+    random_offdiagonal(ham::AbstractHamiltonian, address)
+    -> newaddress, probability, matrixelement
+
+Generate a single random excitation, i.e. choose from one of the accessible off-diagonal
+elements in the column corresponding to `address` in the Hamiltonian matrix represented
+by `ham`. Alternatively, pass as argument a column `operator_column(ham, address)`.
+
+Part of the [`AbstractHamiltonian`](@ref) interface.
+"""
+function random_offdiagonal(column::OperatorColumn)
+    offdiags = offdiagonals(column)
+    nl = length(offdiags) # check how many sites we could reach
+    chosen = rand(1:nl) # choose one of them
+    naddress, melem = offdiags[chosen]
+    return naddress, 1.0/nl, melem
+end
+
+function random_offdiagonal(ham, address)
+    return random_offdiagonal(operator_column(ham, address))
+end

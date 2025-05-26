@@ -108,6 +108,7 @@ function Hamiltonians.random_offdiagonal(c::FirstOrderTransitionOperatorColumn)
     return add, prob, -c.time_step*val
 end
 Hamiltonians.num_offdiagonals(c::FirstOrderTransitionOperatorColumn) = num_offdiagonals(c.ham_column)
+Hamiltonians.starting_address(c::FirstOrderTransitionOperatorColumn) = starting_address(c.ham_column)
 
 struct FirstOrderOffdiagonalsVector{
     A,V,O<:AbstractVector{Tuple{A,V}}
