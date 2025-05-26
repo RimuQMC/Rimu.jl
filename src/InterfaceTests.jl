@@ -15,7 +15,7 @@ using Test: Test, @test, @testset, @test_throws
 using Rimu: Rimu, DVec, Interfaces, LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     Hamiltonians, num_offdiagonals, allows_address_type, offdiagonals, random_offdiagonal,
     diagonal_element, dimension, dot_from_right, IsDeterministic, starting_address, PDVec,
-    sparse, scale!, scalartype, operator_column
+    sparse, scale!, scalartype, operator_column, AbstractOperatorColumn
 using Rimu.Hamiltonians: AbstractHamiltonian, AbstractOperator, AbstractObservable,
     AbstractOffdiagonals
 using LinearAlgebra: dot, mul!, isdiag, ishermitian
