@@ -467,7 +467,7 @@ Methods for these functions need to be implemented for a new type of `AbstractOp
 Implementing [`random_offdiagonal(column)`](@ref) is optional if `offdiagonals(column)`
 returns an `AbstractVector`.
 
-Part of the [`AbstractHamiltonian`](@ref) interface. See also [`AbstractOperatorColumn](@ref).
+Part of the [`AbstractHamiltonian`](@ref) interface. See also [`AbstractOperatorColumn`](@ref).
 """
 operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a), eltype(o)(diagonal_element(o,a)))
 
