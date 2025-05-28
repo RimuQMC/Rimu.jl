@@ -90,25 +90,76 @@ function FirstOrderTransitionOperator(sp::DefaultShiftParameters, hamiltonian)
     return FirstOrderTransitionOperator(hamiltonian, sp.shift, sp.time_step)
 end
 
-function Hamiltonians.diagonal_element(t::FirstOrderTransitionOperator, add)
-    diag = diagonal_element(t.hamiltonian, add)
-    return 1 - t.time_step * (diag - t.shift)
+struct FirstOrderTransitionOperatorColumn{A,T,O<:FirstOrderTransitionOperator{T},C}
+    operator::O
+    address::A
+    ham_column::C
+    time_step::Float64
 end
 
-struct FirstOrderOffdiagonals{
+function Hamiltonians.operator_column(t::FirstOrderTransitionOperator, add)
+    return FirstOrderTransitionOperatorColumn(t, add, operator_column(t.hamiltonian, add), t.time_step)
+end
+function Hamiltonians.diagonal_element(c::FirstOrderTransitionOperatorColumn)
+    return 1 - c.time_step*(diagonal_element(c.ham_column) - c.operator.shift)
+end
+function Hamiltonians.random_offdiagonal(c::FirstOrderTransitionOperatorColumn)
+    add, prob, val = random_offdiagonal(c.ham_column)
+    return add, prob, -c.time_step*val
+end
+Hamiltonians.num_offdiagonals(c::FirstOrderTransitionOperatorColumn) = num_offdiagonals(c.ham_column)
+Hamiltonians.starting_address(c::FirstOrderTransitionOperatorColumn) = starting_address(c.ham_column)
+
+struct FirstOrderOffdiagonalsVector{
     A,V,O<:AbstractVector{Tuple{A,V}}
-} <: AbstractVector{Tuple{A,V}}
+} <: AbstractVector{Pair{A,V}}
     time_step::Float64
     offdiagonals::O
 end
-function Hamiltonians.offdiagonals(t::FirstOrderTransitionOperator, add)
-    return FirstOrderOffdiagonals(t.time_step, offdiagonals(t.hamiltonian, add))
-end
-Base.size(o::FirstOrderOffdiagonals) = size(o.offdiagonals)
+Base.size(o::FirstOrderOffdiagonalsVector) = size(o.offdiagonals)
 
-function Base.getindex(o::FirstOrderOffdiagonals, i)
+function Hamiltonians.offdiagonals(c::FirstOrderTransitionOperatorColumn)
+    ods = offdiagonals(c.ham_column)
+    if ods isa AbstractVector
+        return FirstOrderOffdiagonalsVector(c.time_step, ods)
+    else
+        return FirstOrderOffdiagonals(c.time_step, ods)
+    end
+end
+
+function Base.getindex(o::FirstOrderOffdiagonalsVector, i)
     add, val = o.offdiagonals[i]
-    return add, -val * o.time_step
+    return add => -val * o.time_step
+end
+
+struct FirstOrderOffdiagonals{O}
+    time_step::Float64
+    offdiagonals::O
+end
+function Base.eltype(o::FirstOrderOffdiagonals)
+    odtypes = fieldtypes(eltype(o.offdiagonals))
+    return Pair{odtypes[1], float(odtypes[2])}
+end
+Base.IteratorSize(::FirstOrderOffdiagonals) = Base.SizeUnknown()
+
+function Base.iterate(o::FirstOrderOffdiagonals)
+    first = iterate(o.offdiagonals)
+    if isnothing(first)
+        return nothing
+    end
+    (add, val), state = first
+    od = -val*o.time_step
+    return (add => od, state)
+end
+
+function Base.iterate(o::FirstOrderOffdiagonals, state)
+    new = iterate(o.offdiagonals, state)
+    if isnothing(new)
+        return nothing
+    end
+    (add, val), state = new
+    od = -val*o.time_step
+    return (add => od, state)
 end
 
 """

@@ -64,15 +64,15 @@ end
 end
 
 """
-    diagonal_step!(w, op, add, val, threshold=0) -> (clones, deaths, zombies)
+    diagonal_step!(w, column, val, threshold=0) -> (clones, deaths, zombies)
 
-Perform diagonal step on a walker `add => val`. Optional argument `threshold` sets the
-projection threshold. If `eltype(w)` is an `Integer`, the `val` is rounded to the nearest
-integer stochastically.
+Perform diagonal step on a walker `starting_address(column) => val`. Optional argument
+`threshold` sets the projection threshold. If `eltype(w)` is an `Integer`, the `val` is
+rounded to the nearest integer stochastically.
 """
-@inline function diagonal_step!(w, op, add, val, threshold=0)
-    new_val = diagonal_element(op, add) * val
-    res = projected_deposit!(w, add, new_val, add => val, threshold)
+@inline function diagonal_step!(w, column, val, threshold=0)
+    new_val = diagonal_element(column) * val
+    res = projected_deposit!(w, starting_address(column), new_val, starting_address(column) => val, threshold)
     return clones_deaths_zombies(res, typeof(res)(val))
 end
 
@@ -139,21 +139,6 @@ In order to implement a new `SpawningStrategy`, define a method for [`spawn!`](@
 abstract type SpawningStrategy end
 
 """
-    spawn!(s::SpawningStrategy, w, op::AbstractHamiltonian, add, val, boost)
-    spawn!(s::SpawningStrategy, w, offdiags::AbstractOffdiagonals, add, val, boost)
-
-Perform stochastic spawns to `w` from address `add` with `val` walkers. `val * boost`
-controls the number of spawns performed.
-
-This function should be overloaded in the second form, with `offdiags` as an argument.
-
-See [`SpawningStrategy`](@ref).
-"""
-@inline function spawn!(s::SpawningStrategy, w, op::AbstractOperator, add, val, boost=1)
-    return spawn!(s, w, offdiagonals(op, add), add, val, boost)
-end
-
-"""
     Exact(threshold=0.0) <: SpawningStrategy
 
 Perform an exact spawning step.
@@ -171,14 +156,24 @@ struct Exact{T} <: SpawningStrategy
     Exact(threshold::T=0.0) where {T} = new{T}(threshold)
 end
 
-@inline function spawn!(s::Exact, w, offdiags::AbstractVector, add, val, boost=1)
+"""
+    spawn!(s::SpawningStrategy, w, column, val, boost)
+
+Perform stochastic spawns to `w` from `column` with `val` walkers. `val * boost`
+controls the number of spawns performed.
+
+See [`SpawningStrategy`](@ref).
+"""
+@inline function spawn!(s::Exact, w, column, val, boost=1)
     T = valtype(w)
-    spawns = sum(offdiags; init=real(zero(T))) do (new_add, mat_elem)
+    attempts = 0
+    spawns = sum(offdiagonals(column); init=real(zero(T))) do (new_add, mat_elem)
+        attempts += 1
         abs(projected_deposit!(
-            w, new_add, val * mat_elem, add => val, s.threshold
+            w, new_add, val * mat_elem, starting_address(column) => val, s.threshold
         ))
     end
-    return (length(offdiags), spawns)
+    return (attempts, spawns)
 end
 
 """
@@ -199,13 +194,13 @@ struct SingleSpawn{T} <: SpawningStrategy
     SingleSpawn(threshold::T=0.0) where {T} = new{T}(threshold)
 end
 
-@inline function spawn!(s::SingleSpawn, w, offdiags::AbstractVector, add, val, boost=1)
+@inline function spawn!(s::SingleSpawn, w, column, val, boost=1)
     if iszero(val)
         return (1, real(zero(valtype(w))))
     else
-        new_add, prob, mat_elem = random_offdiagonal(offdiags)
+        new_add, prob, mat_elem = random_offdiagonal(column)
         new_val = val * mat_elem / prob
-        spawns = abs(projected_deposit!(w, new_add, new_val, add => val, s.threshold))
+        spawns = abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
         return (1, spawns)
     end
 end
@@ -229,15 +224,15 @@ struct WithReplacement{T} <: SpawningStrategy
     WithReplacement(threshold::T=0) where {T} = new{T}(threshold)
 end
 
-@inline function spawn!(s::WithReplacement, w, offdiags::AbstractVector, add, val, boost=1)
+@inline function spawn!(s::WithReplacement, w, column, val, boost=1)
     spawns = real(zero(valtype(w)))
     num_attempts = max(floor(Int, abs(val) * boost), 1)
     magnitude = val / num_attempts
 
     for _ in 1:num_attempts
-        new_add, prob, mat_elem = random_offdiagonal(offdiags)
+        new_add, prob, mat_elem = random_offdiagonal(column)
         new_val = mat_elem * magnitude / prob
-        spawns += abs(projected_deposit!(w, new_add, new_val, add => val, s.threshold))
+        spawns += abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
     end
     return (num_attempts, spawns)
 end
@@ -266,22 +261,26 @@ struct WithoutReplacement{T} <: SpawningStrategy
     WithoutReplacement(threshold::T=0.0) where {T} = new{T}(threshold)
 end
 
-@inline function spawn!(s::WithoutReplacement, w, offdiags::AbstractVector, add, val, boost=1)
+@inline function spawn!(s::WithoutReplacement, w, column, val, boost=1)
+    offdiags = offdiagonals(column)
+    if !(offdiags isa AbstractVector)
+        throw(ArgumentError(
+            "The WithoutReplacement strategy requires offdiagonals to be an AbstractVector. Please use a different strategy."
+        ))
+    end
     spawns = zero(valtype(w))
     num_attempts = max(floor(Int, abs(val) * boost), 1)
 
     if abs(num_attempts) ≤ 1
-        spawn!(SingleSpawn(s.threshold), w, offdiags, add, val)
+        spawn!(SingleSpawn(s.threshold), w, column, val)
     else
         magnitude = val / num_attempts
-
-        num_offdiags = length(offdiags)
+        num_offdiags = num_offdiagonals(column)
         prob = 1 / num_offdiags
-
         for i in sample(1:num_offdiags, num_attempts; replace=false)
             new_add, mat_elem = offdiags[i]
             new_val = mat_elem * magnitude / prob
-            spawns += abs(projected_deposit!(w, new_add, new_val, add => val, s.threshold))
+            spawns += abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
         end
     end
     return (num_attempts, spawns)
@@ -312,17 +311,23 @@ struct Bernoulli{T} <: SpawningStrategy
     Bernoulli(threshold::T=0.0) where {T} = new{T}(threshold)
 end
 
-@inline function spawn!(s::Bernoulli, w, offdiags::AbstractVector, add, val, boost=1)
+@inline function spawn!(s::Bernoulli, w, column, val, boost=1)
+    offdiags = offdiagonals(column)
+    if !(offdiags isa AbstractVector)
+        throw(ArgumentError(
+            "The Bernoulli strategy requires offdiagonals to be an AbstractVector. Please use a different strategy."
+        ))
+    end
     spawns = zero(valtype(w))
     # General case.
-    num_offdiags = length(offdiags)
+    num_offdiags = num_offdiagonals(column)
     prob = abs(val) * boost / num_offdiags
     num_attempts = 0
     for i in 1:num_offdiags
         if rand() < prob
             new_add, mat_elem = offdiags[i]
             new_val = mat_elem / prob * val
-            spawns += abs(projected_deposit!(w, new_add, new_val, add => val, s.threshold))
+            spawns += abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
             num_attempts += 1
         end
     end
@@ -361,25 +366,25 @@ Base.@kwdef struct DynamicSemistochastic{T,S<:SpawningStrategy} <: SpawningStrat
     abs_threshold::T = Inf
 end
 
-@inline function spawn!(s::DynamicSemistochastic, w, offdiags::AbstractVector, add, val, boost)
+@inline function spawn!(s::DynamicSemistochastic, w, column, val, boost=1)
     # assumes that s.strat.threshold is defined
     # special-case substrategies that don't fit the pattern?
-    thresh = min(s.abs_threshold, length(offdiags))
+    thresh = min(s.abs_threshold, num_offdiagonals(column))
     amount = boost * abs(val) * s.rel_threshold
     if amount ≥ thresh
         # Exact multiplication.
-        attempts, spawns = spawn!(Exact(s.strat.threshold), w, offdiags, add, val)
+        attempts, spawns = spawn!(Exact(s.strat.threshold), w, column, val)
         return (1, 0, attempts, spawns)
     else
         # Regular spawns.
-        attempts, spawns = spawn!(s.strat, w, offdiags, add, val, boost)
+        attempts, spawns = spawn!(s.strat, w, column, val, boost)
         return (0, 1, attempts, spawns)
     end
 end
 
 # bypass branching code for Exact() sub-strategy
 @inline function spawn!(
-    s::DynamicSemistochastic{<:Any,<:Exact}, w, od::AbstractVector, args...
+    s::DynamicSemistochastic{<:Any,<:Exact}, w, column, args...
 )
-    return (1, 0, spawn!(s.strat, w, od, args...)...)
+    return (1, 0, spawn!(s.strat, w, column, args...)...)
 end

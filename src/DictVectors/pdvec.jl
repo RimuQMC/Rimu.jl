@@ -841,7 +841,7 @@ function LinearAlgebra.dot(
 )
     T = typeof(zero(valtype(t)) * zero(valtype(u)) * zero(eltype(op)))
     return sum(pairs(u); init=zero(T)) do (k, v)
-        T(conj(t[k]) * diagonal_element(op, k) * v)
+        T(conj(t[k]) * diagonal_element(operator_column(op, k)) * v)
     end
 end
 function LinearAlgebra.dot(

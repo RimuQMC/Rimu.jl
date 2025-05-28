@@ -211,9 +211,10 @@ function Base.getindex(ham::AbstractObservable{T}, address1, address2) where {T}
     # for building the matrix for conventional diagonalisation.
     # Only used for verifying matrix.
     # This will be slow and inefficient. Avoid using for larger Hamiltonians!
-    address1 == address2 && return diagonal_element(ham, address1) # diagonal
+    column = operator_column(ham, address2)
+    address1 == address2 && return diagonal_element(column) # diagonal
     res = zero(T)
-    for (add, val) in offdiagonals(ham, address2) # off-diag column as iterator
+    for (add, val) in offdiagonals(column) # off-diag column as iterator
         if add == address1
             res += val # found address1
         end

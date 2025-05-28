@@ -22,7 +22,7 @@ using ..Interfaces: Interfaces, AbstractDVec, AdjointUnknown,
     CompressionStrategy, IsDiagonal, LOStructure,
     apply_column!, apply_operator!, compress!,
     diagonal_element, offdiagonals, step_stats, AbstractHamiltonian, AbstractOperator,
-    AbstractObservable, dot_from_right
+    AbstractObservable, dot_from_right, operator_column
 using ..StochasticStyles: StochasticStyles, IsDeterministic
 
 import ..Interfaces: deposit!, storage, StochasticStyle, default_style, freeze, localpart,

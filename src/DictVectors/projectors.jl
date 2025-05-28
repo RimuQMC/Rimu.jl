@@ -42,8 +42,9 @@ Base.getindex(::UniformProjector, add) = 1
 
 function LinearAlgebra.dot(::UniformProjector, op::AbstractOperator, v::AbstractDVec)
     return sum(pairs(v)) do (key, val)
-        diag = diagonal_element(op, key) * val
-        offdiag = sum(offdiagonals(op, key)) do (add, elem)
+        column = operator_column(op, key)
+        diag = diagonal_element(column) * val
+        offdiag = sum(offdiagonals(column)) do (add, elem)
             elem * val
         end
         diag + offdiag

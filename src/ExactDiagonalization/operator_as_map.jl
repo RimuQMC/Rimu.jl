@@ -117,8 +117,9 @@ end
 # conj-ed everywhere since we actually want the transpose, not the adjoint.
 function _row_dot_vector(op::OperatorAsMap, row_index, vector)
     row = op.basis[row_index]
-    row_result = conj(diagonal_element(op.operator_adj, row)) * vector[row_index]
-    for (col, val) in offdiagonals(op.operator_adj, row)
+    column = operator_column(op.operator_adj, row)
+    row_result = conj(diagonal_element(column)) * vector[row_index]
+    for (col, val) in offdiagonals(column)
         if !iszero(val)
             j = op.mapping[col]
             row_result += conj(val) * vector[j]

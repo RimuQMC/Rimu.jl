@@ -273,8 +273,9 @@ walkernumber_and_length(v) = walkernumber(v), length(v)
 function LinearAlgebra.mul!(w::AbstractDVec, h::AbstractObservable, v::AbstractDVec)
     empty!(w)
     for (key, val) in pairs(v)
-        w[key] += diagonal_element(h, key) * val
-        for (add, elem) in offdiagonals(h, key)
+        column = operator_column(h, key)
+        w[key] += diagonal_element(column) * val
+        for (add, elem) in offdiagonals(column)
             w[add] += elem * val
         end
     end
@@ -312,8 +313,9 @@ function Interfaces.dot_from_right(target, op, source::AbstractDVec)
     T = typeof(zero(valtype(target)) * zero(valtype(source)) * zero(eltype(op)))
 
     result = sum(pairs(source); init=zero(T)) do (k, v)
-        res = conj(target[k]) * diagonal_element(op, k) * v
-        for (k_off, v_off) in offdiagonals(op, k)
+        column = operator_column(op, k)
+        res = conj(target[k]) * diagonal_element(column) * v
+        for (k_off, v_off) in offdiagonals(column)
             res += conj(target[k_off]) * v_off * v
         end
         res
