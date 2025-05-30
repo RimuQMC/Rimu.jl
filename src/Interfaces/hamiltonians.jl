@@ -103,7 +103,7 @@ Alternatively, if the generation of matrix elements is more complicated:
 - [`allows_address_type(op, type)`](@ref)
 - [`operator_column(op, address)`](@ref)
 - [`diagonal_element(column)`](@ref)
-- [`num_offdiagonals(column)`](@ref) (this can be an estimate)
+- [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
 - [`offdiagonals(column)`](@ref)
 - [`random_offdiagonal(column)`](@ref)
 
@@ -180,7 +180,7 @@ Alternatively, if the generation of matrix elements is more complicated:
 * [`starting_address(::AbstractHamiltonian)`](@ref)
 * [`operator_column(op, address)`](@ref)
 * [`diagonal_element(column)`](@ref)
-* [`num_offdiagonals(column)`](@ref) (this can be an estimate)
+* [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
 * [`offdiagonals(column)`](@ref)
 * [`random_offdiagonal(column)`](@ref)
 
@@ -263,7 +263,7 @@ diagonal_element(m::AbstractMatrix, i) = m[i, i]
     num_offdiagonals(ham, address) # (deprecated)
 
 Compute the number of number of reachable configurations from address `address`,
-where `column = operator_column(ham, address)`. If necessary, this may be an estimate.
+where `column = operator_column(ham, address)`. If necessary, this may be an upper bound.
 
 # Example
 
@@ -456,7 +456,7 @@ A `column` can be accessed with the following functions:
 * [`starting_address(column)`](@ref) - returns `address`,
 * [`diagonal_element(column)`](@ref) - returns the diagonal element ``⟨α|Ĥ|α⟩`` of `address`
   in `operator`,
-* [`num_offdiagonals(column)`](@ref) - returns an estimate of the number of
+* [`num_offdiagonals(column)`](@ref) - returns an upper bound on the number of
   off-diagonal elements in the `column`,
 * [`offdiagonals(column)`](@ref) - returns an object representing the off-diagonal
   elements of the `column`,

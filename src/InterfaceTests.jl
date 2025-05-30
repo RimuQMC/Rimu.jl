@@ -92,7 +92,6 @@ to be defined. If `test_iterable_offdiagonals` is `true`, tests are performed th
 
 - `diagonal_element(column)` returns a value of the same type as the `eltype` of the operator
 - `offdiagonals` iterates `address => value` pairs of consistent type (only if `test_iterable_offdiagonals==true`)
-- `num_offdiagonals` returns the correct number of offdiagonals
 - `random_offdiagonal` returns a tuple with the correct types (only if `test_random_offdiagonal==true`)
 - `mul!` and `dot` work as expected
 - `dimension` returns a consistent value
@@ -137,9 +136,8 @@ function test_operator_interface(op, addr; test_iterable_offdiagonals=true, test
             if test_iterable_offdiagonals
                 @testset "offdiagonals" begin
                     offdiags = offdiagonals(column)
-                    if hasmethod(num_offdiagonals, (typeof(op), typeof(addr)))
-                        @test num_offdiagonals(column) == num_offdiagonals(op, addr)
-                    end
+                    @test num_offdiagonals(column) isa Union{Int,BigInt}
+                    @test num_offdiagonals(column) >= length(collect(offdiags))
                     if num_offdiagonals(column) > 0
                         @test iterate(offdiags)[1] isa Union{Tuple{typeof(addr),eltype(op)},Pair{typeof(addr),eltype(op)}}
                     end
