@@ -19,7 +19,7 @@ function LOStructure(::Type{<:OperatorProduct{<:Any,O1,O2}}) where {O1,O2}
     l2 = LOStructure(O2)
     if l1 == IsHermitian() && l2 == IsHermitian()
         return IsHermitian()
-    elseif l1 == IsDiagonal() && l1 == IsDiagonal()
+    elseif l1 == IsDiagonal() && l2 == IsDiagonal()
         return IsDiagonal()
     elseif l1 != AdjointUnknown() && l2 != AdjointUnknown()
         return AdjointKnown()
@@ -28,9 +28,7 @@ function LOStructure(::Type{<:OperatorProduct{<:Any,O1,O2}}) where {O1,O2}
     end
 end
 function LinearAlgebra.adjoint(op::OperatorProduct)
-    if LOStructure(op) != AdjointUnknown()
-        return OperatorProduct(op.op2',op.op1')
-    end
+    return OperatorProduct(op.op2',op.op1')
 end
 
 struct ProductColumn{A,T,O<:OperatorProduct{T},C} <: AbstractOperatorColumn{A,T,O}
@@ -40,13 +38,36 @@ struct ProductColumn{A,T,O<:OperatorProduct{T},C} <: AbstractOperatorColumn{A,T,
 end
 operator_column(o::OperatorProduct, a) = ProductColumn(o, a, operator_column(o.op2, a))
 starting_address(c::ProductColumn) = c.address
-diagonal_element(c::ProductColumn) = diagonal_element(c.col2)*diagonal_element(operator_column(c.operator.op1, starting_address(c)))
-num_offdiagonals(c::ProductColumn) = num_offdiagonals(c.col2)^2
+num_offdiagonals(c::ProductColumn) = 2*(num_offdiagonals(c.col2)+1)^2
+
+function diagonal_element(c::ProductColumn)
+    #this is not the actual diagonal element, just a contribution to it, but this is ok
+    return diagonal_element(c.col2)*diagonal_element(operator_column(c.operator.op1, starting_address(c)))
+end
 
 function random_offdiagonal(c::ProductColumn)
-    b_add, b_prob, b_elem = random_offdiagonal(c.col2)
-    a_add, a_prob, a_elem = random_offdiagonal(operator_column(c.operator.op1, b_add))
-    return a_add, a_prob*b_prob, a_elem*b_elem
+    p = num_offdiagonals(c.col2)
+    if rand() < 1/(p+1)
+        b_add = starting_address(c)
+        b_prob = 1/(p+1)
+        b_elem = diagonal_element(c.col2)
+        a_add, a_prob, a_elem = random_offdiagonal(operator_column(c.operator.op1, b_add))
+        return a_add, a_prob*b_prob, a_elem*b_elem
+    else
+        b_add, b_prob, b_elem = random_offdiagonal(c.col2)
+        b_prob *= p/(p+1)
+        col1 = operator_column(c.operator.op1, b_add)
+        q = num_offdiagonals(col1)
+        if rand() < 1/(q+1)
+            a_elem = diagonal_element(col1)
+            a_prob = 1/(q+1)
+            return b_add, a_prob*b_prob, a_elem*b_elem
+        else
+            a_add, a_prob, a_elem = random_offdiagonal(col1)
+            a_prob *= q/(q+1)
+            return a_add, a_prob*b_prob, a_elem*b_elem
+        end
+    end
 end
 
 struct ProductOffdiagonals{A,T,O<:OperatorProduct{T},OD}
@@ -55,7 +76,7 @@ struct ProductOffdiagonals{A,T,O<:OperatorProduct{T},OD}
     ods2::OD
 end
 offdiagonals(c::ProductColumn) = ProductOffdiagonals(c.operator, c.address, offdiagonals(c.col2))
-Base.IteratorSize(::ProductOffdiagonals) = SizeUnknown()
+Base.IteratorSize(::ProductOffdiagonals) = Base.SizeUnknown()
 Base.eltype(::ProductOffdiagonals{A,T}) where {A,T} = Pair{A,T}
 
 function Base.iterate(o::ProductOffdiagonals)
@@ -75,7 +96,7 @@ function Base.iterate(o::ProductOffdiagonals, state)
         state2, col1, val2 = state
         ods1 = offdiagonals(col1)
         first1 = iterate(ods1)
-        if isnothing(first1)#no offdiagonals for op1, go back to op2
+        if isnothing(first1)# no offdiagonals for op1, go back to op2
             next2 = iterate(o.ods2, state2)
             if isnothing(next2)
                 return nothing
@@ -89,10 +110,10 @@ function Base.iterate(o::ProductOffdiagonals, state)
         (add1, val1), state1 = first1
         state = (state1, state2, ods1, val2)
         return add1 => val1*val2, state
-    else# we have offdiagonals and its state from op1
+    else# we have op1 offdiagonals and its state
         state1, state2, ods1, val2 = state
         next1 = iterate(ods1, state1)
-        if isnothing(next1)#reached the end of op1 column, go back to op2
+        if isnothing(next1)# reached the end of op1 column, go back to op2
             next2 = iterate(o.ods2, state2)
             if isnothing(next2)
                 return nothing
