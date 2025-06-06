@@ -129,6 +129,8 @@ include("FroehlichPolaron.jl")
 
 include("Transcorrelated1D.jl")
 
+include("Molecular.jl")
+
 include("ModifiedHamiltonian.jl")
 include("TransformUndoer.jl")
 include("GutzwillerSampling.jl")
