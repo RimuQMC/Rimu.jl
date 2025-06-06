@@ -370,7 +370,7 @@ end
     # assumes that s.strat.threshold is defined
     # special-case substrategies that don't fit the pattern?
     amount = boost * abs(val)
-    if amount ≥ length(offdiags) * s.rel_threshold || amount > s.abs_threshold
+    if amount ≥ num_offdiagonals(column) * s.rel_threshold || amount > s.abs_threshold
         # Exact multiplication.
         attempts, spawns = spawn!(Exact(s.strat.threshold), w, column, val)
         return (1, 0, attempts, spawns)
