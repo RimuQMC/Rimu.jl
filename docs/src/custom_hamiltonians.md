@@ -30,15 +30,12 @@ model Hamiltonian should subtype to `AbstractHamiltonian` and implement the rele
 
 ```@docs
 AbstractHamiltonian
-offdiagonals
-diagonal_element
 starting_address
-```
-
-The following functions may be implemented instead of [`offdiagonals`](@ref).
-
-```@docs
+operator_column
+AbstractOperatorColumn
+diagonal_element
 num_offdiagonals
+offdiagonals
 get_offdiagonal
 ```
 
@@ -65,6 +62,7 @@ Hamiltonians.check_address_type
 Hamiltonians.number_conserving_dimension
 Hamiltonians.number_conserving_bose_dimension
 Hamiltonians.number_conserving_fermi_dimension
+Interfaces.OffdiagonalsOperatorColumn
 ```
 
 ## Operator and observable interface 

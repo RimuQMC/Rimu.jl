@@ -15,7 +15,7 @@ using Test: Test, @test, @testset, @test_throws
 using Rimu: Rimu, DVec, Interfaces, LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     Hamiltonians, num_offdiagonals, allows_address_type, offdiagonals, random_offdiagonal,
     diagonal_element, dimension, dot_from_right, IsDeterministic, starting_address, PDVec,
-    sparse, scale!, scalartype
+    sparse, scale!, scalartype, operator_column, AbstractOperatorColumn
 using Rimu.Hamiltonians: AbstractHamiltonian, AbstractOperator, AbstractObservable,
     AbstractOffdiagonals
 using LinearAlgebra: dot, mul!, isdiag, ishermitian
@@ -76,22 +76,23 @@ function test_observable_interface(obs, addr)
 end
 
 """
-    test_operator_interface(op, addr; test_spawning=true)
+    test_operator_interface(op, addr; test_iterable_offdiagonals=true, test_random_offdiagonal=true)
 
 This function tests compliance with the [`AbstractOperator`](@ref) interface for an operator
 `op` at address `addr` (typically
 [`<: AbstractFockAddress`](@ref Rimu.BitStringAddresses.AbstractFockAddress)) by
 checking that all required methods are defined.
 
-If `test_spawning` is `true`, tests are performed that require `offdiagonals` to return an
-`Hamiltonians.AbstractOffDiagonals`, which is a prerequisite for using the `spawn!`
-function. Otherwise, the spawning tests are skipped.
-
 The following properties are tested:
-- `diagonal_element` returns a value of the same type as the `eltype` of the operator
-- `offdiagonals` behaves like an `AbstractVector`
-- `num_offdiagonals` returns the correct number of offdiagonals
-- `random_offdiagonal` returns a tuple with the correct types
+- `operator_column(op, addr)` returns a `column` object that is subtype to [`AbstractOperatorColumn`](@ref)
+
+If `test_random_offdiagonal` is `true`, tests are performed that require `random_offdiagonal(column)`
+to be defined. If `test_iterable_offdiagonals` is `true`, tests are performed that require
+`offdiagonals(column)` to be iterable.
+
+- `diagonal_element(column)` returns a value of the same type as the `eltype` of the operator
+- `offdiagonals` iterates `address => value` pairs of consistent type (only if `test_iterable_offdiagonals==true`)
+- `random_offdiagonal` returns a tuple with the correct types (only if `test_random_offdiagonal==true`)
 - `mul!` and `dot` work as expected
 - `dimension` returns a consistent value
 - the [`AbstractObservable`](@ref) interface is tested
@@ -112,33 +113,41 @@ Operator interface: SuperfluidCorrelator |    9      9  0.0s
 See also [`AbstractOperator`](@ref), [`test_observable_interface`](@ref),
 [`test_hamiltonian_interface`](@ref).
 """
-function test_operator_interface(op, addr; test_spawning=true)
+function test_operator_interface(op, addr; test_iterable_offdiagonals=true, test_random_offdiagonal=true)
     test_observable_interface(op, addr)
     @testset "`AbstractOperator` interface test: $(nameof(typeof(op)))" begin
 
         @testset "allows_address_type" begin
             @test allows_address_type(op, addr)
         end
+        column = operator_column(op, addr)
+        @test column isa AbstractOperatorColumn
         @testset "Operator interface: $(nameof(typeof(op)))" begin
+            @testset "starting_address(column)" begin
+                @test starting_address(column) == addr
+            end
             @testset "diagonal_element" begin
-                @test diagonal_element(op, addr) isa eltype(op)
-                @test eltype(diagonal_element(op, addr)) == scalartype(op)
+                @test diagonal_element(column) isa eltype(op)
+                @test eltype(diagonal_element(column)) == scalartype(op)
+                if hasmethod(diagonal_element, (typeof(op), typeof(addr)))
+                    @test diagonal_element(column) == diagonal_element(op, addr)
+                end
             end
-            @testset "offdiagonals" begin
-                # `get_offdiagonal` is not mandatory and thus not tested
-                ods = offdiagonals(op, addr)
-                vec_ods = collect(ods)
-                eltype(vec_ods) == Tuple{typeof(addr),eltype(op)} == eltype(ods)
-                @test length(vec_ods) ≤ num_offdiagonals(op, addr)
+            if test_iterable_offdiagonals
+                @testset "offdiagonals" begin
+                    offdiags = offdiagonals(column)
+                    @test num_offdiagonals(column) isa Union{Int,BigInt}
+                    @test num_offdiagonals(column) >= length(collect(offdiags))
+                    if num_offdiagonals(column) > 0
+                        @test iterate(offdiags)[1] isa Union{Tuple{typeof(addr),eltype(op)},Pair{typeof(addr),eltype(op)}}
+                    end
+                    @test eltype(offdiags) <: Union{Tuple{typeof(addr),eltype(op)},Pair{typeof(addr),eltype(op)}}
+                end
             end
-            if test_spawning
-                @testset "spawning" begin
-                    ods = offdiagonals(op, addr)
-                    @test ods isa AbstractOffdiagonals{typeof(addr),eltype(op)}
-                    @test ods isa AbstractVector
-                    @test size(ods) == (num_offdiagonals(op, addr),)
-                    if length(ods) > 0
-                        @test random_offdiagonal(op, addr) isa Tuple{typeof(addr),<:Real,eltype(op)}
+            if test_random_offdiagonal
+                @testset "random_offdiagonal" begin
+                    if num_offdiagonals(column) > 0
+                        @test random_offdiagonal(column) isa Tuple{typeof(addr),<:Real,eltype(op)}
                     end
                 end
             end
@@ -156,13 +165,14 @@ function test_operator_interface(op, addr; test_spawning=true)
 end
 
 """
-    test_hamiltonian_interface(h, addr=starting_address(h); test_spawning=true)
+    test_hamiltonian_interface(h, addr=starting_address(h); test_iterable_offdiagonals=true, test_random_offdiagonal=true)
 
 The main purpose of this test function is to check that all required methods of the
 [`AbstractHamiltonian`](@ref) interface are defined and work as expected.
 
-Set `test_spawning=false` to skip tests that require [`offdiagonals`](@ref) to return an
-`AbstractVector`.
+Set `test_iterable_offdiagonals=false` to skip tests that require [`offdiagonals(column)`](@ref)
+to be iterable. Set `test_random_offdiagonal=false` to skip tests that require
+[`random_offdiagonal(column)`](@ref) to be defined.
 
 This function also tests the following properties of the Hamiltonian:
 - `dimension(h) ≥ dimension(h, addr)`
@@ -192,8 +202,8 @@ Hamiltonians-only tests with HubbardRealSpace |    6      6  0.0s
 
 See also [`test_operator_interface`](@ref), [`test_observable_interface`](@ref).
 """
-function test_hamiltonian_interface(h, addr=starting_address(h); test_spawning=true)
-    test_operator_interface(h, addr; test_spawning)
+function test_hamiltonian_interface(h, addr=starting_address(h); test_iterable_offdiagonals=true, test_random_offdiagonal=true)
+    test_operator_interface(h, addr; test_iterable_offdiagonals, test_random_offdiagonal)
     @testset "`AbstractHamiltonian` interface test: $(nameof(typeof(h)))" begin
 
         @testset "allows_address_type on starting_address" begin
@@ -217,19 +227,19 @@ function test_hamiltonian_interface(h, addr=starting_address(h); test_spawning=t
             h(v3, v)
             v4 = h(v)
             @test v1 == v2 == v3 == v4
-            v5 = DVec(addr => diagonal_element(h, addr))
-            for (addr, val) in offdiagonals(h, addr)
+            column = operator_column(h, addr)
+            v5 = DVec(addr => diagonal_element(column))
+            for (addr, val) in offdiagonals(column)
                 v5[addr] += val
             end
             scale!(v5, scalartype(h)(2))
             v5[addr] = v5[addr] # remove possible 0.0 from the diagonal
             @test v5 == v1
 
-            if test_spawning && scalartype(h) <: Real
+            if test_iterable_offdiagonals && test_random_offdiagonal
                 # applying an operator on a PDVec uses spawn!, which requires
-                # offdiagonals to be an AbstractVector
-                # currently this only works for real operators as spawn! is not
-                # implemented for complex operators
+                # random_offdiagonal(column) to be defined, and offdiagonals(column) to be
+                # iterable.
                 pv = PDVec(addr => scalartype(h)(2))
                 pv1 = h(pv)
                 @test dot(pv1, h, pv) ≈ Interfaces.dot_from_right(pv1, h, pv) ≈ dot(v1, v1)

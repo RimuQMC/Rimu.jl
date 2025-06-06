@@ -119,7 +119,7 @@ function apply_operator!(
 
     spawn_names, spawn_stats = step_stats(v)
     for (add, val) in pairs(v)
-        spawn_stats += apply_column!(working_memory, ham, add, val, boost)
+        spawn_stats += apply_column!(working_memory, operator_column(ham, add), val, boost)
     end
 
     # Now, working_memory holds the new values - they need to be moved into the target.

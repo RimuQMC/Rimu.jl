@@ -26,7 +26,7 @@ is the concrete value type the style is designed to work with.
 For it to work with [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem), a `StochasticStyle` must define the
 following:
 
-* [`apply_column!(::StochasticStyle, w, H, address, value)`](@ref)
+* [`apply_column!(::StochasticStyle, w, column, value)`](@ref)
 * [`step_stats(::StochasticStyle)`](@ref)
 
 and optionally
@@ -131,14 +131,13 @@ length. These will be reported as columns in the `DataFrame` returned by
 step_stats(v) = step_stats(StochasticStyle(v))
 
 """
-    apply_column!(v, op, addr, num, boost=1) -> stats::Tuple
+    apply_column!(v, column, num, boost=1) -> stats::Tuple
 
-Apply the product of column `addr` of the operator `op` and the scalar `num` to the
-vector `v` according to the [`StochasticStyle`](@ref) of `v`. By expectation value this
-should be equivalent to
+Apply the product of `column` and the scalar `num` to the vector `v` according to the
+[`StochasticStyle`](@ref) of `v`. By expectation value this should be equivalent to
 
 ```
-v .+= op[:, add] .* num
+v .+= column.operator[:, starting_address(column)] .* num
 ```
 
 This is used to perform the spawning step in FCIQMC and to implement operator-vector
@@ -147,6 +146,6 @@ multiplications. Mutates `v` and reports spawning statistics.
 The `boost` argument multiplicatively increases the number of spawns to be performed without
 affecting the expectation value of the procedure.
 """
-function apply_column!(v, ham, add, val, boost=1)
-    return apply_column!(StochasticStyle(v), v, ham, add, val, boost)
+function apply_column!(v, column, val, boost=1)
+    return apply_column!(StochasticStyle(v), v, column, val, boost)
 end

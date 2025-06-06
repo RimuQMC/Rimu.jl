@@ -19,13 +19,18 @@ end
 @testset "Hamiltonian interface tests" begin
     for H in (
         HubbardReal1D(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0),
+        HubbardReal1D(BoseFS(1, 2, 3, 4);t=1.0im),
+        HubbardReal1D(BoseFS(1, 2, 3, 4);u=1.0im),
         HubbardReal1DEP(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0, v_ho=3.0),
+        HubbardReal1DEP(BoseFS(1, 2, 3, 4); t=1.0im),
+        HubbardReal1DEP(BoseFS(1, 2, 3, 4); u=1.0im),
         HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
         HubbardMom1D(OccupationNumberFS(6, 0, 0, 4); t=1.0, u=0.5),
         HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5 + im),
         ExtendedHubbardReal1D(BoseFS((1, 0, 0, 0, 1)); u=1.0, v=2.0, t=3.0),
         ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); u=1 + 0.5im),
         ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); t=1 + 0.5im),
+        ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); t=2.0, power=3),
         ExtendedHubbardMom1D(BoseFS((1, 0, 0, 0, 1)); u=1.0, v=2.0, t=3.0),
         ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); u=1 + 0.5im),
         ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); t=1 + 0.5im),
@@ -62,7 +67,7 @@ end
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
     )
         # test_hamiltonian_interface(H; test_spawning=false)
-        test_hamiltonian_interface(H; test_spawning=!(H isa HOCartesianContactInteractions))
+        test_hamiltonian_interface(H; test_random_offdiagonal=!(H isa HOCartesianContactInteractions))
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(H))) == H
 
@@ -635,7 +640,7 @@ end
             @test LOStructure(GutzwillerSampling(M, 0.2)) isa AdjointKnown
             @test LOStructure(
                 GutzwillerSampling(HubbardReal1D(BoseFS((1,2)),t=0+2im), 0.2)
-            ) isa AdjointUnknown
+            ) isa AdjointKnown
         end
         @testset "GuidingVector adjoint" begin
             v = DVec(starting_address(M) => 10; capacity=10)
@@ -646,7 +651,7 @@ end
                 HubbardReal1D(BoseFS((1,2)),t=0+2im),
                 DVec(BoseFS((1,2)) => 1.1; capacity=10),
                 0.2,
-            )) isa AdjointUnknown
+            )) isa AdjointKnown
         end
     end
 
@@ -1112,6 +1117,7 @@ end
     addr2 = OccupationNumberFS(1,2,3)
     @test_throws ArgumentError FroehlichPolaron(addr2; mode_cutoff=1.0)
     @test_throws ArgumentError FroehlichPolaron(addr2; momentum_cutoff=10.0)
+    @test_throws ArgumentError FroehlichPolaron(OccupationNumberFS(3,2,1); momentum_cutoff=10.0)
 
     addr3 = OccupationNumberFS(1,2,3,4)
     f2 = FroehlichPolaron(addr2)
@@ -1150,6 +1156,21 @@ end
     addr4 = OccupationNumberFS(1,2,1)
     f4 = FroehlichPolaron(addr4; momentum_cutoff=10.0)
     @test get_offdiagonal(f4, addr2, 3)[2] == 0.0
+
+    m = 5; l = 6
+    addr5 = OccupationNumberFS{5}()
+    mom_unit = 2π/l
+    momentum_cutoff = 1.5 * mom_unit
+    f5 = FroehlichPolaron(addr5; l, mode_cutoff=1, momentum_cutoff)
+    basis5 = build_basis(f5)
+    mom_vec = map(o -> dot(o, f5.ks), onr.(basis5))
+    @test all(abs.(mom_vec) .≤ momentum_cutoff) == true
+    @test length(basis5) == 20
+
+    # with and without momentum cutoff
+    f6 = FroehlichPolaron(addr5; v=10, mode_cutoff=1)
+    f7 = FroehlichPolaron(addr5; v=10, mode_cutoff=1, momentum_cutoff=100)
+    @test get_offdiagonal(f6, addr5, 1) == get_offdiagonal(f7, addr5, 1)
 end
 
 """
@@ -1577,41 +1598,63 @@ end
     [@test dimension(addr) == dimension(typeof(addr)) for addr in addresses]
 end
 
-@testset "ExtendedHubbardReal1D boundary conditions" begin
-    for H in (
-        ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, boundary_condition=:twisted),
-        ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, boundary_condition=:hard_wall),
-        ExtendedHubbardReal1D(FermiFS((1,0,1,0,1,0,1,0,1,0,1)), v=6, t=2.0, boundary_condition=:twisted),
-        ExtendedHubbardReal1D(FermiFS((1,0,1,0,1,0,1,0,1,0,1)), v=6, t=2.0, boundary_condition=:hard_wall),
-        ExtendedHubbardReal1D(FermiFS((1,0,1,0,1,0,1,0,1,0,1)), v=6, t=2.0, boundary_condition=π),
-        ExtendedHubbardReal1D(BoseFS(1,0,2,1); u=1+0.5im, boundary_condition=:hard_wall))
+@testset "ExtendedHubbardReal1D" begin
+    @testset "boundary conditions" begin
+        for H in (
+            ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, boundary_condition=:twisted),
+            ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, boundary_condition=:hard_wall),
+            ExtendedHubbardReal1D(FermiFS((1,0,1,0,1,0,1,0,1,0,1)), v=6, t=2.0, boundary_condition=:twisted),
+            ExtendedHubbardReal1D(FermiFS((1,0,1,0,1,0,1,0,1,0,1)), v=6, t=2.0, boundary_condition=:hard_wall),
+            ExtendedHubbardReal1D(FermiFS((1,0,1,0,1,0,1,0,1,0,1)), v=6, t=2.0, boundary_condition=π),
+            ExtendedHubbardReal1D(BoseFS(1,0,2,1); u=1+0.5im, boundary_condition=:hard_wall))
 
-        addr = starting_address(H)
-        H1 = ExtendedHubbardReal1D(addr, v=6, t=2.0)
-        addr2, me = get_offdiagonal(H1, addr, 2)
-        if H.boundary_condition == :twisted
-            @test get_offdiagonal(H, addr, 2)[2] == - me
-            @test diagonal_element(H, addr) == diagonal_element(H1, addr)
-        elseif H.boundary_condition == :hard_wall
-            @test get_offdiagonal(H, addr, 2)[2] == 0.0
-        elseif H.boundary_condition isa Number
-            @test get_offdiagonal(H, addr, 2)[2] == me*exp(-im*H.boundary_condition)
-            @test diagonal_element(H, addr) == diagonal_element(H1, addr)
+            addr = starting_address(H)
+            H1 = ExtendedHubbardReal1D(addr, v=6, t=2.0)
+            addr2, me = get_offdiagonal(H1, addr, 2)
+            if H.boundary_condition == :twisted
+                @test get_offdiagonal(H, addr, 2)[2] == - me
+                @test diagonal_element(H, addr) == diagonal_element(H1, addr)
+            elseif H.boundary_condition == :hard_wall
+                @test get_offdiagonal(H, addr, 2)[2] == 0.0
+            elseif H.boundary_condition isa Number
+                @test get_offdiagonal(H, addr, 2)[2] == me*exp(-im*H.boundary_condition)
+                @test diagonal_element(H, addr) == diagonal_element(H1, addr)
+            end
+            @test get_offdiagonal(H, addr, 2)[1] == addr2
         end
-        @test get_offdiagonal(H, addr, 2)[1] == addr2
+        @test_throws ArgumentError ExtendedHubbardReal1D(BoseFS(1,1,1,1); boundary_condition=:hrad_wall)
     end
-    @test_throws ArgumentError ExtendedHubbardReal1D(BoseFS(1,1,1,1); boundary_condition=:hrad_wall)
+
+    @testset "interaction" begin
+        for H in (
+            ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, power = nothing),
+            ExtendedHubbardReal1D(FermiFS((1,0,1,0)), v=6, t=2.0, power = 3)
+        )
+
+            addr = starting_address(H)
+            H1 = ExtendedHubbardReal1D(addr; v=6, t=2.0)
+            @test get_offdiagonal(H, addr, 2) == get_offdiagonal(H1, addr, 2)
+            ebhinteraction, bhinteraction = Hamiltonians.extended_hubbard_interaction(H, addr, H.power)
+            @test diagonal_element(H, addr) == convert(eltype(H),  6 * ebhinteraction)
+        end
+        @test_throws ArgumentError ExtendedHubbardReal1D(BoseFS(1,1,1,1); power = :nearest_neighbor)
+    end
 end
 
-@testset "Small ExtendedHubbardReal1D with complex parameters" begin
+@testset "Small 1D Hubbard with complex parameters" begin
     for H in (
         ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), boundary_condition=:twisted), # Hermitian
         ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), boundary_condition=0.5), # Hermitian
+        ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), t=2.0+3im, power=3), # Hermitian
         ExtendedHubbardReal1D(BoseFS(1, 0, 1, 0), v=6, t=2.0+3im), # Hermitian
         ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), v=6 + 0.5im, t=2.0), # non-Hermitian
         ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), u=6 + 3im, t=2.0), # non-Hermitian
         ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), u=6 + 3im, t=0), # diagonal and non-Hermitian
         ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), t=0), # diagonal and Hermitian
+        HubbardReal1D(BoseFS(1,1,1),t=1.0im),
+        HubbardReal1D(BoseFS(1,1,1),u=1.0im),
+        ExtendedHubbardReal1D(BoseFS(1,1,1),t=1.0im),
+        ExtendedHubbardReal1D(BoseFS(1,1,1),u=1.0im),
     )
         test_hamiltonian_structure(H)
     end
@@ -1620,8 +1663,21 @@ end
     @test adjoint(h) == h
     h2 = ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1); u=6 + 3im, t=0)
     # diagonal and non-Hermitian
-    @test LOStructure(h) isa IsDiagonal
-    @test_throws ArgumentError adjoint(h2)
+    @test LOStructure(h2) isa AdjointKnown
+    @test h2'.u == conj(h2.u)
+    @test diagonal_element(h2, OccupationNumberFS(3,0,1)) == 21 + 9im
+    start_at = DVec(OccupationNumberFS(3,0,1) => 1)
+    @test_throws ArgumentError ProjectorMonteCarloProblem(h2; start_at)
+    start_at = [DVec(OccupationNumberFS(3,0,1) => 1) DVec(OccupationNumberFS(3,0,1) => 1)]
+    @test_throws ArgumentError ProjectorMonteCarloProblem(h2; start_at, n_spectral=2)
+    h3 = HubbardReal1D(BoseFS(1,1,1),u=1.0im)
+    @test h3'.u == -1.0im
+    @test diagonal_element(h3, BoseFS(2,1,0)) == 1.0im
+    @test diagonal_element(h3', BoseFS(2,1,0)) == -1.0im
+    h4 = HubbardReal1DEP(BoseFS(1,1,1),u=1.0im,v_ho=1.0)
+    @test h4'.u == -1.0im
+    @test diagonal_element(h4, BoseFS(0,1,2)) == 3 + 1.0im
+    @test diagonal_element(h4', BoseFS(0,1,2)) == 3 - 1.0im
 end
 
 @testset "Comparison of ExtendedHubbardMom1D with ExtendedHubbardReal1D" begin

@@ -80,7 +80,7 @@ end
 function (bb::BasisBuilder)(operator, ks, seen)
     empty!(bb.frontier)
     for (k1, _) in ks
-        for (k2, val) in offdiagonals(operator, k1)
+        for (k2, val) in offdiagonals(operator_column(operator, k1))
             if val ≠ 0 && k2 ∉ seen
                 push!(bb.frontier, k2)
             end
@@ -129,11 +129,12 @@ function (builder::MatrixBuilder{<:Any,T})(operator, columns, seen) where {T}
     empty!(builder.frontier)
     for (col_key, col_index) in columns
         empty!(builder.column_buffer)
-        diag = diagonal_element(operator, col_key)
+        column = operator_column(operator, col_key)
+        diag = diagonal_element(column)
         if !iszero(diag)
             builder.column_buffer[col_key] = diag
         end
-        for (row_key, value) in offdiagonals(operator, col_key)
+        for (row_key, value) in offdiagonals(column)
             if !iszero(value)
                 new_value = get(builder.column_buffer, row_key, zero(T)) + value
                 builder.column_buffer[row_key] = new_value
@@ -222,7 +223,7 @@ function basis_breadth_first_search(
     minimum_size=Inf,
 
     cutoff=nothing,
-    filter=isnothing(cutoff) ? Returns(true) : a -> diagonal_element(operator, a) ≤ cutoff,
+    filter=isnothing(cutoff) ? Returns(true) : a -> diagonal_element(operator_column(operator, a)) ≤ cutoff,
 
     sizelim=Inf,
     nnzs=0,

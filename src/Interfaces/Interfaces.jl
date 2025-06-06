@@ -15,6 +15,7 @@ Follow the links for the definitions of the interfaces!
 # Additional exports
 
 ## Interface functions for[`AbstractHamiltonian`](@ref)s:
+* [`operator_column`](@ref)
 * [`diagonal_element`](@ref)
 * [`num_offdiagonals`](@ref)
 * [`get_offdiagonal`](@ref)
@@ -60,7 +61,7 @@ export
     AbstractHamiltonian, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
     random_offdiagonal, starting_address, allows_address_type,
     LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint,
-    AbstractOperator, AbstractObservable
+    AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn, AbstractOperatorColumn
 export
     num_replicas, num_spectral_states, num_overlaps
 
