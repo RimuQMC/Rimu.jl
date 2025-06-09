@@ -31,11 +31,12 @@ function MolecularHamiltonian(fd::QFDump)
     MolecularHamiltonian{val_type,addr_type,fd_type}(starting_address, fd)
 end
 
-struct MolecularHamiltonianOperatorColumn{A<:FermiFS2C,T,O<:MolecularHamiltonian,OD} <: AbstractOperatorColumn{A,T,O}
+struct MolecularHamiltonianOperatorColumn{A<:FermiFS2C,T,O<:MolecularHamiltonian,OD,OM<:Tuple{OccupiedModeMap,OccupiedModeMap}} <: AbstractOperatorColumn{A,T,O}
     addr::A # Contains address Psi_i, provided by operator_column
     op::O   # Represent Hamiltonian itself, provided by operator_column
     diag::T # < Psi_i | Psi_i >, calculated by diagonal_element
     ods::OD # Vector [ < Psi_j | Psi_i > ], calculated by offdiagonals
+    occ_modes::OM # Store the occupied modes of addr
 end
 
 function starting_address(h::MolecularHamiltonian)
@@ -46,21 +47,21 @@ function operator_column(h::MolecularHamiltonian{T,A,D}, a::FermiFS2C)::Molecula
     diag = zero(T)
     ods = Vector{Float64}[]
 
-    one_elec_int = one_electron_integral(h.fcidump.int1, a)
-    two_elec_int = two_electron_integral(h.fcidump.int2, a)
+    occupied_modes = map(OccupiedModeMap, a.components)
+
+    one_elec_int = one_electron_integral(h.fcidump.int1, occupied_modes)
+    two_elec_int = two_electron_integral(h.fcidump.int2, occupied_modes)
     diag = h.fcidump.int0 + one_elec_int + two_elec_int
 
-    MolecularHamiltonianOperatorColumn(a, h, diag, ods)
+    MolecularHamiltonianOperatorColumn{typeof(a),T,typeof(h),typeof(ods),typeof(occupied_modes)}(a, h, diag, ods, occupied_modes)
 end
 
 function diagonal_element(column::MolecularHamiltonianOperatorColumn{A,T,O,OD}) where {A<:FermiFS2C,T,O,OD}
     return column.diag
 end
 
-function num_offdiagonals(column::MolecularHamiltonianOperatorColumn)::Int
-    n_orb = headvar(column.op.fcidump, "NORB")
-    n_elec = headvar(column.op.fcidump, "NELEC")
-    binomial(2 * n_orb, n_elec) - 1
+function num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
+    0
 end
 
 function offdiagonals(column::MolecularHamiltonianOperatorColumn)
@@ -71,26 +72,22 @@ function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
 
 end
 
-function one_electron_integral(int1::Array{T,2}, addr::FermiFS2C) where {T<:Number}
+function one_electron_integral(int1::Array{T,2}, occ_modes::Tuple{OccupiedModeMap,OccupiedModeMap}) where {T<:Number}
     one_elec_int = zero(T)
-    n_comp = num_components(addr)
-    for c = 1:n_comp
-        occ_map = OccupiedModeMap(addr.components[c])
-        for occ in occ_map
-            one_elec_int += int1[occ.mode, occ.mode]
+    for occ_mode in occ_modes
+        for i in occ_mode
+            one_elec_int += int1[i.mode, i.mode]
         end
     end
     one_elec_int
 end
 
-function two_electron_integral(int2::Array{T,4}, addr::FermiFS2C)::T where {T<:Number}
+function two_electron_integral(int2::Array{T,4}, occ_modes::Tuple{OccupiedModeMap,OccupiedModeMap})::T where {T<:Number}
     two_elec_int = zero(T)
-    occ_map_c1 = OccupiedModeMap(addr.components[1])
-    occ_map_c2 = OccupiedModeMap(addr.components[2])
 
     sum_alpha_alpha = zero(T)
-    for i in occ_map_c1
-        for j in occ_map_c1
+    for i in occ_modes[1]
+        for j in occ_modes[1]
             if i.mode ≠ j.mode
                 sum_alpha_alpha += int2[i.mode, j.mode, i.mode, j.mode] - int2[i.mode, j.mode, j.mode, i.mode]
             end
@@ -99,16 +96,16 @@ function two_electron_integral(int2::Array{T,4}, addr::FermiFS2C)::T where {T<:N
     two_elec_int += 0.5 * sum_alpha_alpha
 
     sum_alpha_beta = zero(T)
-    for i in occ_map_c1
-        for j in occ_map_c2
+    for i in occ_modes[1]
+        for j in occ_modes[2]
             sum_alpha_beta += int2[i.mode, j.mode, i.mode, j.mode]
         end
     end
     two_elec_int += sum_alpha_beta
 
     sum_beta_beta = zero(T)
-    for i in occ_map_c2
-        for j in occ_map_c2
+    for i in occ_modes[2]
+        for j in occ_modes[2]
             if i.mode ≠ j.mode
                 sum_beta_beta += int2[i.mode, j.mode, i.mode, j.mode] - int2[i.mode, j.mode, j.mode, i.mode]
             end
