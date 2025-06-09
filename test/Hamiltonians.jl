@@ -1724,3 +1724,39 @@ end
         @test eval(Meta.parse(repr(r))) == r
     end
 end
+
+@testset "OperatorProduct" begin
+    addr = BoseFS(2,0,0)
+    H1 = HubbardReal1D(addr;u=1.0im)
+    H2 = ExtendedHubbardReal1D(addr)
+    P = H1*H2
+    @test LOStructure(P) == AdjointKnown()
+    c = operator_column(P, addr)
+    ods = [DVec(od) for od in offdiagonals(c)]
+    ods_product = DVec(addr => diagonal_element(c)) + sum(ods)
+
+    c2 = operator_column(H2, addr)
+    c1 = operator_column(H1, addr)
+    ods_manual = DVec(addr => diagonal_element(c2)*diagonal_element(c1))
+    for (add1, val1) in offdiagonals(c1)
+        ods_manual += DVec(add1 => val1*diagonal_element(c2))
+    end
+    for (add2, val2) in offdiagonals(c2)
+        c1 = operator_column(H1, add2)
+        ods_manual += DVec(add2 => val2*diagonal_element(c1))
+        for (add1, val1) in offdiagonals(c1)
+            ods_manual += DVec(add1 => val1*val2)
+        end
+    end
+    @test ods_product == ods_manual
+
+    addr = FermiFS(1,0,0)
+    H3 = HubbardReal1D(addr)
+    @test_throws ArgumentError H1*H3
+
+    addr = FermiFS(1,1,1)
+    H = HubbardReal1D(addr)
+    P = H3*H3
+    c = operator_column(P, addr)
+    @test iszero(last.(collect(offdiagonals(c))))
+end
