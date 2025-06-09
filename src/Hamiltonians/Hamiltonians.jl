@@ -23,6 +23,7 @@ Other
 - [`FroehlichPolaron`](@ref)
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
+- [`OperatorProduct`](@ref)
 
 ## [Wrappers](#Hamiltonian-wrappers)
 - [`GutzwillerSampling`](@ref)
