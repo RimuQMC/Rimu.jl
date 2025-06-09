@@ -45,20 +45,16 @@ end
 function operator_column(h::MolecularHamiltonian{T,A,D}, a::FermiFS2C)::MolecularHamiltonianOperatorColumn where {T<:Number,A,D}
     diag = zero(T)
     ods = Vector{Float64}[]
+
+    one_elec_int = one_electron_integral(h.fcidump.int1, a)
+    two_elec_int = two_electron_integral(h.fcidump.int2, a)
+    diag = h.fcidump.int0 + one_elec_int + two_elec_int
+
     MolecularHamiltonianOperatorColumn(a, h, diag, ods)
 end
 
 function diagonal_element(column::MolecularHamiltonianOperatorColumn{A,T,O,OD}) where {A<:FermiFS2C,T,O,OD}
-    one_elec_int = one_electron_integral(column.op.fcidump.int1, column.addr)
-    two_elec_int = two_electron_integral(column.op.fcidump.int2, column.addr)
-    one_elec_int + two_elec_int
-end
-
-# For testing purpose
-function diagonal_element(h::MolecularHamiltonian, a::FermiFS2C)
-    one_elec_int = one_electron_integral(h.fcidump.int1, a)
-    two_elec_int = two_electron_integral(h.fcidump.int2, a)
-    one_elec_int + two_elec_int
+    return column.diag
 end
 
 function num_offdiagonals(column::MolecularHamiltonianOperatorColumn)::Int
