@@ -62,6 +62,7 @@ GuidingVectorSampling
 ParitySymmetry
 TimeReversalSymmetry
 Stoquastic
+OperatorProduct
 ```
 
 ## Observables

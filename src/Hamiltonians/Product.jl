@@ -1,7 +1,7 @@
 """
     OperatorProduct(A::AbstractOperator, B::AbstractOperator)
 
-The product of two ['AbstractOperator'](@ref)s, acting from right to left. The two operators
+The product of two [`AbstractOperator`](@ref)s, acting from right to left. The two operators
 must act on the same address space.
 """
 struct OperatorProduct{T, O1<:AbstractOperator, O2<:AbstractOperator} <: AbstractOperator{T}
