@@ -61,7 +61,16 @@ function diagonal_element(column::MolecularHamiltonianOperatorColumn{A,T,O,OD}) 
 end
 
 function num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
-    0
+    n_spin_orb = headvar(column.op.fcidump, "NORB") * 2
+    n_elec = headvar(column.op.fcidump, "NELEC")
+
+    # One-electron excitation
+    n_one_electron_excitation = n_elec * (n_spin_orb - n_elec)
+
+    # Two-electron excitation
+    n_two_electron_excitation = binomial(n_elec, 2) * binomial(n_spin_orb - n_elec, 2)
+
+    n_one_electron_excitation + n_two_electron_excitation
 end
 
 function offdiagonals(column::MolecularHamiltonianOperatorColumn)
