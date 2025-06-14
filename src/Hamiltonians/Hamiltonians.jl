@@ -91,6 +91,8 @@ export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron
 export ParticleNumberOperator
 
+export MolecularHamiltonian, MolecularHamiltonianOperatorColumn
+
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
 export StringCorrelator, G2MomCorrelator
