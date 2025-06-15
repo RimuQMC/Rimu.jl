@@ -31,12 +31,34 @@ function MolecularHamiltonian(fd::QFDump)
     MolecularHamiltonian{val_type,addr_type,fd_type}(starting_address, fd)
 end
 
-struct MolecularHamiltonianOperatorColumn{A<:FermiFS2C,T,O<:MolecularHamiltonian,OD,OM<:Tuple{OccupiedModeMap,OccupiedModeMap}} <: AbstractOperatorColumn{A,T,O}
+struct Modes{T<:FermiFSIndex}
+    occupied::Vector{Vector{T}}
+    unoccupied::Vector{Vector{T}}
+end
+
+function modes_extract(addr::FermiFS2C)
+    occupied_modes = Vector{Vector{FermiFSIndex}}(undef, 2)
+    unoccupied_modes = Vector{Vector{FermiFSIndex}}(undef, 2)
+    for (i, state) in enumerate(addr.components)
+        occupied_modes[i] = OccupiedModeMap(state)
+        state_unoccupied_modes = FermiFSIndex[]
+        for j = 1:num_modes(state)
+            ind = find_mode(state, j)
+            if ind.occnum == 0
+                push!(state_unoccupied_modes, ind)
+            end
+        end
+        unoccupied_modes[i] = state_unoccupied_modes
+    end
+    Modes(occupied_modes, unoccupied_modes)
+end
+
+struct MolecularHamiltonianOperatorColumn{A<:FermiFS2C,T,O<:MolecularHamiltonian,OD,M<:Modes{FermiFSIndex}} <: AbstractOperatorColumn{A,T,O}
     addr::A # Contains address Psi_i, provided by operator_column
     op::O   # Represent Hamiltonian itself, provided by operator_column
     diag::T # < Psi_i | Psi_i >, calculated by diagonal_element
     ods::OD # Vector [ < Psi_j | Psi_i > ], calculated by offdiagonals
-    occ_modes::OM # Store the occupied modes of addr
+    modes::M # Store the modes of addr
 end
 
 function starting_address(h::MolecularHamiltonian)
@@ -47,13 +69,13 @@ function operator_column(h::MolecularHamiltonian{T,A,D}, a::FermiFS2C)::Molecula
     diag = zero(T)
     ods = Vector{Float64}[]
 
-    occupied_modes = map(OccupiedModeMap, a.components)
+    modes = modes_extract(a)
 
-    one_elec_int = one_electron_integral(h.fcidump.int1, occupied_modes)
-    two_elec_int = two_electron_integral(h.fcidump.int2, occupied_modes)
+    one_elec_int = one_electron_integral(h.fcidump.int1, modes.occupied)
+    two_elec_int = two_electron_integral(h.fcidump.int2, modes.occupied)
     diag = h.fcidump.int0 + one_elec_int + two_elec_int
 
-    MolecularHamiltonianOperatorColumn{typeof(a),T,typeof(h),typeof(ods),typeof(occupied_modes)}(a, h, diag, ods, occupied_modes)
+    MolecularHamiltonianOperatorColumn{typeof(a),T,typeof(h),typeof(ods),typeof(modes)}(a, h, diag, ods, modes)
 end
 
 function diagonal_element(column::MolecularHamiltonianOperatorColumn{A,T,O,OD}) where {A<:FermiFS2C,T,O,OD}
@@ -73,15 +95,60 @@ function num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
     n_one_electron_excitation + n_two_electron_excitation
 end
 
-function offdiagonals(column::MolecularHamiltonianOperatorColumn)
+const ModeIndex = @NamedTuple{ch::Int, orb::Int}
 
+struct ModeTransition
+    old::ModeIndex
+    new::ModeIndex
+end
+
+mutable struct MolecularHamiltonianOffDiagonalsIterState
+    occ_ind::Int
+    unocc_ind::Int
+    spin_ch::Int
+end
+
+struct MolecularHamiltonianOffDiagonals
+    modes::Modes{FermiFSIndex}
+    transition::Vector{ModeTransition}
+end
+
+function Base.iterate(mhod::MolecularHamiltonianOffDiagonals, state::MolecularHamiltonianOffDiagonalsIterState=MolecularHamiltonianOffDiagonalsIterState(1, 1, 1))
+    # Only includes one-electron exctitation
+    if state.spin_ch == 3
+        return nothing
+    end
+    cur_trans = ModeTransition(
+        (state.spin_ch, mhod.modes.occupied[state.spin_ch][state.occ_ind].mode),
+        (state.spin_ch, mhod.modes.unoccupied[state.spin_ch][state.unocc_ind].mode)
+    )
+    println(cur_trans)
+    if state.unocc_ind < length(mhod.modes.unoccupied[state.spin_ch])
+        state.unocc_ind += 1
+    else
+        state.unocc_ind = 1
+        if state.occ_ind < length(mhod.modes.occupied[state.spin_ch])
+            state.occ_ind += 1
+        else
+            state.occ_ind = 1
+            if state.spin_ch <= 2
+                state.spin_ch += 1
+            end
+        end
+    end
+    return MolecularHamiltonianOffDiagonals(mhod.modes, [cur_trans]), state
+end
+
+function offdiagonals(column::MolecularHamiltonianOperatorColumn)
+    mt = ModeTransition((0, 0), (0, 0))
+    MolecularHamiltonianOffDiagonals(column.modes, [mt])
 end
 
 function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
 
 end
 
-function one_electron_integral(int1::Array{T,2}, occ_modes::Tuple{OccupiedModeMap,OccupiedModeMap}) where {T<:Number}
+function one_electron_integral(int1::Array{T,2}, occ_modes::Vector{Vector{FermiFSIndex}}) where {T<:Number}
     one_elec_int = zero(T)
     for occ_mode in occ_modes
         for i in occ_mode
@@ -91,7 +158,7 @@ function one_electron_integral(int1::Array{T,2}, occ_modes::Tuple{OccupiedModeMa
     one_elec_int
 end
 
-function two_electron_integral(int2::Array{T,4}, occ_modes::Tuple{OccupiedModeMap,OccupiedModeMap})::T where {T<:Number}
+function two_electron_integral(int2::Array{T,4}, occ_modes::Vector{Vector{FermiFSIndex}})::T where {T<:Number}
     two_elec_int = zero(T)
 
     sum_alpha_alpha = zero(T)
