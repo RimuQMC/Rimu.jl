@@ -4,7 +4,7 @@ Module with types and methods pertaining to bitstring addresses.
 ```
 module BitStringAddresses
 
-using LinearAlgebra: LinearAlgebra, I, dot
+using LinearAlgebra: LinearAlgebra, I, dot, ⋅
 using Parameters: Parameters, @unpack
 using Setfield: Setfield, @set, @set!, setindex
 using SparseArrays: SparseArrays, SparseVector, nonzeros, rowvals, spzeros
