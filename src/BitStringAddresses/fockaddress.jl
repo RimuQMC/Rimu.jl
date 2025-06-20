@@ -77,6 +77,8 @@ Find the `i`-th mode in address. Returns [`BoseFSIndex`](@ref) for [`BoseFS`](@r
 bounds.
 
 ```jldoctest
+julia> using Rimu.BitStringAddresses
+
 julia> find_mode(BoseFS(1, 0, 2), 2)
 BoseFSIndex(occnum=0, mode=2, offset=2)
 
@@ -99,6 +101,8 @@ Returns [`BoseFSIndex`](@ref) for [`BoseFS`](@ref), and [`FermiFSIndex`](@ref) f
 # Example
 
 ```jldoctest
+julia> using Rimu.BitStringAddresses
+
 julia> find_occupied_mode(FermiFS(1, 1, 1, 0), 2)
 FermiFSIndex(occnum=1, mode=2, offset=1)
 
@@ -134,6 +138,8 @@ representation.
 # Example
 
 ```jldoctest
+julia> using Rimu.BitStringAddresses
+
 julia> num_occupied_modes(BoseFS((1, 0, 2)))
 2
 julia> num_occupied_modes(FermiFS((1, 1, 1, 0)))
@@ -154,6 +160,8 @@ Return a lazy iterator over all occupied modes in an address. Iterates over
 # Example
 
 ```jldoctest
+julia> using Rimu.BitStringAddresses
+
 julia> b = BoseFS((1,5,0,4));
 
 julia> foreach(println, occupied_modes(b))
@@ -163,6 +171,8 @@ BoseFSIndex(occnum=4, mode=4, offset=9)
 ```
 
 ```jldoctest
+julia> using Rimu.BitStringAddresses
+
 julia> f = FermiFS((1,1,0,1,0,0,1));
 
 julia> foreach(println, occupied_modes(f))
@@ -195,6 +205,8 @@ excitation is illegal, returns an arbitrary address and the value `0.0`.
 # Example
 
 ```jldoctest
+julia> using Rimu.BitStringAddresses
+
 julia> f = FermiFS(1,1,0,0,1,1,1,1)
 FermiFS{6,8}(1, 1, 0, 0, 1, 1, 1, 1)
 
@@ -224,6 +236,8 @@ This is useful because repeatedly looking for occupied modes with
 # Example
 
 ```jldoctest
+julia> using Rimu.BitStringAddresses
+
 julia> b = BoseFS(10, 0, 0, 0, 2, 0, 1)
 BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
 
@@ -296,6 +310,8 @@ Dot product extracting mode occupation numbers from an [`OccupiedModeMap`](@ref)
 to [`onr`](@ref).
 
 ```jldoctest
+julia> using Rimu.BitStringAddresses
+
 julia> b = BoseFS(10, 0, 0, 0, 2, 0, 1)
 BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
 
@@ -436,6 +452,8 @@ Useful for copying the printout from a vector to the REPL.
 # Example
 
 ```jldoctest
+julia> using Rimu.BitStringAddresses
+
 julia> DVec(BoseFS{3,4}(0, 1, 2, 0) => 1)
 DVec{BoseFS{3, 4, BitString{6, 1, UInt8}},Int64} with 1 entry, style = IsStochasticInteger{Int64}()
   fs"|0 1 2 0⟩" => 1
@@ -742,6 +760,8 @@ can be given to `excitation`
 # Example
 
 ```jldoctest
+julia> using Rimu.BitStringAddresses
+
 julia> addr = BoseFS(10, 0, 0, 0, 2, 0, 1)
 BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
 

@@ -49,7 +49,8 @@ using .Interfaces
 import .Interfaces: dot_from_right, num_replicas, num_overlaps, num_spectral_states
 # Exported functions and types from Interfaces
 export starting_address, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
-       random_offdiagonal, operator_column
+       random_offdiagonal, operator_column, AbstractDVec, AbstractHamiltonian,
+       AbstractOperator, AbstractObservable
 
 include("BitStringAddresses/BitStringAddresses.jl")
 @reexport using .BitStringAddresses
