@@ -3,6 +3,8 @@ using Rimu
 using Test
 using DataFrames
 
+using Rimu.Interfaces
+
 @testset "Interface basics" begin
     @test eltype(StyleUnknown{String}()) == String
     @test StochasticStyle(['a', 'b']) == StyleUnknown{Char}()
