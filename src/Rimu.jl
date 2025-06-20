@@ -45,8 +45,12 @@ include("helpers.jl") # non MPI-dependent helper functions
 include("mpi_helpers.jl")
 
 include("Interfaces/Interfaces.jl")
-@reexport using .Interfaces
+using .Interfaces
 import .Interfaces: dot_from_right, num_replicas, num_overlaps, num_spectral_states
+# Exported functions and types from Interfaces
+export starting_address, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
+       random_offdiagonal, operator_column
+
 include("BitStringAddresses/BitStringAddresses.jl")
 @reexport using .BitStringAddresses
 include("Hamiltonians/Hamiltonians.jl")

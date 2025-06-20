@@ -3,6 +3,7 @@ using Random
 using Rimu
 using Rimu.DictVectors
 using Rimu.StochasticStyles: IsStochastic2Pop, StochasticStyle
+using Rimu.Interfaces
 using StaticArrays
 using Suppressor
 using Test

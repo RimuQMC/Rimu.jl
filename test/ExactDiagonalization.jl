@@ -1,4 +1,5 @@
 using Rimu
+using Rimu.Interfaces
 using Test
 using Random
 using Suppressor

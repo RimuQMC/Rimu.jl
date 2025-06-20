@@ -1,5 +1,6 @@
 using Rimu
 using Test
+using VectorInterface: scale!
 using Rimu.StochasticStyles
 
 using Rimu.StochasticStyles: projected_deposit!, diagonal_step!, spawn!
