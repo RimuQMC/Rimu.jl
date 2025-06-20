@@ -418,7 +418,7 @@ has_adjoint(::LOStructure) = true
 """
     AbstractOperatorColumn{A,T,O}
 
-Abstract type for operator columns returned by [`operator_column`](@ref). 
+Abstract type for operator columns returned by [`operator_column`](@ref).
 The type parameters represent the address type (`A`), the eltype (`T`), and the
 type of the operator (`O`).
 
@@ -498,3 +498,35 @@ end
 function random_offdiagonal(ham, address)
     return random_offdiagonal(operator_column(ham, address))
 end
+
+"""
+    IterableOffdiagonalsTrait(operatortype::Type) -> IterableOffdiagonalsTrait
+
+Return a trait that indicates whether the operator's columns have iterable
+[`offdiagonals`](@ref). One of the following values will be returned:
+- [`NoIterableOffdiagonals()`](@ref): no iterable `offdiagonals` are available.
+- [`HasIterableOffdiagonals()`](@ref): `offdiagonals(column)` returns an iterable
+  object.
+
+## Example
+```jldoctest
+julia> using Rimu.Interfaces
+
+julia> h = HubbardReal1D(BoseFS(1,2,3));
+
+julia> IterableOffdiagonalsTrait(typeof(h)) isa HasIterableOffdiagonals
+true
+```
+
+When extending the interface, implement a method for
+`IterableOffdiagonalsTrait(::Type{<:MyNewOperator})`.
+
+Part of the [`AbstractHamiltonian`](@ref) interface.
+"""
+abstract type IterableOffdiagonalsTrait end
+
+struct NoIterableOffdiagonals <: IterableOffdiagonalsTrait end
+struct HasIterableOffdiagonals <: IterableOffdiagonalsTrait end
+
+IterableOffdiagonalsTrait(::Type{<:AbstractObservable}) = HasIterableOffdiagonals()
+# default trait for observables

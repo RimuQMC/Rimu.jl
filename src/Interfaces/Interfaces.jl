@@ -64,6 +64,8 @@ export
     AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn, AbstractOperatorColumn
 export
     num_replicas, num_spectral_states, num_overlaps
+export
+    IterableOffdiagonalsTrait, NoIterableOffdiagonals, HasIterableOffdiagonals
 
 include("stochasticstyles.jl")
 include("dictvectors.jl")
