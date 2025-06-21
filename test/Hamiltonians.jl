@@ -68,8 +68,7 @@ end
         FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
     )
-        # test_hamiltonian_interface(H; test_spawning=false)
-        test_hamiltonian_interface(H; test_random_offdiagonal=!(H isa HOCartesianContactInteractions))
+        test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(H))) == H
 

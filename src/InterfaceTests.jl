@@ -16,6 +16,8 @@ using Rimu: Rimu, DVec, Interfaces, LOStructure, IsHermitian, IsDiagonal, Adjoin
     Hamiltonians, num_offdiagonals, allows_address_type, offdiagonals, random_offdiagonal,
     diagonal_element, dimension, dot_from_right, IsDeterministic, starting_address, PDVec,
     sparse, scale!, scalartype, operator_column, AbstractOperatorColumn
+using Rimu.Interfaces: IterableOffdiagonalsTrait, HasIterableOffdiagonals,
+    RandomOffdiagonalTrait, HasRandomOffdiagonal
 using Rimu.Hamiltonians: AbstractHamiltonian, AbstractOperator, AbstractObservable,
     AbstractOffdiagonals
 using LinearAlgebra: dot, mul!, isdiag, ishermitian
@@ -76,12 +78,23 @@ function test_observable_interface(obs, addr)
 end
 
 """
-    test_operator_interface(op, addr; test_iterable_offdiagonals=true, test_random_offdiagonal=true)
+    test_operator_interface(op, addr; kwargs...)
 
 This function tests compliance with the [`AbstractOperator`](@ref) interface for an operator
 `op` at address `addr` (typically
 [`<: AbstractFockAddress`](@ref Rimu.BitStringAddresses.AbstractFockAddress)) by
 checking that all required methods are defined.
+
+## Keyword arguments
+- `test_iterable_offdiagonals::Bool`: If `true`, tests that the `offdiagonals(column)` is
+    iterable.
+- `test_random_offdiagonal::Bool`: If `true`, tests that the `random_offdiagonal(column)` is
+    defined.
+
+By default the keyword arguments are set according the [`IterableOffdiagonalsTrait`](@ref)
+and [`RandomOffdiagonalTrait`](@ref) of the operator type. If the operator does not
+support iterable offdiagonals or random offdiagonals, the tests that require these
+features are skipped.
 
 The following properties are tested:
 - `operator_column(op, addr)` returns a `column` object that is subtype to [`AbstractOperatorColumn`](@ref)
@@ -113,7 +126,10 @@ Operator interface: SuperfluidCorrelator |    9      9  0.0s
 See also [`AbstractOperator`](@ref), [`test_observable_interface`](@ref),
 [`test_hamiltonian_interface`](@ref).
 """
-function test_operator_interface(op, addr; test_iterable_offdiagonals=true, test_random_offdiagonal=true)
+function test_operator_interface(op, addr;
+    test_iterable_offdiagonals = IterableOffdiagonalsTrait(typeof(op)) isa HasIterableOffdiagonals,
+    test_random_offdiagonal = RandomOffdiagonalTrait(typeof(op)) isa HasRandomOffdiagonal
+)
     test_observable_interface(op, addr)
     @testset "`AbstractOperator` interface test: $(nameof(typeof(op)))" begin
 
@@ -170,9 +186,17 @@ end
 The main purpose of this test function is to check that all required methods of the
 [`AbstractHamiltonian`](@ref) interface are defined and work as expected.
 
-Set `test_iterable_offdiagonals=false` to skip tests that require [`offdiagonals(column)`](@ref)
-to be iterable. Set `test_random_offdiagonal=false` to skip tests that require
-[`random_offdiagonal(column)`](@ref) to be defined.
+
+## Keyword arguments
+- `test_iterable_offdiagonals::Bool`: If `true`, tests that the `offdiagonals(column)` is
+    iterable.
+- `test_random_offdiagonal::Bool`: If `true`, tests that the `random_offdiagonal(column)` is
+    defined.
+
+By default the keyword arguments are set according the [`IterableOffdiagonalsTrait`](@ref)
+and [`RandomOffdiagonalTrait`](@ref) of the operator type. If the operator does not
+support iterable offdiagonals or random offdiagonals, the tests that require these
+features are skipped.
 
 This function also tests the following properties of the Hamiltonian:
 - `dimension(h) ≥ dimension(h, addr)`
@@ -202,7 +226,10 @@ Hamiltonians-only tests with HubbardRealSpace |    6      6  0.0s
 
 See also [`test_operator_interface`](@ref), [`test_observable_interface`](@ref).
 """
-function test_hamiltonian_interface(h, addr=starting_address(h); test_iterable_offdiagonals=true, test_random_offdiagonal=true)
+function test_hamiltonian_interface(h, addr=starting_address(h);
+    test_iterable_offdiagonals = IterableOffdiagonalsTrait(typeof(h)) isa HasIterableOffdiagonals,
+    test_random_offdiagonal = RandomOffdiagonalTrait(typeof(h)) isa HasRandomOffdiagonal
+)
     test_operator_interface(h, addr; test_iterable_offdiagonals, test_random_offdiagonal)
     @testset "`AbstractHamiltonian` interface test: $(nameof(typeof(h)))" begin
 

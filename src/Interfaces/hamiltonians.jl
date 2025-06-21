@@ -547,3 +547,54 @@ struct HasIterableOffdiagonals <: IterableOffdiagonalsTrait end
 
 IterableOffdiagonalsTrait(::Type{<:AbstractObservable}) = HasIterableOffdiagonals()
 # default trait for observables
+
+"""
+    RandomOffdiagonalTrait(operatortype::Type) -> RandomOffdiagonalTrait
+Return a trait that indicates whether the operator's columns have a
+[`random_offdiagonal`](@ref) method implemented. One of the following values will be
+returned:
+
+- [`NoRandomOffdiagonal()`](@ref): no `random_offdiagonal` method is implemented.
+- [`HasRandomOffdiagonal()`](@ref): `random_offdiagonal(column)` is implemented.
+
+## Example
+```jldoctest
+julia> using Rimu.Interfaces
+
+julia> h = HubbardReal1D(BoseFS(1,2,3));
+
+julia> RandomOffdiagonalTrait(typeof(h)) isa HasRandomOffdiagonal
+true
+```
+
+When extending the interface, implement a method for
+`RandomOffdiagonalTrait(::Type{<:MyNewOperator})`.
+
+Part of the [`AbstractHamiltonian`](@ref) interface.
+"""
+abstract type RandomOffdiagonalTrait end
+
+"""
+    NoRandomOffdiagonal() <: RandomOffdiagonalTrait
+`NoRandomOffdiagonal` is a trait that indicates that the operator's columns do not have a
+`random_offdiagonal` method implemented. This means that the
+[`random_offdiagonal(column)`](@ref) function returns an error when called on the
+operator's column.
+
+See also [`RandomOffdiagonalTrait`](@ref Main.Interfaces.RandomOffdiagonalTrait).
+"""
+struct NoRandomOffdiagonal <: RandomOffdiagonalTrait end
+
+"""
+    HasRandomOffdiagonal() <: RandomOffdiagonalTrait
+`HasRandomOffdiagonal` is a trait that indicates that the operator's columns have a
+`random_offdiagonal` method implemented. This means that the
+[`random_offdiagonal(column)`](@ref) function returns a random off-diagonal element when
+called on the operator's column.
+
+See also [`RandomOffdiagonalTrait`](@ref Main.Interfaces.RandomOffdiagonalTrait).
+"""
+struct HasRandomOffdiagonal <: RandomOffdiagonalTrait end
+
+RandomOffdiagonalTrait(::Type{<:AbstractObservable}) = HasRandomOffdiagonal()
+# default trait for observables
