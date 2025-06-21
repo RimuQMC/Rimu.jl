@@ -471,7 +471,7 @@ Part of the [`AbstractHamiltonian`](@ref) interface. See also [`AbstractOperator
 """
 operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a), eltype(o)(diagonal_element(o,a)))
 
-starting_address(c::AbstractOperatorColumn) = c.address
+starting_address(c::OffdiagonalsOperatorColumn) = c.address
 diagonal_element(c::OffdiagonalsOperatorColumn) = c.diagonal
 num_offdiagonals(c::OffdiagonalsOperatorColumn) = num_offdiagonals(c.operator, c.address)
 offdiagonals(c::OffdiagonalsOperatorColumn) = c.ods
@@ -487,7 +487,16 @@ by `ham`. Alternatively, pass as argument a column `operator_column(ham, address
 
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
-function random_offdiagonal(column::AbstractOperatorColumn)
+function random_offdiagonal(::AbstractOperatorColumn{A,T,O}) where {A,T,O}
+    if RandomOffdiagonalTrait(O) isa HasRandomOffdiagonal
+        error("random_offdiagonal not implemented for operator type $O " *
+                         "even though RandomOffdiagonalTrait($O) isa HasRandomOffdiagonal")
+    else
+        throw(ArgumentError("random_offdiagonal not supported for operator type $O"))
+    end
+end
+
+function random_offdiagonal(column::OffdiagonalsOperatorColumn)
     offdiags = offdiagonals(column)
     nl = length(offdiags) # check how many sites we could reach
     chosen = rand(1:nl) # choose one of them

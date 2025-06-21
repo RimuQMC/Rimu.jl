@@ -1724,3 +1724,24 @@ end
         @test eval(Meta.parse(repr(r))) == r
     end
 end
+
+@testset "Operator Traits" begin
+    struct TestHamiltonian <: Rimu.AbstractHamiltonian{Float64} end
+    struct TestColumn{A,O} <: Rimu.AbstractOperatorColumn{A,Float64,O}
+        operator::O
+        address::A
+    end
+    function Rimu.operator_column(h::TestHamiltonian, address)
+        return TestColumn(h, address)
+    end
+    h = TestHamiltonian()
+    addr = FermiFS{2,4}(1,0,1,0)
+    col = Rimu.operator_column(h, addr)
+    t = RandomOffdiagonalTrait(typeof(h))
+    @test t isa HasRandomOffdiagonal # default trait
+    @test_throws ErrorException random_offdiagonal(col)
+    Rimu.RandomOffdiagonalTrait(::Type{<:TestHamiltonian}) = NoRandomOffdiagonal()
+    # set the trait to NoRandomOffdiagonal
+    @test_throws ArgumentError random_offdiagonal(col) # still throws
+
+end
