@@ -525,7 +525,24 @@ Part of the [`AbstractHamiltonian`](@ref) interface.
 """
 abstract type IterableOffdiagonalsTrait end
 
+"""
+    NoIterableOffdiagonals() <: IterableOffdiagonalsTrait
+`NoIterableOffdiagonals` is a trait that indicates that the operator's columns do not have
+iterable `offdiagonals`. This means that the `offdiagonals(column)` function returns an
+error when called on the operator's column.
+
+See also [`IterableOffdiagonalsTrait`](@ref Main.Interfaces.IterableOffdiagonalsTrait).
+"""
 struct NoIterableOffdiagonals <: IterableOffdiagonalsTrait end
+
+"""
+    HasIterableOffdiagonals() <: IterableOffdiagonalsTrait
+`HasIterableOffdiagonals` is a trait that indicates that the operator's columns have
+iterable `offdiagonals`. This means that the `offdiagonals(column)` function returns an
+iterable object when called on the operator's column.
+
+See also [`IterableOffdiagonalsTrait`](@ref Main.Interfaces.IterableOffdiagonalsTrait).
+"""
 struct HasIterableOffdiagonals <: IterableOffdiagonalsTrait end
 
 IterableOffdiagonalsTrait(::Type{<:AbstractObservable}) = HasIterableOffdiagonals()
