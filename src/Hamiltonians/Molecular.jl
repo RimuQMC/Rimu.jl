@@ -31,9 +31,9 @@ function MolecularHamiltonian(fd::QFDump)
     MolecularHamiltonian{val_type,addr_type,fd_type}(starting_address, fd)
 end
 
-struct Modes{T<:FermiFSIndex}
-    occupied::Tuple{AbstractVector{T},AbstractVector{T}}
-    unoccupied::Tuple{AbstractVector{T},AbstractVector{T}}
+struct Modes{OA,OB,UA,UB,T<:FermiFSIndex}
+    occupied::Tuple{OccupiedModeMap{OA,T},OccupiedModeMap{OB,T}}
+    unoccupied::Tuple{OccupiedModeMap{UA,T},OccupiedModeMap{UB,T}}
 end
 
 function modes_extract(addr::FermiFS2C)
@@ -42,7 +42,7 @@ function modes_extract(addr::FermiFS2C)
     Modes(occupied_modes, unoccupied_modes)
 end
 
-struct MolecularHamiltonianOperatorColumn{A<:FermiFS2C,T,O<:MolecularHamiltonian,OD,M<:Modes{FermiFSIndex}} <: AbstractOperatorColumn{A,T,O}
+struct MolecularHamiltonianOperatorColumn{A<:FermiFS2C,T,O<:MolecularHamiltonian,OD,M<:Modes} <: AbstractOperatorColumn{A,T,O}
     addr::A # Contains address Psi_i, provided by operator_column
     op::O   # Represent Hamiltonian itself, provided by operator_column
     diag::T # < Psi_i | Psi_i >, calculated by diagonal_element
