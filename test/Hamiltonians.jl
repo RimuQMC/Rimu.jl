@@ -1750,6 +1750,9 @@ end
     end
     @test ods_product == ods_manual
 
+   basis = build_basis(addr)
+   @test Matrix(H1, basis) * Matrix(H2, basis) ≈ Matrix(H1 * H2, basis)
+
     addr = FermiFS(1,0,0)
     H3 = HubbardReal1D(addr)
     @test_throws ArgumentError H1*H3
