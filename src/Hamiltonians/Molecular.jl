@@ -32,24 +32,13 @@ function MolecularHamiltonian(fd::QFDump)
 end
 
 struct Modes{T<:FermiFSIndex}
-    occupied::Vector{Vector{T}}
-    unoccupied::Vector{Vector{T}}
+    occupied::Tuple{AbstractVector{T},AbstractVector{T}}
+    unoccupied::Tuple{AbstractVector{T},AbstractVector{T}}
 end
 
 function modes_extract(addr::FermiFS2C)
-    occupied_modes = Vector{Vector{FermiFSIndex}}(undef, 2)
-    unoccupied_modes = Vector{Vector{FermiFSIndex}}(undef, 2)
-    for (i, state) in enumerate(addr.components)
-        occupied_modes[i] = OccupiedModeMap(state)
-        state_unoccupied_modes = FermiFSIndex[]
-        for j = 1:num_modes(state)
-            ind = find_mode(state, j)
-            if ind.occnum == 0
-                push!(state_unoccupied_modes, ind)
-            end
-        end
-        unoccupied_modes[i] = state_unoccupied_modes
-    end
+    occupied_modes = (OccupiedModeMap(addr.components[1]), OccupiedModeMap(addr.components[2]))
+    unoccupied_modes = (UnoccupiedModeMap(addr.components[1]), UnoccupiedModeMap(addr.components[2]))
     Modes(occupied_modes, unoccupied_modes)
 end
 
@@ -83,14 +72,21 @@ function diagonal_element(column::MolecularHamiltonianOperatorColumn{A,T,O,OD}) 
 end
 
 function num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
-    n_spin_orb = headvar(column.op.fcidump, "NORB") * 2
-    n_elec = headvar(column.op.fcidump, "NELEC")
+    n_orb = num_modes(column.addr.components[1])
+    n_alpha_elec = num_occupied_modes(column.addr.components[1])
+    n_beta_elec = num_occupied_modes(column.addr.components[2])
+
+    n_alpha_hole = n_orb - n_alpha_elec
+    n_beta_hole = n_orb - n_beta_elec
 
     # One-electron excitation
-    n_one_electron_excitation = n_elec * (n_spin_orb - n_elec)
+    n_one_electron_excitation = n_alpha_elec * n_alpha_hole + n_beta_elec * n_beta_hole
 
     # Two-electron excitation
-    n_two_electron_excitation = binomial(n_elec, 2) * binomial(n_spin_orb - n_elec, 2)
+    n_two_electron_excitation =
+        binomial(n_alpha_elec, 2) * binomial(n_alpha_hole, 2) +
+        binomial(n_beta_elec, 2) * binomial(n_beta_hole, 2) +
+        (n_alpha_elec * n_alpha_hole) * (n_beta_elec * n_beta_hole)
 
     n_one_electron_excitation + n_two_electron_excitation
 end
@@ -148,7 +144,7 @@ function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
 
 end
 
-function one_electron_integral(int1::Array{T,2}, occ_modes::Vector{Vector{FermiFSIndex}}) where {T<:Number}
+function one_electron_integral(int1::Array{T,2}, occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}) where {T<:Number}
     one_elec_int = zero(T)
     for occ_mode in occ_modes
         for i in occ_mode
@@ -158,7 +154,7 @@ function one_electron_integral(int1::Array{T,2}, occ_modes::Vector{Vector{FermiF
     one_elec_int
 end
 
-function two_electron_integral(int2::Array{T,4}, occ_modes::Vector{Vector{FermiFSIndex}})::T where {T<:Number}
+function two_electron_integral(int2::Array{T,4}, occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}})::T where {T<:Number}
     two_elec_int = zero(T)
 
     sum_alpha_alpha = zero(T)
