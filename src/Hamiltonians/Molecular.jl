@@ -76,9 +76,9 @@ function num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
 end
 
 function ref_num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
-    n_orb = num_modes(column.addr.components[1])
-    n_alpha_elec = num_occupied_modes(column.addr.components[1])
-    n_beta_elec = num_occupied_modes(column.addr.components[2])
+    n_orb = num_modes(column.address.components[1])
+    n_alpha_elec = num_occupied_modes(column.address.components[1])
+    n_beta_elec = num_occupied_modes(column.address.components[2])
 
     n_alpha_hole = n_orb - n_alpha_elec
     n_beta_hole = n_orb - n_beta_elec
@@ -132,9 +132,9 @@ function init_offdiagonals(addr::A, op::MolecularHamiltonian{T,A,D}, modes::Mode
     states
 end
 
-function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
-    return rand(column.ods)
-end
+# function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
+#     return rand(column.ods), 1 / length(column.ods)
+# end
 
 function one_electron_integral(int1::Array{T,2}, occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}) where {T<:Number}
     one_elec_int = zero(T)
