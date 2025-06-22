@@ -27,6 +27,8 @@ Basic interface methods to implement:
 Optional additional methods to implement:
 - [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
 - [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
+- [`RandomOffdiagonalTrait(op)`](@ref): defaults to `NoRandomOffdiagonal()`
+- [`IterableOffdiagonalsTrait(op)`](@ref): defaults to `NoIterableOffdiagonals()`
 
 See also [`AbstractOperator`](@ref), [`AbstractHamiltonian`](@ref), [`Interfaces`](@ref).
 """
@@ -76,7 +78,7 @@ as observable operators in a [`ReplicaStrategy`](@ref Rimu.ReplicaStrategy), e.g
 defining correlation functions. In contrast to [`AbstractHamiltonian`](@ref)s,
 `AbstractOperator`s do not need to have a [`starting_address`](@ref). Moreover, the
 `eltype` of an `AbstractOperator` can be a vector value whereas
-[`AbstractHamiltonian`](@ref)s requre a scalar `eltype`.
+[`AbstractHamiltonian`](@ref)s require a scalar `eltype`.
 
     AbstractHamiltonian{T} <: AbstractOperator{T} <: AbstractObservable{T}
 
@@ -90,28 +92,33 @@ implement a Hamiltonian for use in [`ProjectorMonteCarloProblem`](@ref) or
 
 # Interface
 
-There are two options for which methods need to be implemented.
-
-If the number of non-zero matrix elements that can be reached from any address is known,
-and they can be separately generated:
-- [`allows_address_type(op, type)`](@ref)
-- [`diagonal_element(op, address)`](@ref)
-- [`num_offdiagonals(op, address)`](@ref) and
-- [`get_offdiagonal(op, address, chosen)`](@ref) or [`offdiagonals`](@ref)
-
-Alternatively, if the generation of matrix elements is more complicated:
+Mandatory methods to implement:
 - [`allows_address_type(op, type)`](@ref)
 - [`operator_column(op, address)`](@ref)
 - [`diagonal_element(column)`](@ref)
 - [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
-- [`offdiagonals(column)`](@ref)
-- [`random_offdiagonal(column)`](@ref)
+- [`offdiagonals(column)`](@ref) required for deterministic operations, see
+    [`IterableOffdiagonalsTrait(op)`](@ref) below
 
 Optional additional methods to implement:
 - [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
 - [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
 - [`dimension(op, addr)`](@ref Main.Hamiltonians.dimension): defaults to dimension of
   address space
+- [`IterableOffdiagonalsTrait(op)`](@ref): defaults to `HasIterableOffdiagonals()`
+- [`RandomOffdiagonalTrait(op)`](@ref): defaults to `NoRandomOffdiagonal()`. If this set to
+  `HasRandomOffdiagonal()`, the method [`random_offdiagonal(column)`](@ref) needs to be
+  implemented.
+
+## Alternative Interface (deprecated)
+
+If the number of non-zero matrix elements that can be reached from any address is known,
+and they can be separately generated:
+- [`allows_address_type(op, type)`](@ref)
+- [`diagonal_element(op, address)`](@ref)
+- [`num_offdiagonals(op, address)`](@ref) and
+- [`get_offdiagonal(op, address, chosen)`](@ref) or [`offdiagonals`](@ref) returning an
+    `AbstractVector` object.
 
 In order to calculate observables efficiently, it may make sense to implement custom methods
 for [`Interfaces.dot_from_right(x, op, y)`](@ref) and [`LinearAlgebra.mul!(y, op, x)`](@ref).
@@ -167,31 +174,32 @@ For available implementations see [`Hamiltonians`](@ref Main.Hamiltonians).
 
 # Interface
 
-There are two options for which methods need to be implemented.
+Mandatory methods to implement:
 
-If the number of non-zero matrix elements that can be reached from any address is known,
-and they can be separately generated:
 * [`starting_address(::AbstractHamiltonian)`](@ref)
-* [`diagonal_element(op, address)`](@ref)
-* [`num_offdiagonals(op, address)`](@ref) and
-* [`get_offdiagonal(op, address, chosen)`](@ref) or [`offdiagonals`](@ref)
-
-Alternatively, if the generation of matrix elements is more complicated:
-* [`starting_address(::AbstractHamiltonian)`](@ref)
-* [`operator_column(op, address)`](@ref)
+* [`operator_column(op, address)`](@ref) returns an `AbstractOperatorColumn`
 * [`diagonal_element(column)`](@ref)
 * [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
-* [`offdiagonals(column)`](@ref)
+* [`offdiagonals(column)`](@ref) returns an iterator
 * [`random_offdiagonal(column)`](@ref)
 
 Optional additional methods to implement:
 
 * [`LOStructure(::Type{typeof(lo)})`](@ref LOStructure): defaults to `AdjointUnknown`
+* [`RandomOffdiagonalTrait(op)`](@ref): defaults to `HasRandomOffdiagonal()`.
+* [`IterableOffdiagonalsTrait(op)`](@ref): defaults to `HasIterableOffdiagonals()`.
 * [`dimension(::AbstractHamiltonian, addr)`](@ref Main.Hamiltonians.dimension): defaults to
   dimension of address space
 * [`allows_address_type(h::AbstractHamiltonian, type)`](@ref): defaults to
   `type :< typeof(starting_address(h))`
 * [`momentum(::AbstractHamiltonian)`](@ref Main.Hamiltonians.momentum): no default
+
+## Alternative Interface (deprecated)
+
+* [`starting_address(::AbstractHamiltonian)`](@ref)
+* [`diagonal_element(op, address)`](@ref)
+* [`num_offdiagonals(op, address)`](@ref) and
+* [`get_offdiagonal(op, address, chosen)`](@ref) or [`offdiagonals`](@ref)
 
 Provides the following functions and methods:
 
@@ -554,8 +562,9 @@ See also [`IterableOffdiagonalsTrait`](@ref Main.Interfaces.IterableOffdiagonals
 """
 struct HasIterableOffdiagonals <: IterableOffdiagonalsTrait end
 
-IterableOffdiagonalsTrait(::Type{<:AbstractObservable}) = HasIterableOffdiagonals()
-# default trait for observables
+# default traits for operators and observables
+IterableOffdiagonalsTrait(::Type{<:AbstractOperator}) = HasIterableOffdiagonals()
+IterableOffdiagonalsTrait(::Type{<:AbstractObservable}) = NoIterableOffdiagonals()
 
 """
     RandomOffdiagonalTrait(operatortype::Type) -> RandomOffdiagonalTrait
@@ -605,5 +614,6 @@ See also [`RandomOffdiagonalTrait`](@ref Main.Interfaces.RandomOffdiagonalTrait)
 """
 struct HasRandomOffdiagonal <: RandomOffdiagonalTrait end
 
-RandomOffdiagonalTrait(::Type{<:AbstractObservable}) = HasRandomOffdiagonal()
-# default trait for observables
+# default traits for operators and observables
+RandomOffdiagonalTrait(::Type{<:AbstractHamiltonian}) = HasRandomOffdiagonal()
+RandomOffdiagonalTrait(::Type{<:AbstractObservable}) = NoRandomOffdiagonal()
