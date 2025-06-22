@@ -43,7 +43,7 @@ function modes_extract(addr::FermiFS2C)
 end
 
 struct MolecularHamiltonianOperatorColumn{A<:FermiFS2C,T,O<:MolecularHamiltonian{T,A},OD,M<:Modes} <: AbstractOperatorColumn{A,T,O}
-    addr::A # Contains address Psi_i, provided by operator_column
+    address::A # Contains address Psi_i, provided by operator_column
     op::O   # Represent Hamiltonian itself, provided by operator_column
     diag::T # < Psi_i | Psi_i >, calculated by diagonal_element
     ods::OD # Vector [ < Psi_j | Psi_i > ], calculated by offdiagonals
@@ -54,7 +54,7 @@ function starting_address(h::MolecularHamiltonian)
     return h.starting_address
 end
 
-function operator_column(h::MolecularHamiltonian{T,A,D}, a::FermiFS2C)::MolecularHamiltonianOperatorColumn where {T<:Number,A,D}
+function operator_column(h::MolecularHamiltonian{T,A,D}, a::A)::MolecularHamiltonianOperatorColumn where {T<:Number,A<:FermiFS2C,D}
     modes = modes_extract(a)
 
     diag = zero(T)
@@ -64,7 +64,7 @@ function operator_column(h::MolecularHamiltonian{T,A,D}, a::FermiFS2C)::Molecula
 
     ods = init_offdiagonals(a, h, modes)
 
-    MolecularHamiltonianOperatorColumn{typeof(a),T,typeof(h),typeof(ods),typeof(modes)}(a, h, diag, ods, modes)
+    MolecularHamiltonianOperatorColumn{A,T,typeof(h),typeof(ods),typeof(modes)}(a, h, diag, ods, modes)
 end
 
 function diagonal_element(column::MolecularHamiltonianOperatorColumn{A,T,O,OD}) where {A<:FermiFS2C,T,O,OD}
@@ -99,8 +99,8 @@ function offdiagonals(column::MolecularHamiltonianOperatorColumn)
     return column.ods
 end
 
-function init_offdiagonals(addr::FermiFS2C, op::MolecularHamiltonian{T,A,D}, modes::Modes) where {T,A,D}
-    states = Tuple{FermiFS2C,T}[]
+function init_offdiagonals(addr::A, op::MolecularHamiltonian{T,A,D}, modes::Modes) where {T,A,D}
+    states = Tuple{A,T}[]
     alpha_one_electron = one_electron_excitation_state(1, addr, op, modes)
     beta_one_electron = one_electron_excitation_state(2, addr, op, modes)
 
