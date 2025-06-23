@@ -77,8 +77,8 @@ end
 
 function ref_num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
     n_orb = num_modes(column.address.components[1])
-    n_alpha_elec = num_occupied_modes(column.address.components[1])
-    n_beta_elec = num_occupied_modes(column.address.components[2])
+    n_alpha_elec = num_particles(column.address.components[1])
+    n_beta_elec = num_particles(column.address.components[2])
 
     n_alpha_hole = n_orb - n_alpha_elec
     n_beta_hole = n_orb - n_beta_elec
