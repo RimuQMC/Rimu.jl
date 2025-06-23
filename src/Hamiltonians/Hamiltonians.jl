@@ -23,7 +23,7 @@ Other
 - [`FroehlichPolaron`](@ref)
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
-- [`OperatorProduct`](@ref)
+- [`HamiltonianProduct`](@ref)
 
 ## [Wrappers](#Hamiltonian-wrappers)
 - [`GutzwillerSampling`](@ref)
@@ -93,7 +93,7 @@ export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCarte
 export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
-export OperatorProduct
+export HamiltonianProduct
 
 if VERSION < v"1.10"
     # used for ReducedDensityMatrix
