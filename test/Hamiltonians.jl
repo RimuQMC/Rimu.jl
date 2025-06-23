@@ -65,6 +65,7 @@ end
         FroehlichPolaron(OccupationNumberFS(1, 1, 1)),
         FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
+        HubbardReal1D(BoseFS(2,0,0);u=1.0im)*ExtendedHubbardReal1D(BoseFS(2,0,0))
     )
         # test_hamiltonian_interface(H; test_spawning=false)
         test_hamiltonian_interface(H; test_random_offdiagonal=!(H isa HOCartesianContactInteractions))
@@ -90,8 +91,7 @@ end
         (SingleParticleExcitation(2, 3), BoseFS(1, 2, 3, 4)),
         (TwoParticleExcitation(3, 2, 1, 4), BoseFS(1, 2, 3, 4)),
         (Momentum(1), BoseFS(1, 2, 3, 4)),
-        (G2MomCorrelator(3), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
-        (HubbardReal1D(BoseFS(2,0,0);u=1.0im)*ExtendedHubbardReal1D(BoseFS(2,0,0)), BoseFS(2,0,0))
+        (G2MomCorrelator(3), BoseFS(1, 2, 0, 3, 0, 4, 0, 1))
     ]
         test_operator_interface(op, addr)
         # Check that the result of show can be pasted into the REPL
@@ -736,7 +736,7 @@ end
 using Rimu.Hamiltonians: circshift_dot
 
 @testset "Correlation functions" begin
-    @testset "circhshift_dot" begin
+    @testset "circshift_dot" begin
         for i in 1:10
             A = rand(3, 4, 5)
             B = rand(3, 4, 5)
@@ -1725,13 +1725,29 @@ end
     end
 end
 
-@testset "OperatorProduct" begin
+@testset "HamiltonianProduct" begin
     addr = BoseFS(2,0,0)
+
+    H = HubbardReal1D(addr)
+    start_at = DVec(addr => 10; style=IsStochasticWithThreshold(0.1))
+    P = H*H
+    problem = ProjectorMonteCarloProblem(P; start_at, last_step=10000, target_walkers=10000)
+    df = DataFrame(solve(problem))
+    energy = shift_estimator(df; skip=5000)
+    @test energy.mean ≈ eigvals(Matrix(P))[1] atol=5*energy.err
+
     H1 = HubbardReal1D(addr;u=1.0im)
     H2 = ExtendedHubbardReal1D(addr)
+    @test LOStructure(H2*H2) == IsHermitian()
     P = H1*H2
     @test LOStructure(P) == AdjointKnown()
     c = operator_column(P, addr)
+
+    for _ in 1:20
+        a, p, v = random_offdiagonal(c)
+        @test (a => v) in offdiagonals(c)
+    end
+
     ods = [DVec(od) for od in offdiagonals(c)]
     ods_product = DVec(addr => diagonal_element(c)) + sum(ods)
 
@@ -1750,16 +1766,16 @@ end
     end
     @test ods_product == ods_manual
 
-   basis = build_basis(addr)
-   @test Matrix(H1, basis) * Matrix(H2, basis) ≈ Matrix(H1 * H2, basis)
+    basis = build_basis(addr)
+    @test Matrix(H1, basis) * Matrix(H2, basis) ≈ Matrix(H1 * H2, basis)
 
     addr = FermiFS(1,0,0)
     H3 = HubbardReal1D(addr)
     @test_throws ArgumentError H1*H3
 
     addr = FermiFS(1,1,1)
-    H = HubbardReal1D(addr)
-    P = H3*H3
+    H4 = HubbardReal1D(addr)
+    P = H4*H4
     c = operator_column(P, addr)
     @test iszero(last.(collect(offdiagonals(c))))
 end

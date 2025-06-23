@@ -1,30 +1,33 @@
 """
-    OperatorProduct(A::AbstractOperator, B::AbstractOperator)
+    HamiltonianProduct(A::AbstractHamiltonian, B::AbstractHamiltonian; commuting=A==B)
 
-The product of two [`AbstractOperator`](@ref)s, acting from right to left. The two operators
-must act on the same address space.
+The product of two [`AbstractHamiltonian`](@ref)s, acting from right to left. The two Hamiltonians
+must act on the same address space. Set `commuting` to `true` if `A` and `B` commute.
 """
-struct OperatorProduct{T, O1<:AbstractOperator, O2<:AbstractOperator} <: AbstractOperator{T}
+struct HamiltonianProduct{T, O1<:AbstractHamiltonian, O2<:AbstractHamiltonian, C} <: AbstractHamiltonian{T}
     op1::O1
     op2::O2
 end
-function OperatorProduct(op1::AbstractOperator{T1}, op2::AbstractOperator{T2}) where {T1, T2}
-    if (op2 isa AbstractHamiltonian && !allows_address_type(op1, starting_address(op2)) ||
-        op1 isa AbstractHamiltonian && !allows_address_type(op2, starting_address(op1)))
-        throw(ArgumentError("The operators are not compatible."))
+function HamiltonianProduct(
+    op1::AbstractHamiltonian{T1}, op2::AbstractHamiltonian{T2}; commuting = op1==op2
+) where {T1, T2}
+    if !allows_address_type(op1, starting_address(op2))
+        throw(ArgumentError("The Hamiltonians are not compatible."))
     end
-    return OperatorProduct{promote_type(T1,T2), typeof(op1), typeof(op2)}(op1, op2)
+    return HamiltonianProduct{promote_type(T1,T2), typeof(op1), typeof(op2), commuting}(op1, op2)
 end
-Base.:*(op1::AbstractOperator, op2::AbstractOperator) = OperatorProduct(op1, op2)
+Base.:*(op1::AbstractHamiltonian, op2::AbstractHamiltonian) = HamiltonianProduct(op1, op2)
 
-function allows_address_type(p::OperatorProduct, ::Type{A}) where {A}
+function allows_address_type(p::HamiltonianProduct, ::Type{A}) where {A}
     return allows_address_type(p.op2, A) && allows_address_type(p.op1, A)
 end
 
-function LOStructure(::Type{<:OperatorProduct{<:Any,O1,O2}}) where {O1,O2}
+starting_address(p::HamiltonianProduct) = starting_address(p.op2)
+
+function LOStructure(::Type{<:HamiltonianProduct{<:Any,O1,O2,C}}) where {O1,O2,C}
     l1 = LOStructure(O1)
     l2 = LOStructure(O2)
-    if l1 == IsHermitian() && l2 == IsHermitian()
+    if l1 == IsHermitian() && l2 == IsHermitian() && C
         return IsHermitian()
     elseif l1 == IsDiagonal() && l2 == IsDiagonal()
         return IsDiagonal()
@@ -34,16 +37,16 @@ function LOStructure(::Type{<:OperatorProduct{<:Any,O1,O2}}) where {O1,O2}
         return AdjointUnknown()
     end
 end
-function LinearAlgebra.adjoint(op::OperatorProduct)
-    return OperatorProduct(op.op2',op.op1')
+function LinearAlgebra.adjoint(op::HamiltonianProduct{<:Any,<:Any,<:Any,C}) where {C}
+    return HamiltonianProduct(op.op2',op.op1'; commuting=C)
 end
 
-struct ProductColumn{A,T,O<:OperatorProduct{T},C} <: AbstractOperatorColumn{A,T,O}
+struct ProductColumn{A,T,O<:HamiltonianProduct{T},C} <: AbstractOperatorColumn{A,T,O}
     operator::O
     address::A
     col2::C
 end
-operator_column(o::OperatorProduct, a) = ProductColumn(o, a, operator_column(o.op2, a))
+operator_column(o::HamiltonianProduct, a) = ProductColumn(o, a, operator_column(o.op2, a))
 starting_address(c::ProductColumn) = c.address
 num_offdiagonals(c::ProductColumn) = 2*(num_offdiagonals(c.col2)+1)^2
 
@@ -72,7 +75,7 @@ function random_offdiagonal(c::ProductColumn)
     end
 end
 
-struct ProductOffdiagonals{A,T,O<:OperatorProduct{T},C,OD}
+struct ProductOffdiagonals{A,T,O<:HamiltonianProduct{T},C,OD}
     operator::O
     address::A
     col2::C
