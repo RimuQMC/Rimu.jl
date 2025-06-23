@@ -19,7 +19,7 @@ provided by external packages.
 """
 module ExactDiagonalization
 
-using LinearAlgebra: LinearAlgebra, eigen!, issymmetric, ishermitian, Matrix, dot
+using LinearAlgebra: LinearAlgebra, eigen!, issymmetric, ishermitian, Matrix, dot, ⋅
 using LinearMaps: LinearMaps, LinearMap
 using SparseArrays: SparseArrays, nnz, nzrange, sparse
 using CommonSolve: CommonSolve, solve, init
