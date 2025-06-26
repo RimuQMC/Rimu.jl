@@ -38,7 +38,7 @@ end
 
 function modes_extract(addr::FermiFS2C)
     occupied_modes = (OccupiedModeMap(addr.components[1]), OccupiedModeMap(addr.components[2]))
-    unoccupied_modes = (UnoccupiedModeMap(addr.components[1]), UnoccupiedModeMap(addr.components[2]))
+    unoccupied_modes = (unoccupied_mode_map(addr.components[1]), unoccupied_mode_map(addr.components[2]))
     Modes(occupied_modes, unoccupied_modes)
 end
 
