@@ -66,7 +66,7 @@ using ..Interfaces
 using ..Interfaces: sum_mutating!
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
     offdiagonals, random_offdiagonal, LOStructure, allows_address_type, operator_column,
-    RandomOffdiagonalTrait, IterableOffdiagonalsTrait
+    has_random_offdiagonal, has_iterable_offdiagonals
 
 export dimension, rayleigh_quotient, momentum
 

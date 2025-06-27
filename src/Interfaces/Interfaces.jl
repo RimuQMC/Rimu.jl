@@ -65,8 +65,7 @@ export
 export
     num_replicas, num_spectral_states, num_overlaps
 export
-    IterableOffdiagonalsTrait, NoIterableOffdiagonals, HasIterableOffdiagonals,
-    RandomOffdiagonalTrait, NoRandomOffdiagonal, HasRandomOffdiagonal
+    has_iterable_offdiagonals, has_random_offdiagonal
 
 include("stochasticstyles.jl")
 include("dictvectors.jl")

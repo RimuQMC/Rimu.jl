@@ -245,7 +245,7 @@ function starting_address(h::HOCartesianContactInteractions)
 end
 
 LOStructure(::Type{<:HOCartesianContactInteractions}) = IsHermitian()
-RandomOffdiagonalTrait(::Type{<:HOCartesianContactInteractions}) = NoRandomOffdiagonal()
+has_random_offdiagonal(::Type{<:HOCartesianContactInteractions}) = false
 
 ### DIAGONAL ELEMENTS ###
 function energy_transfer_diagonal(h::HOCartesianContactInteractions{D}, omm::BoseOccupiedModeMap) where {D}

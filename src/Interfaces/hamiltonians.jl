@@ -27,8 +27,8 @@ Basic interface methods to implement:
 Optional additional methods to implement:
 - [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
 - [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
-- [`RandomOffdiagonalTrait(op)`](@ref): defaults to `NoRandomOffdiagonal()`
-- [`IterableOffdiagonalsTrait(op)`](@ref): defaults to `NoIterableOffdiagonals()`
+- [`has_random_offdiagonal(::Type{typeof(op)})`](@ref): defaults to `false`
+- [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref): defaults to `false`
 
 See also [`AbstractOperator`](@ref), [`AbstractHamiltonian`](@ref), [`Interfaces`](@ref).
 """
@@ -98,16 +98,16 @@ Mandatory methods to implement:
 - [`diagonal_element(column)`](@ref)
 - [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
 - [`offdiagonals(column)`](@ref) required for deterministic operations, see
-    [`IterableOffdiagonalsTrait(op)`](@ref) below
+    [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref) below
 
 Optional additional methods to implement:
 - [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
 - [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
 - [`dimension(op, addr)`](@ref Main.Hamiltonians.dimension): defaults to dimension of
   address space
-- [`IterableOffdiagonalsTrait(op)`](@ref): defaults to `HasIterableOffdiagonals()`
-- [`RandomOffdiagonalTrait(op)`](@ref): defaults to `NoRandomOffdiagonal()`. If this set to
-  `HasRandomOffdiagonal()`, the method [`random_offdiagonal(column)`](@ref) needs to be
+- [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref): defaults to `true`
+- [`has_random_offdiagonal(::Type{typeof(op)})`](@ref): defaults to `false`. If this set to
+  `true`, the method [`random_offdiagonal(column)`](@ref) needs to be
   implemented.
 
 ## Alternative Interface (deprecated)
@@ -176,7 +176,7 @@ For available implementations see [`Hamiltonians`](@ref Main.Hamiltonians).
 
 Mandatory methods to implement:
 
-* [`starting_address(::AbstractHamiltonian)`](@ref)
+* [`starting_address(op::AbstractHamiltonian)`](@ref)
 * [`operator_column(op, address)`](@ref) returns an `AbstractOperatorColumn`
 * [`diagonal_element(column)`](@ref)
 * [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
@@ -185,9 +185,9 @@ Mandatory methods to implement:
 
 Optional additional methods to implement:
 
-* [`LOStructure(::Type{typeof(lo)})`](@ref LOStructure): defaults to `AdjointUnknown`
-* [`RandomOffdiagonalTrait(op)`](@ref): defaults to `HasRandomOffdiagonal()`.
-* [`IterableOffdiagonalsTrait(op)`](@ref): defaults to `HasIterableOffdiagonals()`.
+* [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
+* [`has_random_offdiagonal(::Type{typeof(op)})`](@ref): defaults to `true`.
+* [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref): defaults to `true`.
 * [`dimension(::AbstractHamiltonian, addr)`](@ref Main.Hamiltonians.dimension): defaults to
   dimension of address space
 * [`allows_address_type(h::AbstractHamiltonian, type)`](@ref): defaults to
@@ -199,7 +199,7 @@ Optional additional methods to implement:
 * [`starting_address(::AbstractHamiltonian)`](@ref)
 * [`diagonal_element(op, address)`](@ref)
 * [`num_offdiagonals(op, address)`](@ref) and
-* [`get_offdiagonal(op, address, chosen)`](@ref) or [`offdiagonals`](@ref)
+* [`get_offdiagonal(op, address, chosen)`](@ref) or [`offdiagonals(op, address)`](@ref)
 
 Provides the following functions and methods:
 
@@ -496,9 +496,9 @@ by `ham`. Alternatively, pass as argument a column `operator_column(ham, address
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
 function random_offdiagonal(::AbstractOperatorColumn{A,T,O}) where {A,T,O}
-    if RandomOffdiagonalTrait(O) isa HasRandomOffdiagonal
+    if has_random_offdiagonal(O)
         error("random_offdiagonal not implemented for operator type $O " *
-                         "even though RandomOffdiagonalTrait($O) isa HasRandomOffdiagonal")
+                         "even though has_random_offdiagonal($O) == true")
     else
         throw(ArgumentError("random_offdiagonal not supported for operator type $O"))
     end
@@ -517,13 +517,10 @@ function random_offdiagonal(ham, address)
 end
 
 """
-    IterableOffdiagonalsTrait(operatortype::Type) -> IterableOffdiagonalsTrait
+    has_iterable_offdiagonals(operatortype::Type)::Bool
 
-Return a trait that indicates whether the operator's columns have iterable
-[`offdiagonals`](@ref). One of the following values will be returned:
-- [`NoIterableOffdiagonals()`](@ref): no iterable `offdiagonals` are available.
-- [`HasIterableOffdiagonals()`](@ref): `offdiagonals(column)` returns an iterable
-  object.
+Return `true` if the operator's columns have iterable
+[`offdiagonals`](@ref).
 
 ## Example
 ```jldoctest
@@ -531,49 +528,26 @@ julia> using Rimu.Interfaces
 
 julia> h = HubbardReal1D(BoseFS(1,2,3));
 
-julia> IterableOffdiagonalsTrait(typeof(h)) isa HasIterableOffdiagonals
+julia> has_iterable_offdiagonals(typeof(h))
 true
 ```
 
 When extending the interface, implement a method for
-`IterableOffdiagonalsTrait(::Type{<:MyNewOperator})`.
+`has_iterable_offdiagonals(::Type{<:MyNewOperator})`.
 
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
-abstract type IterableOffdiagonalsTrait end
-
-"""
-    NoIterableOffdiagonals() <: IterableOffdiagonalsTrait
-`NoIterableOffdiagonals` is a trait that indicates that the operator's columns do not have
-iterable `offdiagonals`. This means that the `offdiagonals(column)` function returns an
-error when called on the operator's column.
-
-See also [`IterableOffdiagonalsTrait`](@ref Main.Interfaces.IterableOffdiagonalsTrait).
-"""
-struct NoIterableOffdiagonals <: IterableOffdiagonalsTrait end
-
-"""
-    HasIterableOffdiagonals() <: IterableOffdiagonalsTrait
-`HasIterableOffdiagonals` is a trait that indicates that the operator's columns have
-iterable `offdiagonals`. This means that the `offdiagonals(column)` function returns an
-iterable object when called on the operator's column.
-
-See also [`IterableOffdiagonalsTrait`](@ref Main.Interfaces.IterableOffdiagonalsTrait).
-"""
-struct HasIterableOffdiagonals <: IterableOffdiagonalsTrait end
+has_iterable_offdiagonals(op::AbstractObservable) = has_iterable_offdiagonals(type(op))
 
 # default traits for operators and observables
-IterableOffdiagonalsTrait(::Type{<:AbstractOperator}) = HasIterableOffdiagonals()
-IterableOffdiagonalsTrait(::Type{<:AbstractObservable}) = NoIterableOffdiagonals()
+has_iterable_offdiagonals(::Type{<:AbstractOperator}) = true
+has_iterable_offdiagonals(::Type{<:AbstractObservable}) = false
 
 """
-    RandomOffdiagonalTrait(operatortype::Type) -> RandomOffdiagonalTrait
-Return a trait that indicates whether the operator's columns have a
-[`random_offdiagonal`](@ref) method implemented. One of the following values will be
-returned:
+    has_random_offdiagonal(operatortype::Type)::Bool
 
-- [`NoRandomOffdiagonal()`](@ref): no `random_offdiagonal` method is implemented.
-- [`HasRandomOffdiagonal()`](@ref): `random_offdiagonal(column)` is implemented.
+Return `true` if the operator's columns have a
+[`random_offdiagonal`](@ref) method implemented.
 
 ## Example
 ```jldoctest
@@ -581,39 +555,17 @@ julia> using Rimu.Interfaces
 
 julia> h = HubbardReal1D(BoseFS(1,2,3));
 
-julia> RandomOffdiagonalTrait(typeof(h)) isa HasRandomOffdiagonal
+julia> has_random_offdiagonal(typeof(h))
 true
 ```
 
 When extending the interface, implement a method for
-`RandomOffdiagonalTrait(::Type{<:MyNewOperator})`.
+`Rimu.Interfaces.has_random_offdiagonal(::Type{<:MyNewOperator})`.
 
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
-abstract type RandomOffdiagonalTrait end
-
-"""
-    NoRandomOffdiagonal() <: RandomOffdiagonalTrait
-`NoRandomOffdiagonal` is a trait that indicates that the operator's columns do not have a
-`random_offdiagonal` method implemented. This means that the
-[`random_offdiagonal(column)`](@ref) function returns an error when called on the
-operator's column.
-
-See also [`RandomOffdiagonalTrait`](@ref Main.Interfaces.RandomOffdiagonalTrait).
-"""
-struct NoRandomOffdiagonal <: RandomOffdiagonalTrait end
-
-"""
-    HasRandomOffdiagonal() <: RandomOffdiagonalTrait
-`HasRandomOffdiagonal` is a trait that indicates that the operator's columns have a
-`random_offdiagonal` method implemented. This means that the
-[`random_offdiagonal(column)`](@ref) function returns a random off-diagonal element when
-called on the operator's column.
-
-See also [`RandomOffdiagonalTrait`](@ref Main.Interfaces.RandomOffdiagonalTrait).
-"""
-struct HasRandomOffdiagonal <: RandomOffdiagonalTrait end
+has_random_offdiagonal(op::AbstractObservable) = has_random_offdiagonal(type(op))
 
 # default traits for operators and observables
-RandomOffdiagonalTrait(::Type{<:AbstractHamiltonian}) = HasRandomOffdiagonal()
-RandomOffdiagonalTrait(::Type{<:AbstractObservable}) = NoRandomOffdiagonal()
+has_random_offdiagonal(::Type{<:AbstractHamiltonian}) = true
+has_random_offdiagonal(::Type{<:AbstractObservable}) = false

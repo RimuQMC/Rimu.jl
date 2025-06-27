@@ -1737,10 +1737,9 @@ end
     h = TestHamiltonian()
     addr = FermiFS{2,4}(1,0,1,0)
     col = Rimu.operator_column(h, addr)
-    t = RandomOffdiagonalTrait(typeof(h))
-    @test t isa HasRandomOffdiagonal # default trait
+    @test has_random_offdiagonal(typeof(h))  # default trait
     @test_throws ErrorException random_offdiagonal(col)
-    Rimu.RandomOffdiagonalTrait(::Type{<:TestHamiltonian}) = NoRandomOffdiagonal()
+    Rimu.has_random_offdiagonal(::Type{<:TestHamiltonian}) = false
     # set the trait to NoRandomOffdiagonal
     @test_throws ArgumentError random_offdiagonal(col) # still throws
 
