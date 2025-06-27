@@ -34,18 +34,20 @@ starting_address
 operator_column
 AbstractOperatorColumn
 diagonal_element
-num_offdiagonals
 offdiagonals
+random_offdiagonal
+num_offdiagonals
 get_offdiagonal
 ```
 
 The following functions come with default implementations, but may be customized.
 
 ```@docs
-random_offdiagonal
 Hamiltonians.LOStructure
 dimension
 has_adjoint
+has_iterable_offdiagonals
+has_random_offdiagonal
 allows_address_type
 Base.eltype
 VectorInterface.scalartype
