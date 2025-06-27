@@ -549,7 +549,7 @@ end
         lfs = OccupationNumberFS{6}([1 0 0; 1 1 0])
         @test onr(lfs, LadderBoundaries(2, 3)) == [1 0 0; 1 1 0]
         @test num_occupied_modes(lfs) == length(occupied_modes(lfs)) == 3
-        @test OccupiedModeMap(lfs) == collect(occupied_modes(lfs))
+        @test occupied_mode_map(lfs) == collect(occupied_modes(lfs))
         b1, b2 = BoseFS(1, 6), BoseFS(3, 4)
         o1, o2 = OccupationNumberFS(b1), OccupationNumberFS(b2)
         @test (o1 < o2) == (b1 < b2)

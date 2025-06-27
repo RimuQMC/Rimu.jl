@@ -249,8 +249,8 @@ end
 
 function diagonal_element(h::Transcorrelated1D{<:Any,F}, add::F) where {F}
     c1, c2 = add.components
-    map1 = OccupiedModeMap(c1)
-    map2 = OccupiedModeMap(c2)
+    map1 = occupied_mode_map(c1)
+    map2 = occupied_mode_map(c2)
 
     value = dot(h.kes, map1) + dot(h.kes, map2) +
         momentum_transfer_diagonal(h, map1, map2)
@@ -277,8 +277,8 @@ end
 function offdiagonals(h::Transcorrelated1D{M,F}, add::F) where {M,F}
     offdiags = Tuple{F,Float64}[]
     c1, c2 = add.components
-    map1 = OccupiedModeMap(c1)
-    map2 = OccupiedModeMap(c2)
+    map1 = occupied_mode_map(c1)
+    map2 = occupied_mode_map(c2)
     N1 = length(map1)
     N2 = length(map2)
     n_mom = N1 * N2 * (M - 1)
