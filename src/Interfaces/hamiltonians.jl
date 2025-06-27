@@ -100,7 +100,7 @@ Mandatory methods to implement:
 - [`diagonal_element(column)`](@ref)
 - [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
 - [`offdiagonals(column)`](@ref) required for deterministic operations, see
-    [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref) below
+    [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals) below
 
 Optional additional methods to implement:
 - [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
