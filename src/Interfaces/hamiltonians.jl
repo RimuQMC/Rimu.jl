@@ -27,8 +27,10 @@ Basic interface methods to implement:
 Optional additional methods to implement:
 - [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
 - [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
-- [`has_random_offdiagonal(::Type{typeof(op)})`](@ref): defaults to `false`
-- [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref): defaults to `false`
+- [`has_random_offdiagonal(::Type{typeof(op)})`](@ref has_random_offdiagonal): defaults to
+  `false`
+- [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals):
+  defaults to `false`
 
 See also [`AbstractOperator`](@ref), [`AbstractHamiltonian`](@ref), [`Interfaces`](@ref).
 """
@@ -105,10 +107,11 @@ Optional additional methods to implement:
 - [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
 - [`dimension(op, addr)`](@ref Main.Hamiltonians.dimension): defaults to dimension of
   address space
-- [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref): defaults to `true`
-- [`has_random_offdiagonal(::Type{typeof(op)})`](@ref): defaults to `false`. If this set to
-  `true`, the method [`random_offdiagonal(column)`](@ref) needs to be
-  implemented.
+- [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals):
+  defaults to `true`
+- [`has_random_offdiagonal(::Type{typeof(op)})`](@ref has_random_offdiagonal): defaults to
+  `false`. If this set to `true`, the method [`random_offdiagonal(column)`](@ref) needs to
+  be implemented.
 
 ## Alternative Interface (deprecated)
 
@@ -186,8 +189,10 @@ Mandatory methods to implement:
 Optional additional methods to implement:
 
 * [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
-* [`has_random_offdiagonal(::Type{typeof(op)})`](@ref): defaults to `true`.
-* [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref): defaults to `true`.
+* [`has_random_offdiagonal(::Type{typeof(op)})`](@ref has_random_offdiagonal): defaults to
+  `true`.
+* [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals):
+  defaults to `true`.
 * [`dimension(::AbstractHamiltonian, addr)`](@ref Main.Hamiltonians.dimension): defaults to
   dimension of address space
 * [`allows_address_type(h::AbstractHamiltonian, type)`](@ref): defaults to
