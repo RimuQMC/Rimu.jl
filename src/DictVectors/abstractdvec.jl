@@ -5,7 +5,11 @@
 function Base.show(io::IO, dvec::AbstractDVec)
     summary(io, dvec)
     limit, _ = displaysize()
-    for (i, p) in enumerate(pairs(localpart(dvec)))
+    # sort if length(dvec) is small to make doctests reproducible
+    pldvec = length(dvec) < 20 ? sort!(collect(pairs(localpart(dvec)))) :
+        pairs(localpart(dvec))
+
+    for (i, p) in enumerate(pldvec)
         if length(dvec) > i > limit - 4
             print(io, "\n  ⋮   => ⋮")
             break
