@@ -410,6 +410,12 @@ struct OffdiagonalsOperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatri
     diagonal::T
 end
 
+function Base.show(io::IO, c::OffdiagonalsOperatorColumn{A,T,O}) where {A,T,O}
+    io = IOContext(io, :compact => true)
+    print(io, "OffdiagonalsOperatorColumn{", nameof(A), "{…}, ", T, ", ", nameof(O),
+        "{…}}(", starting_address(c), ", …)")
+end
+
 """
     operator_column(operator::AbstractOperator, address) -> column <: AbstractOperatorColumn
     *(o::AbstractOperator, a::AbstractFockAddress) -> column
