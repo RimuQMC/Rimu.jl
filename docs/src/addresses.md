@@ -22,6 +22,10 @@ straightforward to implement efficient Hamiltonians. Examples are:
 
 ### Fock address API
 
+```@docs
+Rimu.Interfaces.AbstractFockAddress
+```
+
 ```@autodocs
 Modules = [BitStringAddresses]
 Pages = ["fockaddress.jl","bosefs.jl","fermifs.jl","multicomponent.jl","occupationnumberfs.jl"]
