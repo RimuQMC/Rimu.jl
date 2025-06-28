@@ -492,22 +492,21 @@ function Base.:*(a::AbstractFockAddress, column::AbstractOperatorColumn{<:Any,T}
 end
 
 """
-    offdiagonals(column)
+    offdiagonals(column::AbstractOperatorColumn)
     offdiagonals(h::AbstractHamiltonian, address) # (deprecated)
 
 Return an iterator over nonzero off-diagonal matrix elements of `h` in the same column as
-`address`. Will iterate over pairs `(newaddress, matrixelement)` or `newaddress => matrixelement`.
+`address`. Will iterate over pairs `(newaddress, matrixelement)` or
+`newaddress => matrixelement`.
 
 # Example
 
 ```jldoctest
 julia> address = BoseFS(3,2,1);
 
-
 julia> H = HubbardReal1D(address);
 
-
-julia> h = offdiagonals(H, address)
+julia> h = offdiagonals(H * address)
 6-element Rimu.Hamiltonians.Offdiagonals{BoseFS{6, 3, BitString{8, 1, UInt8}}, Float64, HubbardReal1D{Float64, BoseFS{6, 3, BitString{8, 1, UInt8}}, 1.0, 1.0}}:
  (fs"|2 3 1⟩", -3.0)
  (fs"|2 2 2⟩", -2.449489742783178)
@@ -516,11 +515,8 @@ julia> h = offdiagonals(H, address)
  (fs"|4 2 0⟩", -2.0)
  (fs"|3 3 0⟩", -1.7320508075688772)
 ```
-Part of the [`AbstractHamiltonian`](@ref) interface.
-
-See also [`Offdiagonals`](@ref Main.Hamiltonians.Offdiagonals),
-[`AbstractOffdiagonals`](@ref Main.Hamiltonians.AbstractOffdiagonals).
-
+Part of the [`AbstractHamiltonian`](@ref) interface. See also
+[`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
 function offdiagonals(m::AbstractMatrix, i)
     pairs = collect(zip(axes(m, 1), view(m, :, i)))
@@ -538,15 +534,17 @@ function offdiagonals(::AbstractOperatorColumn{A,T,O}) where {A,T,O}
 end
 
 """
-    random_offdiagonal(column)
+    random_offdiagonal(column::AbstractOperatorColumn)
     random_offdiagonal(ham::AbstractHamiltonian, address) # deprecated
     -> newaddress, probability, matrixelement
 
 Generate a single random excitation, i.e. choose from one of the accessible off-diagonal
-elements in the column corresponding to `address` in the Hamiltonian matrix represented
-by `ham`. Alternatively, pass as argument a column `operator_column(ham, address)`.
+elements in the column `ham * address`.
+The result is a tuple of the new address `newaddress`, the probability of this excitation
+`probability`, and the matrix element `matrixelement` of the excitation.
 
-Part of the [`AbstractHamiltonian`](@ref) interface.
+Part of the [`AbstractHamiltonian`](@ref) interface. See also
+[`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
 function random_offdiagonal(::AbstractOperatorColumn{A,T,O}) where {A,T,O}
     if has_random_offdiagonal(O)
@@ -588,7 +586,8 @@ true
 When extending the interface, implement a method for
 `has_iterable_offdiagonals(::Type{<:MyNewOperator})`.
 
-Part of the [`AbstractHamiltonian`](@ref) interface.
+Part of the [`AbstractHamiltonian`](@ref) interface. See also
+[`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
 has_iterable_offdiagonals(op::AbstractObservable) = has_iterable_offdiagonals(typeof(op))
 has_iterable_offdiagonals(::AbstractOperatorColumn{A,T,O}) where {A,T,O} =
@@ -617,7 +616,8 @@ true
 When extending the interface, implement a method for
 `Rimu.Interfaces.has_random_offdiagonal(::Type{<:MyNewOperator})`.
 
-Part of the [`AbstractHamiltonian`](@ref) interface.
+Part of the [`AbstractHamiltonian`](@ref) interface. See also
+[`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
 has_random_offdiagonal(op::AbstractObservable) = has_random_offdiagonal(typeof(op))
 has_random_offdiagonal(::AbstractOperatorColumn{A,T,O}) where {A,T,O} =
