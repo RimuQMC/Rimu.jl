@@ -412,7 +412,7 @@ end
 
 """
     operator_column(operator::AbstractOperator, address) -> column <: AbstractOperatorColumn
-    *(o::AbstractOperator, a::AbstractFockAddress)
+    *(o::AbstractOperator, a::AbstractFockAddress) -> column
 
 Return an object representing the column of `operator` given by `address`. In quantum
 notation, the `column` represents the object
@@ -434,11 +434,33 @@ A `column` can be accessed with the following functions:
 * [`random_offdiagonal(column)`](@ref) - returns a random off-diagonal element in the
   `column`.
 
-Methods for these functions need to be implemented for a new type of `AbstractOperator`.
-Implementing [`random_offdiagonal(column)`](@ref) is optional if `offdiagonals(column)`
-returns an `AbstractVector`.
+Methods for these functions need to be implemented for a new type of
+[`AbstractOperator`](@ref). Implementing [`random_offdiagonal(column)`](@ref) is optional
+if [`offdiagonals(column)`](@ref) returns an `AbstractVector`.
 
-Part of the [`AbstractHamiltonian`](@ref) interface. See also [`AbstractOperatorColumn`](@ref).
+# Example
+```jldoctest
+julia> address = BoseFS(1,2,3);
+
+julia> H = HubbardRealSpace(address);
+
+julia> column = operator_column(H, address);
+
+julia> H * address == column
+true
+
+julia> num_offdiagonals(column)
+6
+
+julia> diagonal_element(column) == address * column
+true
+
+julia> fs"|1 3 2⟩" * column
+-3.0
+```
+
+Part of the [`AbstractHamiltonian`](@ref) interface. See also
+[`AbstractOperatorColumn`](@ref).
 """
 operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a),
     eltype(o)(diagonal_element(o,a)))
@@ -448,6 +470,19 @@ starting_address(c::OffdiagonalsOperatorColumn) = c.address
 diagonal_element(c::OffdiagonalsOperatorColumn) = c.diagonal
 num_offdiagonals(c::OffdiagonalsOperatorColumn) = num_offdiagonals(c.operator, c.address)
 offdiagonals(c::OffdiagonalsOperatorColumn) = c.ods
+
+function Base.:*(a::AbstractFockAddress, column::AbstractOperatorColumn{<:Any,T}) where {T}
+    if a == starting_address(column)
+        return diagonal_element(column)::T
+    else
+        for (newaddress, matrixelement) in offdiagonals(column)
+            if newaddress == a
+                return matrixelement::T
+            end
+        end
+    end
+    return zero(T)
+end
 
 """
     offdiagonals(column)
