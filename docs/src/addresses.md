@@ -28,7 +28,7 @@ Rimu.Interfaces.AbstractFockAddress
 
 ```@autodocs
 Modules = [BitStringAddresses]
-Pages = ["fockaddress.jl","bosefs.jl","fermifs.jl","multicomponent.jl","occupationnumberfs.jl"]
+Pages = ["BitStringAddresses.jl","fockaddress.jl","bosefs.jl","fermifs.jl","multicomponent.jl","occupationnumberfs.jl"]
 Private = false
 ```
 
