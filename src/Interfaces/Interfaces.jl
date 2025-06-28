@@ -13,8 +13,7 @@ Follow the links for the definitions of the interfaces!
 * [`StochasticStyle`](@ref) for controlling the stochastic algorithms used by
     [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem) as implemented in
     [`StochasticStyles`](@ref Main.StochasticStyles)
-* [`AbstractFockAddress`](@ref) for defining Fock states, see also
-    [`BitStringAddresses`](@ref Main.BitStringAddresses).
+* [`AbstractFockAddress`](@ref) for defining Fock states.
 
 # Additional exports
 
