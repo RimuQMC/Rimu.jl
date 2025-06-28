@@ -450,7 +450,8 @@ julia> address = BoseFS(1,2,3);
 
 julia> H = HubbardRealSpace(address);
 
-julia> column = operator_column(H, address);
+julia> column = operator_column(H, address)
+OffdiagonalsOperatorColumn{BoseFS{…}, Float64, HubbardRealSpace{…}}(fs"|1 2 3⟩", …)
 
 julia> H * address == column
 true
