@@ -52,6 +52,8 @@ using DataFrames: DataFrame, metadata
 import OrderedCollections: freeze
 
 export
+    AbstractFockAddress
+export
     StochasticStyle, default_style, StyleUnknown, apply_column!, step_stats,
     CompressionStrategy, NoCompression, compress!
 export
@@ -66,6 +68,20 @@ export
     num_replicas, num_spectral_states, num_overlaps
 export
     has_iterable_offdiagonals, has_random_offdiagonal
+
+"""
+    AbstractFockAddress{N,M}
+
+Abstract type representing a Fock state with `N` particles and `M` modes.
+
+See also [`SingleComponentFockAddress`](@ref Main.SingleComponentFockAddress),
+[`CompositeFS`](@ref Main.CompositeFS), [`BoseFS`](@ref Main.BoseFS),
+[`FermiFS`](@ref Main.FermiFS).
+"""
+abstract type AbstractFockAddress{N,M} end
+
+# `AbstractFockAddress`es can be reconstructed from their printout.
+Base.typeinfo_implicit(::Type{<:AbstractFockAddress}) = true
 
 include("stochasticstyles.jl")
 include("dictvectors.jl")

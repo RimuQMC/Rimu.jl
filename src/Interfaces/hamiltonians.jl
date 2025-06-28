@@ -180,7 +180,7 @@ For available implementations see [`Hamiltonians`](@ref Main.Hamiltonians).
 Mandatory methods to implement:
 
 * [`starting_address(op::AbstractHamiltonian)`](@ref)
-* [`operator_column(op, address)`](@ref) returns an `AbstractOperatorColumn`
+* [`operator_column(op, address)`](@ref) returns an [`AbstractOperatorColumn`](@ref)
 * [`diagonal_element(column)`](@ref)
 * [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
 * [`offdiagonals(column)`](@ref) returns an iterator
@@ -208,25 +208,22 @@ Optional additional methods to implement:
 
 Provides the following functions and methods:
 
-* [`offdiagonals`](@ref): iterator over reachable off-diagonal matrix elements
-* [`random_offdiagonal`](@ref): function to generate random off-diagonal matrix element
+* [`ProjectorMonteCarloProblem(H)`](@ref Main.ProjectorMonteCarloProblem):
+  use this Hamiltonian for FCIQMC
+* [`ExactDiagonalizationProblem(H)`](@ref Main.ExactDiagonalizationProblem):
+  use this Hamiltonian for exact diagonalization
 * `*(H, v)`: deterministic matrix-vector multiply (allocating)
 * `H(v)`: equivalent to `H * v`.
 * `mul!(w, H, v)`: mutating matrix-vector multiply.
 * [`dot(x, H, v)`](@ref Main.Hamiltonians.dot): compute `x⋅(H*v)` minimizing allocations.
 * `H[address1, address2]`: indexing with `getindex()` - mostly for testing purposes (slow!)
 * [`BasisSetRepresentation`](@ref Main.ExactDiagonalization.BasisSetRepresentation):
-  construct a basis set repesentation
+  construct a basis set representation
 * [`sparse`](@ref Main.ExactDiagonalization.sparse), [`Matrix`](@ref): construct a (sparse)
   matrix representation
 
-Alternatively to the above, [`offdiagonals`](@ref) can be implemented instead of
-[`get_offdiagonal`](@ref). Sometimes this can be done efficiently. In this case
-[`num_offdiagonals`](@ref) should provide an upper bound on the number of elements obtained
-when iterating [`offdiagonals`](@ref).
-
 See also [`Hamiltonians`](@ref Main.Hamiltonians), [`Interfaces`](@ref),
-[`AbstractOperator`](@ref), [`AbstractObservable`](@ref).
+[`AbstractOperatorColumn`](@ref), [`AbstractOperator`](@ref), [`AbstractObservable`](@ref).
 """
 abstract type AbstractHamiltonian{T} <: AbstractOperator{T} end
 
@@ -249,7 +246,7 @@ function allows_address_type(op, address)
 end
 
 """
-    diagonal_element(column)
+    diagonal_element(column::AbstractOperatorColumn)
     diagonal_element(ham, address) # (deprecated)
 
 Compute the diagonal matrix element of the linear operator `ham` at
@@ -258,21 +255,20 @@ address `address`, where `column = operator_column(ham, address)`.
 # Example
 
 ```jldoctest
-julia> address = BoseFS((3, 2, 1));
+julia> H = HubbardMom1D(BoseFS(3, 2, 1));
 
+julia> column = operator_column(H, starting_address(H));
 
-julia> H = HubbardMom1D(address);
-
-
-julia> diagonal_element(H, address)
+julia> diagonal_element(column)
 8.666666666666664
 ```
-Part of the [`AbstractHamiltonian`](@ref) interface.
+Part of the [`AbstractHamiltonian`](@ref) interface. See also
+[`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
 diagonal_element(m::AbstractMatrix, i) = m[i, i]
 
 """
-    num_offdiagonals(column)
+    num_offdiagonals(column::AbstractOperatorColumn)
     num_offdiagonals(ham, address) # (deprecated)
 
 Compute the number of number of reachable configurations from address `address`,
@@ -281,21 +277,20 @@ where `column = operator_column(ham, address)`. If necessary, this may be an upp
 # Example
 
 ```jldoctest
-julia> address = BoseFS((3, 2, 1));
+julia> H = HubbardMom1D(BoseFS(3, 2, 1));
 
+julia> column = operator_column(H, starting_address(H));
 
-julia> H = HubbardMom1D(address);
-
-
-julia> num_offdiagonals(H, address)
+julia> num_offdiagonals(column)
 10
 ```
-Part of the [`AbstractHamiltonian`](@ref) interface.
+Part of the [`AbstractHamiltonian`](@ref) interface. See also
+[`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
 num_offdiagonals(m::AbstractMatrix, i) = length(offdiagonals(m, i))
 
 """
-    newadd, me = get_offdiagonal(ham, address, chosen)
+    newadd, me = get_offdiagonal(ham, address, chosen) # (deprecated)
 
 Compute value `me` and new address `newadd` of a single (off-diagonal) matrix element in a
 Hamiltonian `ham`. The off-diagonal element is in the same column as address `address` and is
@@ -316,26 +311,25 @@ Part of the [`AbstractHamiltonian`](@ref) interface.
 get_offdiagonal(m::AbstractMatrix, i, n) = offdiagonals(m, i)[n]
 
 """
-    starting_address(h)
-    starting_address(column)
+    starting_address(h::AbstractHamiltonian)
+    starting_address(column::AbstractOperatorColumn)
 
-Return the starting address for Hamiltonian `h`, or for `AbstractOperatorColumn` `column`. When
-called on an `AbstractMatrix`, `starting_address` returns the index of the lowest diagonal
-element.
+Return the starting address for the Hamiltonian `h`, or for the `column`. When
+called on an `AbstractMatrix`, `starting_address` returns the index of the diagonal
+element with the smallest real part.
 
 # Example
 
 ```jldoctest
 julia> address = BoseFS((3, 2, 1));
 
-
 julia> H = HubbardMom1D(address);
-
 
 julia> address == starting_address(H)
 true
 ```
-Part of the [`AbstractHamiltonian`](@ref) interface.
+Part of the [`AbstractHamiltonian`](@ref) interface. See also
+[`AbstractOperatorColumn`](@ref).
 """
 starting_address(m::AbstractMatrix) = findmin(real.(diag(m)))[2]
 
@@ -404,7 +398,8 @@ abstract type AbstractOperatorColumn{A,T,O} end
 """
     OffdiagonalsOperatorColumn <: AbstractOperatorColumn
 
-Default column, using [`offdiagonals(op, address)`](@ref) and [`diagonal_element(op, address)`](@ref).
+Default column, using the deprecated interface with [`offdiagonals(op, address)`](@ref) and
+[`diagonal_element(op, address)`](@ref).
 
 See also [`operator_column`](@ref).
 """
@@ -417,6 +412,7 @@ end
 
 """
     operator_column(operator::AbstractOperator, address) -> column <: AbstractOperatorColumn
+    *(o::AbstractOperator, a::AbstractFockAddress)
 
 Return an object representing the column of `operator` given by `address`. In quantum
 notation, the `column` represents the object
@@ -444,7 +440,9 @@ returns an `AbstractVector`.
 
 Part of the [`AbstractHamiltonian`](@ref) interface. See also [`AbstractOperatorColumn`](@ref).
 """
-operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a), eltype(o)(diagonal_element(o,a)))
+operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a),
+    eltype(o)(diagonal_element(o,a)))
+Base.:*(o::AbstractOperator, a::AbstractFockAddress) = operator_column(o, a)
 
 starting_address(c::OffdiagonalsOperatorColumn) = c.address
 diagonal_element(c::OffdiagonalsOperatorColumn) = c.diagonal

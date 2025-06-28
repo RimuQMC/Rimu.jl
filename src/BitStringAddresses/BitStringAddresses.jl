@@ -12,7 +12,9 @@ using StaticArrays: StaticArrays, @MVector, FieldVector, MVector, SA, SVector
 
 using Base.Cartesian
 
-export AbstractFockAddress, SingleComponentFockAddress, BoseFS, FermiFS
+using ..Interfaces: AbstractFockAddress
+
+export SingleComponentFockAddress, BoseFS, FermiFS
 export CompositeFS, FermiFS2C, time_reverse
 export OccupationNumberFS
 export BoseFSIndex, FermiFSIndex

@@ -1,15 +1,4 @@
-"""
-    AbstractFockAddress{N,M}
-
-Abstract type representing a Fock state with `N` particles and `M` modes.
-
-See also [`SingleComponentFockAddress`](@ref), [`CompositeFS`](@ref), [`BoseFS`](@ref),
-[`FermiFS`](@ref).
-"""
-abstract type AbstractFockAddress{N,M} end
-
-# `AbstractFockAddress`es can be reconstructed from their printout.
-Base.typeinfo_implicit(::Type{<:AbstractFockAddress}) = true
+# AbstractFockAddress is defined in Interfaces.jl, so we can use it here.
 
 """
     num_particles(::Type{<:AbstractFockAddress})
