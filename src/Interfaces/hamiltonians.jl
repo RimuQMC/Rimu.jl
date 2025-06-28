@@ -376,6 +376,14 @@ function offdiagonals(m::AbstractMatrix, i)
         k ≠ i && v ≠ 0
     end
 end
+function offdiagonals(::AbstractOperatorColumn{A,T,O}) where {A,T,O}
+    if has_iterable_offdiagonals(O)
+        error("offdiagonals not implemented for operator type $O " *
+              "even though has_iterable_offdiagonals($O) == true")
+    else
+        throw(ArgumentError("offdiagonals not supported for operator type $O"))
+    end
+end
 
 @doc """
     LOStructure(op::AbstractHamiltonian)
@@ -542,7 +550,9 @@ When extending the interface, implement a method for
 
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
-has_iterable_offdiagonals(op::AbstractObservable) = has_iterable_offdiagonals(type(op))
+has_iterable_offdiagonals(op::AbstractObservable) = has_iterable_offdiagonals(typeof(op))
+has_iterable_offdiagonals(::AbstractOperatorColumn{A,T,O}) where {A,T,O} =
+    has_iterable_offdiagonals(O)
 
 # default traits for operators and observables
 has_iterable_offdiagonals(::Type{<:AbstractOperator}) = true
@@ -569,7 +579,9 @@ When extending the interface, implement a method for
 
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
-has_random_offdiagonal(op::AbstractObservable) = has_random_offdiagonal(type(op))
+has_random_offdiagonal(op::AbstractObservable) = has_random_offdiagonal(typeof(op))
+has_random_offdiagonal(::AbstractOperatorColumn{A,T,O}) where {A,T,O} =
+    has_random_offdiagonal(O)
 
 # default traits for operators and observables
 has_random_offdiagonal(::Type{<:AbstractHamiltonian}) = true
