@@ -33,6 +33,7 @@ AbstractHamiltonian
 starting_address
 operator_column
 AbstractOperatorColumn
+column_operator
 diagonal_element
 offdiagonals
 random_offdiagonal

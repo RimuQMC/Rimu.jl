@@ -8,6 +8,8 @@ behaviours of `Rimu`.
 Follow the links for the definitions of the interfaces!
 * [`AbstractHamiltonian`](@ref) for defining [`Hamiltonians`](@ref Main.Hamiltonians)
 * [`AbstractOperator`](@ref) for defining observable operators
+* [`AbstractObservable`](@ref) for defining observables
+* [`AbstractOperatorColumn`](@ref) for defining operator columns
 * [`AbstractDVec`](@ref) for defining data structures for `Rimu` as in [
     `DictVectors`](@ref Main.DictVectors)
 * [`StochasticStyle`](@ref) for controlling the stochastic algorithms used by
@@ -21,6 +23,7 @@ Follow the links for the definitions of the interfaces!
 ## Interface functions for[`AbstractHamiltonian`](@ref)s:
 * [`starting_address`](@ref)
 * [`operator_column`](@ref)
+* [`column_operator`](@ref)
 * [`diagonal_element`](@ref)
 * [`random_offdiagonal`](@ref)
 * [`offdiagonals`](@ref).
@@ -69,11 +72,11 @@ export
     AbstractHamiltonian, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
     random_offdiagonal, starting_address, allows_address_type,
     LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint,
-    AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn, AbstractOperatorColumn
+    AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn,
+    AbstractOperatorColumn, column_operator,
+    has_random_offdiagonal, has_iterable_offdiagonals
 export
     num_replicas, num_spectral_states, num_overlaps
-export
-    has_iterable_offdiagonals, has_random_offdiagonal
 
 """
     AbstractFockAddress{N,M}

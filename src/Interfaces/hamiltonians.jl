@@ -181,10 +181,15 @@ Mandatory methods to implement:
 
 * [`starting_address(op::AbstractHamiltonian)`](@ref)
 * [`operator_column(op, address)`](@ref) returns an [`AbstractOperatorColumn`](@ref)
-* [`diagonal_element(column)`](@ref)
-* [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
-* [`offdiagonals(column)`](@ref) returns an iterator
-* [`random_offdiagonal(column)`](@ref)
+
+[`AbstractOperatorColumn`](@ref) has its own interface methods:
+* [`column_operator(column)`](@ref) returns the operator of the column
+* [`diagonal_element(column)`](@ref) returns the diagonal element of the column
+* [`num_offdiagonals(column)`](@ref) (this can be an upper bound) returns the number of
+    off-diagonal elements in the column
+* [`offdiagonals(column)`](@ref) returns an object representing the off-diagonal elements
+    of the column
+* [`random_offdiagonal(column)`](@ref) returns a random off-diagonal element in the column
 
 Optional additional methods to implement:
 
@@ -387,13 +392,47 @@ has_adjoint(::LOStructure) = true
 """
     AbstractOperatorColumn{A,T,O}
 
-Abstract type for operator columns returned by [`operator_column`](@ref).
-The type parameters represent the address type (`A`), the eltype (`T`), and the
-type of the operator (`O`).
+Abstract type for operator columns returned by [`operator_column(operator, address)`](@ref)
+or `operator * address`. The type parameters represent the address type (`A`), the eltype
+(`T`), and the type of the operator (`O`).
+
+In quantum notation, the column represents the object
+```math
+    Ĥ|α⟩ = ∑ᵦ|β⟩⟨β|Ĥ|α⟩,
+```
+where ``α`` is the  `address` and ``β`` represents all reachable addresses with nonzero
+matrix element ``⟨β|Ĥ|α⟩`` of the `operator` ``Ĥ``.
+
+# Interface
+
+The default constructor for `AbstractOperatorColumn` is
+`operator_column(operator, address)`. The interface for `AbstractOperatorColumn` is defined
+by the following functions:
+
+* [`column_operator(c::AbstractOperatorColumn)`](@ref) - returns the `operator`,
+* [`starting_address(c::AbstractOperatorColumn)`](@ref) - returns the starting `address`,
+* [`diagonal_element(c::AbstractOperatorColumn)`](@ref) - returns the diagonal element of
+    the column `c`, `⟨α|Ĥ|α⟩`, where ``α`` is the starting address,
+* [`num_offdiagonals(c::AbstractOperatorColumn)`](@ref) - returns an upper bound on the
+    number of off-diagonal elements in the column `c`,
+* [`offdiagonals(c::AbstractOperatorColumn)`](@ref) - returns an object representing the
+    off-diagonal elements of the column `c`,
+* [`random_offdiagonal(c::AbstractOperatorColumn)`](@ref) - returns a random off-diagonal
+    element in the column `c`.
+
+Methods for these functions need to be implemented for a new type of
+[`AbstractOperator`](@ref).
 
 Part of the  [`AbstractHamiltonian`](@ref) and  [`AbstractOperator`](@ref) interface.
+See also [`operator_column`](@ref).
 """
 abstract type AbstractOperatorColumn{A,T,O} end
+
+function Base.show(io::IO, c::AbstractOperatorColumn{A,T,O}) where {A,T,O}
+    io = IOContext(io, :compact => true)
+    show(io, column_operator(c))
+    print(io, " * ", starting_address(c))
+end
 
 """
     OffdiagonalsOperatorColumn <: AbstractOperatorColumn
@@ -410,11 +449,15 @@ struct OffdiagonalsOperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatri
     diagonal::T
 end
 
-function Base.show(io::IO, c::OffdiagonalsOperatorColumn{A,T,O}) where {A,T,O}
-    io = IOContext(io, :compact => true)
-    print(io, "OffdiagonalsOperatorColumn{", nameof(A), "{…}, ", T, ", ", nameof(O),
-        "{…}}(", starting_address(c), ", …)")
-end
+"""
+    column_operator(c::AbstractOperatorColumn)
+Return the operator of the column `c`.  This is the operator that was used to
+construct the column with [`operator_column`](@ref).
+
+Part of the [`AbstractHamiltonian`](@ref) and [`AbstractOperator`](@ref) interface.
+See also [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
+"""
+column_operator(c::OffdiagonalsOperatorColumn) = c.operator
 
 """
     operator_column(operator::AbstractOperator, address) -> column <: AbstractOperatorColumn
@@ -428,41 +471,25 @@ notation, the `column` represents the object
 where ``α`` is the  `address` and ``β`` represents all reachable addresses with nonzero
 matrix element ``⟨β|Ĥ|α⟩`` of the `operator` ``Ĥ``.
 
-A `column` can be accessed with the following functions:
-
-* [`starting_address(column)`](@ref) - returns `address`,
-* [`diagonal_element(column)`](@ref) - returns the diagonal element ``⟨α|Ĥ|α⟩`` of `address`
-  in `operator`,
-* [`num_offdiagonals(column)`](@ref) - returns an upper bound on the number of
-  off-diagonal elements in the `column`,
-* [`offdiagonals(column)`](@ref) - returns an object representing the off-diagonal
-  elements of the `column`,
-* [`random_offdiagonal(column)`](@ref) - returns a random off-diagonal element in the
-  `column`.
-
-Methods for these functions need to be implemented for a new type of
-[`AbstractOperator`](@ref). Implementing [`random_offdiagonal(column)`](@ref) is optional
-if [`offdiagonals(column)`](@ref) returns an `AbstractVector`.
+For more information and the definition of an interface see
+[`AbstractOperatorColumn`](@ref).
 
 # Example
 ```jldoctest
 julia> address = BoseFS(1,2,3);
 
-julia> H = HubbardRealSpace(address);
+julia> H = HubbardReal1D(address; u=6.0);
 
-julia> column = operator_column(H, address)
-OffdiagonalsOperatorColumn{BoseFS{…}, Float64, HubbardRealSpace{…}}(fs"|1 2 3⟩", …)
+julia> column = H * address
+HubbardReal1D(fs"|1 2 3⟩"; u=6.0, t=1.0) * fs"|1 2 3⟩"
 
-julia> H * address == column
+julia> operator_column(H, address) == column
 true
-
-julia> num_offdiagonals(column)
-6
 
 julia> diagonal_element(column) == address * column
 true
 
-julia> fs"|1 3 2⟩" * column
+julia> fs"|1 3 2⟩" * column # an off-diagonal matrix element
 -3.0
 ```
 
