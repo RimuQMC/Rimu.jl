@@ -32,12 +32,12 @@ function MolecularHamiltonian(fd::QFDump)
 end
 
 struct Modes{OA,OB,UA,UB,T<:FermiFSIndex}
-    occupied::Tuple{OccupiedModeMap{OA,T},OccupiedModeMap{OB,T}}
-    unoccupied::Tuple{OccupiedModeMap{UA,T},OccupiedModeMap{UB,T}}
+    occupied::Tuple{ModeMap{OA,T},ModeMap{OB,T}}
+    unoccupied::Tuple{ModeMap{UA,T},ModeMap{UB,T}}
 end
 
 function modes_extract(addr::FermiFS2C)
-    occupied_modes = (OccupiedModeMap(addr.components[1]), OccupiedModeMap(addr.components[2]))
+    occupied_modes = (occupied_mode_map(addr.components[1]), occupied_mode_map(addr.components[2]))
     unoccupied_modes = (unoccupied_mode_map(addr.components[1]), unoccupied_mode_map(addr.components[2]))
     Modes(occupied_modes, unoccupied_modes)
 end
