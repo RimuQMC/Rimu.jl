@@ -412,7 +412,7 @@ by the following functions:
 * [`column_operator(c::AbstractOperatorColumn)`](@ref) - returns the `operator`,
 * [`starting_address(c::AbstractOperatorColumn)`](@ref) - returns the starting `address`,
 * [`diagonal_element(c::AbstractOperatorColumn)`](@ref) - returns the diagonal element of
-    the column `c`, `⟨α|Ĥ|α⟩`, where ``α`` is the starting address,
+    the column `c`, ``⟨α|Ĥ|α⟩``, where ``α`` is the starting address,
 * [`num_offdiagonals(c::AbstractOperatorColumn)`](@ref) - returns an upper bound on the
     number of off-diagonal elements in the column `c`,
 * [`offdiagonals(c::AbstractOperatorColumn)`](@ref) - returns an object representing the
@@ -494,7 +494,9 @@ julia> fs"|1 3 2⟩" * column # an off-diagonal matrix element
 ```
 
 Part of the [`AbstractHamiltonian`](@ref) interface. See also
-[`AbstractOperatorColumn`](@ref).
+[`AbstractOperatorColumn`](@ref), [`column_operator`](@ref), [`starting_address`](@ref),
+[`diagonal_element`](@ref), [`offdiagonals`](@ref), [`num_offdiagonals`](@ref),
+[`random_offdiagonal`](@ref).
 """
 operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a),
     eltype(o)(diagonal_element(o,a)))
@@ -505,7 +507,7 @@ diagonal_element(c::OffdiagonalsOperatorColumn) = c.diagonal
 num_offdiagonals(c::OffdiagonalsOperatorColumn) = num_offdiagonals(c.operator, c.address)
 offdiagonals(c::OffdiagonalsOperatorColumn) = c.ods
 
-function Base.:*(a::AbstractFockAddress, column::AbstractOperatorColumn{<:Any,T}) where {T}
+function Base.:*(a::A, column::AbstractOperatorColumn{A,T}) where {A<:AbstractFockAddress,T}
     if a == starting_address(column)
         return diagonal_element(column)::T
     else

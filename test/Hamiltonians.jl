@@ -1734,9 +1734,12 @@ end
     function Rimu.operator_column(h::TestHamiltonian, address)
         return TestColumn(h, address)
     end
+    Rimu.column_operator(c::TestColumn) = c.operator
+    Rimu.starting_address(c::TestColumn) = c.address
     h = TestHamiltonian()
     addr = FermiFS{2,4}(1,0,1,0)
-    col = Rimu.operator_column(h, addr)
+    col = operator_column(h, addr)
+    @test col == h * addr
     @test has_random_offdiagonal(typeof(h))  # default trait
     @test has_random_offdiagonal(h) # works with instance
     @test has_random_offdiagonal(col) # works with column
@@ -1752,4 +1755,31 @@ end
     Rimu.has_iterable_offdiagonals(::Type{<:TestHamiltonian}) = false
     # set the trait
     @test_throws ArgumentError offdiagonals(col) # still throws
+
+    # Operator
+    op = SingleParticleExcitation(1, 2)
+    @test has_iterable_offdiagonals(op)
+    @test !has_random_offdiagonal(op)
+    @test offdiagonals(op * BoseFS(1, 1)) isa AbstractVector
+    @test length(offdiagonals(op * BoseFS(1, 1))) == 1
+
+    # Observable
+    obs = ReducedDensityMatrix(1)
+    @test !has_iterable_offdiagonals(obs)
+    @test !has_random_offdiagonal(obs)
+end
+
+@testset "AbstractOperatorColumn" begin
+    # standard Hamiltonian
+    h = HubbardReal1D(BoseFS(1,1,1), t=1.0)
+    addr = BoseFS(0,2,1)
+    col = operator_column(h, addr)
+    @test col == h * addr
+    @test column_operator(col) == h
+    @test starting_address(col) == addr
+    @test diagonal_element(col) == addr * col
+    @test fs"|0 1 2⟩" * col == -2 # off-diagonal element
+    @test fs"|0 0 3⟩" * col == 0 # zero off-diagonal element
+    @test_throws MethodError fs"|0 0 4⟩" * col # not in the address space
+    @test length(collect(offdiagonals(col))) == 4
 end
