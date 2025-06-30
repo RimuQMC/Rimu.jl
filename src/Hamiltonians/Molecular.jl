@@ -188,7 +188,7 @@ function one_electron_excitation_state(chan::Int, addr::FermiFS2C, op::Molecular
             new_address, interaction = excitation(addr.components[chan], (j,), (i,))
             one_body = op.fcidump.int1[j.mode, i.mode]
             two_body = zero(T)
-            for k in OccupiedModeMap(new_address)
+            for k in occupied_mode_map(new_address)
                 two_body += op.fcidump.int2[j.mode, k.mode, i.mode, k.mode] - op.fcidump.int2[j.mode, k.mode, k.mode, i.mode]
             end
             interaction *= one_body + two_body
