@@ -486,10 +486,10 @@ HubbardReal1D(fs"|1 2 3⟩"; u=6.0, t=1.0) * fs"|1 2 3⟩"
 julia> operator_column(H, address) == column
 true
 
-julia> diagonal_element(column) == address * column
+julia> diagonal_element(column) == dot(address, column)
 true
 
-julia> fs"|1 3 2⟩" * column # an off-diagonal matrix element
+julia> fs"|1 3 2⟩" ⋅ column # an off-diagonal matrix element
 -3.0
 ```
 
@@ -500,14 +500,26 @@ Part of the [`AbstractHamiltonian`](@ref) interface. See also
 """
 operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a),
     eltype(o)(diagonal_element(o,a)))
-Base.:*(o::AbstractOperator, a::AbstractFockAddress) = operator_column(o, a)
+function Base.:*(o::AbstractObservable, a::A) where {A<:Union{AbstractFockAddress,Integer}}
+    return operator_column(o, a)
+end
 
 starting_address(c::OffdiagonalsOperatorColumn) = c.address
 diagonal_element(c::OffdiagonalsOperatorColumn) = c.diagonal
 num_offdiagonals(c::OffdiagonalsOperatorColumn) = num_offdiagonals(c.operator, c.address)
 offdiagonals(c::OffdiagonalsOperatorColumn) = c.ods
 
-function Base.:*(a::A, column::AbstractOperatorColumn{A,T}) where {A<:AbstractFockAddress,T}
+"""
+    dot(a::AbstractFockAddress, column::AbstractOperatorColumn)
+
+Compute the matrix element of the operator `column` at address `a`.
+
+See also [`operator_column`](@ref), [`AbstractOperatorColumn`](@ref),
+[`AbstractFockAddress`](@ref).
+"""
+function LinearAlgebra.dot(
+    a::A, column::AbstractOperatorColumn{A,T}
+) where {A,T} # `A` is the (compatible) address type, `T` is the eltype
     if a == starting_address(column)
         return diagonal_element(column)::T
     else
@@ -518,6 +530,28 @@ function Base.:*(a::A, column::AbstractOperatorColumn{A,T}) where {A<:AbstractFo
         end
     end
     return zero(T)
+end
+
+function LinearAlgebra.dot(column::AbstractOperatorColumn, a)
+    return adjoint(LinearAlgebra.dot(a, column))
+end
+
+"""
+    dot(dv::AbstractDVec, column::AbstractOperatorColumn)
+
+Compute the dot product of the vector `dv` with the operator `column`.
+
+See also [`operator_column`](@ref), [`AbstractOperatorColumn`](@ref),
+and [`AbstractDVec`](@ref).
+"""
+function LinearAlgebra.dot(
+    dv::AbstractDVec{A}, column::AbstractOperatorColumn{A}
+) where {A} # `A` is the (compatible) address type
+    res = conj(dv[starting_address(column)]) * diagonal_element(column)
+    for (newaddress, matrixelement) in offdiagonals(column)
+        res += conj(dv[newaddress]) * matrixelement
+    end
+    return res
 end
 
 """

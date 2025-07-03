@@ -1777,9 +1777,11 @@ end
     @test col == h * addr
     @test column_operator(col) == h
     @test starting_address(col) == addr
-    @test diagonal_element(col) == addr * col
-    @test fs"|0 1 2⟩" * col == -2 # off-diagonal element
-    @test fs"|0 0 3⟩" * col == 0 # zero off-diagonal element
-    @test_throws MethodError fs"|0 0 4⟩" * col # not in the address space
+    @test diagonal_element(col) == addr ⋅ col == dot(addr, col) == dot(col, addr)'
+    @test fs"|0 1 2⟩" ⋅ col == -2 # off-diagonal element
+    @test fs"|0 0 3⟩" ⋅ col == 0 # zero off-diagonal element
+    @test_throws MethodError fs"|0 0 4⟩" ⋅ col # not in the address space
     @test length(collect(offdiagonals(col))) == 4
+    dv = DVec(addr => 1.0)
+    @test dv ⋅ col == (col ⋅ dv)' == addr ⋅ col
 end

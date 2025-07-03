@@ -317,12 +317,7 @@ function Interfaces.dot_from_right(target, op, source::AbstractDVec)
     T = typeof(zero(valtype(target)) * zero(valtype(source)) * zero(eltype(op)))
 
     result = sum(pairs(source); init=zero(T)) do (k, v)
-        column = operator_column(op, k)
-        res = conj(target[k]) * diagonal_element(column) * v
-        for (k_off, v_off) in offdiagonals(column)
-            res += conj(target[k_off]) * v_off * v
-        end
-        res
+        dot(target, op * k) * v
     end
     return result::T
 end
