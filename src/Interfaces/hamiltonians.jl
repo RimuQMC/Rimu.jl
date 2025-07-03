@@ -463,7 +463,7 @@ column_operator(c::OffdiagonalsOperatorColumn) = c.operator
     operator_column(operator::AbstractOperator, address) -> column <: AbstractOperatorColumn
     *(o::AbstractOperator, a::AbstractFockAddress) -> column
 
-Return an object representing the column of `operator` given by `address`. In quantum
+Return a (lazy) object representing the column of `operator` given by `address`. In quantum
 notation, the `column` represents the object
 ```math
     Ĥ|α⟩ = ∑ᵦ|β⟩⟨β|Ĥ|α⟩,
@@ -476,21 +476,24 @@ For more information and the definition of an interface see
 
 # Example
 ```jldoctest
-julia> address = BoseFS(1,2,3);
+julia> address = BoseFS(0,1,0);
 
 julia> H = HubbardReal1D(address; u=6.0);
 
-julia> column = H * address
-HubbardReal1D(fs"|1 2 3⟩"; u=6.0, t=1.0) * fs"|1 2 3⟩"
+julia> column = H * address # construct column with `*` operator
+HubbardReal1D(fs"|0 1 0⟩"; u=6.0, t=1.0) * fs"|0 1 0⟩"
 
 julia> operator_column(H, address) == column
 true
 
-julia> diagonal_element(column) == dot(address, column)
+julia> diagonal_element(column) == dot(address, column) # access elements with `dot()`
 true
 
-julia> fs"|1 3 2⟩" ⋅ column # an off-diagonal matrix element
--3.0
+julia> DVec(column) # materialise as a `DVec`
+DVec{BoseFS{1, 3, BitString{3, 1, UInt8}},Float64} with 3 entries, style = IsDeterministic{Float64}()
+  fs"|1 0 0⟩" => -1.0
+  fs"|0 1 0⟩" => 0.0
+  fs"|0 0 1⟩" => -1.0
 ```
 
 Part of the [`AbstractHamiltonian`](@ref) interface. See also
@@ -595,6 +598,25 @@ function offdiagonals(::AbstractOperatorColumn{A,T,O}) where {A,T,O}
         throw(ArgumentError("offdiagonals not supported for operator type $O"))
     end
 end
+
+# Iteration interface for AbstractOperatorColumn
+function Base.iterate(col::AbstractOperatorColumn)
+    return starting_address(col) => diagonal_element(col), nothing
+end
+function Base.iterate(col::AbstractOperatorColumn, state)
+    result = if state === nothing
+        iterate(offdiagonals(col))
+    else
+        iterate(offdiagonals(col), state)
+    end
+    if result === nothing
+        return nothing
+    end
+    (address, value), newstate = result
+    return address => value, newstate
+end
+Base.IteratorSize(::AbstractOperatorColumn) = Base.SizeUnknown()
+Base.eltype(::AbstractOperatorColumn{A,T}) where {A,T} = Pair{A,T}
 
 """
     random_offdiagonal(column::AbstractOperatorColumn)
