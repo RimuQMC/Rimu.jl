@@ -193,7 +193,7 @@ FermiFSIndex(occnum=0, mode=3, offset=2)
 FermiFSIndex(occnum=0, mode=5, offset=4)
 FermiFSIndex(occnum=0, mode=6, offset=5)
 ```
-See also [`find_occupied_mode`](@ref), [`SingleComponentFockAddress`](@ref).
+See also [`find_occupied_mode`](@ref), [`occupied_modes`](@ref).
 """
 unoccupied_modes
 
@@ -241,7 +241,7 @@ It stores the FSIndex of corresponding address as an `AbstractVector` compatible
 This struct is not intended to construct directly. Use [`occupied_mode_map`](@ref) or 
 [`unoccupied_mode_map`](@ref) to obtain an instance.
 
-See also [`dot`](@ref Main.Hamiltonians.dot), [`SingleComponentFockAddress`](@ref).
+See also [`SingleComponentFockAddress`](@ref).
 """
 struct ModeMap{N,T} <: AbstractVector{T}
     indices::SVector{N,T} # N = min(N, M)
@@ -272,7 +272,7 @@ julia> b = BoseFS(10, 0, 0, 0, 2, 0, 1)
 BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
 
 julia> mb = occupied_mode_map(b)
-3-element ModeMap{7, BoseFSIndex}:
+3-element Rimu.BitStringAddresses.ModeMap{7, BoseFSIndex}:
  BoseFSIndex(occnum=10, mode=1, offset=0)
  BoseFSIndex(occnum=2, mode=5, offset=14)
  BoseFSIndex(occnum=1, mode=7, offset=18)
@@ -281,7 +281,7 @@ julia> f = FermiFS(1,1,1,1,0,0,1,0,0)
 FermiFS{5,9}(1, 1, 1, 1, 0, 0, 1, 0, 0)
 
 julia> mf = occupied_mode_map(f)
-5-element ModeMap{5, FermiFSIndex}:
+5-element Rimu.BitStringAddresses.ModeMap{5, FermiFSIndex}:
  FermiFSIndex(occnum=1, mode=1, offset=0)
  FermiFSIndex(occnum=1, mode=2, offset=1)
  FermiFSIndex(occnum=1, mode=3, offset=2)
@@ -297,7 +297,8 @@ julia> dot(mf, mb)
 julia> dot(mf, 1:20)
 17
 ```
-See also [`dot`](@ref Main.Hamiltonians.dot), [`SingleComponentFockAddress`](@ref).
+See also [`dot`](@ref Main.Hamiltonians.dot), [`unoccupied_mode_map`](@ref),
+[`SingleComponentFockAddress`](@ref).
 """
 function occupied_mode_map(addr::SingleComponentFockAddress{N,M}) where {N,M}
     modes = occupied_modes(addr)
@@ -339,7 +340,7 @@ julia> b = BoseFS(10, 0, 0, 0, 2, 0, 1)
 BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
 
 julia> mb = occupied_mode_map(b)
-3-element ModeMap{7, BoseFSIndex}:
+3-element Rimu.BitStringAddresses.ModeMap{7, BoseFSIndex}:
  BoseFSIndex(occnum=10, mode=1, offset=0)
  BoseFSIndex(occnum=2, mode=5, offset=14)
  BoseFSIndex(occnum=1, mode=7, offset=18)

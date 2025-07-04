@@ -143,7 +143,8 @@ of indices compatible with [`excitation`](@ref).
 `unoccupied_mode_map(addr)[i]` contains the index for the `i`-th unoccupied mode.
 This is useful because unoccupied modes is required in some cases.
 `unoccupied_mode_map(addr)` is an eager version of the iterator returned by
-[`unoccupied_modes`](@ref). It is similar to [`onr`](@ref) but contains more information.
+[`unoccupied_modes`](@ref). It is similar to 
+[`onr`](@ref) but contains more information.
 
 # Example
 
@@ -152,7 +153,7 @@ julia> f = FermiFS(1,1,0,0)
 FermiFS{2,4}(1, 1, 0, 0)
 
 julia> mf = unoccupied_mode_map(f)
-2-element ModeMap{2, FermiFSIndex}:
+2-element Rimu.BitStringAddresses.ModeMap{2, FermiFSIndex}:
  FermiFSIndex(occnum=0, mode=3, offset=2)
  FermiFSIndex(occnum=0, mode=4, offset=3)
  
@@ -160,7 +161,7 @@ julia> mf == collect(unoccupied_modes(f))
 true
 
 ```
-See also [`SingleComponentFockAddress`](@ref).
+See also [`occupied_mode_map`](@ref).
 """
 function unoccupied_mode_map(addr::FermiFS{N,M}) where {N,M}
     modes = unoccupied_modes(addr)
