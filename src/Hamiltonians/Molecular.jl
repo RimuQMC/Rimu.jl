@@ -125,7 +125,7 @@ function init_offdiagonals(addr::A, op::MolecularHamiltonian{T,A,D}, modes::Mode
 
     for i in alpha_one_electron
         for j in beta_one_electron
-            push!(states, (FermiFS2C(i[1], j[1]), i[2] * j[2]))
+            push!(states, (FermiFS2C(i[1], j[1]), op.fcidump.int2[i[3][2][1], j[3][2][1], i[3][1][1], j[3][1][1]]))
         end
     end
 
@@ -180,19 +180,37 @@ function two_electron_integral(int2::Array{T,4}, occ_modes::Tuple{AbstractVector
     two_elec_int
 end
 
+@inline function flip_spin_chan(chan::Int)::Int
+    if chan == 1
+        return 2
+    else
+        chan == 2
+        return 1
+    end
+end
 
 function one_electron_excitation_state(chan::Int, addr::FermiFS2C, op::MolecularHamiltonian{T,A,D}, modes::Modes) where {T,A,D}
-    new_addresses = Tuple{FermiFS,T}[]
+    # `addr` corresponds to the `mode`
+    new_addresses = Tuple{FermiFS,T,ModeTransition}[]
     for i in modes.occupied[chan]
         for j in modes.unoccupied[chan]
             new_address, interaction = excitation(addr.components[chan], (j,), (i,))
+            # print(interaction, " ")
             one_body = op.fcidump.int1[j.mode, i.mode]
             two_body = zero(T)
-            for k in occupied_mode_map(new_address)
-                two_body += op.fcidump.int2[j.mode, k.mode, i.mode, k.mode] - op.fcidump.int2[j.mode, k.mode, k.mode, i.mode]
+            for k in modes.occupied[chan]
+                if k.mode ≠ i.mode
+                    two_body += op.fcidump.int2[j.mode, k.mode, i.mode, k.mode] - op.fcidump.int2[j.mode, k.mode, k.mode, i.mode]
+                    # print("+ <$(j.mode), $(k.mode) ||  $(i.mode), $(k.mode)>")
+                end
+            end
+            for k in modes.occupied[flip_spin_chan(chan)]
+                two_body += op.fcidump.int2[j.mode, k.mode, i.mode, k.mode]
+                # print("+ < $(j.mode), $(k.mode) | $(i.mode), $(k.mode) >")
             end
             interaction *= one_body + two_body
-            push!(new_addresses, (new_address, interaction))
+            push!(new_addresses, (new_address, interaction, ModeTransition((i.mode, chan), (j.mode, chan))))
+            # println()
         end
     end
     new_addresses
@@ -219,10 +237,7 @@ end
 
 const ModeIndex = @NamedTuple{ch::Int, orb::Int}
 
-struct ModeTransition
-    old::ModeIndex
-    new::ModeIndex
-end
+const ModeTransition = Pair{Tuple{Int64,Int64},Tuple{Int64,Int64}}
 
 mutable struct MolecularHamiltonianOffDiagonalsIterState
     occ_ind::Int
