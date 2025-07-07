@@ -238,7 +238,7 @@ A unified storage structure for indices of `SingleComponentFockAddress`.
 It stores the FSIndex of corresponding address as an `AbstractVector` compatible with
 [`excitation`](@ref) - [`BoseFSIndex`](@ref) or [`FermiFSIndex`](@ref).
 
-This struct is not intended to construct directly. Use [`occupied_mode_map`](@ref) or 
+This struct is not intended to be constructed directly. Use [`occupied_mode_map`](@ref) or 
 [`unoccupied_mode_map`](@ref) to obtain an instance.
 
 See also [`SingleComponentFockAddress`](@ref).

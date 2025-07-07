@@ -2,7 +2,7 @@ using Rimu
 using Rimu.BitStringAddresses
 using Rimu.BitStringAddresses: num_chunks, chunks
 using Rimu.BitStringAddresses: remove_ghost_bits, has_ghost_bits
-using Rimu.BitStringAddresses: occupied_modes, update_component
+using Rimu.BitStringAddresses: occupied_modes, occupied_mode_map, unoccupied_modes, unoccupied_mode_map, update_component
 using Rimu.BitStringAddresses: parse_address
 using Rimu.BitStringAddresses: destroy, create
 using Random
@@ -229,6 +229,11 @@ end
 
         @test collect(occupied_modes(middle_empty)) == [[2, 1, 0], [8, 127, 128]]
     end
+    @testset "occupied_mode_map" begin
+        for b in (middle_full, middle_empty, two_full)
+            @test occupied_mode_map(b) == collect(occupied_modes(b))
+        end
+    end
     @testset "Randomized tests" begin
         # Note: the random number for these tests will be the same everytime. This is still
         # an ok way to look for errors.
@@ -354,7 +359,16 @@ end
         for o in (small, big, giant)
             f = FermiFS(o)
             sites = collect(occupied_modes(f))
+            @test occupied_mode_map(f) == sites
             @test getproperty.(sites, :mode) == findall(≠(0), onr(f))
+        end
+    end
+    @testset "unoccupied_modes" begin
+        for o in (small, big, giant)
+            f = FermiFS(o)
+            sites = collect(unoccupied_modes(f))
+            @test unoccupied_mode_map(f) == sites
+            @test getproperty.(sites, :mode) == findall(==(0), onr(f))
         end
     end
     @testset "Randomized Tests" begin
