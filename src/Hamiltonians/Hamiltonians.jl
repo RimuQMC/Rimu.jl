@@ -69,6 +69,7 @@ import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starti
 
 export dimension, rayleigh_quotient, momentum
 
+export IdentityOperator
 export MatrixHamiltonian
 export HubbardReal1D, HubbardMom1D, ExtendedHubbardReal1D, ExtendedHubbardMom1D, HubbardRealSpace
 export HubbardReal1DEP, shift_lattice, shift_lattice_inv

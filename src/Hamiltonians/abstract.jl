@@ -246,50 +246,28 @@ function LinearAlgebra.adjoint(::IsDiagonal, op)
     end
 end
 
+
 """
-    TransformUndoer(transform::AbstractHamiltonian, op::AbstractObservable) <: AbstractHamiltonian
+    IdentityOperator() <: AbstractOperator{Float64}
 
-Create a new operator for the purpose of calculating overlaps of transformed
-vectors, which are defined by some transformation `transform`. The new operator should
-represent the effect of undoing the transformation before calculating overlaps, including
-with an optional operator `op`.
-
-Not exported; transformations should define all necessary methods and properties,
-see [`AbstractHamiltonian`](@ref). An `ArgumentError` is thrown if used with an
-unsupported transformation.
-
-# Example
-
-A similarity transform ``\\hat{G} = f \\hat{H} f^{-1}`` has eigenvector
-``d = f \\cdot c`` where ``c`` is an eigenvector of ``\\hat{H}``. Then the
-overlap ``c' \\cdot c = d' \\cdot f^{-2} \\cdot d`` can be computed by defining all
-necessary methods for `TransformUndoer(G)` to represent the operator ``f^{-2}`` and
-calculating `dot(d, TransformUndoer(G), d)`.
-
-Observables in the transformed basis can be computed by defining `TransformUndoer(G, A)`
-to represent ``f^{-1} A f^{-1}``.
-
-# Supported transformations
-
-* [`GutzwillerSampling`](@ref)
-* [`GuidingVectorSampling`](@ref)
+The diagonal operator with 1.0 along its diagonal.
 """
-struct TransformUndoer{
-    T,K<:AbstractHamiltonian,O<:Union{AbstractObservable,Nothing}
-} <: AbstractHamiltonian{T}
-    transform::K
-    op::O
-end
+struct IdentityOperator <: AbstractOperator{Float64} end
+LOStructure(::Type{<:IdentityOperator}) = IsDiagonal()
+allows_address_type(::IdentityOperator, ::Any) = true
+allows_address_type(::IdentityOperator, ::Type{<:Any}) = true
 
-function TransformUndoer(k::AbstractHamiltonian, op)
-    # default check
-    throw(ArgumentError("Unsupported transformation: $k"))
+struct IdentityOperatorColumn{A}
+    address::A
 end
-TransformUndoer(k::AbstractHamiltonian) = TransformUndoer(k::AbstractHamiltonian, nothing)
+operator_column(::IdentityOperator, addr) = IdentityOperatorColumn(addr)
+num_offdiagonals(::IdentityOperatorColumn) = 0
+diagonal_element(::IdentityOperatorColumn) = 1.0
+starting_address(col::IdentityOperatorColumn) = col.address
 
-# common methods
-starting_address(s::TransformUndoer) = starting_address(s.transform)
-dimension(s::TransformUndoer, addr) = dimension(s.transform, addr)
-function Base.:(==)(a::TransformUndoer, b::TransformUndoer)
-    return a.transform == b.transform && a.op == b.op
+struct IdentityOperatorOffdiagonals{A} <: AbstractVector{Pair{A,Float64}}
+    address::A
 end
+offdiagonals(col::IdentityOperatorColumn) = IdentityOperatorOffdiagonals(col.address)
+Base.size(::IdentityOperatorOffdiagonals) = (0,)
+Base.getindex(ods::IdentityOperatorOffdiagonals, i) = throw(BoundsError(ods, i))

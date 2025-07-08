@@ -104,6 +104,7 @@ Alternatively, if the generation of matrix elements is more complicated:
 - [`operator_column(op, address)`](@ref)
 - [`diagonal_element(column)`](@ref)
 - [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
+- [`starting_address(column)`](@ref)
 - [`offdiagonals(column)`](@ref)
 - [`random_offdiagonal(column)`](@ref)
 
@@ -418,7 +419,7 @@ has_adjoint(::LOStructure) = true
 """
     AbstractOperatorColumn{A,T,O}
 
-Abstract type for operator columns returned by [`operator_column`](@ref). 
+Abstract type for operator columns returned by [`operator_column`](@ref).
 The type parameters represent the address type (`A`), the eltype (`T`), and the
 type of the operator (`O`).
 
