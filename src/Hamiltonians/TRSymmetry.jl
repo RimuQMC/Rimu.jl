@@ -32,7 +32,7 @@ true
 ```
 See also [`ParitySymmetry`](@ref).
 """
-struct TimeReversalSymmetry{T,H<:AbstractHamiltonian{T}} <: AbstractHamiltonian{T}
+struct TimeReversalSymmetry{T,H<:AbstractHamiltonian{T}} <: ModifiedHamiltonian{T}
     hamiltonian::H
     even::Bool
 end
@@ -62,8 +62,6 @@ function Base.show(io::IO, h::TimeReversalSymmetry)
     print(io, "TimeReversalSymmetry(", h.hamiltonian, ", even=", h.even, ")")
 end
 
-dimension(h::TimeReversalSymmetry, addr) = dimension(h.hamiltonian, addr) # upper bound
-
 LOStructure(h::TimeReversalSymmetry) = LOStructure(h.hamiltonian)
 Base.adjoint(h::TimeReversalSymmetry) = TimeReversalSymmetry(h.hamiltonian', even=h.even)
 
@@ -72,30 +70,12 @@ function starting_address(h::TimeReversalSymmetry)
     return min(add, time_reverse(add))
 end
 
-get_offdiagonal(h::TimeReversalSymmetry, add, i) = offdiagonals(h, add)[i]
-num_offdiagonals(h::TimeReversalSymmetry, add) = num_offdiagonals(h.hamiltonian, add)
+parent_hamiltonian(h::TimeReversalSymmetry) = h.hamiltonian
+modify_diagonal(::TimeReversalSymmetry, _, val) = val
 
-struct TRSymmetryOffdiagonals{
-    A,T,O<:AbstractVector{Tuple{A,T}}
-} <: AbstractOffdiagonals{A,T}
-    add::A
-    add_even::Bool
-    od::O
-    even::Bool
-end
-Base.size(o::TRSymmetryOffdiagonals) = size(o.od)
-
-function offdiagonals(h::TimeReversalSymmetry, add)
-    add_even = add == time_reverse(add)
-    return TRSymmetryOffdiagonals(add, add_even, offdiagonals(h.hamiltonian, add), h.even)
-end
-
-function Base.getindex(o::TRSymmetryOffdiagonals, i)
-    in = o.add
-    out, val = o.od[i]
-
+function modify_offdiagonal(h::TimeReversalSymmetry, in, out, val)
     rev_out = time_reverse(out)
-    in_even = o.add_even
+    in_even = in == time_reverse(in)
     out_even = out == rev_out
 
     if in_even && !out_even
@@ -106,14 +86,11 @@ function Base.getindex(o::TRSymmetryOffdiagonals, i)
         new_val = float(val)
     end
 
-    left_out = min(rev_out, out)
-    if !o.even && left_out ≠ out
+    final_out = min(rev_out, out)
+    if !h.even && final_out ≠ out
         new_val = -new_val
-    elseif !o.even && out_even
+    elseif !h.even && out_even
         new_val = zero(new_val)
     end
-    return left_out, new_val
-end
-function diagonal_element(h::TimeReversalSymmetry, add)
-    return diagonal_element(h.hamiltonian, add)
+    return final_out => new_val
 end

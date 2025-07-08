@@ -107,6 +107,8 @@ include("excitations.jl")
 
 include("MatrixHamiltonian.jl")
 
+include("ModifiedHamiltonian.jl")
+
 include("HubbardReal1D.jl")
 include("HubbardReal1DEP.jl")
 include("ExtendedHubbardMom1D.jl")

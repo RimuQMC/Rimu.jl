@@ -75,91 +75,35 @@ of the imaginary-time Schrödinger equation (Euler step) and repeated applicatio
 will project out the ground state eigenvector of the `hamiltonian`.  It is the
 transition operator used in [`FCIQMC`](@ref).
 """
-struct FirstOrderTransitionOperator{T,S,H} <: AbstractHamiltonian{T}
+struct FirstOrderTransitionOperator{
+    T,S,H<:AbstractHamiltonian{T}
+} <: Hamiltonians.ModifiedHamiltonian{T}
     hamiltonian::H
     shift::S
     time_step::Float64
-
-    function FirstOrderTransitionOperator(hamiltonian::H, shift::S, time_step) where {H,S}
-        T = eltype(hamiltonian)
-        return new{T,S,H}(hamiltonian, shift, Float64(time_step))
-    end
 end
-
+function FirstOrderTransitionOperator(hamiltonian::H, shift::S, time_step) where {H,S}
+    T = eltype(H)
+    return FirstOrderTransitionOperator{T,S,H}(hamiltonian, shift, Float64(time_step))
+end
 function FirstOrderTransitionOperator(sp::DefaultShiftParameters, hamiltonian)
     return FirstOrderTransitionOperator(hamiltonian, sp.shift, sp.time_step)
 end
 
-struct FirstOrderTransitionOperatorColumn{A,T,O<:FirstOrderTransitionOperator{T},C}
-    operator::O
-    address::A
-    ham_column::C
-    time_step::Float64
+function Hamiltonians.parent_hamiltonian(op::FirstOrderTransitionOperator)
+    return op.hamiltonian
 end
-
-function Hamiltonians.operator_column(t::FirstOrderTransitionOperator, add)
-    return FirstOrderTransitionOperatorColumn(t, add, operator_column(t.hamiltonian, add), t.time_step)
+function Hamiltonians.modify_offdiagonal(op::FirstOrderTransitionOperator, _, addr, value)
+    return addr => -op.time_step * value
 end
-function Hamiltonians.diagonal_element(c::FirstOrderTransitionOperatorColumn)
-    return 1 - c.time_step*(diagonal_element(c.ham_column) - c.operator.shift)
+function Hamiltonians.modify_diagonal(op::FirstOrderTransitionOperator, _, value)
+    return 1 - op.time_step * (value - op.shift)
 end
-function Hamiltonians.random_offdiagonal(c::FirstOrderTransitionOperatorColumn)
-    add, prob, val = random_offdiagonal(c.ham_column)
-    return add, prob, -c.time_step*val
+function Hamiltonians.LOStructure(op::FirstOrderTransitionOperator)
+    return LOStructure(op.hamiltonian)
 end
-Hamiltonians.num_offdiagonals(c::FirstOrderTransitionOperatorColumn) = num_offdiagonals(c.ham_column)
-Hamiltonians.starting_address(c::FirstOrderTransitionOperatorColumn) = starting_address(c.ham_column)
-
-struct FirstOrderOffdiagonalsVector{
-    A,V,O<:AbstractVector{Tuple{A,V}}
-} <: AbstractVector{Pair{A,V}}
-    time_step::Float64
-    offdiagonals::O
-end
-Base.size(o::FirstOrderOffdiagonalsVector) = size(o.offdiagonals)
-
-function Hamiltonians.offdiagonals(c::FirstOrderTransitionOperatorColumn)
-    ods = offdiagonals(c.ham_column)
-    if ods isa AbstractVector
-        return FirstOrderOffdiagonalsVector(c.time_step, ods)
-    else
-        return FirstOrderOffdiagonals(c.time_step, ods)
-    end
-end
-
-function Base.getindex(o::FirstOrderOffdiagonalsVector, i)
-    add, val = o.offdiagonals[i]
-    return add => -val * o.time_step
-end
-
-struct FirstOrderOffdiagonals{O}
-    time_step::Float64
-    offdiagonals::O
-end
-function Base.eltype(o::FirstOrderOffdiagonals)
-    odtypes = fieldtypes(eltype(o.offdiagonals))
-    return Pair{odtypes[1], float(odtypes[2])}
-end
-Base.IteratorSize(::FirstOrderOffdiagonals) = Base.SizeUnknown()
-
-function Base.iterate(o::FirstOrderOffdiagonals)
-    first = iterate(o.offdiagonals)
-    if isnothing(first)
-        return nothing
-    end
-    (add, val), state = first
-    od = -val*o.time_step
-    return (add => od, state)
-end
-
-function Base.iterate(o::FirstOrderOffdiagonals, state)
-    new = iterate(o.offdiagonals, state)
-    if isnothing(new)
-        return nothing
-    end
-    (add, val), state = new
-    od = -val*o.time_step
-    return (add => od, state)
+function Base.adjoint(op::FirstOrderTransitionOperator)
+    return FirstOrderTransitionOperator(adjoint(op.hamiltonian), op.shift, op.time_step)
 end
 
 """
