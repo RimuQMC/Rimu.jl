@@ -26,7 +26,7 @@ After construction, we can access the underlying hamiltonian with `G.hamiltonian
 
 # Example
 
-```jldoctest filter = r"(\d*)\.(\d{4})\d+" => s"\1.\2"
+```jldoctest
 julia> H = HubbardMom1D(BoseFS(1,1,1); u=6.0, t=1.0);
 
 julia> v = DVec(starting_address(H) => 10);
