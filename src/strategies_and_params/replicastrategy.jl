@@ -76,7 +76,7 @@ The `r{i}s{k}_dot_r{j}s{k}` overlap can be omitted with the flag `vecnorm=false`
 
 By default, overlaps of different spectral states are omitted. To include overlaps of
 different spectral states `r{i}s{k}_dot_r{j}s{l}` and `r{i}s{k}_Op{m}_r{j}s{l}`, use the
-flag `mixed_spectral_overlaps=true`. 
+flag `mixed_spectral_overlaps=true`.
 
 See [`ProjectorMonteCarloProblem`](@ref), [`ReplicaStrategy`](@ref) and
 [`AbstractOperator`](@ref Interfaces.AbstractOperator) (for an interface for implementing
@@ -114,7 +114,7 @@ For an ``m``-tuple of input operators ``(\\hat{A}_1, ..., \\hat{A}_m)``, overlap
 ``\\langle \\phi | f^{-1} \\hat{A} f^{-1} | \\phi \\rangle`` are reported as
 `r{i}s{k}_Op{m}_r{j}s{k}`. The correct vector-vector overlap ``\\langle \\phi | f^{-2} | \\phi
 \\rangle`` is reported *last* as `r{i}s{k}_Op{m+1}_r{j}s{k}`. This is in addition to the *bare*
-vector-vector overlap ``\\langle \\phi | \\phi \\rangle`` that is reported as 
+vector-vector overlap ``\\langle \\phi | \\phi \\rangle`` that is reported as
 `r{i}s{k}_dot_r{j}s{k}`.
 """
 struct AllOverlaps{N,M,O,B,S} <: ReplicaStrategy{N}
@@ -223,12 +223,12 @@ Used as a sanity check before starting main [`ProjectorMonteCarloProblem`](@ref)
 function check_transform(r::AllOverlaps, ham::AbstractHamiltonian)
     ops = r.operators
     if !isempty(ops)
-        op_transform = all(op -> typeof(op)<:Rimu.Hamiltonians.TransformUndoer, ops)
-        ham_transform = hasproperty(ham, :hamiltonian)    # need a better test for this
-        if op_transform && ham_transform && !all(op -> ham == op.transform, ops)
+        op_transformed = all(op -> op isa Rimu.Hamiltonians.TransformUndoer, ops)
+        ham_transformed = ham isa ModifiedHamiltonian
+        if op_transformed && ham_transformed && !all(op -> ham == op.transform, ops)
             # both are transformed but different
             @warn "Overlaps transformation not consistent with Hamiltonian transformation."
-        elseif op_transform ⊻ ham_transform
+        elseif op_transformed ⊻ ham_transformed
             # only one is transformed
             @warn "Expected overlaps and Hamiltonian to be transformed; got only one."
         end

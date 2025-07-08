@@ -257,7 +257,7 @@ LOStructure(::Type{<:IdentityOperator}) = IsDiagonal()
 allows_address_type(::IdentityOperator, ::Any) = true
 allows_address_type(::IdentityOperator, ::Type{<:Any}) = true
 
-struct IdentityOperatorColumn{A}
+struct IdentityOperatorColumn{A} <: AbstractOperatorColumn{A,T,IdentityOperator}
     address::A
 end
 operator_column(::IdentityOperator, addr) = IdentityOperatorColumn(addr)
