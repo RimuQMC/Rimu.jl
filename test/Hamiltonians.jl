@@ -17,7 +17,7 @@ function exact_energy(ham)
 end
 
 @testset "Hamiltonian interface tests" begin
-    for H in (
+    for H in [
         HubbardReal1D(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0),
         HubbardReal1D(BoseFS(1, 2, 3, 4);t=1.0im),
         HubbardReal1D(BoseFS(1, 2, 3, 4);u=1.0im),
@@ -65,7 +65,7 @@ end
         FroehlichPolaron(OccupationNumberFS(1, 1, 1)),
         FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
-    )
+    ]
         # test_hamiltonian_interface(H; test_spawning=false)
         test_hamiltonian_interface(H; test_random_offdiagonal=!(H isa HOCartesianContactInteractions))
         # Check that the result of show can be pasted into the REPL
@@ -90,7 +90,8 @@ end
         (SingleParticleExcitation(2, 3), BoseFS(1, 2, 3, 4)),
         (TwoParticleExcitation(3, 2, 1, 4), BoseFS(1, 2, 3, 4)),
         (Momentum(1), BoseFS(1, 2, 3, 4)),
-        (G2MomCorrelator(3), BoseFS(1, 2, 0, 3, 0, 4, 0, 1))
+        (G2MomCorrelator(3), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
+        (IdentityOperator(), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
     ]
         test_operator_interface(op, addr)
         # Check that the result of show can be pasted into the REPL
