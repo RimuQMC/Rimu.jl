@@ -1,13 +1,14 @@
 """
-    GutzwillerSampling(::AbstractHamiltonian; g)
+    GutzwillerSampling(H::AbstractHamiltonian; g)
 
 Wrapper over any [`AbstractHamiltonian`](@ref) that implements Gutzwiller sampling. In this
 importance sampling scheme the Hamiltonian is modified as follows
 ```math
 \\tilde{H}_{ij} = H_{ij} e^{-g(H_{ii} - H_{jj})} .
 ```
-This way off-diagonal spawns to higher-energy configurations are discouraged and
-spawns to lower-energy configurations encouraged for positive `g`.
+This way off-diagonal spawns to higher-energy configurations are discouraged and spawns to
+lower-energy configurations encouraged for positive `g` while keeping the spectrum of the
+Hamiltonian intact.
 
 # Constructor
 
@@ -26,11 +27,33 @@ HubbardMom1D(fs"|1 1 1⟩"; u=6.0, t=1.0)
 julia> G = GutzwillerSampling(H, g=0.3)
 GutzwillerSampling(HubbardMom1D(fs"|1 1 1⟩"; u=6.0, t=1.0); g=0.3)
 
-julia> get_offdiagonal(H, BoseFS(2, 1, 0), 1)
-(BoseFS{3,3}(1, 0, 2), 2.0)
+julia> Matrix(H)
+4×4 Matrix{Float64}:
+ 12.0      4.89898  4.89898  4.89898
+  4.89898  9.0      0.0      0.0
+  4.89898  0.0      9.0      0.0
+  4.89898  0.0      0.0      0.0
 
-julia> get_offdiagonal(G, BoseFS(2, 1, 0), 1)
-(BoseFS{3,3}(1, 0, 2), 0.8131393194811987)
+julia> Matrix(G)
+4×4 Matrix{Float64}:
+  12.0     1.99178  1.99178  0.133858
+  12.0495  9.0      0.0      0.0
+  12.0495  0.0      9.0      0.0
+ 179.294   0.0      0.0      0.0
+
+julia> eigen(Matrix(H)).values
+4-element Vector{Float64}:
+ -2.3661456273236645
+  4.9594958589580465
+  8.999999999999996
+ 18.406649768365643
+
+julia> eigen(Matrix(G)).values
+4-element Vector{Float64}:
+ -2.366145627323686
+  4.959495858958046
+  8.999999999999998
+ 18.40664976836564
 ```
 
 # Observables

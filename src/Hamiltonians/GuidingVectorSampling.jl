@@ -27,17 +27,39 @@ After construction, we can access the underlying hamiltonian with `G.hamiltonian
 # Example
 
 ```jldoctest
-julia> H = HubbardReal1D(BoseFS(1,1,1); u=6.0, t=1.0);
+julia> H = HubbardMom1D(BoseFS(1,1,1); u=6.0, t=1.0);
 
-julia> v = DVec(starting_address(H) => 10; capacity=1);
+julia> v = DVec(starting_address(H) => 10);
 
 julia> G = GuidingVectorSampling(H, v, 0.1);
 
-julia> get_offdiagonal(H, starting_address(H), 4)
-(BoseFS{3,3}(2, 0, 1), -1.4142135623730951)
+julia> Matrix(H)
+4×4 Matrix{Float64}:
+ 12.0      4.89898  4.89898  4.89898
+  4.89898  9.0      0.0      0.0
+  4.89898  0.0      9.0      0.0
+  4.89898  0.0      0.0      0.0
 
-julia> get_offdiagonal(G, starting_address(G), 4)
-(BoseFS{3,3}(2, 0, 1), -0.014142135623730952)
+julia> Matrix(G)
+4×4 Matrix{Float64}:
+ 12.0        489.898  489.898  489.898
+  0.0489898    9.0      0.0      0.0
+  0.0489898    0.0      9.0      0.0
+  0.0489898    0.0      0.0      0.0
+
+julia> eigen(Matrix(H)).values
+4-element Vector{Float64}:
+ -2.3661456273236645
+  4.9594958589580465
+  8.999999999999996
+ 18.406649768365643
+
+julia> eigen(Matrix(G)).values
+4-element Vector{Float64}:
+ -2.366145627323689
+  4.9594958589580465
+  8.999999999999998
+ 18.406649768365643
 ```
 
 # Observables
