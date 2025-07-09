@@ -63,6 +63,7 @@ GuidingVectorSampling
 ParitySymmetry
 TimeReversalSymmetry
 Stoquastic
+TransformUndoer
 ```
 
 ## Observables
@@ -77,6 +78,7 @@ AbstractHamiltonian{T} <: AbstractOperator{T} <: AbstractObservable{T}
 ```
 
 ```@docs
+IdentityOperator
 ParticleNumberOperator
 G2RealCorrelator
 G2RealSpace

@@ -93,8 +93,6 @@ function LinearAlgebra.adjoint(h::GuidingVectorSampling{A,T,<:Any,D}) where {A,T
     return GuidingVectorSampling{!A,T,typeof(h_adj),D}(h_adj, h.vector, h.eps)
 end
 
-requires_transform_undoer(::GuidingVectorSampling) = true
-
 parent_hamiltonian(h::GuidingVectorSampling) = h.hamiltonian
 modify_diagonal(::GuidingVectorSampling, _, value) = value
 
@@ -140,6 +138,8 @@ function TransformUndoer(k::GuidingVectorSampling, op::Union{Nothing,AbstractOpe
     end
     return TransformUndoer{T,typeof(k),typeof(op)}(k, op)
 end
+
+undo_transform(g::GuidingVectorSampling, op::AbstractOperator) = TransformUndoer(g, op)
 
 const GuidingVectorTransformUndoer{A} = TransformUndoer{<:Any,<:GuidingVectorSampling,A}
 

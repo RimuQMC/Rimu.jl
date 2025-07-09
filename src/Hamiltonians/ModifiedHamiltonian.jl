@@ -140,7 +140,6 @@ function Base.length(ods::ModifiedHamiltonianOffdiagonals)
 end
 Base.eltype(::ModifiedHamiltonianOffdiagonals{A,T}) where {A,T} = Pair{A,T}
 
-
 """
     TransformUndoer(transform::AbstractHamiltonian, op::AbstractObservable) <: AbstractHamiltonian
 

@@ -94,14 +94,14 @@ There are two options for which methods need to be implemented.
 
 If the number of non-zero matrix elements that can be reached from any address is known,
 and they can be separately generated:
-- [`allows_address_type(op, type)`](@ref)
-- [`diagonal_element(op, address)`](@ref)
-- [`num_offdiagonals(op, address)`](@ref) and
-- [`get_offdiagonal(op, address, chosen)`](@ref) or [`offdiagonals`](@ref)
+- [`allows_address_type(ham, type)`](@ref)
+- [`diagonal_element(ham, address)`](@ref)
+- [`num_offdiagonals(ham, address)`](@ref) and
+- [`get_offdiagonal(ham, address, chosen)`](@ref) or [`offdiagonals`](@ref)
 
 Alternatively, if the generation of matrix elements is more complicated:
-- [`allows_address_type(op, type)`](@ref)
-- [`operator_column(op, address)`](@ref)
+- [`allows_address_type(ham, type)`](@ref)
+- [`operator_column(ham, address)`](@ref)
 - [`diagonal_element(column)`](@ref)
 - [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
 - [`starting_address(column)`](@ref)
@@ -109,14 +109,15 @@ Alternatively, if the generation of matrix elements is more complicated:
 - [`random_offdiagonal(column)`](@ref)
 
 Optional additional methods to implement:
-- [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
-- [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
-- [`dimension(op, addr)`](@ref Main.Hamiltonians.dimension): defaults to dimension of
+- [`VectorInterface.scalartype(ham)`](@ref): defaults to `eltype(eltype(ham))`
+- [`LOStructure(::Type{typeof(ham)})`](@ref LOStructure): defaults to `AdjointUnknown`
+- [`dimension(ham, addr)`](@ref Main.Hamiltonians.dimension): defaults to dimension of
   address space
-- [`requires_transform_undoer(op)`](@ref): defaults to `false`.
+- [`undo_transform(ham, op)`](@ref): the default implementation returns `op`.
 
 In order to calculate observables efficiently, it may make sense to implement custom methods
-for [`Interfaces.dot_from_right(x, op, y)`](@ref) and [`LinearAlgebra.mul!(y, op, x)`](@ref).
+for [`Interfaces.dot_from_right(x, ham, y)`](@ref) and
+[`LinearAlgebra.mul!(y, ham, x)`](@ref).
 
 See also [`AbstractHamiltonian`](@ref), [`Interfaces`](@ref).
 """
@@ -124,6 +125,7 @@ abstract type AbstractOperator{T} <: AbstractObservable{T} end
 
 @doc """
     LinearAlgebra.mul!(w::AbstractDVec, op::AbstractOperator, v::AbstractDVec)
+
 In place multiplication of `op` with `v` and storing the result in `w`. The result is
 returned. Note that `w` needs to have a `valtype` that can hold a product of instances
 of `eltype(op)` and `valtype(v)`. Moreover, the [`StochasticStyle`](@ref) of `w` needs to
@@ -329,12 +331,12 @@ Part of the [`AbstractHamiltonian`](@ref) interface.
 starting_address(m::AbstractMatrix) = findmin(real.(diag(m)))[2]
 
 """
-    requires_transform_undoer(::AbstractHamiltonian)
+    undo_transform(ham::AbstractHamiltonian, operator)
 
-Return `true` if [`TransformUndoer`](@ref) is needed to compute observables with this
-Hamiltonian.
+Modify the `operator` in a way that undoes the transform that was applied to `ham`.
+See [`TransformUndoer`](@ref).
 """
-requires_transform_undoer(::AbstractHamiltonian) = false
+undo_transform(::AbstractHamiltonian, op::AbstractObservable) = op
 
 """
     offdiagonals(column)
