@@ -17,4 +17,4 @@ Base.adjoint(h::Stoquastic) = Stoquastic(h.hamiltonian')
 
 parent_hamiltonian(h::Stoquastic) = h.hamiltonian
 modify_diagonal(h::Stoquastic, _, value) = value
-modify_offdiagonal(h::Stoquastic{T}, _, _, value) where {T} = T(-abs(value))
+modify_offdiagonal(h::Stoquastic{T}, _, addr, value) where {T} = addr => T(-abs(value))
