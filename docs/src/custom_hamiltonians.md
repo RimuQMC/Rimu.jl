@@ -78,8 +78,8 @@ AbstractOperator
 ```@docs
 Hamiltonians.ModifiedHamiltonian
 Hamiltonians.parent_hamiltonian
-Hamiltonians.modifty_diagonal
-Hamiltonians.modifty_offdiagonal
+Hamiltonians.modify_diagonal
+Hamiltonians.modify_offdiagonal
 ```
 
 
