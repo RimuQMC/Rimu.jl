@@ -694,7 +694,7 @@ Base.eltype(::FermiOccupiedModes) = FermiFSIndex
 """
     FermiUnoccupiedModes{N,S<:BitString}
 
-Iterator over unoccupied modes in address. `N` is the number of fermions. See [`unoccupied_modes`](@ref).
+Iterator over unoccupied modes in address. `N` is the number of unoccupied orbitals. See [`unoccupied_modes`](@ref).
 """
 struct FermiUnoccupiedModes{N,S} <: ModeIterator
     storage::S
