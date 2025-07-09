@@ -77,9 +77,9 @@ AbstractOperator
 
 ```@docs
 Hamiltonians.ModifiedHamiltonian
-parent_hamiltonian
-modifty_diagonal
-modifty_offdiagonal
+Hamiltonians.parent_hamiltonian
+Hamiltonians.modifty_diagonal
+Hamiltonians.modifty_offdiagonal
 ```
 
 

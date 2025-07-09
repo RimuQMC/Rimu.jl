@@ -62,7 +62,7 @@ GuidingVectorSampling
 ParitySymmetry
 TimeReversalSymmetry
 Stoquastic
-TransformUndoer
+Hamiltonians.TransformUndoer
 ```
 
 ## Observables
