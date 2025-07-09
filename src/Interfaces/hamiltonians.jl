@@ -469,7 +469,8 @@ notation, the `column` represents the object
     Ĥ|α⟩ = ∑ᵦ|β⟩⟨β|Ĥ|α⟩,
 ```
 where ``α`` is the  `address` and ``β`` represents all reachable addresses with nonzero
-matrix element ``⟨β|Ĥ|α⟩`` of the `operator` ``Ĥ``.
+matrix element ``⟨β|Ĥ|α⟩`` of the `operator` ``Ĥ``. Columns iterate over pairs
+`address => matrix_element`.
 
 For more information and the definition of an interface see
 [`AbstractOperatorColumn`](@ref).
@@ -486,7 +487,7 @@ HubbardReal1D(fs"|0 1 0⟩"; u=6.0, t=1.0) * fs"|0 1 0⟩"
 julia> operator_column(H, address) == column
 true
 
-julia> diagonal_element(column) == dot(address, column) # access elements with `dot()`
+julia> diagonal_element(column) == column[address] # access elements with `getindex`
 true
 
 julia> DVec(column) # materialise as a `DVec`
@@ -513,15 +514,14 @@ num_offdiagonals(c::OffdiagonalsOperatorColumn) = num_offdiagonals(c.operator, c
 offdiagonals(c::OffdiagonalsOperatorColumn) = c.ods
 
 """
-    dot(a::AbstractFockAddress, column::AbstractOperatorColumn)
+    getindex(column::AbstractOperatorColumn, address)
 
-Compute the matrix element of the operator `column` at address `a`.
+Return the matrix element of the operator column `column` at `address`.
 
-See also [`operator_column`](@ref), [`AbstractOperatorColumn`](@ref),
-[`AbstractFockAddress`](@ref).
+See also [`operator_column`](@ref), [`AbstractOperatorColumn`](@ref).
 """
-function LinearAlgebra.dot(
-    a::A, column::AbstractOperatorColumn{A,T}
+function Base.getindex(
+    column::AbstractOperatorColumn{A,T}, a::A
 ) where {A,T} # `A` is the (compatible) address type, `T` is the eltype
     if a == starting_address(column)
         return diagonal_element(column)::T
@@ -535,14 +535,10 @@ function LinearAlgebra.dot(
     return zero(T)
 end
 
-function LinearAlgebra.dot(column::AbstractOperatorColumn, a)
-    return adjoint(LinearAlgebra.dot(a, column))
-end
-
 """
     dot(dv, column::AbstractOperatorColumn)
 
-Compute the dot product of the vector `dv` with the operator `column`.
+Compute the dot product of the vector `dv` with the operator column `column`.
 
 See also [`operator_column`](@ref), [`AbstractOperatorColumn`](@ref),
 and [`AbstractDVec`](@ref).
@@ -555,6 +551,9 @@ function LinearAlgebra.dot(
         res += conj(dv[newaddress]) * matrixelement
     end
     return res
+end
+function LinearAlgebra.dot(column::AbstractOperatorColumn, a)
+    return adjoint(LinearAlgebra.dot(a, column))
 end
 
 """
