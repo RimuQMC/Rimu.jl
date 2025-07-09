@@ -2,19 +2,19 @@
     abstract type ModifiedHamiltonian{T} <: AbstractHamiltonian{T} end
 
 Abstract type for defining wrappers over [`AbstractHamiltonian`](@ref)s that modify diagonal
-and off-diagonal elements via the functions [`modify_diagonal`](@ref) and
-[`modify_offdiagonal`](@ref).
+and off-diagonal elements via the functions [`modify_diagonal`](@ref Main.Hamiltonians) and
+[`modify_offdiagonal`](@ref Main.Hamiltonians).
 
 The `ModifiedHamiltonian` can only be used to implement wrappers that modify the
 (off)-diagonals individually and cannot be used to introduce additional off-diagonal
 elements to the Hamiltonian.
 
 The following need to be implemented
-* [`parent_hamiltonian`](@ref)
-* [`modify_diagonal`](@ref)
-* [`modify_offdiagonal`](@ref)
+* [`parent_hamiltonian`](@ref Main.Hamiltonians)
+* [`modify_diagonal`](@ref Main.Hamiltonians)
+* [`modify_offdiagonal`](@ref Main.Hamiltonians)
 * [`LOStructure(p)`](@ref) and `Base.adjoint` if known, defaults to
-  [`AdjointUnknown()`](@ref).
+  [`AdjointUnknown`](@ref Main.Interfaces).
 
 The follwing are provided:
 * [`starting_address(op)`](@ref)
@@ -34,6 +34,7 @@ abstract type ModifiedHamiltonian{T} <: AbstractHamiltonian{T} end
     parent_hamiltonian(::ModifiedHamiltonian)
 
 Return the Hamiltonian that is being modified.
+See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
 """
 parent_hamiltonian
 
@@ -42,6 +43,7 @@ parent_hamiltonian
 
 Modifty the diagonal element where
 `value = diagonal_element(operator_column(parent_hamiltonian(ham), source))`.
+See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
 """
 modify_diagonal
 
@@ -52,6 +54,7 @@ Modfy an offdiagonal element `dest => element` reachable from `source` in the
 [`parent_hamiltonian`](@ref) of `ham`.
 
 Should return a `Pair` of modified address `addr` and modified value `val`.
+See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
 """
 modify_offdiagonal
 
