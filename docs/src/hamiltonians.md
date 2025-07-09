@@ -57,6 +57,7 @@ shift_lattice_inv
 The following Hamiltonians are constructed from an existing
 Hamiltonian instance and change its behaviour:
 ```@docs
+ModifiedHamiltonian
 GutzwillerSampling
 GuidingVectorSampling
 ParitySymmetry
@@ -65,11 +66,11 @@ Stoquastic
 ```
 
 ## Observables
-`Rimu.jl` offers two other supertypes for operators that are less 
-restrictive than [`AbstractHamiltonian`](@ref). 
+`Rimu.jl` offers two other supertypes for operators that are less
+restrictive than [`AbstractHamiltonian`](@ref).
 [`AbstractObservable`](@ref) and [`AbstractOperator`](@ref)s both
-can represent a physical observable. Their expectation values can be sampled during a [`ProjectorMonteCarloProblem`](@ref) simulation by 
-passing them into a suitable [`ReplicaStrategy`](@ref), e.g. 
+can represent a physical observable. Their expectation values can be sampled during a [`ProjectorMonteCarloProblem`](@ref) simulation by
+passing them into a suitable [`ReplicaStrategy`](@ref), e.g.
 [`AllOverlaps`](@ref). Some observables are also [`AbstractHamiltonian`](@ref)s. The full type hierarchy is
 ```julia
 AbstractHamiltonian{T} <: AbstractOperator{T} <: AbstractObservable{T}

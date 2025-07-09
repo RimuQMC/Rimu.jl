@@ -88,11 +88,12 @@ function LOStructure(::Type{<:GuidingVectorSampling{<:Any,<:Any,H}}) where {H}
         return AdjointKnown()
     end
 end
-
 function LinearAlgebra.adjoint(h::GuidingVectorSampling{A,T,<:Any,D}) where {A,T,D}
     h_adj = h.hamiltonian'
     return GuidingVectorSampling{!A,T,typeof(h_adj),D}(h_adj, h.vector, h.eps)
 end
+
+requires_transform_undoer(::GuidingVectorSampling) = true
 
 parent_hamiltonian(h::GuidingVectorSampling) = h.hamiltonian
 modify_diagonal(::GuidingVectorSampling, _, value) = value

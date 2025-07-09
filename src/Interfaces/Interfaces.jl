@@ -24,6 +24,7 @@ Follow the links for the definitions of the interfaces!
 * [`starting_address`](@ref)
 * [`LOStructure`](@ref)
 * [`allows_address_type`](@ref)
+* [`requires_transform_undoer`](@ref)
 
 ## working with  [`AbstractDVec`](@ref)s and [`StochasticStyle`](@ref)
 * [`deposit!`](@ref)
@@ -59,9 +60,10 @@ export
     apply_operator!, sort_into_targets!, sum_mutating!
 export
     AbstractHamiltonian, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
-    random_offdiagonal, starting_address, allows_address_type,
+    random_offdiagonal, starting_address, allows_address_type, requires_transform_undoer,
     LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint,
-    AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn, AbstractOperatorColumn
+    AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn,
+    AbstractOperatorColumn
 export
     num_replicas, num_spectral_states, num_overlaps
 

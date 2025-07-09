@@ -259,6 +259,9 @@ function ProjectorMonteCarloProblem(
         post_step_strategy = (post_step_strategy,)
     end
 
+    # set up transforms if needed
+    replica_strategy = apply_transform(replica_strategy, hamiltonian)
+
     if eltype(hamiltonian) <: Complex
         if (start_at isa AbstractDVec && valtype(start_at) <: Real ||
             start_at isa Union{AbstractMatrix, AbstractVector} &&

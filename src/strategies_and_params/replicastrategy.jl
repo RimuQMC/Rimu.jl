@@ -57,9 +57,8 @@ struct NoStats{N} <: ReplicaStrategy{N} end
 NoStats(N=1) = NoStats{N}()
 
 replica_stats(::NoStats, _) = (), ()
-check_transform(::NoStats, _) = nothing
+apply_transform(::NoStats{N}, _) where {N} = NoStats{N}()
 
-# TODO: add custom names
 """
     AllOverlaps(n_replicas=2; operator=nothing, transform=nothing, vecnorm=true, mixed_spectral_overlaps=false)
         <: ReplicaStrategy{n_replicas}
@@ -214,24 +213,20 @@ function all_overlaps(
     return SVector{num_reports,String}(names).data, SVector{num_reports,T}(values).data
 end
 
-"""
-    check_transform(r::AllOverlaps, ham)
-
-Check that the transformation provided to `r::AllOverlaps` matches the given Hamiltonian `ham`.
-Used as a sanity check before starting main [`ProjectorMonteCarloProblem`](@ref) loop.
-"""
-function check_transform(r::AllOverlaps, ham::AbstractHamiltonian)
-    ops = r.operators
-    if !isempty(ops)
-        op_transformed = all(op -> op isa Rimu.Hamiltonians.TransformUndoer, ops)
-        ham_transformed = ham isa ModifiedHamiltonian
-        if op_transformed && ham_transformed && !all(op -> ham == op.transform, ops)
-            # both are transformed but different
-            @warn "Overlaps transformation not consistent with Hamiltonian transformation."
-        elseif op_transformed ⊻ ham_transformed
-            # only one is transformed
-            @warn "Expected overlaps and Hamiltonian to be transformed; got only one."
+function apply_transform(
+    strat::AllOverlaps{N,M,<:Any,B,S}, ham::AbstractHamiltonian
+) where {N,M,B,S}
+    if !requires_transform_undoer(ham)
+        return strat
+    else
+        if all(op -> op isa TransformUndoer, strat.operators)
+            return strat
+        elseif any(op -> op isa TransformUndoer, strat.operators)
+            error("Some, but not all observables have a `TransformUndoer` applied")
+        else
+            operators = map(op -> TransformUnoder(ham, op), strat.operators)
+            operators = (operators..., TransformUndoer(ham))
+            return AllOverlaps{N,M,typeof(operators),B,S}(operators)
         end
     end
-    return nothing
 end

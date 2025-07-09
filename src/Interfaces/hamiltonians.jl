@@ -113,6 +113,7 @@ Optional additional methods to implement:
 - [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
 - [`dimension(op, addr)`](@ref Main.Hamiltonians.dimension): defaults to dimension of
   address space
+- [`requires_transform_undoer(op)`](@ref): defaults to `false`.
 
 In order to calculate observables efficiently, it may make sense to implement custom methods
 for [`Interfaces.dot_from_right(x, op, y)`](@ref) and [`LinearAlgebra.mul!(y, op, x)`](@ref).
@@ -326,6 +327,14 @@ true
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
 starting_address(m::AbstractMatrix) = findmin(real.(diag(m)))[2]
+
+"""
+    requires_transform_undoer(::AbstractHamiltonian)
+
+Return `true` if [`TransformUndoer`](@ref) is needed to compute observables with this
+Hamiltonian.
+"""
+requires_transform_undoer(::AbstractHamiltonian) = false
 
 """
     offdiagonals(column)

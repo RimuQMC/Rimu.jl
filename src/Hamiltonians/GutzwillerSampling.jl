@@ -90,6 +90,8 @@ function LinearAlgebra.adjoint(h::GutzwillerSampling{A}) where {A}
     return GutzwillerSampling{!A,eltype(h_adj),typeof(h_adj)}(h_adj, h.g)
 end
 
+requires_transform_undoer(::GutzwillerSampling) = true
+
 function Base.:(==)(a::GutzwillerSampling{A}, b::GutzwillerSampling{B}) where {A,B}
    return A == B && a.g == b.g && a.hamiltonian == b.hamiltonian
 end
