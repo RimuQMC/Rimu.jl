@@ -57,7 +57,6 @@ shift_lattice_inv
 The following Hamiltonians are constructed from an existing
 Hamiltonian instance and change its behaviour:
 ```@docs
-Hamiltonians.ModifiedHamiltonian
 GutzwillerSampling
 GuidingVectorSampling
 ParitySymmetry

@@ -334,7 +334,7 @@ starting_address(m::AbstractMatrix) = findmin(real.(diag(m)))[2]
     undo_transform(ham::AbstractHamiltonian, operator)
 
 Modify the `operator` in a way that undoes the transform that was applied to `ham`.
-See [`TransformUndoer`](@ref).
+See [`TransformUndoer`](@ref Main.Hamiltonians).
 """
 undo_transform(::AbstractHamiltonian, op::AbstractObservable) = op
 

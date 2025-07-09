@@ -73,6 +73,16 @@ AbstractObservable
 AbstractOperator
 ```
 
+## Hamiltonian wrappers
+
+```@docs
+Hamiltonians.ModifiedHamiltonian
+parent_hamiltonian
+modifty_diagonal
+modifty_offdiagonal
+```
+
+
 ## Interface tests
 Helper functions that can be used for testing the various interfaces are provided in the
 (unexported) submodule `Rimu.InterfaceTests`.
