@@ -132,7 +132,7 @@ num_occupied_modes(::FermiFS{N}) where {N} = N
 occupied_modes(a::FermiFS{N,<:Any,S}) where {N,S} = FermiOccupiedModes{N,S}(a.bs)
 
 num_unoccupied_modes(::FermiFS{N,M}) where {N,M} = M - N
-unoccupied_modes(a::FermiFS{N,<:Any,S}) where {N,S} = FermiUnoccupiedModes{N,S}(~a.bs)
+unoccupied_modes(a::FermiFS{N,M,S}) where {N,M,S} = FermiUnoccupiedModes{M - N,S}(~a.bs)
 
 """
     unoccupied_mode_map(addr::FermiFS) <: AbstractVector
