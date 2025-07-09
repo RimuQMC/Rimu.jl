@@ -540,7 +540,7 @@ function LinearAlgebra.dot(column::AbstractOperatorColumn, a)
 end
 
 """
-    dot(dv::AbstractDVec, column::AbstractOperatorColumn)
+    dot(dv, column::AbstractOperatorColumn)
 
 Compute the dot product of the vector `dv` with the operator `column`.
 
@@ -548,8 +548,8 @@ See also [`operator_column`](@ref), [`AbstractOperatorColumn`](@ref),
 and [`AbstractDVec`](@ref).
 """
 function LinearAlgebra.dot(
-    dv::AbstractDVec{A}, column::AbstractOperatorColumn{A}
-) where {A} # `A` is the (compatible) address type
+    dv, column::AbstractOperatorColumn
+)
     res = conj(dv[starting_address(column)]) * diagonal_element(column)
     for (newaddress, matrixelement) in offdiagonals(column)
         res += conj(dv[newaddress]) * matrixelement
