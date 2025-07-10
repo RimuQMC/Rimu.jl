@@ -38,7 +38,7 @@ end
 function TransformUndoer(k::AbstractHamiltonian)
     return TransformUndoer(k, IdentityOperator())
 end
-parent_hamiltonian(t::TransformUndoer) = t.op
+parent_operator(t::TransformUndoer) = t.op
 starting_address(t::TransformUndoer) = starting_address(t.transform)
 
 # common methods

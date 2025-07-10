@@ -102,7 +102,7 @@ function gutzwiller_modify(matrix_element, is_adjoint, g, diag1, diag2)
     end
 end
 
-parent_hamiltonian(h::GutzwillerSampling) = h.hamiltonian
+parent_operator(h::GutzwillerSampling) = h.hamiltonian
 modify_diagonal(h::GutzwillerSampling, _, value) = value
 
 function modify_offdiagonal(h::GutzwillerSampling{A}, in, out, value) where {A}

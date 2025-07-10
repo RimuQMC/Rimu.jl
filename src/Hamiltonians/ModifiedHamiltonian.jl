@@ -10,7 +10,7 @@ The `ModifiedHamiltonian` can only be used to implement wrappers that modify the
 elements to the Hamiltonian.
 
 The following need to be implemented
-* [`parent_hamiltonian`](@ref Main.Hamiltonians)
+* [`parent_operator`](@ref Main.Hamiltonians)
 * [`modify_diagonal`](@ref Main.Hamiltonians)
 * [`modify_offdiagonal`](@ref Main.Hamiltonians)
 * [`LOStructure(p)`](@ref) and `Base.adjoint` if known, defaults to
@@ -31,18 +31,18 @@ The following are provided:
 abstract type ModifiedHamiltonian{T} <: AbstractHamiltonian{T} end
 
 """
-    parent_hamiltonian(::ModifiedHamiltonian)
+    parent_operator(::ModifiedHamiltonian)
 
 Return the Hamiltonian that is being modified.
 See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
 """
-parent_hamiltonian
+parent_operator
 
 """
     modify_diagonal(ham::ModifiedHamiltonian, source, value) -> val
 
 Modify the diagonal element `value` at address `source` to `val`. Specifically,
-`value = diagonal_element(operator_column(parent_hamiltonian(ham), source))`.
+`value = diagonal_element(operator_column(parent_operator(ham), source))`.
 See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
 """
 modify_diagonal
@@ -50,8 +50,8 @@ modify_diagonal
 """
     modify_offdiagonal(ham::ModifiedHamiltonian, source, dest, element) -> (addr => val)
 
-Modfy an offdiagonal element `dest => element` reachable from the address 
-`source` in the [`parent_hamiltonian`](@ref) of `ham`.
+Modfy an offdiagonal element `dest => element` reachable from the address
+`source` in the [`parent_operator`](@ref) of `ham`.
 
 Should return a `Pair` of modified address `addr` and modified value `val`.
 See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
@@ -59,12 +59,12 @@ See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
 modify_offdiagonal
 
 function allows_address_type(h::ModifiedHamiltonian, ::Type{A}) where {A}
-    return allows_address_type(parent_hamiltonian(h), A)
+    return allows_address_type(parent_operator(h), A)
 end
 
 LOStructure(::Type{<:ModifiedHamiltonian}) = AdjointUnknown()
-starting_address(h::ModifiedHamiltonian) = starting_address(parent_hamiltonian(h))
-dimension(h::ModifiedHamiltonian, address) = dimension(parent_hamiltonian(h), address)
+starting_address(h::ModifiedHamiltonian) = starting_address(parent_operator(h))
+dimension(h::ModifiedHamiltonian, address) = dimension(parent_operator(h), address)
 
 struct ModifiedHamiltonianColumn{
     A,T,H<:ModifiedHamiltonian{T},C
@@ -74,7 +74,7 @@ struct ModifiedHamiltonianColumn{
     column::C
 end
 function operator_column(h::ModifiedHamiltonian, address)
-    column = operator_column(parent_hamiltonian(h), address)
+    column = operator_column(parent_operator(h), address)
     return ModifiedHamiltonianColumn(address, h, column)
 end
 function Base.show(io::IO, col::ModifiedHamiltonianColumn)

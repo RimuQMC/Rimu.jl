@@ -93,7 +93,7 @@ function LinearAlgebra.adjoint(h::GuidingVectorSampling{A,T,<:Any,D}) where {A,T
     return GuidingVectorSampling{!A,T,typeof(h_adj),D}(h_adj, h.vector, h.eps)
 end
 
-parent_hamiltonian(h::GuidingVectorSampling) = h.hamiltonian
+parent_operator(h::GuidingVectorSampling) = h.hamiltonian
 modify_diagonal(::GuidingVectorSampling, _, value) = value
 
 _apply_eps(x, eps) = ifelse(iszero(x), eps, ifelse(abs(x) < eps, sign(x) * eps, x))

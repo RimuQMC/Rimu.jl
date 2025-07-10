@@ -15,6 +15,6 @@ Stoquastic(h) = Stoquastic{eltype(h),typeof(h)}(h)
 LOStructure(::Type{<:Stoquastic{<:Any,H}}) where {H} = LOStructure(H)
 Base.adjoint(h::Stoquastic) = Stoquastic(h.hamiltonian')
 
-parent_hamiltonian(h::Stoquastic) = h.hamiltonian
+parent_operator(h::Stoquastic) = h.hamiltonian
 modify_diagonal(h::Stoquastic, _, value) = value
 modify_offdiagonal(h::Stoquastic{T}, _, addr, value) where {T} = addr => T(-abs(value))

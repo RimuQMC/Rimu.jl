@@ -60,7 +60,7 @@ replica_stats(::NoStats, _) = (), ()
 undo_transforms(::NoStats{N}, _) where {N} = NoStats{N}()
 
 """
-    AllOverlaps(n_replicas=2; operator=nothing, transform=nothing, vecnorm=true, mixed_spectral_overlaps=false)
+    AllOverlaps(n_replicas=2; operator=nothing, vecnorm=true, mixed_spectral_overlaps=false)
         <: ReplicaStrategy{n_replicas}
 
 Run `n_replicas` replicas and report overlaps between all pairs of replica vectors. If
@@ -86,7 +86,7 @@ operators).
 If a transformed Hamiltonian `G` has been passed to [`ProjectorMonteCarloProblem`](@ref), an
 inverse transformation is applied to the operators in `AllOverlaps`. Additionally, an
 operator representing the inverse transform applied to the identity operator is added to
-the list of operators.
+the list of operators. Passing `transform` to `AllOverlaps` is deprecated.
 
 Implemented transformations are:
 
@@ -96,9 +96,9 @@ Implemented transformations are:
 In the case of a transformed Hamiltonian the overlaps are defined as follows. For a
 similarity transformation `G` of the Hamiltonian (see e.g. [`GutzwillerSampling`](@ref).)
 ```math
-    \\hat{G} = f \\hat{H} f^{-1}.
+    Ĝ = f Ĥ f^{-1}.
 ```
-The expectation value of an operator ``\\hat{A}`` is
+The expectation value of an operator ``Â`` is
 ```math
     ⟨Â⟩ = ⟨ψ| Â |ψ⟩ = \\frac{⟨ϕ| f⁻¹ Â f⁻¹ |ϕ⟩}{⟨ϕ| f⁻² |ϕ⟩}
 ```
@@ -106,7 +106,7 @@ where
 ```math
     |ϕ⟩ = f |ψ⟩
 ```
-is the (right) eigenvector of ``\\hat{G}`` and ``|ψ⟩`` is an eigenvector of ``\\hat{H}``.
+is the (right) eigenvector of ``Ĝ`` and ``|ψ⟩`` is an eigenvector of ``Ĥ``.
 
 For an ``m``-tuple of input operators ``(\\hat{A}_1, ..., \\hat{A}_m)``, overlaps of
 ``⟨ϕ| f⁻¹ Â f⁻¹ |ϕ⟩`` are reported as `r{i}s{k}_Op{m}_r{j}s{k}`. The correct
