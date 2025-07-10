@@ -132,8 +132,7 @@ num_occupied_modes(::FermiFS{N}) where {N} = N
 occupied_modes(a::FermiFS{N,<:Any,S}) where {N,S} = FermiOccupiedModes{N,S}(a.bs)
 
 num_unoccupied_modes(::FermiFS{N,M}) where {N,M} = M - N
-unoccupied_modes(a::FermiFS{N,M,S}) where {N,M,S<:BitString} = FermiUnoccupiedModes{M - N,typeof(a.bs)}(~a.bs)
-unoccupied_modes(a::FermiFS{N,M,S}) where {N,M,S<:SortedParticleList} = FermiUnoccupiedModes{M - N,typeof(a.bs)}(a.bs)
+unoccupied_modes(a::FermiFS{N,M,S}) where {N,M,S} = FermiUnoccupiedModes{M - N,S}(a.bs)
 
 """
     unoccupied_mode_map(addr::FermiFS) <: AbstractVector
@@ -144,8 +143,9 @@ of indices compatible with [`excitation`](@ref).
 `unoccupied_mode_map(addr)[i]` contains the index for the `i`-th unoccupied mode.
 This is useful because unoccupied modes is required in some cases.
 `unoccupied_mode_map(addr)` is an eager version of the iterator returned by
-[`unoccupied_modes`](@ref). It is similar to 
-[`onr`](@ref) but contains more information.
+[`unoccupied_modes`](@ref). It is similar to [`onr`](@ref) but contains more information.
+
+Note that this function is only implemented for addresses of type [`FermiFS`](@ref).
 
 # Example
 

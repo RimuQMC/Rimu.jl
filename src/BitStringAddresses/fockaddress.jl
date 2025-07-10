@@ -692,7 +692,7 @@ Base.length(::FermiOccupiedModes{N}) where {N} = N
 Base.eltype(::FermiOccupiedModes) = FermiFSIndex
 
 """
-    FermiUnoccupiedModes{N,S<:BitString}
+    FermiUnoccupiedModes{N}
 
 Iterator over unoccupied modes in address. `N` is the number of unoccupied orbitals. See [`unoccupied_modes`](@ref).
 """

@@ -836,41 +836,37 @@ function LinearAlgebra.dot(
     return count_ones(occ_a.storage & occ_b.storage)
 end
 
-
-function Base.iterate(o::FermiUnoccupiedModes{<:Any,<:BitString})
-    c = 0
-    chunk = o.storage.chunks[end]
-    while iszero(chunk)
-        c += 1
-        chunk = o.storage.chunks[end-c]
+function Base.iterate(o::FermiUnoccupiedModes{<:Any,<:BitString{N,NC,T}}, st=(1, 1)) where {N,NC,T}
+    l_index, c_index = st
+    chunk_size = sizeof(T) * 8
+    while c_index <= NC
+        chunk = o.storage.chunks[end+1-c_index]
+        while (chunk >> (l_index - 1) & 1 ≠ 0) && l_index <= chunk_size
+            l_index += 1
+        end
+        if l_index <= chunk_size
+            g_index = l_index + (c_index - 1) * chunk_size
+            if g_index <= N
+                return FermiFSIndex(0, g_index, g_index - 1), (l_index + 1, c_index)
+            else
+                return nothing
+            end
+        else
+            l_index = 1
+            c_index += 1
+        end
     end
-    zeros = trailing_zeros(chunk % Int)
-    return iterate(o, (chunk >> (zeros % UInt64), c * 64 + zeros, c))
-end
-function Base.iterate(o::FermiUnoccupiedModes{<:Any,<:BitString}, st)
-    chunk, index, c = st
-    while iszero(chunk)
-        c += 1
-        c == num_chunks(o.storage) && return nothing
-        chunk = o.storage.chunks[end-c]
-        index = c * 64
-    end
-    zeros = trailing_zeros(chunk % Int)
-    index += zeros
-    chunk >>= zeros
-    return FermiFSIndex(0, index + 1, index), (chunk >> 1, index + 1, c)
+    return nothing
 end
 
-function Base.iterate(o::FermiUnoccupiedModes{<:Any,<:BitString{<:Any,1,T}}) where {T}
-    chunk = o.storage.chunks[end]
-    zeros = trailing_zeros(chunk % Int)
-    return iterate(o, (chunk >> (zeros % T), zeros))
-end
-function Base.iterate(o::FermiUnoccupiedModes{<:Any,<:BitString{<:Any,1,T}}, st) where {T}
-    chunk, index = st
-    iszero(chunk) && return nothing
-    chunk >>= 0x1
-    index += 1
-    zeros = trailing_zeros(chunk % Int)
-    return FermiFSIndex(0, index, index - 1), (chunk >> (zeros % T), index + zeros)
+function Base.iterate(o::FermiUnoccupiedModes{<:Any,<:BitString{N,1,T}}, st=1) where {N,T}
+    l_index = st
+    chunk_size = sizeof(T) * 8
+    while (o.storage.chunks[end] >> (l_index - 1) & 1 ≠ 0) && l_index <= chunk_size
+        l_index += 1
+    end
+    if l_index <= chunk_size && l_index <= N
+        return FermiFSIndex(0, l_index, l_index - 1), l_index + 1
+    end
+    return nothing
 end
