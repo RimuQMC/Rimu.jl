@@ -65,6 +65,7 @@ end
         FroehlichPolaron(OccupationNumberFS(1, 1, 1)),
         FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
+        Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1))),
     ]
         # test_hamiltonian_interface(H; test_spawning=false)
         test_hamiltonian_interface(H; test_random_offdiagonal=!(H isa HOCartesianContactInteractions))
