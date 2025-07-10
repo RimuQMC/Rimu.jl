@@ -75,7 +75,7 @@ AbstractOperator
 
 ## Hamiltonian wrapper interface
 
-[`ModifiedHamiltonian`](@ref Main.Hamiltonian) provides an interface for wrapping
+[`ModifiedHamiltonian`](@ref Main.Hamiltonians) provides an interface for wrapping
 Hamiltonians into a new type with modified properties. Fully implemented Hamiltonian
 wrappers are documented in the [Hamiltonians](@ref Hamiltonian-wrappers) section.
 
