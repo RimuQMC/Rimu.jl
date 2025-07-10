@@ -16,7 +16,7 @@ The following need to be implemented
 * [`LOStructure(p)`](@ref) and `Base.adjoint` if known, defaults to
   [`AdjointUnknown`](@ref Main.Interfaces).
 
-The follwing are provided:
+The following are provided:
 * [`starting_address(op)`](@ref)
 * [`allows_address_type(op, type)`](@ref)
 * [`operator_column(op, address)`](@ref)
@@ -41,7 +41,7 @@ parent_hamiltonian
 """
     modify_diagonal(ham::ModifiedHamiltonian, source, value) -> val
 
-Modifty the diagonal element where
+Modify the diagonal element `value` at address `source` to `val`. Specifically,
 `value = diagonal_element(operator_column(parent_hamiltonian(ham), source))`.
 See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
 """
@@ -50,8 +50,8 @@ modify_diagonal
 """
     modify_offdiagonal(ham::ModifiedHamiltonian, source, dest, element) -> (addr => val)
 
-Modfy an offdiagonal element `dest => element` reachable from `source` in the
-[`parent_hamiltonian`](@ref) of `ham`.
+Modfy an offdiagonal element `dest => element` reachable from the address 
+`source` in the [`parent_hamiltonian`](@ref) of `ham`.
 
 Should return a `Pair` of modified address `addr` and modified value `val`.
 See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).

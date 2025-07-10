@@ -84,7 +84,7 @@ operators).
 # Transformed Hamiltonians
 
 If a transformed Hamiltonian `G` has been passed to [`ProjectorMonteCarloProblem`](@ref), an
-inverse transformation is applied to the operators in `AllOverlaps`. Additinally, an
+inverse transformation is applied to the operators in `AllOverlaps`. Additionally, an
 operator representing the inverse transform applied to the identity operator is added to
 the list of operators.
 
@@ -100,7 +100,7 @@ similarity transformation `G` of the Hamiltonian (see e.g. [`GutzwillerSampling`
 ```
 The expectation value of an operator ``\\hat{A}`` is
 ```math
-    ⟨\\hat{A}⟩ = ⟨ψ| \\hat{A} |ψ⟩ = \\frac{⟨ϕ| f^{-1} \\hat{A} f^{-1} |ϕ⟩}{⟨ϕ| f^{-2} |ϕ⟩}
+    ⟨Â⟩ = ⟨ψ| Â |ψ⟩ = \\frac{⟨ϕ| f⁻¹ Â f⁻¹ |ϕ⟩}{⟨ϕ| f⁻² |ϕ⟩}
 ```
 where
 ```math
@@ -109,8 +109,8 @@ where
 is the (right) eigenvector of ``\\hat{G}`` and ``|ψ⟩`` is an eigenvector of ``\\hat{H}``.
 
 For an ``m``-tuple of input operators ``(\\hat{A}_1, ..., \\hat{A}_m)``, overlaps of
-``⟨ϕ| f^{-1} \\hat{A} f^{-1} |ϕ⟩`` are reported as `r{i}s{k}_Op{m}_r{j}s{k}`. The correct
-vector-vector overlap ``⟨ϕ| f^{-2} |ϕ⟩`` is reported *last* as `r{i}s{k}_Op{m+1}_r{j}s{k}`.
+``⟨ϕ| f⁻¹ Â f⁻¹ |ϕ⟩`` are reported as `r{i}s{k}_Op{m}_r{j}s{k}`. The correct
+vector-vector overlap ``⟨ϕ| f⁻² |ϕ⟩`` is reported *last* as `r{i}s{k}_Op{m+1}_r{j}s{k}`.
 This is in addition to the *bare* vector-vector overlap ``⟨ϕ|ϕ⟩`` that is reported as
 `r{i}s{k}_dot_r{j}s{k}`.
 """

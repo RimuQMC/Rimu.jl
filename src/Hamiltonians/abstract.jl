@@ -254,7 +254,6 @@ The diagonal operator with 1.0 along its diagonal.
 """
 struct IdentityOperator <: AbstractOperator{Float64} end
 LOStructure(::Type{<:IdentityOperator}) = IsDiagonal()
-allows_address_type(::IdentityOperator, ::Any) = true
 allows_address_type(::IdentityOperator, ::Type{<:Any}) = true
 
 struct IdentityOperatorColumn{A} <: AbstractOperatorColumn{A,Float64,IdentityOperator}
