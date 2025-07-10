@@ -130,12 +130,8 @@ the components of the guiding vector, i.e.``f_{ii} = v_i``.
 
 See [`AllOverlaps`](@ref), [`GuidingVectorSampling`](@ref).
 """
-function TransformUndoer(k::GuidingVectorSampling, op::Union{Nothing,AbstractOperator})
-    if isnothing(op)
-        T = eltype(k)
-    else
-        T = promote_type(eltype(k), eltype(op))
-    end
+function TransformUndoer(k::GuidingVectorSampling, op::AbstractOperator)
+    T = promote_type(eltype(k), eltype(op))
     return TransformUndoer{T,typeof(k),typeof(op)}(k, op)
 end
 
@@ -150,7 +146,7 @@ function LinearAlgebra.adjoint(s::GuidingVectorTransformUndoer)
     return TransformUndoer(s.transform, a_adj)
 end
 
-function modify_diagonal(s::GuidingVectorTransformUndoer{<:AbstractOperator}, addr, val)
+function modify_diagonal(s::GuidingVectorTransformUndoer, addr, val)
     guide = s.transform.vector[addr]
 
     return guiding_vector_modify(val, true, s.transform.eps, 1.0, 2 * guide)

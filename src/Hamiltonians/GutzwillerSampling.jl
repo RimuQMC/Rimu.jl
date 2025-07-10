@@ -123,7 +123,7 @@ to calculate observables. Here ``f`` is a diagonal operator whose entries are
 See [`AllOverlaps`](@ref), [`GutzwillerSampling`](@ref).
 """
 function TransformUndoer(k::GutzwillerSampling, op::AbstractOperator)
-    T = typeof(zero(eltype(k)) * zero(eltype(op)))
+    T = promote_type(eltype(k), eltype(op))
     return TransformUndoer{T,typeof(k),typeof(op)}(k, op)
 end
 
