@@ -82,7 +82,6 @@ Hamiltonians.modify_diagonal
 Hamiltonians.modify_offdiagonal
 ```
 
-
 ## Interface tests
 Helper functions that can be used for testing the various interfaces are provided in the
 (unexported) submodule `Rimu.InterfaceTests`.
