@@ -1743,18 +1743,12 @@ end
     @test has_random_offdiagonal(typeof(h))  # default trait
     @test has_random_offdiagonal(h) # works with instance
     @test has_random_offdiagonal(col) # works with column
-    @test_throws ErrorException random_offdiagonal(col) # not implemented
-    Rimu.has_random_offdiagonal(::Type{<:TestHamiltonian}) = false
-    # set the trait
-    @test_throws ArgumentError random_offdiagonal(col) # still throws
+    @test_throws MethodError random_offdiagonal(col) # not implemented
 
     @test has_iterable_offdiagonals(typeof(h))  # default trait
     @test has_iterable_offdiagonals(h) # works with instance
     @test has_iterable_offdiagonals(col) # works with column
-    @test_throws ErrorException offdiagonals(col) # not implemented
-    Rimu.has_iterable_offdiagonals(::Type{<:TestHamiltonian}) = false
-    # set the trait
-    @test_throws ArgumentError offdiagonals(col) # still throws
+    @test_throws MethodError offdiagonals(col) # not implemented
 
     # Operator
     op = SingleParticleExcitation(1, 2)

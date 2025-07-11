@@ -588,14 +588,7 @@ julia> h = offdiagonals(H * address)
 Part of the [`AbstractHamiltonian`](@ref) interface. See also
 [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
-function offdiagonals(::AbstractOperatorColumn{A,T,O}) where {A,T,O}
-    if has_iterable_offdiagonals(O)
-        error("offdiagonals not implemented for operator type $O " *
-              "even though has_iterable_offdiagonals($O) == true")
-    else
-        throw(ArgumentError("offdiagonals not supported for operator type $O"))
-    end
-end
+offdiagonals
 
 # Iteration interface for AbstractOperatorColumn
 function Base.iterate(col::AbstractOperatorColumn)
@@ -629,15 +622,6 @@ The result is a tuple of the new address `newaddress`, the probability of this e
 Part of the [`AbstractHamiltonian`](@ref) interface. See also
 [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
-function random_offdiagonal(::AbstractOperatorColumn{A,T,O}) where {A,T,O}
-    if has_random_offdiagonal(O)
-        error("random_offdiagonal not implemented for operator type $O " *
-                         "even though has_random_offdiagonal($O) == true")
-    else
-        throw(ArgumentError("random_offdiagonal not supported for operator type $O"))
-    end
-end
-
 function random_offdiagonal(column::OffdiagonalsOperatorColumn)
     offdiags = offdiagonals(column)
     nl = length(offdiags) # check how many sites we could reach
