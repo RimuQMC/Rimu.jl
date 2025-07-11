@@ -316,8 +316,8 @@ end
 function Interfaces.dot_from_right(target, op, source::AbstractDVec)
     T = typeof(zero(valtype(target)) * zero(valtype(source)) * zero(eltype(op)))
 
-    result = sum(pairs(source); init=zero(T)) do (k, v)
-        dot(target, op * k) * v
+    result = sum(pairs(source); init=zero(T)) do (address, value)
+        dot(target, operator_column(op, address)) * value
     end
     return result::T
 end
