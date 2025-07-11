@@ -183,7 +183,7 @@ Mandatory methods to implement:
 * [`operator_column(op, address)`](@ref) returns an [`AbstractOperatorColumn`](@ref)
 
 [`AbstractOperatorColumn`](@ref) has its own interface methods:
-* [`column_operator(column)`](@ref) returns the operator of the column
+* [`parent_operator(column)`](@ref) returns the operator of the column
 * [`diagonal_element(column)`](@ref) returns the diagonal element of the column
 * [`num_offdiagonals(column)`](@ref) (this can be an upper bound) returns the number of
     off-diagonal elements in the column
@@ -406,7 +406,7 @@ The default constructor for `AbstractOperatorColumn` is
 `operator_column(operator, address)`. The interface for `AbstractOperatorColumn` is defined
 by the following functions:
 
-* [`column_operator(c::AbstractOperatorColumn)`](@ref) - returns the `operator`,
+* [`parent_operator(c::AbstractOperatorColumn)`](@ref) - returns the `operator`,
 * [`starting_address(c::AbstractOperatorColumn)`](@ref) - returns the starting `address`,
 * [`diagonal_element(c::AbstractOperatorColumn)`](@ref) - returns the diagonal element of
     the column `c`, ``⟨α|Ĥ|α⟩``, where ``α`` is the starting address,
@@ -427,7 +427,7 @@ abstract type AbstractOperatorColumn{A,T,O} end
 
 function Base.show(io::IO, c::AbstractOperatorColumn{A,T,O}) where {A,T,O}
     io = IOContext(io, :compact => true)
-    show(io, column_operator(c))
+    show(io, parent_operator(c))
     print(io, " * ", starting_address(c))
 end
 
@@ -447,14 +447,14 @@ struct OffdiagonalsOperatorColumn{A,T,O<:AbstractOperator{T},OD} <: AbstractOper
 end
 
 """
-    column_operator(c::AbstractOperatorColumn)
+    parent_operator(c::AbstractOperatorColumn)
 Return the operator of the column `c`.  This is the operator that was used to
 construct the column with [`operator_column`](@ref).
 
 Part of the [`AbstractHamiltonian`](@ref) and [`AbstractOperator`](@ref) interface.
 See also [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
-column_operator(c::OffdiagonalsOperatorColumn) = c.operator
+parent_operator(c::OffdiagonalsOperatorColumn) = c.operator
 
 """
     operator_column(operator::AbstractOperator, address) -> column <: AbstractOperatorColumn
@@ -495,7 +495,7 @@ DVec{BoseFS{1, 3, BitString{3, 1, UInt8}},Float64} with 3 entries, style = IsDet
 ```
 
 Part of the [`AbstractHamiltonian`](@ref) interface. See also
-[`AbstractOperatorColumn`](@ref), [`column_operator`](@ref), [`starting_address`](@ref),
+[`AbstractOperatorColumn`](@ref), [`parent_operator`](@ref), [`starting_address`](@ref),
 [`diagonal_element`](@ref), [`offdiagonals`](@ref), [`num_offdiagonals`](@ref),
 [`random_offdiagonal`](@ref).
 """

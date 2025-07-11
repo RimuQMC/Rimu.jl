@@ -1734,7 +1734,7 @@ end
     function Rimu.operator_column(h::TestHamiltonian, address)
         return TestColumn(h, address)
     end
-    Rimu.column_operator(c::TestColumn) = c.operator
+    Rimu.parent_operator(c::TestColumn) = c.operator
     Rimu.starting_address(c::TestColumn) = c.address
     h = TestHamiltonian()
     addr = FermiFS{2,4}(1,0,1,0)
@@ -1769,7 +1769,7 @@ end
     addr = BoseFS(0,2,1)
     col = operator_column(h, addr)
     @test col == h * addr
-    @test column_operator(col) == h
+    @test parent_operator(col) == h
     @test starting_address(col) == addr
     @test diagonal_element(col) == col[addr]
     @test col[fs"|0 1 2⟩"] == -2 # off-diagonal element

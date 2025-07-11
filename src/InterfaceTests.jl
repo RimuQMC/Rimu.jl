@@ -16,7 +16,7 @@ using Rimu: Rimu, DVec, Interfaces, LOStructure, IsHermitian, IsDiagonal, Adjoin
     Hamiltonians, num_offdiagonals, allows_address_type, offdiagonals, random_offdiagonal,
     diagonal_element, dimension, dot_from_right, IsDeterministic, starting_address, PDVec,
     sparse, scale!, scalartype, operator_column, AbstractOperatorColumn,
-    has_random_offdiagonal, has_iterable_offdiagonals, column_operator
+    has_random_offdiagonal, has_iterable_offdiagonals, parent_operator
 using Rimu.Hamiltonians: AbstractHamiltonian, AbstractOperator, AbstractObservable,
     AbstractOffdiagonals
 using LinearAlgebra: dot, mul!, isdiag, ishermitian
@@ -137,9 +137,9 @@ function test_operator_interface(op, addr;
         column = operator_column(op, addr)
         @test column isa AbstractOperatorColumn
         @testset "Operator interface: $(nameof(typeof(op)))" begin
-            @testset "starting_address(column) and column_operator" begin
+            @testset "starting_address(column) and parent_operator" begin
                 @test starting_address(column) == addr
-                @test column_operator(column) == op
+                @test parent_operator(column) == op
             end
             @testset "diagonal_element" begin
                 @test diagonal_element(column) isa eltype(op)
