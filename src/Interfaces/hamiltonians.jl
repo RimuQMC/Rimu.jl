@@ -270,7 +270,7 @@ julia> diagonal_element(column)
 Part of the [`AbstractHamiltonian`](@ref) interface. See also
 [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
-diagonal_element(m::AbstractMatrix, i) = m[i, i]
+diagonal_element
 
 """
     num_offdiagonals(column::AbstractOperatorColumn)
@@ -292,7 +292,7 @@ julia> num_offdiagonals(column)
 Part of the [`AbstractHamiltonian`](@ref) interface. See also
 [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
-num_offdiagonals(m::AbstractMatrix, i) = length(offdiagonals(m, i))
+num_offdiagonals
 
 """
     newadd, me = get_offdiagonal(ham, address, chosen) # (deprecated)
@@ -313,15 +313,13 @@ julia> get_offdiagonal(H, addr, 3)
 ```
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
-get_offdiagonal(m::AbstractMatrix, i, n) = offdiagonals(m, i)[n]
+get_offdiagonal(m, i, n) = offdiagonals(m, i)[n]
 
 """
     starting_address(h::AbstractHamiltonian)
     starting_address(column::AbstractOperatorColumn)
 
-Return the starting address for the Hamiltonian `h`, or for the `column`. When
-called on an `AbstractMatrix`, `starting_address` returns the index of the diagonal
-element with the smallest real part.
+Return the starting address for the Hamiltonian `h`, or for the `column`.
 
 # Example
 
@@ -336,7 +334,7 @@ true
 Part of the [`AbstractHamiltonian`](@ref) interface. See also
 [`AbstractOperatorColumn`](@ref).
 """
-starting_address(m::AbstractMatrix) = findmin(real.(diag(m)))[2]
+starting_address
 
 @doc """
     LOStructure(op::AbstractHamiltonian)
@@ -368,7 +366,6 @@ struct AdjointUnknown <: LOStructure end
 # defaults
 LOStructure(op) = LOStructure(typeof(op))
 LOStructure(::Type) = AdjointUnknown()
-LOStructure(::AbstractMatrix) = AdjointKnown()
 
 # diagonal matrices have zero offdiagonal elements
 function num_offdiagonals(h::H, addr) where {H<:AbstractOperator}
@@ -442,7 +439,7 @@ Default column, using the deprecated interface with [`offdiagonals(op, address)`
 
 See also [`operator_column`](@ref).
 """
-struct OffdiagonalsOperatorColumn{A,T,O<:Union{AbstractOperator{T},AbstractMatrix{T}},OD} <: AbstractOperatorColumn{A,T,O}
+struct OffdiagonalsOperatorColumn{A,T,O<:AbstractOperator{T},OD} <: AbstractOperatorColumn{A,T,O}
     operator::O
     address::A
     ods::OD
@@ -504,6 +501,8 @@ Part of the [`AbstractHamiltonian`](@ref) interface. See also
 """
 operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a),
     eltype(o)(diagonal_element(o,a)))
+
+@doc (@doc operator_column) Base.:*
 function Base.:*(o::AbstractObservable, a::A) where {A<:Union{AbstractFockAddress,Integer}}
     return operator_column(o, a)
 end
@@ -518,16 +517,22 @@ offdiagonals(c::OffdiagonalsOperatorColumn) = c.ods
 
 Return the matrix element of the operator column `column` at `address`.
 
+!!! warning
+    This method is provided for convenience only. It is not efficient and should not be
+    used in performance-critical code. Use [`diagonal_element`](@ref) and
+    [`offdiagonals`](@ref) instead to access the diagonal and off-diagonal
+    elements of the operator column.
+
 See also [`operator_column`](@ref), [`AbstractOperatorColumn`](@ref).
 """
 function Base.getindex(
-    column::AbstractOperatorColumn{A,T}, a::A
-) where {A,T} # `A` is the (compatible) address type, `T` is the eltype
-    if a == starting_address(column)
+    column::AbstractOperatorColumn{A,T}, address::A
+) where {A,T}
+    if address == starting_address(column)
         return diagonal_element(column)::T
     else
         for (newaddress, matrixelement) in offdiagonals(column)
-            if newaddress == a
+            if newaddress == address
                 return matrixelement::T
             end
         end
@@ -583,12 +588,6 @@ julia> h = offdiagonals(H * address)
 Part of the [`AbstractHamiltonian`](@ref) interface. See also
 [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
-function offdiagonals(m::AbstractMatrix, i)
-    pairs = collect(zip(axes(m, 1), view(m, :, i)))
-    return filter!(pairs) do ((k, v))
-        k ≠ i && v ≠ 0
-    end
-end
 function offdiagonals(::AbstractOperatorColumn{A,T,O}) where {A,T,O}
     if has_iterable_offdiagonals(O)
         error("offdiagonals not implemented for operator type $O " *

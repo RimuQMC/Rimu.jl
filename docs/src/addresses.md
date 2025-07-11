@@ -24,6 +24,9 @@ straightforward to implement efficient Hamiltonians. Examples are:
 
 ```@docs
 Rimu.Interfaces.AbstractFockAddress
+Rimu.Interfaces.num_particles
+Rimu.Interfaces.num_modes
+Rimu.Interfaces.num_components
 ```
 
 ```@autodocs

@@ -51,6 +51,11 @@ Follow the links for the definitions of the interfaces!
 * [`num_replicas`](@ref)
 * [`num_spectral_states`](@ref)
 * [`num_overlaps`](@ref)
+
+## Functions for working with [`AbstractFockAddress`](@ref)s:
+* [`num_particles`](@ref)
+* [`num_modes`](@ref)
+* [`num_components`](@ref)
 """
 module Interfaces
 
@@ -61,7 +66,7 @@ using DataFrames: DataFrame, metadata
 import OrderedCollections: freeze
 
 export
-    AbstractFockAddress
+    AbstractFockAddress, num_particles, num_modes, num_components
 export
     StochasticStyle, default_style, StyleUnknown, apply_column!, step_stats,
     CompressionStrategy, NoCompression, compress!
@@ -78,20 +83,7 @@ export
 export
     num_replicas, num_spectral_states, num_overlaps
 
-"""
-    AbstractFockAddress{N,M}
-
-Abstract type representing a Fock state with `N` particles and `M` modes.
-
-See also [`SingleComponentFockAddress`](@ref Main.SingleComponentFockAddress),
-[`CompositeFS`](@ref Main.CompositeFS), [`BoseFS`](@ref Main.BoseFS),
-[`FermiFS`](@ref Main.FermiFS).
-"""
-abstract type AbstractFockAddress{N,M} end
-
-# `AbstractFockAddress`es can be reconstructed from their printout.
-Base.typeinfo_implicit(::Type{<:AbstractFockAddress}) = true
-
+include("abstractfockaddress.jl")
 include("stochasticstyles.jl")
 include("dictvectors.jl")
 include("hamiltonians.jl")

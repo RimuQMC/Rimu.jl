@@ -12,14 +12,14 @@ using StaticArrays: StaticArrays, @MVector, FieldVector, MVector, SA, SVector
 
 using Base.Cartesian
 
-using ..Interfaces: AbstractFockAddress
+using ..Interfaces: Interfaces, AbstractFockAddress, num_particles, num_modes,
+    num_components
 
 export SingleComponentFockAddress, BoseFS, FermiFS
 export CompositeFS, FermiFS2C, time_reverse
 export OccupationNumberFS
 export BoseFSIndex, FermiFSIndex
 export BitString, SortedParticleList
-export num_particles, num_modes, num_components
 export find_occupied_mode, find_mode, occupied_modes, is_occupied, num_occupied_modes
 export excitation, near_uniform, OccupiedModeMap, OccupiedPairsMap
 export onr, occupation_number_representation

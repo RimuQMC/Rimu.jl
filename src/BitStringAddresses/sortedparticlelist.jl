@@ -80,8 +80,8 @@ function Base.isless(ss1::SortedParticleList, ss2::SortedParticleList)
     return isless(ss1.storage, ss2.storage)
 end
 
-num_particles(::Type{<:SortedParticleList{N}}) where {N} = N
-num_modes(::Type{<:SortedParticleList{<:Any,M}}) where {M} = M
+Interfaces.num_particles(::Type{<:SortedParticleList{N}}) where {N} = N
+Interfaces.num_modes(::Type{<:SortedParticleList{<:Any,M}}) where {M} = M
 
 ###
 ### General functions

@@ -1,30 +1,5 @@
-# AbstractFockAddress is defined in Interfaces.jl, so we can use it here.
-
-"""
-    num_particles(::Type{<:AbstractFockAddress})
-    num_particles(::AbstractFockAddress)
-
-Number of particles represented by address.
-"""
-num_particles(a::AbstractFockAddress) = num_particles(typeof(a))
-num_particles(::Type{<:AbstractFockAddress{N}}) where {N} = N
-
-"""
-    num_modes(::Type{<:AbstractFockAddress})
-    num_modes(::AbstractFockAddress)
-
-Number of modes represented by address.
-"""
-num_modes(a::AbstractFockAddress) = num_modes(typeof(a))
-num_modes(::Type{<:AbstractFockAddress{<:Any,M}}) where {M} = M
-
-"""
-    num_components(::Type{<:AbstractFockAddress})
-    num_components(::AbstractFockAddress)
-
-Number of components in address.
-"""
-num_components(b::AbstractFockAddress) = num_components(typeof(b))
+# AbstractFockAddress is defined in Interfaces/abstractfockaddress.jl, so we can use it here.
+# So are num_particles, num_modes, num_components.
 
 """
     SingleComponentFockAddress{N,M} <: AbstractFockAddress{N,M}
@@ -47,7 +22,7 @@ See also [`CompositeFS`](@ref), [`AbstractFockAddress`](@ref).
 """
 abstract type SingleComponentFockAddress{N,M} <: AbstractFockAddress{N,M} end
 
-num_components(::Type{<:SingleComponentFockAddress}) = 1
+Interfaces.num_components(::Type{<:SingleComponentFockAddress}) = 1
 
 """
     occupation_number_representation(fs::SingleComponentFockAddress)
