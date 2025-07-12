@@ -37,5 +37,8 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
         h = MolecularHamiltonian(fcidump)
         bsr = BasisSetRepresentation(h, sort=true)
         @test bsr.sparse_matrix ≈ h2_fci_matrix atol = error
+        p = ExactDiagonalizationProblem(h)
+        s = solve(p)
+        @test s.values[1] ≈ -1.137312593210905 atol = error
     end
 end
