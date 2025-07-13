@@ -167,9 +167,10 @@ See [`SpawningStrategy`](@ref).
 @inline function spawn!(s::Exact, w, column, val, boost=1)
     T = valtype(w)
     attempts = 0
-    spawns = sum(offdiagonals(column); init=real(zero(T))) do (new_add, mat_elem)
+    spawns = real(zero(T))
+    for (new_add, mat_elem) in offdiagonals(column)
         attempts += 1
-        abs(projected_deposit!(
+        spawns += abs(projected_deposit!(
             w, new_add, val * mat_elem, starting_address(column) => val, s.threshold
         ))
     end
