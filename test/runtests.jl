@@ -20,7 +20,7 @@ using ExplicitImports: check_no_implicit_imports
     # Check that no implicit imports are used in the Rimu module.
     # See https://ericphanson.github.io/ExplicitImports.jl/stable/
     @test check_no_implicit_imports(
-        Rimu; skip=(Rimu, Base, Core, VectorInterface), ignore=(:/, :adjoint)
+        Rimu; skip=(Rimu, Base, Core, LinearAlgebra, VectorInterface)
     ) === nothing
     # If this test fails, make your import statements explicit.
     # For example, replace `using Foo` with `using Foo: bar, baz`.
