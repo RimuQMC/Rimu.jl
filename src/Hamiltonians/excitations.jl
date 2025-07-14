@@ -1,8 +1,8 @@
 using Rimu
 using Rimu.Hamiltonians: hopnextneighbour
 
-const BoseOccupiedModeMap{N} = OccupiedModeMap{N,BitStringAddresses.BoseFSIndex}
-const FermiOccupiedModeMap{N} = OccupiedModeMap{N,BitStringAddresses.FermiFSIndex}
+const BoseOccupiedModeMap{N} = ModeMap{N,BitStringAddresses.BoseFSIndex}
+const FermiOccupiedModeMap{N} = ModeMap{N,BitStringAddresses.FermiFSIndex}
 
 """
     momentum_transfer_excitation(add, chosen, map; fold=true) -> nadd, α, p, q, -k
@@ -17,14 +17,14 @@ a^†_{p + k} a^†_{q - k} a_q a_p |\\mathtt{add}⟩
 
 The `fold` argument controls whether the terms `p + k` and `q - k` are done modulo M. If
 not, zero is returned when either of those terms is less than 1 or larger than M.
-It is expected that `map == OccupiedModeMap(add)`.
+It is expected that `map == occupied_mode_map(add)`.
 
 Return the new address(es), the value, modes `p` and `q`, and the momentum change `-k`.
 
-See [`excitation`](@ref), [`OccupiedModeMap`](@ref).
+See [`excitation`](@ref), [`occupied_mode_map`](@ref).
 """
 @inline function momentum_transfer_excitation(
-    add::SingleComponentFockAddress, chosen, map::OccupiedModeMap; fold=true
+    add::SingleComponentFockAddress, chosen, map::ModeMap; fold=true
 )
     M = num_modes(add)
     singlies = length(map) # number of at least singly occupied modes
@@ -142,7 +142,7 @@ end
 The diagonal part of nearest neighbour term [`momentum_transfer_excitation`](@ref) in [`ExtendedHubbardMom1D`](@ref).
 Where `step` is the separation of single-particle momenta in the momentum grid.
 """
-function extended_momentum_transfer_diagonal(map::OccupiedModeMap, step)
+function extended_momentum_transfer_diagonal(map::ModeMap, step)
     onproduct = 0
     for i in 1:length(map)
         occ_i = map[i].occnum
@@ -189,7 +189,7 @@ a^†_{p+k,↑} a^†_{q+l,↑} a^†_{s-k-l,↓} a_{s,↓} a_{q,↑} a_{p,↑} 
 ```
 
 The index `i` enumerates the possible non-zero terms and determines ``p, q, s, k, l``.
-It is expected that `map↑, map↓ == OccupiedModeMap(add↑), OccupiedModeMap(add↓)`.
+It is expected that `map↑, map↓ == occupied_mode_map(add↑), occupied_mode_map(add↓)`.
 
 Return new addresses, prefactor `value`, `k`, and `l`. Note: If either `k` or `l` are zero,
 or the excitation is diagonal, the function returns `value == 0`.
@@ -238,7 +238,7 @@ function transcorrelated_three_body_excitation(add_a, add_b, i, map_a, map_b)
 end
 
 """
-    momentum_external_potential_excitation(ep, add, i, map::OccupiedModeMap) -> nadd, α
+    momentum_external_potential_excitation(ep, add, i, map::ModeMap) -> nadd, α
 
 The momentum space version of an external potential. `ep` may be a discrete Fourier
 transform of a real-space potential.
@@ -249,12 +249,12 @@ transform of a real-space potential.
 
 Return the new address `nadd` and value `α` of the `i`th of the
 `(num_modes(add)-1) * num_occupied_modes(add)` terms in the sum, excluding the diagonal
-term `∝ |add⟩`. It is expected that `map == OccupiedModeMap(add)`.
+term `∝ |add⟩`. It is expected that `map == occupied_mode_map(add)`.
 
-See [`momentum_external_potential_diagonal`](@ref), [`OccupiedModeMap`](@ref),
+See [`momentum_external_potential_diagonal`](@ref), [`occupied_mode_map`](@ref),
 [`num_occupied_modes`](@ref), [`num_modes`](@ref).
 """
-function momentum_external_potential_excitation(ep, add, i, map::OccupiedModeMap)
+function momentum_external_potential_excitation(ep, add, i, map::ModeMap)
     M = num_modes(add)
     p, q = fldmod1(i, M - 1) # i == (p-1)*(M-1) + q
     p_index = map[p] # p-th occupied mode in add
@@ -267,11 +267,11 @@ function momentum_external_potential_excitation(ep, add, i, map::OccupiedModeMap
 end
 
 """
-    momentum_external_potential_diagonal(ep, add, map::OccupiedModeMap)
+    momentum_external_potential_diagonal(ep, add, map::ModeMap)
 
 The diagonal part of [`momentum_external_potential_excitation`](@ref).
 """
-function momentum_external_potential_diagonal(ep, add, map::OccupiedModeMap)
+function momentum_external_potential_diagonal(ep, add, map::ModeMap)
     onproduct = sum(map) do index
         index.occnum
     end

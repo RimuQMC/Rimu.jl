@@ -20,15 +20,15 @@ function largest_two_point_box(i::Int, j::Int, dims::NTuple{D,Int}) where {D}
 end
 
 """
-    find_chosen_pair_moves(omm::OccupiedModeMap, c, S) -> p_i, p_j, c, box_ranges
+    find_chosen_pair_moves(omm::ModeMap, c, S) -> p_i, p_j, c, box_ranges
 
 Find size of valid moves for chosen pair of indices in `omm`. Returns two valid indices `p_i` and `p_j`
 for the initial pair and a tuple of ranges `box_ranges` defining the subbox of valid moves.
 The index for the chosen move `c` is updated to be valid for this box.
-Arguments are the `OccupiedModeMap` `omm`, the chosen move index `c`
+Arguments are the `ModeMap` `omm`, the chosen move index `c`
 and the size of the basis grid `S`.
 """
-function find_chosen_pair_moves(omm::OccupiedModeMap, c, S::Tuple)
+function find_chosen_pair_moves(omm::ModeMap, c, S::Tuple)
     for i in eachindex(omm)
         p_i = omm[i]
         if p_i.occnum > 1
@@ -196,14 +196,14 @@ end
 
 noninteracting_energy(h::HOCartesianEnergyConservedPerDim, omm::BoseOccupiedModeMap) = dot(h.energies, omm)
 @inline function noninteracting_energy(h::HOCartesianEnergyConservedPerDim, addr::BoseFS)
-    omm = OccupiedModeMap(addr)
+    omm = occupied_mode_map(addr)
     return noninteracting_energy(h, omm)
 end
 # fast method for finding blocks
 noninteracting_energy(h::HOCartesianEnergyConservedPerDim, t::Union{Vector{Int64},NTuple{N,Int64}}) where {N} = sum(h.energies[j] for j in t)
 
 @inline function diagonal_element(h::HOCartesianEnergyConservedPerDim, addr::BoseFS)
-    omm = OccupiedModeMap(addr)
+    omm = occupied_mode_map(addr)
     return noninteracting_energy(h, omm) + energy_transfer_diagonal(h, omm)
 end
 
@@ -213,7 +213,7 @@ end
 # To-Do: optimise these out for FCIQMC
 function num_offdiagonals(h::HOCartesianEnergyConservedPerDim, addr::BoseFS)
     S = h.S
-    omm = OccupiedModeMap(addr)
+    omm = occupied_mode_map(addr)
     noffs = 0
 
     for i in eachindex(omm)
@@ -233,7 +233,7 @@ end
 
 
 """
-    energy_transfer_offdiagonal(S, addr, chosen, omm = OccupiedModeMap(addr))
+    energy_transfer_offdiagonal(S, addr, chosen, omm = occupied_mode_map(addr))
         -> new_add, val, mode_i, mode_j, mode_l
 
 Return the new address `new_add`, the prefactor `val`, the initial particle modes
@@ -244,7 +244,7 @@ function energy_transfer_offdiagonal(
         S::Tuple,
         addr::BoseFS,
         chosen::Int,
-        omm::BoseOccupiedModeMap = OccupiedModeMap(addr)
+    omm::BoseOccupiedModeMap=occupied_mode_map(addr)
     )
     # find size of valid moves for each pair
     particle_i, particle_j, valid_box_ranges, chosen = find_chosen_pair_moves(omm, chosen, S)
@@ -271,7 +271,7 @@ function get_offdiagonal(
         h::HOCartesianEnergyConservedPerDim{D,A},
         addr::A,
         chosen::Int,
-        omm::BoseOccupiedModeMap = OccupiedModeMap(addr)
+    omm::BoseOccupiedModeMap=occupied_mode_map(addr)
     ) where {D,A}
 
     S = h.S
@@ -306,7 +306,7 @@ end
 Specialized [`AbstractOffdiagonals`](@ref) for [`HOCartesianEnergyConservedPerDim`](@ref).
 """
 struct HOCartSeparableOffdiagonals{
-    A<:BoseFS,T,H<:AbstractHamiltonian{T},O<:OccupiedModeMap
+    A<:BoseFS,T,H<:AbstractHamiltonian{T},O<:ModeMap
 } <: AbstractOffdiagonals{A,T}
     hamiltonian::H
     address::A
@@ -315,7 +315,7 @@ struct HOCartSeparableOffdiagonals{
 end
 
 function offdiagonals(h::HOCartesianEnergyConservedPerDim, addr::BoseFS)
-    omm = OccupiedModeMap(addr)
+    omm = occupied_mode_map(addr)
     num = num_offdiagonals(h, addr)
     return HOCartSeparableOffdiagonals(h, addr, num, omm)
 end

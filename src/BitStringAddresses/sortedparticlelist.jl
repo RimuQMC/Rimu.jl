@@ -277,3 +277,20 @@ function Base.iterate(fom::FermiOccupiedModes{<:Any,<:SortedParticleList}, i=1)
         return FermiFSIndex(res...), i
     end
 end
+
+function Base.iterate(fum::FermiUnoccupiedModes{<:Any,<:SortedParticleList{N,M}}, state=(1, 1, 1)) where {N,M}
+    if isnothing(state)
+        return nothing
+    else
+        mode, idx, count = state
+        while mode <= M
+            if idx <= N && mode == fum.storage.storage[idx]
+                mode += 1
+                idx += 1
+            else
+                return FermiFSIndex(0, mode, mode - 1), (mode + 1, idx, count + 1)
+            end
+        end
+        return nothing
+    end
+end

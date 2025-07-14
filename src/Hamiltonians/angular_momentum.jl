@@ -88,7 +88,7 @@ num_offdiagonals(::AxialAngularMomentumHO, addr::SingleComponentFockAddress) = 2
 function get_offdiagonal(L::AxialAngularMomentumHO{<:Any,D}, addr::SingleComponentFockAddress, chosen::Int) where {D}
     S = L.S
     states = CartesianIndices(S)
-    omm = OccupiedModeMap(addr)
+    omm = occupied_mode_map(addr)
     x, y, z = L.xyz
 
     # mode selects current mode, b = 0,1 selects left or right branch

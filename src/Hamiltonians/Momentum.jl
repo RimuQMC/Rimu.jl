@@ -33,7 +33,7 @@ end
 
 @inline function _momentum(address::SingleComponentFockAddress, fold)
     M = num_modes(address)
-    momentum = float(dot(-cld(M,2)+1:fld(M,2), OccupiedModeMap(address)))
+    momentum = float(dot(-cld(M, 2)+1:fld(M, 2), occupied_mode_map(address)))
     if fold
         return mod1(momentum + cld(M,2), M) - cld(M,2)
     else

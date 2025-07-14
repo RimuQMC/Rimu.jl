@@ -131,6 +131,52 @@ Base.:(==)(a::FermiFS, b::FermiFS) = a.bs == b.bs
 num_occupied_modes(::FermiFS{N}) where {N} = N
 occupied_modes(a::FermiFS{N,<:Any,S}) where {N,S} = FermiOccupiedModes{N,S}(a.bs)
 
+num_unoccupied_modes(::FermiFS{N,M}) where {N,M} = M - N
+unoccupied_modes(a::FermiFS{N,M,S}) where {N,M,S} = FermiUnoccupiedModes{M - N,S}(a.bs)
+
+"""
+    unoccupied_mode_map(addr::FermiFS) <: AbstractVector
+    
+Get a map of unoccupied modes in [`FermiFS`](@ref) address as an `AbstractVector`
+of indices compatible with [`excitation`](@ref).
+
+`unoccupied_mode_map(addr)[i]` contains the index for the `i`-th unoccupied mode.
+This is useful because unoccupied modes is required in some cases.
+`unoccupied_mode_map(addr)` is an eager version of the iterator returned by
+[`unoccupied_modes`](@ref). It is similar to [`onr`](@ref) but contains more information.
+
+Note that this function is only implemented for addresses of type [`FermiFS`](@ref).
+
+# Example
+
+```jldoctest
+julia> f = FermiFS(1,1,0,0)
+FermiFS{2,4}(1, 1, 0, 0)
+
+julia> mf = unoccupied_mode_map(f)
+2-element Rimu.BitStringAddresses.ModeMap{2, FermiFSIndex}:
+ FermiFSIndex(occnum=0, mode=3, offset=2)
+ FermiFSIndex(occnum=0, mode=4, offset=3)
+ 
+julia> mf == collect(unoccupied_modes(f))
+true
+
+```
+See also [`occupied_mode_map`](@ref).
+"""
+function unoccupied_mode_map(addr::FermiFS{N,M}) where {N,M}
+    modes = unoccupied_modes(addr)
+    T = eltype(modes)
+    L = num_unoccupied_modes(addr)
+    indices = MVector{L,T}(undef)
+    i = 0
+    for index in modes
+        i += 1
+        @inbounds indices[i] = index
+    end
+    return ModeMap(SVector(indices), i)
+end
+
 function near_uniform(::Type{FermiFS{N,M}}) where {N,M}
     return FermiFS([fill(1, N); fill(0, M - N)])
 end
