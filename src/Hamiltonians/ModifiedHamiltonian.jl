@@ -10,11 +10,11 @@ The `ModifiedHamiltonian` can only be used to implement wrappers that modify the
 elements to the Hamiltonian.
 
 The following need to be implemented
-* [`parent_operator`](@ref Main.Hamiltonians)
-* [`modify_diagonal`](@ref Main.Hamiltonians)
-* [`modify_offdiagonal`](@ref Main.Hamiltonians)
+* [`parent_operator`](@ref Main.Hamiltonians.parent_operator)
+* [`modify_diagonal`](@ref Main.Hamiltonians.modify_diagonal)
+* [`modify_offdiagonal`](@ref Main.Hamiltonians.modfy_offdiagonal)
 * [`LOStructure(p)`](@ref) and `Base.adjoint` if known, defaults to
-  [`AdjointUnknown`](@ref Main.Interfaces).
+  [`AdjointUnknown`](@ref Main.Interfaces.AdjointUnknown).
 
 The following are provided:
 * [`starting_address(op)`](@ref)
@@ -43,7 +43,7 @@ parent_operator
 
 Modify the diagonal element `value` at address `source` to `val`. Specifically,
 `value = diagonal_element(operator_column(parent_operator(ham), source))`.
-See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
+See [`ModifiedHamiltonian`](@ref Main.Hamiltonians.ModifiedHamiltonian).
 """
 modify_diagonal
 
@@ -54,7 +54,7 @@ Modfy an offdiagonal element `dest => element` reachable from the address
 `source` in the [`parent_operator`](@ref) of `ham`.
 
 Should return a `Pair` of modified address `addr` and modified value `val`.
-See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
+See [`ModifiedHamiltonian`](@ref Main.Hamiltonians.ModifiedHamiltonian).
 """
 modify_offdiagonal
 

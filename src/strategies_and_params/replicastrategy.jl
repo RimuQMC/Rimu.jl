@@ -96,7 +96,7 @@ Implemented transformations are:
 In the case of a transformed Hamiltonian the overlaps are defined as follows. For a
 similarity transformation `G` of the Hamiltonian (see e.g. [`GutzwillerSampling`](@ref).)
 ```math
-    Ĝ = f Ĥ f^{-1}.
+    Ĝ = f Ĥ f⁻¹.
 ```
 The expectation value of an operator ``Â`` is
 ```math
