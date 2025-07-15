@@ -12,6 +12,8 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     AdjointUnknown
 
+using ElemCo
+
 function exact_energy(ham)
     dv = DVec(starting_address(ham) => 1.0)
     all_results = eigsolve(ham, dv, 1, :SR; issymmetric = LOStructure(ham) == IsHermitian())
