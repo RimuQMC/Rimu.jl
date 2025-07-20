@@ -1,5 +1,6 @@
 """
     HamiltonianProduct(A::AbstractHamiltonian, B::AbstractHamiltonian; commuting=A==B)
+    *(A::AbstractHamiltonian, B::AbstractHamiltonian)
 
 The product of two [`AbstractHamiltonian`](@ref)s, acting from right to left. The two Hamiltonians
 must act on the same address space. Set `commuting` to `true` if `A` and `B` commute.
