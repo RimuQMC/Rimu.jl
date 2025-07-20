@@ -9,7 +9,8 @@ struct HamiltonianProduct{T, O1<:AbstractHamiltonian, O2<:AbstractHamiltonian, C
     op2::O2
 end
 function HamiltonianProduct(
-    op1::AbstractHamiltonian{T1}, op2::AbstractHamiltonian{T2}; commuting = op1==op2
+    op1::AbstractHamiltonian{T1}, op2::AbstractHamiltonian{T2};
+    commuting = op1==op2 || isdiag(op1) && isdiag(op2)
 ) where {T1, T2}
     if !allows_address_type(op1, starting_address(op2))
         throw(ArgumentError("The Hamiltonians are not compatible."))
@@ -27,10 +28,14 @@ starting_address(p::HamiltonianProduct) = starting_address(p.op2)
 function LOStructure(::Type{<:HamiltonianProduct{<:Any,O1,O2,C}}) where {O1,O2,C}
     l1 = LOStructure(O1)
     l2 = LOStructure(O2)
-    if l1 == IsHermitian() && l2 == IsHermitian() && C
-        return IsHermitian()
-    elseif l1 == IsDiagonal() && l2 == IsDiagonal()
+    if l1 == IsDiagonal() && l2 == IsDiagonal()
         return IsDiagonal()
+    elseif C
+        if (l1 == IsHermitian() && l2 == IsHermitian()) ||
+            (l1 == IsDiagonal() && eltype(O1) <: Real && l2 == IsHermitian()) ||
+            (l2 == IsDiagonal() && eltype(O2) <: Real && l1 == IsHermitian())
+            return IsHermitian()
+        end
     elseif l1 != AdjointUnknown() && l2 != AdjointUnknown()
         return AdjointKnown()
     else
@@ -41,24 +46,28 @@ function LinearAlgebra.adjoint(op::HamiltonianProduct{<:Any,<:Any,<:Any,C}) wher
     return HamiltonianProduct(op.op2',op.op1'; commuting=C)
 end
 
-struct ProductColumn{A,T,O<:HamiltonianProduct{T},C} <: AbstractOperatorColumn{A,T,O}
+struct ProductColumn{A,T,O<:HamiltonianProduct{T},C1,C2} <: AbstractOperatorColumn{A,T,O}
     operator::O
     address::A
-    col2::C
+    col1::C1
+    col2::C2
 end
-operator_column(o::HamiltonianProduct, a) = ProductColumn(o, a, operator_column(o.op2, a))
+function operator_column(o::HamiltonianProduct, a) 
+    return ProductColumn(o, a, operator_column(o.op1, a), operator_column(o.op2, a))
+end
+
 starting_address(c::ProductColumn) = c.address
 num_offdiagonals(c::ProductColumn) = 2*(num_offdiagonals(c.col2)+1)^2
 
 function diagonal_element(c::ProductColumn)
     #this is not the actual diagonal element, just a contribution to it
-    return diagonal_element(c.col2)*diagonal_element(operator_column(c.operator.op1, starting_address(c)))
+    return diagonal_element(c.col2)*diagonal_element(c.col1)
 end
 
 function random_offdiagonal(c::ProductColumn)
     p = num_offdiagonals(c.col2)
     if rand() < 1/(p+1)# diagonal element op2
-        a_add, a_prob, a_elem = random_offdiagonal(operator_column(c.operator.op1, starting_address(c)))
+        a_add, a_prob, a_elem = random_offdiagonal(c.col1)
         return a_add, a_prob/(p+1), a_elem*diagonal_element(c.col2)
     else
         b_add, b_prob, b_elem = random_offdiagonal(c.col2)
@@ -75,20 +84,20 @@ function random_offdiagonal(c::ProductColumn)
     end
 end
 
-struct ProductOffdiagonals{A,T,O<:HamiltonianProduct{T},C,OD}
+struct ProductOffdiagonals{A,T,O<:HamiltonianProduct{T},C,OD1,OD2}
     operator::O
     address::A
     col2::C
-    ods2::OD
+    ods1::OD1
+    ods2::OD2
 end
-offdiagonals(c::ProductColumn) = ProductOffdiagonals(c.operator, c.address, c.col2, offdiagonals(c.col2))
+offdiagonals(c::ProductColumn) = ProductOffdiagonals(c.operator, c.address, c.col2, offdiagonals(c.col1), offdiagonals(c.col2))
 Base.IteratorSize(::ProductOffdiagonals) = Base.SizeUnknown()
 Base.eltype(::ProductOffdiagonals{A,T}) where {A,T} = Pair{A,T}
 
 function Base.iterate(o::ProductOffdiagonals)
     #start with diagonal of op2, offdiagonals of op1
-    ods1 = offdiagonals(operator_column(o.operator.op1, o.address))
-    first1 = iterate(ods1)
+    first1 = iterate(o.ods1)
     if isnothing(first1)# no offdiagonals for op1, go to offdiagonals of op2
         first2 = iterate(o.ods2)
         if isnothing(first2)
@@ -101,7 +110,7 @@ function Base.iterate(o::ProductOffdiagonals)
         return add2 => val1*val2, state
     else
         (add1, val1), state1 = first1
-        state = (ods1, state1)
+        state = (o.ods1, state1)
         return add1 => val1*diagonal_element(o.col2), state
     end
 end
