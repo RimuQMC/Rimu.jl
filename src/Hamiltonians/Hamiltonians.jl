@@ -23,6 +23,7 @@ Other
 - [`FroehlichPolaron`](@ref)
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
+- [`HamiltonianProduct`](@ref)
 
 ## [Wrappers](#Hamiltonian-wrappers)
 - [`GutzwillerSampling`](@ref)
@@ -94,6 +95,8 @@ export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCarte
 export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
+export HamiltonianProduct
+
 if VERSION < v"1.10"
     # used for ReducedDensityMatrix
     function hermitianpart!(A)
@@ -139,4 +142,6 @@ include("HOCartesianCentralImpurity.jl")
 include("vertices.jl")
 include("ho-cart-tools.jl")
 include("angular_momentum.jl")
+
+include("Product.jl")
 end
