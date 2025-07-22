@@ -1749,7 +1749,7 @@ end
         @test (a => v) in offdiagonals(c)
     end
 
-    ods_product = sum([DVec(od) for od in offdiagonals(c)])
+    ods_product = sum(DVec(od) for od in offdiagonals(c))
     ods_product[addr] += diagonal_element(c)
 
     c2 = operator_column(H2, addr)
