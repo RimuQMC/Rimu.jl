@@ -2,7 +2,7 @@
     abstract type ModifiedHamiltonian{T} <: AbstractHamiltonian{T} end
 
 Abstract type for defining wrappers over [`AbstractHamiltonian`](@ref)s that modify diagonal
-and off-diagonal elements via the functions 
+and off-diagonal elements via the functions
 [`modify_diagonal`](@ref Main.Hamiltonians.modify_diagonal) and
 [`modify_offdiagonal`](@ref Main.Hamiltonians.modify_offdiagonal).
 
@@ -83,6 +83,7 @@ function Base.show(io::IO, col::ModifiedHamiltonianColumn)
 end
 
 starting_address(col::ModifiedHamiltonianColumn) = starting_address(col.column)
+parent_operator(col::ModifiedHamiltonianColumn) = col.hamiltonian
 
 function diagonal_element(col::ModifiedHamiltonianColumn)
     value = diagonal_element(col.column)

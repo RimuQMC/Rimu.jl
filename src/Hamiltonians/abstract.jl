@@ -263,6 +263,7 @@ operator_column(::IdentityOperator, addr) = IdentityOperatorColumn(addr)
 num_offdiagonals(::IdentityOperatorColumn) = 0
 diagonal_element(::IdentityOperatorColumn) = 1.0
 starting_address(col::IdentityOperatorColumn) = col.address
+parent_operator(::IdentityOperatorColumn) = IdentityOperator()
 
 struct IdentityOperatorOffdiagonals{A} <: AbstractVector{Pair{A,Float64}}
     address::A
