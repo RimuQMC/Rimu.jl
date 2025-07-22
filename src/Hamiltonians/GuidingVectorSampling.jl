@@ -64,8 +64,7 @@ julia> eigen(Matrix(G)).values
 
 # Observables
 
-To calculate observables, pass the transformed Hamiltonian `G` to
-[`AllOverlaps`](@ref) with keyword argument `transform=G`.
+See [`AllOverlaps`](@ref) for calculation of observables with a transformed Hamiltonian.
 """
 struct GuidingVectorSampling{A,T,H<:AbstractHamiltonian{T},D} <: ModifiedHamiltonian{T}
     # The A parameter sets whether this is an adjoint or not.
