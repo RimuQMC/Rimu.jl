@@ -148,10 +148,10 @@ LOStructure(::Type{<:HOCartesianCentralImpurity}) = IsHermitian()
         dot(indices, aspect) + sum(aspect)/2
     end
 end
-noninteracting_energy(H::HOCartesianCentralImpurity, addr) = noninteracting_energy(H.S, H.aspect, OccupiedModeMap(addr))
+noninteracting_energy(H::HOCartesianCentralImpurity, addr) = noninteracting_energy(H.S, H.aspect, occupied_mode_map(addr))
 
 @inline function diagonal_element(H::HOCartesianCentralImpurity, addr)
-    omm = OccupiedModeMap(addr)
+    omm = occupied_mode_map(addr)
     u = H.g / sqrt(prod(H.aspect))
     result = u * sum(p -> ho_delta_potential(H.S, p.mode, p.mode; vals = H.vtable), omm)
     if !H.impurity_only
@@ -173,7 +173,7 @@ num_offdiagonals(H::HOCartesianCentralImpurity, addr) = (num_modes(addr) - 1) * 
 Specialized [`AbstractOffdiagonals`](@ref) for [`HOCartesianCentralImpurity`](@ref).
 """
 struct HOCartImpurityOffdiagonals{
-    A<:BoseFS,O<:OccupiedModeMap,H<:HOCartesianCentralImpurity
+    A<:BoseFS,O<:ModeMap,H<:HOCartesianCentralImpurity
 } <: AbstractOffdiagonals{A,Float64}
     ham::H
     address::A
@@ -183,7 +183,7 @@ struct HOCartImpurityOffdiagonals{
 end
 
 function offdiagonals(H::HOCartesianCentralImpurity, addr::SingleComponentFockAddress)
-    omm = OccupiedModeMap(addr)
+    omm = occupied_mode_map(addr)
     num_offs = num_offdiagonals(H, addr)
     u = H.g / sqrt(prod(H.aspect))
     return HOCartImpurityOffdiagonals(H, addr, omm, u, num_offs)

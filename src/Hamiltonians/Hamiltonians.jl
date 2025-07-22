@@ -62,11 +62,12 @@ using StaticArrays: StaticArrays, SA, SMatrix, SVector, SArray, setindex
 using TupleTools: TupleTools
 
 using ..BitStringAddresses
+import ..BitStringAddresses: ModeMap
 using ..Interfaces
 using ..Interfaces: sum_mutating!
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
     offdiagonals, random_offdiagonal, LOStructure, allows_address_type, operator_column,
-    undo_transform
+    undo_transform, has_random_offdiagonal, has_iterable_offdiagonals, parent_operator
 
 export dimension, rayleigh_quotient, momentum
 

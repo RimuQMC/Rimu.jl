@@ -245,7 +245,7 @@ function starting_address(h::HOCartesianContactInteractions)
 end
 
 LOStructure(::Type{<:HOCartesianContactInteractions}) = IsHermitian()
-
+has_random_offdiagonal(::Type{<:HOCartesianContactInteractions}) = false
 
 ### DIAGONAL ELEMENTS ###
 function energy_transfer_diagonal(h::HOCartesianContactInteractions{D}, omm::BoseOccupiedModeMap) where {D}
@@ -272,14 +272,14 @@ end
 
 noninteracting_energy(h::HOCartesianContactInteractions, omm::BoseOccupiedModeMap) = dot(h.energies, omm)
 @inline function noninteracting_energy(h::HOCartesianContactInteractions, addr::BoseFS)
-    omm = OccupiedModeMap(addr)
+    omm = occupied_mode_map(addr)
     return noninteracting_energy(h, omm)
 end
 # fast method for finding blocks
 noninteracting_energy(h::HOCartesianContactInteractions, t::Union{Vector{Int64},NTuple{N,Int64}}) where {N} = sum(h.energies[j] for j in t)
 
 @inline function diagonal_element(h::HOCartesianContactInteractions, addr::BoseFS)
-    omm = OccupiedModeMap(addr)
+    omm = occupied_mode_map(addr)
     return noninteracting_energy(h, omm) + energy_transfer_diagonal(h, omm)
 end
 

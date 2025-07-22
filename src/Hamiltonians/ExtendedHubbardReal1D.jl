@@ -117,7 +117,7 @@ where ``f_{j-i} = 1`` for nearest neighbors (power = nothing) and
 See [`ExtendedHubbardReal1D`](@ref) and [`hopnextneighbour`](@ref).
 """
 function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleComponentFockAddress, ::Nothing)
-    omm = OccupiedModeMap(b)
+    omm = occupied_mode_map(b)
 
     prev = zero(eltype(omm))
     ext_result = 0
@@ -139,7 +139,7 @@ function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleCompone
 end
 
 function extended_hubbard_interaction(h::ExtendedHubbardReal1D, b::SingleComponentFockAddress, power::Number)
-    omm = OccupiedModeMap(b)
+    omm = occupied_mode_map(b)
     M = num_modes(b)
     ext_result = 0
     reg_result = 0

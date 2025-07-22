@@ -146,14 +146,14 @@ end
 end
 
 @inline function diagonal_element(h::HubbardMom1DEP, address::SingleComponentFockAddress)
-    map = OccupiedModeMap(address)
+    map = occupied_mode_map(address)
     return dot(h.kes, map) + momentum_transfer_diagonal(h, map) +
         momentum_external_potential_diagonal(h.ep, address, map)
 end
 @inline function diagonal_element(h::HubbardMom1DEP, address::FermiFS2C)
     c1, c2 = address.components
-    map_a = OccupiedModeMap(c1)
-    map_b = OccupiedModeMap(c2)
+    map_a = occupied_mode_map(c1)
+    map_b = occupied_mode_map(c2)
     return dot(h.kes, map_a) + dot(h.kes, map_b) +
         momentum_transfer_diagonal(h, map_a, map_b) +
         momentum_external_potential_diagonal(h.ep, c1, map_a) +
@@ -164,7 +164,7 @@ end
 ### offdiagonals
 ###
 struct OffdiagonalsBoseMom1DEP{
-    A<:SingleComponentFockAddress,T,H<:AbstractHamiltonian{T},O<:OccupiedModeMap
+    A<:SingleComponentFockAddress,T,H<:AbstractHamiltonian{T},O<:ModeMap
 } <: AbstractOffdiagonals{A,T}
     hamiltonian::H
     address::A
@@ -175,7 +175,7 @@ end
 
 function offdiagonals(h::HubbardMom1DEP, a::SingleComponentFockAddress)
     M = num_modes(a)
-    map = OccupiedModeMap(a)
+    map = occupied_mode_map(a)
     singlies = length(map)
     doublies = count(i -> i.occnum ≥ 2, map)
     num_mom = singlies * (singlies - 1) * (M - 2) + doublies * (M - 1)
@@ -219,8 +219,8 @@ function offdiagonals(h::HubbardMom1DEP, a::FermiFS2C)
     comp_a, comp_b = a.components
     N1 = num_particles(comp_a)
     N2 = num_particles(comp_b)
-    map_a = OccupiedModeMap(comp_a)
-    map_b = OccupiedModeMap(comp_b)
+    map_a = occupied_mode_map(comp_a)
+    map_b = occupied_mode_map(comp_b)
     num_mom = N1 * N2 * (M - 1)
     num_ep_a = N1 * (M - 1)
     num_ep_b = N2 * (M - 1)
