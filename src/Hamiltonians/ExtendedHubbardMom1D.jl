@@ -91,25 +91,25 @@ end
 end
 
 @inline function diagonal_element(h::ExtendedHubbardMom1D{<:Any,M,A}, address::A) where {M,A<:SingleComponentFockAddress}
-    map = OccupiedModeMap(address)
+    map = occupied_mode_map(address)
     return (dot(h.kes, map) + (h.u/ 2M) * momentum_transfer_diagonal(map) 
         + (h.v/ M) * extended_momentum_transfer_diagonal(map, 2π / M))
 end
 
 @inline function diagonal_element(h::ExtendedHubbardMom1D{<:Any,M,A}, address::A) where {M,A<:FermiFS}
-    map = OccupiedModeMap(address)
+    map = occupied_mode_map(address)
     return dot(h.kes, map) + (h.v/ M) * extended_momentum_transfer_diagonal(map, 2π / M)
 end
 
 @inline function get_offdiagonal(
-    ham::ExtendedHubbardMom1D{<:Any,M,A}, address::A, chosen, map=OccupiedModeMap(address)
+    ham::ExtendedHubbardMom1D{<:Any,M,A}, address::A, chosen, map=occupied_mode_map(address)
 ) where {M,A<:SingleComponentFockAddress}
     address, onproduct,_,_,q = momentum_transfer_excitation(address, chosen, map)
     return address, ham.u * onproduct / 2M + ham.v * cos(q * 2π / M) * onproduct / M
 end
 
 @inline function get_offdiagonal(
-    ham::ExtendedHubbardMom1D{<:Any,M,A}, address::A, chosen, map=OccupiedModeMap(address)
+    ham::ExtendedHubbardMom1D{<:Any,M,A}, address::A, chosen, map=occupied_mode_map(address)
 ) where {M,A<:FermiFS}
     address, onproduct,_,_,q = momentum_transfer_excitation(address, chosen, map)
     return address, -ham.v * onproduct * cos(q * 2π / M) / M

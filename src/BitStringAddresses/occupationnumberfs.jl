@@ -251,4 +251,4 @@ function Base.iterate(bom::BoseOccupiedModes{<:Any,<:Any,<:OccupationNumberFS}, 
 end
 
 # find_occupied_modes provided by generic implementation
-# OccupiedModeMap provided by generic implementation
+# occupied_mode_map provided by generic implementation

@@ -62,6 +62,7 @@ using StaticArrays: StaticArrays, SA, SMatrix, SVector, SArray, setindex
 using TupleTools: TupleTools
 
 using ..BitStringAddresses
+import ..BitStringAddresses: ModeMap
 using ..Interfaces
 using ..Interfaces: sum_mutating!
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,

@@ -201,7 +201,7 @@ function get_all_blocks_parity(h::HOCartesianContactInteractions{D,<:Any,B}) whe
     # rough upper bound assuming `BasisSetRepresentation` will filter by energy cutoff
     df = DataFrame()
     for (block_id, addr) in enumerate(parity_block_seed_addresses(h))
-        t = vcat(map(p -> [p.mode for _ in 1:p.occnum], OccupiedModeMap(addr))...)
+        t = vcat(map(p -> [p.mode for _ in 1:p.occnum], occupied_mode_map(addr))...)
         block_E0 = noninteracting_energy(h, t)
         push!(df, (; block_id, block_E0, block_size = bs_estimate, addr, indices = Tuple(t), t_basis = 0.0))
     end
@@ -227,7 +227,7 @@ function fock_to_cart(
 
     cart = vcat(map(
         p -> [Tuple(states[p.mode]) .- Int(zero_index) for _ in 1:p.occnum],
-        OccupiedModeMap(addr))...)
+        occupied_mode_map(addr))...)
 
     return SVector{N,NTuple{D,Int}}(cart)
 end

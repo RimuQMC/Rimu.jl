@@ -835,3 +835,38 @@ function LinearAlgebra.dot(
 ) where {S<:BitString}
     return count_ones(occ_a.storage & occ_b.storage)
 end
+
+function Base.iterate(o::FermiUnoccupiedModes{<:Any,<:BitString{N,NC,T}}, st=(1, 1)) where {N,NC,T}
+    l_index, c_index = st
+    chunk_size = sizeof(T) * 8
+    while c_index <= NC
+        chunk = o.storage.chunks[end+1-c_index]
+        while (chunk >> (l_index - 1) & 1 ≠ 0) && l_index <= chunk_size
+            l_index += 1
+        end
+        if l_index <= chunk_size
+            g_index = l_index + (c_index - 1) * chunk_size
+            if g_index <= N
+                return FermiFSIndex(0, g_index, g_index - 1), (l_index + 1, c_index)
+            else
+                return nothing
+            end
+        else
+            l_index = 1
+            c_index += 1
+        end
+    end
+    return nothing
+end
+
+function Base.iterate(o::FermiUnoccupiedModes{<:Any,<:BitString{N,1,T}}, st=1) where {N,T}
+    l_index = st
+    chunk_size = sizeof(T) * 8
+    while (o.storage.chunks[end] >> (l_index - 1) & 1 ≠ 0) && l_index <= chunk_size
+        l_index += 1
+    end
+    if l_index <= chunk_size && l_index <= N
+        return FermiFSIndex(0, l_index, l_index - 1), l_index + 1
+    end
+    return nothing
+end

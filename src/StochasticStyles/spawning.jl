@@ -370,9 +370,8 @@ end
 @inline function spawn!(s::DynamicSemistochastic, w, column, val, boost=1)
     # assumes that s.strat.threshold is defined
     # special-case substrategies that don't fit the pattern?
-    thresh = min(s.abs_threshold, num_offdiagonals(column))
-    amount = boost * abs(val) * s.rel_threshold
-    if amount ≥ thresh
+    amount = boost * abs(val)
+    if amount ≥ num_offdiagonals(column) * s.rel_threshold || amount > s.abs_threshold
         # Exact multiplication.
         attempts, spawns = spawn!(Exact(s.strat.threshold), w, column, val)
         return (1, 0, attempts, spawns)
