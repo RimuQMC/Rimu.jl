@@ -36,7 +36,7 @@ abstract type ModifiedHamiltonian{T} <: AbstractHamiltonian{T} end
 Return the Hamiltonian that is being modified.
 See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
 """
-parent_operator
+parent_operator(::ModifiedHamiltonian)
 
 """
     modify_diagonal(ham::ModifiedHamiltonian, source, value) -> val

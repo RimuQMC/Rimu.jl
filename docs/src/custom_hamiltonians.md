@@ -33,7 +33,7 @@ AbstractHamiltonian
 starting_address
 operator_column
 AbstractOperatorColumn
-parent_operator
+parent_operator(::AbstractOperatorColumn)
 diagonal_element
 offdiagonals
 random_offdiagonal
@@ -84,7 +84,7 @@ wrappers are documented in the [Hamiltonians](@ref Hamiltonian-wrappers) section
 
 ```@docs
 Hamiltonians.ModifiedHamiltonian
-Hamiltonians.parent_operator
+Hamiltonians.parent_operator(::ModifiedHamiltonian)
 Hamiltonians.modify_diagonal
 Hamiltonians.modify_offdiagonal
 ```
