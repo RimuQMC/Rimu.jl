@@ -503,6 +503,8 @@ construct the column with [`operator_column`](@ref).
 Part of the [`AbstractHamiltonian`](@ref) and [`AbstractOperator`](@ref) interface.
 See also [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
+parent_operator(::AbstractOperatorColumn)
+
 parent_operator(c::OffdiagonalsOperatorColumn) = c.operator
 
 """

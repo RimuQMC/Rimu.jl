@@ -84,7 +84,7 @@ wrappers are documented in the [Hamiltonians](@ref Hamiltonian-wrappers) section
 
 ```@docs
 Hamiltonians.ModifiedHamiltonian
-Hamiltonians.parent_operator(::ModifiedHamiltonian)
+Hamiltonians.parent_operator(::Main.Hamiltonians.ModifiedHamiltonian)
 Hamiltonians.modify_diagonal
 Hamiltonians.modify_offdiagonal
 ```
