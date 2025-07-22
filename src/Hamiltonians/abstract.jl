@@ -254,10 +254,9 @@ The diagonal operator with 1.0 along its diagonal.
 """
 struct IdentityOperator <: AbstractOperator{Float64} end
 LOStructure(::Type{<:IdentityOperator}) = IsDiagonal()
-allows_address_type(::IdentityOperator, ::Any) = true
 allows_address_type(::IdentityOperator, ::Type{<:Any}) = true
 
-struct IdentityOperatorColumn{A}
+struct IdentityOperatorColumn{A} <: AbstractOperatorColumn{A,Float64,IdentityOperator}
     address::A
 end
 operator_column(::IdentityOperator, addr) = IdentityOperatorColumn(addr)
@@ -271,3 +270,6 @@ end
 offdiagonals(col::IdentityOperatorColumn) = IdentityOperatorOffdiagonals(col.address)
 Base.size(::IdentityOperatorOffdiagonals) = (0,)
 Base.getindex(ods::IdentityOperatorOffdiagonals, i) = throw(BoundsError(ods, i))
+
+LinearAlgebra.dot(v::AbstractDVec, ::IdentityOperator, w::AbstractDVec) = dot(v, w)
+dot_from_right(v::AbstractDVec, ::IdentityOperator, w::AbstractDVec) = dot(v, w)

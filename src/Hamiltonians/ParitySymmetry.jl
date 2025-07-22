@@ -68,7 +68,7 @@ function starting_address(h::ParitySymmetry)
     return min(addr, reverse(addr))
 end
 
-parent_hamiltonian(h::ParitySymmetry) = h.hamiltonian
+parent_operator(h::ParitySymmetry) = h.hamiltonian
 modify_diagonal(::ParitySymmetry, _, val) = val
 
 function modify_offdiagonal(h::ParitySymmetry, in, out, val)

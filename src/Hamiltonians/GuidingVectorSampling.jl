@@ -27,23 +27,44 @@ After construction, we can access the underlying hamiltonian with `G.hamiltonian
 # Example
 
 ```jldoctest
-julia> H = HubbardReal1D(BoseFS(1,1,1); u=6.0, t=1.0);
+julia> H = HubbardMom1D(BoseFS(1,1,1); u=6.0, t=1.0);
 
-julia> v = DVec(starting_address(H) => 10; capacity=1);
+julia> v = DVec(starting_address(H) => 10);
 
 julia> G = GuidingVectorSampling(H, v, 0.1);
 
-julia> get_offdiagonal(H, starting_address(H), 4)
-(BoseFS{3,3}(2, 0, 1), -1.4142135623730951)
+julia> Matrix(H)
+4×4 Matrix{Float64}:
+ 12.0      4.89898  4.89898  4.89898
+  4.89898  9.0      0.0      0.0
+  4.89898  0.0      9.0      0.0
+  4.89898  0.0      0.0      0.0
 
-julia> get_offdiagonal(G, starting_address(G), 4)
-(BoseFS{3,3}(2, 0, 1), -0.014142135623730952)
+julia> Matrix(G)
+4×4 Matrix{Float64}:
+ 12.0        489.898  489.898  489.898
+  0.0489898    9.0      0.0      0.0
+  0.0489898    0.0      9.0      0.0
+  0.0489898    0.0      0.0      0.0
+
+julia> eigen(Matrix(H)).values
+4-element Vector{Float64}:
+ -2.3661456273236645
+  4.9594958589580465
+  8.999999999999996
+ 18.406649768365643
+
+julia> eigen(Matrix(G)).values
+4-element Vector{Float64}:
+ -2.366145627323689
+  4.9594958589580465
+  8.999999999999998
+ 18.406649768365643
 ```
 
 # Observables
 
-To calculate observables, pass the transformed Hamiltonian `G` to
-[`AllOverlaps`](@ref) with keyword argument `transform=G`.
+See [`AllOverlaps`](@ref) for calculation of observables with a transformed Hamiltonian.
 """
 struct GuidingVectorSampling{A,T,H<:AbstractHamiltonian{T},D} <: ModifiedHamiltonian{T}
     # The A parameter sets whether this is an adjoint or not.
@@ -66,13 +87,12 @@ function LOStructure(::Type{<:GuidingVectorSampling{<:Any,<:Any,H}}) where {H}
         return AdjointKnown()
     end
 end
-
 function LinearAlgebra.adjoint(h::GuidingVectorSampling{A,T,<:Any,D}) where {A,T,D}
     h_adj = h.hamiltonian'
     return GuidingVectorSampling{!A,T,typeof(h_adj),D}(h_adj, h.vector, h.eps)
 end
 
-parent_hamiltonian(h::GuidingVectorSampling) = h.hamiltonian
+parent_operator(h::GuidingVectorSampling) = h.hamiltonian
 modify_diagonal(::GuidingVectorSampling, _, value) = value
 
 _apply_eps(x, eps) = ifelse(iszero(x), eps, ifelse(abs(x) < eps, sign(x) * eps, x))
@@ -109,14 +129,12 @@ the components of the guiding vector, i.e.``f_{ii} = v_i``.
 
 See [`AllOverlaps`](@ref), [`GuidingVectorSampling`](@ref).
 """
-function TransformUndoer(k::GuidingVectorSampling, op::Union{Nothing,AbstractOperator})
-    if isnothing(op)
-        T = eltype(k)
-    else
-        T = promote_type(eltype(k), eltype(op))
-    end
+function TransformUndoer(k::GuidingVectorSampling, op::AbstractOperator)
+    T = promote_type(eltype(k), eltype(op))
     return TransformUndoer{T,typeof(k),typeof(op)}(k, op)
 end
+
+undo_transform(g::GuidingVectorSampling, op::AbstractOperator) = TransformUndoer(g, op)
 
 const GuidingVectorTransformUndoer{A} = TransformUndoer{<:Any,<:GuidingVectorSampling,A}
 
@@ -127,7 +145,7 @@ function LinearAlgebra.adjoint(s::GuidingVectorTransformUndoer)
     return TransformUndoer(s.transform, a_adj)
 end
 
-function modify_diagonal(s::GuidingVectorTransformUndoer{<:AbstractOperator}, addr, val)
+function modify_diagonal(s::GuidingVectorTransformUndoer, addr, val)
     guide = s.transform.vector[addr]
 
     return guiding_vector_modify(val, true, s.transform.eps, 1.0, 2 * guide)

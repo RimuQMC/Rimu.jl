@@ -65,7 +65,8 @@ using ..BitStringAddresses
 using ..Interfaces
 using ..Interfaces: sum_mutating!
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
-    offdiagonals, random_offdiagonal, LOStructure, allows_address_type, operator_column
+    offdiagonals, random_offdiagonal, LOStructure, allows_address_type, operator_column,
+    undo_transform
 
 export dimension, rayleigh_quotient, momentum
 
@@ -108,8 +109,6 @@ include("excitations.jl")
 
 include("MatrixHamiltonian.jl")
 
-include("ModifiedHamiltonian.jl")
-
 include("HubbardReal1D.jl")
 include("HubbardReal1DEP.jl")
 include("ExtendedHubbardMom1D.jl")
@@ -120,13 +119,16 @@ include("ExtendedHubbardReal1D.jl")
 
 include("FroehlichPolaron.jl")
 
+include("Transcorrelated1D.jl")
+
+include("ModifiedHamiltonian.jl")
+include("TransformUndoer.jl")
 include("GutzwillerSampling.jl")
 include("GuidingVectorSampling.jl")
 include("ParitySymmetry.jl")
 include("TRSymmetry.jl")
 include("Stoquastic.jl")
 
-include("Transcorrelated1D.jl")
 include("correlation_functions.jl")
 include("G2MomCorrelator.jl")
 include("DensityMatrixDiagonal.jl")

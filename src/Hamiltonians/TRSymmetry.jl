@@ -70,7 +70,7 @@ function starting_address(h::TimeReversalSymmetry)
     return min(add, time_reverse(add))
 end
 
-parent_hamiltonian(h::TimeReversalSymmetry) = h.hamiltonian
+parent_operator(h::TimeReversalSymmetry) = h.hamiltonian
 modify_diagonal(::TimeReversalSymmetry, _, val) = val
 
 function modify_offdiagonal(h::TimeReversalSymmetry, in, out, val)

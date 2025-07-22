@@ -2,17 +2,21 @@
     abstract type ModifiedHamiltonian{T} <: AbstractHamiltonian{T} end
 
 Abstract type for defining wrappers over [`AbstractHamiltonian`](@ref)s that modify diagonal
-and off-diagonal elements via the functions [`modify_diagonal`](@ref) and
-[`modify_offdiagonal`](@ref).
+and off-diagonal elements via the functions [`modify_diagonal`](@ref Main.Hamiltonians) and
+[`modify_offdiagonal`](@ref Main.Hamiltonians).
+
+The `ModifiedHamiltonian` can only be used to implement wrappers that modify the
+(off)-diagonals individually and cannot be used to introduce additional off-diagonal
+elements to the Hamiltonian.
 
 The following need to be implemented
-* [`parent_hamiltonian`](@ref)
-* [`modify_diagonal`](@ref)
-* [`modify_offdiagonal`](@ref)
+* [`parent_operator`](@ref Main.Hamiltonians.parent_operator)
+* [`modify_diagonal`](@ref Main.Hamiltonians.modify_diagonal)
+* [`modify_offdiagonal`](@ref Main.Hamiltonians.modify_offdiagonal)
 * [`LOStructure(p)`](@ref) and `Base.adjoint` if known, defaults to
-  [`AdjointUnknown()`](@ref).
+  [`AdjointUnknown`](@ref Main.Interfaces.AdjointUnknown).
 
-The follwing are provided:
+The following are provided:
 * [`starting_address(op)`](@ref)
 * [`allows_address_type(op, type)`](@ref)
 * [`operator_column(op, address)`](@ref)
@@ -27,37 +31,40 @@ The follwing are provided:
 abstract type ModifiedHamiltonian{T} <: AbstractHamiltonian{T} end
 
 """
-    parent_hamiltonian(::ModifiedHamiltonian)
+    parent_operator(::ModifiedHamiltonian)
 
 Return the Hamiltonian that is being modified.
+See [`ModifiedHamiltonian`](@ref Main.Hamiltonians).
 """
-parent_hamiltonian
+parent_operator
 
 """
     modify_diagonal(ham::ModifiedHamiltonian, source, value) -> val
 
-Modifty the diagonal element where
-`value = diagonal_element(operator_column(parent_hamiltonian(ham), source))`.
+Modify the diagonal element `value` at address `source` to `val`. Specifically,
+`value = diagonal_element(operator_column(parent_operator(ham), source))`.
+See [`ModifiedHamiltonian`](@ref Main.Hamiltonians.ModifiedHamiltonian).
 """
 modify_diagonal
 
 """
     modify_offdiagonal(ham::ModifiedHamiltonian, source, dest, element) -> (addr => val)
 
-Modfy an offdiagonal element `dest => element` reachable from `source` in the
-[`parent_hamiltonian`](@ref) of `ham`.
+Modify an offdiagonal element `dest => element` reachable from the address
+`source` in the [`parent_operator`](@ref) of `ham`.
 
 Should return a `Pair` of modified address `addr` and modified value `val`.
+See [`ModifiedHamiltonian`](@ref Main.Hamiltonians.ModifiedHamiltonian).
 """
 modify_offdiagonal
 
 function allows_address_type(h::ModifiedHamiltonian, ::Type{A}) where {A}
-    return allows_address_type(parent_hamiltonian(h), A)
+    return allows_address_type(parent_operator(h), A)
 end
 
 LOStructure(::Type{<:ModifiedHamiltonian}) = AdjointUnknown()
-starting_address(h::ModifiedHamiltonian) = starting_address(parent_hamiltonian(h))
-dimension(h::ModifiedHamiltonian, address) = dimension(parent_hamiltonian(h), address)
+starting_address(h::ModifiedHamiltonian) = starting_address(parent_operator(h))
+dimension(h::ModifiedHamiltonian, address) = dimension(parent_operator(h), address)
 
 struct ModifiedHamiltonianColumn{
     A,T,H<:ModifiedHamiltonian{T},C
@@ -67,7 +74,7 @@ struct ModifiedHamiltonianColumn{
     column::C
 end
 function operator_column(h::ModifiedHamiltonian, address)
-    column = operator_column(parent_hamiltonian(h), address)
+    column = operator_column(parent_operator(h), address)
     return ModifiedHamiltonianColumn(address, h, column)
 end
 function Base.show(io::IO, col::ModifiedHamiltonianColumn)
@@ -139,52 +146,3 @@ function Base.length(ods::ModifiedHamiltonianOffdiagonals)
     return length(ods.offdiagonals)
 end
 Base.eltype(::ModifiedHamiltonianOffdiagonals{A,T}) where {A,T} = Pair{A,T}
-
-
-"""
-    TransformUndoer(transform::AbstractHamiltonian, op::AbstractObservable) <: AbstractHamiltonian
-
-Create a new operator for the purpose of calculating overlaps of transformed
-vectors, which are defined by some transformation `transform`. The new operator should
-represent the effect of undoing the transformation before calculating overlaps, including
-with an optional operator `op`.
-
-Not exported; transformations should define all necessary methods and properties,
-see [`AbstractHamiltonian`](@ref). An `ArgumentError` is thrown if used with an
-unsupported transformation.
-
-# Example
-
-A similarity transform ``\\hat{G} = f \\hat{H} f^{-1}`` has eigenvector
-``d = f \\cdot c`` where ``c`` is an eigenvector of ``\\hat{H}``. Then the
-overlap ``c' \\cdot c = d' \\cdot f^{-2} \\cdot d`` can be computed by defining all
-necessary methods for `TransformUndoer(G)` to represent the operator ``f^{-2}`` and
-calculating `dot(d, TransformUndoer(G), d)`.
-
-Observables in the transformed basis can be computed by defining `TransformUndoer(G, A)`
-to represent ``f^{-1} A f^{-1}``.
-
-# Supported transformations
-
-* [`GutzwillerSampling`](@ref)
-* [`GuidingVectorSampling`](@ref)
-"""
-struct TransformUndoer{
-    T,K<:AbstractHamiltonian,O<:AbstractObservable
-} <: ModifiedHamiltonian{T}
-    transform::K
-    op::O
-end
-function TransformUndoer(k::AbstractHamiltonian, op)
-    return throw(ArgumentError("Unsupported transformation: $k"))
-end
-function TransformUndoer(k::AbstractHamiltonian)
-    return TransformUndoer(k, IdentityOperator())
-end
-parent_hamiltonian(t::TransformUndoer) = t.op
-starting_address(t::TransformUndoer) = starting_address(t.transform)
-
-# common methods
-function Base.:(==)(a::TransformUndoer, b::TransformUndoer)
-    return a.transform == b.transform && a.op == b.op
-end

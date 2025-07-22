@@ -90,7 +90,7 @@ function FirstOrderTransitionOperator(sp::DefaultShiftParameters, hamiltonian)
     return FirstOrderTransitionOperator(hamiltonian, sp.shift, sp.time_step)
 end
 
-function Hamiltonians.parent_hamiltonian(op::FirstOrderTransitionOperator)
+function Hamiltonians.parent_operator(op::FirstOrderTransitionOperator)
     return op.hamiltonian
 end
 function Hamiltonians.modify_offdiagonal(op::FirstOrderTransitionOperator, _, addr, value)
