@@ -1,7 +1,7 @@
-```
+"""
     BitStringAddresses
 Module with types and methods pertaining to bitstring addresses.
-```
+"""
 module BitStringAddresses
 
 using LinearAlgebra: LinearAlgebra, I, dot, ⋅
@@ -12,14 +12,19 @@ using StaticArrays: StaticArrays, @MVector, FieldVector, MVector, SA, SVector
 
 using Base.Cartesian
 
-export AbstractFockAddress, SingleComponentFockAddress, BoseFS, BoseFS2C, FermiFS
+using ..Interfaces: Interfaces, AbstractFockAddress, num_particles, num_modes,
+    num_components
+
+export SingleComponentFockAddress, BoseFS, FermiFS
 export CompositeFS, FermiFS2C, time_reverse
 export OccupationNumberFS
 export BoseFSIndex, FermiFSIndex
 export BitString, SortedParticleList
+
 export num_particles, num_modes, num_components
-export find_occupied_mode, find_mode, occupied_modes, is_occupied, num_occupied_modes
-export excitation, near_uniform, OccupiedModeMap, OccupiedPairsMap
+export find_occupied_mode, find_mode, occupied_modes, unoccupied_modes, is_occupied, num_occupied_modes, num_unoccupied_modes
+export excitation, near_uniform, OccupiedPairsMap, occupied_mode_map, unoccupied_mode_map
+
 export onr, occupation_number_representation
 export hopnextneighbour, bose_hubbard_interaction
 export @fs_str

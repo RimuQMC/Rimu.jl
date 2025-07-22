@@ -123,7 +123,7 @@ end
 Base.:(==)(a::OccupationNumberFS, b::OccupationNumberFS) = a.onr == b.onr
 Base.hash(ofs::OccupationNumberFS, h::UInt) = hash(ofs.onr, h)
 
-num_particles(ofs::OccupationNumberFS) = sum(Int, onr(ofs))
+Interfaces.num_particles(ofs::OccupationNumberFS) = sum(Int, onr(ofs))
 # `num_modes` does not have to be defined here, because it is defined for the abstract type
 
 """
@@ -251,4 +251,4 @@ function Base.iterate(bom::BoseOccupiedModes{<:Any,<:Any,<:OccupationNumberFS}, 
 end
 
 # find_occupied_modes provided by generic implementation
-# OccupiedModeMap provided by generic implementation
+# occupied_mode_map provided by generic implementation

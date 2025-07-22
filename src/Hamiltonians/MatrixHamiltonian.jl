@@ -1,7 +1,7 @@
 """
     MatrixHamiltonian(
         mat::AbstractMatrix{T};
-        starting_address::Int = starting_address(mat)
+        starting_address::Int = findmin(real.(diag(mat)))[2]
     ) <: AbstractHamiltonian{T}
 Wrap an abstract matrix `mat` as an [`AbstractHamiltonian`](@ref) object.
 Works with stochastic methods of [`ProjectorMonteCarloProblem()`](@ref) and [`DVec`](@ref).
@@ -17,7 +17,7 @@ end
 
 function MatrixHamiltonian(
     m::AM;
-    starting_address=starting_address(m)
+    starting_address = findmin(real.(diag(m)))[2]
 ) where AM <:AbstractMatrix
     Base.require_one_based_indexing(m)
     s = size(m)

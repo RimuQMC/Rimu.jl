@@ -80,8 +80,8 @@ function Base.isless(ss1::SortedParticleList, ss2::SortedParticleList)
     return isless(ss1.storage, ss2.storage)
 end
 
-num_particles(::Type{<:SortedParticleList{N}}) where {N} = N
-num_modes(::Type{<:SortedParticleList{<:Any,M}}) where {M} = M
+Interfaces.num_particles(::Type{<:SortedParticleList{N}}) where {N} = N
+Interfaces.num_modes(::Type{<:SortedParticleList{<:Any,M}}) where {M} = M
 
 ###
 ### General functions
@@ -275,5 +275,22 @@ function Base.iterate(fom::FermiOccupiedModes{<:Any,<:SortedParticleList}, i=1)
     else
         res, i = itr
         return FermiFSIndex(res...), i
+    end
+end
+
+function Base.iterate(fum::FermiUnoccupiedModes{<:Any,<:SortedParticleList{N,M}}, state=(1, 1, 1)) where {N,M}
+    if isnothing(state)
+        return nothing
+    else
+        mode, idx, count = state
+        while mode <= M
+            if idx <= N && mode == fum.storage.storage[idx]
+                mode += 1
+                idx += 1
+            else
+                return FermiFSIndex(0, mode, mode - 1), (mode + 1, idx, count + 1)
+            end
+        end
+        return nothing
     end
 end

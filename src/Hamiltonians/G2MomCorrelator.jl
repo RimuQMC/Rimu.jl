@@ -71,7 +71,7 @@ function get_offdiagonal(
     chosen,
 )::Tuple{A,ComplexF64} where {A<:SingleComponentFockAddress}
     M = num_modes(addr)
-    new_add, gamma, Δp = momentum_transfer_excitation(addr, chosen, OccupiedModeMap(addr))
+    new_add, gamma, Δp = momentum_transfer_excitation(addr, chosen, occupied_mode_map(addr))
     gd = exp(-im * g.d * Δp * 2π / M) * gamma
     return new_add, ComplexF64(gd / M)
 end
