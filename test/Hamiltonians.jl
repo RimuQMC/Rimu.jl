@@ -1779,7 +1779,7 @@ end
     P = H4*H4
     c = operator_column(P, addr)
     @test iszero(last.(collect(offdiagonals(c))))
-
+end
 @testset "Operator Traits" begin
     struct TestHamiltonian <: Rimu.AbstractHamiltonian{Float64} end
     struct TestColumn{A,O} <: Rimu.AbstractOperatorColumn{A,Float64,O}

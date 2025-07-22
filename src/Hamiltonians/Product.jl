@@ -53,10 +53,11 @@ struct ProductColumn{A,T,O<:HamiltonianProduct{T},C1,C2} <: AbstractOperatorColu
     col1::C1
     col2::C2
 end
-function operator_column(o::HamiltonianProduct, a) 
+function operator_column(o::HamiltonianProduct, a)
     return ProductColumn(o, a, operator_column(o.op1, a), operator_column(o.op2, a))
 end
 
+parent_operator(c::ProductColumn) = c.operator
 starting_address(c::ProductColumn) = c.address
 num_offdiagonals(c::ProductColumn) = 2*(num_offdiagonals(c.col2)+1)^2
 
