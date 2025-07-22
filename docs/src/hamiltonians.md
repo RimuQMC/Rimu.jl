@@ -63,6 +63,7 @@ ParitySymmetry
 TimeReversalSymmetry
 Stoquastic
 Hamiltonians.TransformUndoer
+HamiltonianProduct
 ```
 
 ## Observables
