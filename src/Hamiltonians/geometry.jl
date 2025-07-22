@@ -51,6 +51,8 @@ Base.length(g::Geometry) = prod(size(g))
     num_neighbors(::Geometry)
 
 Return the number of neighbors each site has in the geometry.
+
+See also [`Geometry`](@ref).
 """
 num_neighbors
 
@@ -58,6 +60,8 @@ num_neighbors
     neighbor_site(::Geometry, site, i)
 
 Find the `i`-th neighbor of `site` in the geometry. If the move is illegal, return 0.
+
+See also [`Geometry`](@ref).
 """
 neighbor_site
 
@@ -72,7 +76,7 @@ periodic_dimensions
 """
     num_dimensions(geom::Geometry)
 
-Return the number of dimensions of the lattice in this geometry.
+Return the number of dimensions of the lattice in this [`Geometry`](@ref).
 """
 num_dimensions(::Geometry{D}) where {D} = D
 
@@ -84,8 +88,8 @@ Base.getindex(g::Geometry, i::Int) = SVector(Tuple(CartesianIndices(size(g))[i])
 """
     fold_vec(g::Geometry{D}, vec::SVector{D,Int}) -> SVector{D,Int}
 
-Use the [`Geometry`](@ref) to fold the `vec` in each dimension. If folding is disabled in a
-dimension, the vector is allowed to go out of bounds.
+Use the [`Geometry`](@ref) to fold the `vec` in each dimension back into the bounded domain. 
+If folding is disabled in a dimension, the vector is unchanged and allowed to go out of bounds.
 
 ```julia
 julia> geo = CubicGrid((2,3), (true,false))
@@ -108,7 +112,7 @@ end
 end
 
 """
-    CubicGrid(dims::NTuple{D,Int}, fold::NTuple{D,Bool})
+    CubicGrid(dims::NTuple{D,Int}, fold::NTuple{D,Bool}) <: Geometry{D}
 
 Represents a `D`-dimensional grid. Used to define a cubic lattice and boundary conditions
 for some [`AbstractHamiltonian`](@ref)s, e.g. with the keyword argument `geometry` when
@@ -125,7 +129,7 @@ See also [`PeriodicBoundaries`](@ref), [`HardwallBoundaries`](@ref) and
 [`LadderBoundaries`](@ref) for special-case constructors and [`HoneycombLattice`](@ref), and
 [`HexagonalLattice`](@ref) for alternative lattice geometries.
 
-See also [`HubbardRealSpace`](@ref) and [`G2RealSpace`](@ref).
+See also [`Geometry`](@ref), [`HubbardRealSpace`](@ref) and [`G2RealSpace`](@ref).
 
 A 3×2 `CubicGrid` is indexed as follows.
 ```
@@ -291,7 +295,7 @@ function BitStringAddresses.onr(address::CompositeFS, geom::CubicGrid)
 end
 
 """
-    HoneycombLattice((height, width), fold=(true, true))
+    HoneycombLattice((height, width), fold=(true, true)) <: Geometry{2}
 
 A honeycomb lattice where each site has three neighbors. If periodic, each dimension of the
 lattice must be divisible by 2.
@@ -345,7 +349,7 @@ end
 num_neighbors(::HoneycombLattice) = 3
 
 """
-    HexagonalLattice((height, width), fold=(true, true))
+    HexagonalLattice((height, width), fold=(true, true)) <: Geometry{2}
 
 A hexagonal lattice where each site has 6 neighbors.
 
