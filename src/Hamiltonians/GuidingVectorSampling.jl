@@ -33,19 +33,19 @@ julia> v = DVec(starting_address(H) => 10);
 
 julia> G = GuidingVectorSampling(H, v, 0.1);
 
-julia> Matrix(H)
+julia> Matrix(H; sort=true)
 4×4 Matrix{Float64}:
- 12.0      4.89898  4.89898  4.89898
-  4.89898  9.0      0.0      0.0
-  4.89898  0.0      9.0      0.0
-  4.89898  0.0      0.0      0.0
+ 9.0      0.0       4.89898  0.0
+ 0.0      0.0       4.89898  0.0
+ 4.89898  4.89898  12.0      4.89898
+ 0.0      0.0       4.89898  9.0
 
-julia> Matrix(G)
+julia> Matrix(G; sort=true)
 4×4 Matrix{Float64}:
- 12.0        489.898  489.898  489.898
-  0.0489898    9.0      0.0      0.0
-  0.0489898    0.0      9.0      0.0
-  0.0489898    0.0      0.0      0.0
+   9.0      0.0     0.0489898    0.0
+   0.0      0.0     0.0489898    0.0
+ 489.898  489.898  12.0        489.898
+   0.0      0.0     0.0489898    9.0
 
 julia> eigen(Matrix(H)).values
 4-element Vector{Float64}:
