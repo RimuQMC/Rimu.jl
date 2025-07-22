@@ -2,8 +2,9 @@
     abstract type ModifiedHamiltonian{T} <: AbstractHamiltonian{T} end
 
 Abstract type for defining wrappers over [`AbstractHamiltonian`](@ref)s that modify diagonal
-and off-diagonal elements via the functions [`modify_diagonal`](@ref Main.Hamiltonians) and
-[`modify_offdiagonal`](@ref Main.Hamiltonians).
+and off-diagonal elements via the functions 
+[`modify_diagonal`](@ref Main.Hamiltonians.modify_diagonal) and
+[`modify_offdiagonal`](@ref Main.Hamiltonians.modify_offdiagonal).
 
 The `ModifiedHamiltonian` can only be used to implement wrappers that modify the
 (off)-diagonals individually and cannot be used to introduce additional off-diagonal
