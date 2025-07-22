@@ -45,10 +45,10 @@ end
             ); t=[1, 2], u=[0 3; 3 0]
         ),
         GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6 + 2im); g=0.3),
-        GutzwillerSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0)); g=0.1)),
+        GutzwillerSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))); g=0.1),
 
-        GuidingVectorSampling(HubbardReal1D(BoseFS(1, 2, 3); u=6 + 2im); v=DVec(BoseFS(1,2,3))),
-        GuidingVectorSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))); v=DVec(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0)) => 1),
+        GuidingVectorSampling(HubbardReal1D(BoseFS(1, 2, 3); u=6 + 2im), DVec(BoseFS(1,2,3) => 1.0)),
+        GuidingVectorSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))), DVec(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0)) => 1.0)),
 
         MatrixHamiltonian(Float64[1 2; 2 0]),
         GutzwillerSampling(MatrixHamiltonian([1.0 2.0; 2.0 0.0]); g=0.3),
@@ -73,9 +73,11 @@ end
     ]
         # test_hamiltonian_interface(H; test_spawning=false)
         test_hamiltonian_interface(H; test_random_offdiagonal=!(H isa HOCartesianContactInteractions))
-        # Check that the result of show can be pasted into the REPL
-        @test eval(Meta.parse(repr(H))) == H
-
+        # Check that the result of show can be pasted into the REPL. Does not work with
+        # GuidingVectorSampling because it includes a DVec.
+        if !(H isa GuidingVectorSampling)
+            @test eval(Meta.parse(repr(H))) == H
+        end
     end
 end
 
