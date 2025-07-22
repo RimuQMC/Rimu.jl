@@ -9,6 +9,8 @@ using StaticArrays
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
+using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
+    AdjointUnknown
 
 function exact_energy(ham)
     dv = DVec(starting_address(ham) => 1.0)
@@ -66,8 +68,7 @@ end
         FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
     )
-        # test_hamiltonian_interface(H; test_spawning=false)
-        test_hamiltonian_interface(H; test_random_offdiagonal=!(H isa HOCartesianContactInteractions))
+        test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(H))) == H
 
@@ -1722,4 +1723,59 @@ end
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(r))) == r
     end
+end
+
+@testset "Operator Traits" begin
+    struct TestHamiltonian <: Rimu.AbstractHamiltonian{Float64} end
+    struct TestColumn{A,O} <: Rimu.AbstractOperatorColumn{A,Float64,O}
+        operator::O
+        address::A
+    end
+    function Rimu.operator_column(h::TestHamiltonian, address)
+        return TestColumn(h, address)
+    end
+    Rimu.parent_operator(c::TestColumn) = c.operator
+    Rimu.starting_address(c::TestColumn) = c.address
+    h = TestHamiltonian()
+    addr = FermiFS{2,4}(1,0,1,0)
+    col = operator_column(h, addr)
+    @test col == h * addr
+    @test has_random_offdiagonal(typeof(h))  # default trait
+    @test has_random_offdiagonal(h) # works with instance
+    @test has_random_offdiagonal(col) # works with column
+    @test_throws MethodError random_offdiagonal(col) # not implemented
+
+    @test has_iterable_offdiagonals(typeof(h))  # default trait
+    @test has_iterable_offdiagonals(h) # works with instance
+    @test has_iterable_offdiagonals(col) # works with column
+    @test_throws MethodError offdiagonals(col) # not implemented
+
+    # Operator
+    op = SingleParticleExcitation(1, 2)
+    @test has_iterable_offdiagonals(op)
+    @test !has_random_offdiagonal(op)
+    @test offdiagonals(op * BoseFS(1, 1)) isa AbstractVector
+    @test length(offdiagonals(op * BoseFS(1, 1))) == 1
+
+    # Observable
+    obs = ReducedDensityMatrix(1)
+    @test !has_iterable_offdiagonals(obs)
+    @test !has_random_offdiagonal(obs)
+end
+
+@testset "AbstractOperatorColumn" begin
+    # standard Hamiltonian
+    h = HubbardReal1D(BoseFS(1,1,1), t=1.0)
+    addr = BoseFS(0,2,1)
+    col = operator_column(h, addr)
+    @test col == h * addr
+    @test parent_operator(col) == h
+    @test starting_address(col) == addr
+    @test diagonal_element(col) == col[addr]
+    @test col[fs"|0 1 2⟩"] == -2 # off-diagonal element
+    @test col[fs"|0 0 3⟩"] == 0 # zero off-diagonal element
+    @test_throws MethodError col[fs"|0 0 4⟩"] # not in the address space
+    @test length(collect(offdiagonals(col))) == 4
+    dv = DVec(addr => 1.0)
+    @test dv ⋅ col == (col ⋅ dv)' == col[addr]
 end

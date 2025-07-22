@@ -18,11 +18,12 @@ using Rimu.StochasticStyles:
 end
 @testset "Generic Hamiltonian-free functions" begin
     matrix = [1 2 3; 4 5 6; 7 8 9]
-    @test diagonal_element(matrix, 3) == 9
-    @test offdiagonals(matrix, 1) == [(2, 4), (3, 7)]
-    @test offdiagonals(matrix, 2) == [(1, 2), (3, 8)]
+    mh = MatrixHamiltonian(matrix)
+    @test diagonal_element(mh, 3) == 9
+    @test offdiagonals(mh, 1) == [(2, 4), (3, 7)]
+    @test offdiagonals(mh, 2) == [(1, 2), (3, 8)]
 
-    add, prob, val = random_offdiagonal(matrix, 1)
+    add, prob, val = random_offdiagonal(mh, 1)
     @test add in (2, 3)
     @test prob == 1/2
     @test val in (4, 7)
@@ -41,7 +42,7 @@ end
 
     w = [1.0, 2.0, 3.0]
 
-    @test apply_column!(w, operator_column(matrix, 1), 2) == (1, )
+    @test apply_column!(w, operator_column(mh, 1), 2) == (1, )
     @test w[1] == 1.0 + 2 * matrix[1, 1]
     @test w[2] == 2.0 + 2 * matrix[2, 1]
     @test w[3] == 3.0 + 2 * matrix[3, 1]

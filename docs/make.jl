@@ -43,7 +43,9 @@ for fn in EXAMPLES_FILES
 end
 
 makedocs(;
-    modules=[Rimu,Rimu.RimuIO,Rimu.InterfaceTests],
+    modules=[
+        Rimu, Rimu.RimuIO, Rimu.InterfaceTests, Rimu.BitStringAddresses, Rimu.Interfaces
+    ],
     format=Documenter.HTML(
         prettyurls = false,
         size_threshold=700_000, # 700 kB

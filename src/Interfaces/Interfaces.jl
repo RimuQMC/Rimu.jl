@@ -1,29 +1,38 @@
 """
     module Interfaces
 
-This module contains interfaces that can be used to extend and modify the algorithms and behaviours of `Rimu`.
+This module contains interfaces that can be used to extend and modify the algorithms and
+behaviours of `Rimu`.
 
 # Interfaces
 Follow the links for the definitions of the interfaces!
 * [`AbstractHamiltonian`](@ref) for defining [`Hamiltonians`](@ref Main.Hamiltonians)
 * [`AbstractOperator`](@ref) for defining observable operators
-* [`AbstractDVec`](@ref) for defining data structures for `Rimu` as in [`DictVectors`](@ref Main.DictVectors)
+* [`AbstractObservable`](@ref) for defining observables
+* [`AbstractOperatorColumn`](@ref) for defining operator columns
+* [`AbstractDVec`](@ref) for defining data structures for `Rimu` as in [
+    `DictVectors`](@ref Main.DictVectors)
 * [`StochasticStyle`](@ref) for controlling the stochastic algorithms used by
-  [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem) as implemented in
-  [`StochasticStyles`](@ref Main.StochasticStyles)
+    [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem) as implemented in
+    [`StochasticStyles`](@ref Main.StochasticStyles)
+* [`AbstractFockAddress`](@ref) for defining Fock states, see also
+    [`BitStringAddresses`](@ref Main.BitStringAddresses).
 
 # Additional exports
 
 ## Interface functions for[`AbstractHamiltonian`](@ref)s:
+* [`starting_address`](@ref)
 * [`operator_column`](@ref)
+* [`parent_operator`](@ref)
 * [`diagonal_element`](@ref)
+* [`random_offdiagonal`](@ref)
+* [`offdiagonals`](@ref).
 * [`num_offdiagonals`](@ref)
 * [`get_offdiagonal`](@ref)
-* [`offdiagonals`](@ref).
-* [`random_offdiagonal`](@ref)
-* [`starting_address`](@ref)
 * [`LOStructure`](@ref)
 * [`allows_address_type`](@ref)
+* [`has_random_offdiagonal`](@ref)
+* [`has_iterable_offdiagonals`](@ref)
 
 ## working with  [`AbstractDVec`](@ref)s and [`StochasticStyle`](@ref)
 * [`deposit!`](@ref)
@@ -42,6 +51,11 @@ Follow the links for the definitions of the interfaces!
 * [`num_replicas`](@ref)
 * [`num_spectral_states`](@ref)
 * [`num_overlaps`](@ref)
+
+## Functions for working with [`AbstractFockAddress`](@ref)s:
+* [`num_particles`](@ref)
+* [`num_modes`](@ref)
+* [`num_components`](@ref)
 """
 module Interfaces
 
@@ -52,6 +66,8 @@ using DataFrames: DataFrame, metadata
 import OrderedCollections: freeze
 
 export
+    AbstractFockAddress, num_particles, num_modes, num_components
+export
     StochasticStyle, default_style, StyleUnknown, apply_column!, step_stats,
     CompressionStrategy, NoCompression, compress!
 export
@@ -61,10 +77,13 @@ export
     AbstractHamiltonian, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
     random_offdiagonal, starting_address, allows_address_type,
     LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint,
-    AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn, AbstractOperatorColumn
+    AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn,
+    AbstractOperatorColumn, parent_operator,
+    has_random_offdiagonal, has_iterable_offdiagonals
 export
     num_replicas, num_spectral_states, num_overlaps
 
+include("abstractfockaddress.jl")
 include("stochasticstyles.jl")
 include("dictvectors.jl")
 include("hamiltonians.jl")

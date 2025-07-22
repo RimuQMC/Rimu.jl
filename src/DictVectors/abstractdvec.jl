@@ -5,7 +5,11 @@
 function Base.show(io::IO, dvec::AbstractDVec)
     summary(io, dvec)
     limit, _ = displaysize()
-    for (i, p) in enumerate(pairs(localpart(dvec)))
+    # sort if length(dvec) is small to make doctests reproducible
+    pldvec = length(dvec) < 20 ? sort!(collect(pairs(localpart(dvec)))) :
+        pairs(localpart(dvec))
+
+    for (i, p) in enumerate(pldvec)
         if length(dvec) > i > limit - 4
             print(io, "\n  ⋮   => ⋮")
             break
@@ -312,13 +316,8 @@ end
 function Interfaces.dot_from_right(target, op, source::AbstractDVec)
     T = typeof(zero(valtype(target)) * zero(valtype(source)) * zero(eltype(op)))
 
-    result = sum(pairs(source); init=zero(T)) do (k, v)
-        column = operator_column(op, k)
-        res = conj(target[k]) * diagonal_element(column) * v
-        for (k_off, v_off) in offdiagonals(column)
-            res += conj(target[k_off]) * v_off * v
-        end
-        res
+    result = sum(pairs(source); init=zero(T)) do (address, value)
+        dot(target, operator_column(op, address)) * value
     end
     return result::T
 end
