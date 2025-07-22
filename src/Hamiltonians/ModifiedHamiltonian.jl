@@ -13,8 +13,7 @@ The following need to be implemented
 * [`parent_operator`](@ref Main.Hamiltonians.parent_operator)
 * [`modify_diagonal`](@ref Main.Hamiltonians.modify_diagonal)
 * [`modify_offdiagonal`](@ref Main.Hamiltonians.modify_offdiagonal)
-* [`LOStructure(p)`](@ref) and `Base.adjoint` if known, defaults to
-  [`AdjointUnknown`](@ref Main.Interfaces.AdjointUnknown).
+* [`LOStructure(p)`](@ref) and `Base.adjoint` if known, defaults to `AdjointUnknown`.
 
 The following are provided:
 * [`starting_address(op)`](@ref)
