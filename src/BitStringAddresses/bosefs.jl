@@ -251,6 +251,30 @@ function find_mode(b::BoseFS, indices::NTuple{N}) where {N}
     return result # not reached
 end
 
+# Specialised version of each_mode for iterating modes in BoseFS with BitString storage.
+# This is necessary because get_mode in a BitString-backed BoseFS is inefficient.
+struct BoseBitStringEachMode{M,A<:BoseFS{<:Any,M,<:BitString}}
+    address::A
+end
+Base.eltype(::BoseBitStringEachMode) = BoseFSIndex
+Base.length(::BoseBitStringEachMode{M}) where {M} = M
+
+function Base.iterate(em::BoseBitStringEachMode{M}, state=(0, 1, em.address.bs)) where {M}
+    offset, mode, bitstring = state
+    if mode > M
+        return nothing
+    else
+        bosons = Int32(trailing_ones(bitstring))
+        bitstring >>>= (bosons + 1) % UInt
+
+        return BoseFSIndex(bosons, mode, offset), (offset + bosons + 1, mode + 1, bitstring)
+    end
+end
+
+function each_mode(addr::BoseFS{<:Any,<:Any,<:BitString})
+    return BoseBitStringEachMode(addr)
+end
+
 # find_occupied_mode provided by generic implementation
 
 function excitation(b::B, creations, destructions) where {B<:BoseFS}
