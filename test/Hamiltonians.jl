@@ -19,7 +19,7 @@ function exact_energy(ham)
 end
 
 @testset "Hamiltonian interface tests" begin
-    for H in (
+    for H in [
         HubbardReal1D(BoseFS((1, 2, 3, 4)); u=1.0, t=2.0),
         HubbardReal1D(BoseFS(1, 2, 3, 4);t=1.0im),
         HubbardReal1D(BoseFS(1, 2, 3, 4);u=1.0im),
@@ -46,14 +46,18 @@ end
                 FermiFS((1, 1, 1, 1, 0, 0, 0, 0)),
             ); t=[1, 2], u=[0 3; 3 0]
         ),
-        GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6); g=0.3),
         GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6 + 2im); g=0.3),
+        GutzwillerSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))); g=0.1),
+
+        GuidingVectorSampling(HubbardReal1D(BoseFS(1, 2, 3); u=6 + 2im), DVec(BoseFS(1,2,3) => 1.0)),
+        GuidingVectorSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))), DVec(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0)) => 1.0)),
+
         MatrixHamiltonian(Float64[1 2; 2 0]),
         GutzwillerSampling(MatrixHamiltonian([1.0 2.0; 2.0 0.0]); g=0.3),
         TransformUndoer(
             GutzwillerSampling(MatrixHamiltonian([1.0 2.0; 2.0 0.0]); g=0.3)
         ),
-        Transcorrelated1D(CompositeFS(FermiFS((0, 0, 1, 1, 0)), FermiFS((0, 1, 1, 0, 0))); t=2),
+        Transcorrelated1D(FermiFS2C((0, 0, 1, 1, 0), (0, 1, 1, 0, 0)); t=2),
         Transcorrelated1D(CompositeFS(FermiFS((0, 0, 1, 0)), FermiFS((0, 1, 1, 0))); v=3, v_ho=1),
         HubbardMom1DEP(BoseFS((0, 0, 5, 0, 0))),
         HubbardMom1DEP(CompositeFS(FermiFS((0, 1, 1, 0, 0)), FermiFS((0, 0, 1, 0, 0))), v_ho=5),
@@ -67,12 +71,15 @@ end
         FroehlichPolaron(OccupationNumberFS(1, 1, 1)),
         FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
-        HubbardReal1D(BoseFS(2,0,0);u=1.0im)*ExtendedHubbardReal1D(BoseFS(2,0,0))
-    )
+        Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
+        HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0))
+    ]
         test_hamiltonian_interface(H)
-        # Check that the result of show can be pasted into the REPL
-        @test eval(Meta.parse(repr(H))) == H
-
+        # Check that the result of show can be pasted into the REPL. Does not work with
+        # GuidingVectorSampling because it includes a DVec.
+        if !(H isa GuidingVectorSampling)
+            @test eval(Meta.parse(repr(H))) == H
+        end
     end
 end
 
@@ -92,7 +99,8 @@ end
         (SingleParticleExcitation(2, 3), BoseFS(1, 2, 3, 4)),
         (TwoParticleExcitation(3, 2, 1, 4), BoseFS(1, 2, 3, 4)),
         (Momentum(1), BoseFS(1, 2, 3, 4)),
-        (G2MomCorrelator(3), BoseFS(1, 2, 0, 3, 0, 4, 0, 1))
+        (G2MomCorrelator(3), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
+        (IdentityOperator(), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
     ]
         test_operator_interface(op, addr)
         # Check that the result of show can be pasted into the REPL
@@ -498,28 +506,28 @@ end
         @testset "Gutzwiller transformation" begin
             for H in (
                 HubbardMom1D(BoseFS((2,2,2)), u=6),
-                ExtendedHubbardReal1D(BoseFS((1,1,1,1,1,1,1,1,1,1,1,1)), u=6, t=2.0),
-                ExtendedHubbardMom1D(BoseFS((1,1,1,1,1,1,1,1,1,1,1,1)), u=6, t=2.0),
+                ExtendedHubbardReal1D(BoseFS(1,1,1,1,1,1), u=6, t=2.0),
+                ExtendedHubbardMom1D(BoseFS(0,0,1,1,1,0,0), u=3),
             )
+                h_matrix = sparse(H; sort=true)
+
                 # GutzwillerSampling with parameter zero is exactly equal to the original H
                 G = GutzwillerSampling(H, 0.0)
-                addr = starting_address(H)
-                @test starting_address(G) == addr
-                @test all(x == y for (x, y) in zip(offdiagonals(H, addr), offdiagonals(G, addr)))
+
+                @test sparse(G; sort=true) == h_matrix
+                @test starting_address(G) == starting_address(H)
+
                 @test LOStructure(G) isa AdjointKnown
                 @test LOStructure(TransformUndoer(G,G)) isa AdjointKnown
 
                 @test eval(Meta.parse(repr(G))) == G
                 @test eval(Meta.parse(repr(G'))) == G'
 
-                g = rand()
-                G = GutzwillerSampling(H, g)
-                for i in 1:num_offdiagonals(G, addr)
-                    addr2, me = get_offdiagonal(G, addr, i)
-                    w = exp(-g * (diagonal_element(H, addr2) - diagonal_element(H, addr)))
-                    @test get_offdiagonal(H, addr, i)[2] * w == me
-                    @test get_offdiagonal(H, addr, i)[1] == addr2
-                    @test diagonal_element(H, addr2) == diagonal_element(G, addr2)
+                g = 0.1
+                g_matrix = sparse(GutzwillerSampling(G, g); sort=true)
+                for i in axes(g_matrix, 1), j in axes(g_matrix, 2)
+                    value = exp(h_matrix[i,i] * -g) * h_matrix[i,j] * exp(h_matrix[j,j] * g)
+                    @test g_matrix[i, j] ≈ value
                 end
             end
         end
@@ -560,45 +568,47 @@ end
     @testset "GuidingVector" begin
         H = HubbardMom1D(BoseFS((2,2,2)), u=6)
         v = DVec(
-            BoseFS{6,3}((0, 0, 6)) => 0.0770580680636451,
-            BoseFS{6,3}((6, 0, 0)) => 0.0770580680636451,
-            BoseFS{6,3}((1, 1, 4)) => 0.3825802976327182,
-            BoseFS{6,3}((4, 1, 1)) => 0.3825802976327182,
-            BoseFS{6,3}((0, 6, 0)) => 0.04322440994245527,
-            BoseFS{6,3}((3, 3, 0)) => 0.2565124277520772,
-            BoseFS{6,3}((3, 0, 3)) => 0.3460652270329457,
-            BoseFS{6,3}((0, 3, 3)) => 0.2565124277520772,
-            BoseFS{6,3}((1, 4, 1)) => 0.28562685053740633,
-            BoseFS{6,3}((2, 2, 2)) => 0.6004825560434165;
-            capacity=100,
+            BoseFS(0, 0, 6) => 0.0770580680636451,
+            BoseFS(6, 0, 0) => 0.0770580680636451,
+            BoseFS(1, 1, 4) => 0.3825802976327182,
+            BoseFS(4, 1, 1) => 0.3825802976327182,
+            BoseFS(0, 6, 0) => 0.04322440994245527,
+            BoseFS(3, 3, 0) => 0.2565124277520772,
+            BoseFS(3, 0, 3) => 0.3460652270329457,
+            BoseFS(0, 3, 3) => 0.2565124277520772,
+            BoseFS(1, 4, 1) => 0.28562685053740633,
+            BoseFS(2, 2, 2) => 0.6004825560434165;
         )
+        h_matrix = sparse(H; sort=true)
         @testset "GuidingVector transformation" begin
             @testset "With empty vector" begin
                 G = GuidingVectorSampling(H, empty(v), 0.2)
 
-                addr = starting_address(H)
-                @test starting_address(G) == addr
-                @test all(x == y for (x, y) in zip(offdiagonals(H, addr), offdiagonals(G, addr)))
+                @test starting_address(G) == starting_address(H)
                 @test LOStructure(G) isa AdjointKnown
-                @test LOStructure(Rimu.Hamiltonians.TransformUndoer(G,G)) isa AdjointKnown
+                @test LOStructure(TransformUndoer(G,G)) isa AdjointKnown
+
+                @test h_matrix == sparse(G; sort=true)
             end
 
             @testset "With non-empty vector" begin
                 G = GuidingVectorSampling(H, v, 0.2)
-                addr = starting_address(H)
-                @test starting_address(G) == addr
+
+                @test starting_address(G) == starting_address(H)
                 @test LOStructure(G) isa AdjointKnown
-                @test LOStructure(Rimu.Hamiltonians.TransformUndoer(G,G)) isa AdjointKnown
+                @test LOStructure(TransformUndoer(G,G)) isa AdjointKnown
                 @test G == GuidingVectorSampling(H; vector = v, eps = 0.2) # call signature
 
-                for i in 1:num_offdiagonals(G, addr)
-                    addr2, me = get_offdiagonal(G, addr, i)
-                    top = ifelse(v[addr2] < 0.2, 0.2, v[addr2])
-                    bot = ifelse(v[addr] < 0.2, 0.2, v[addr])
-                    w = top / bot
-                    @test get_offdiagonal(H, addr, i)[2] * w ≈ me
-                    @test get_offdiagonal(H, addr, i)[1] == addr2
-                    @test diagonal_element(H, addr2) == diagonal_element(G, addr2)
+                bsr = BasisSetRepresentation(G; sort=true)
+                g_matrix = bsr.sparse_matrix
+                basis = bsr.basis
+
+                for i in axes(g_matrix, 1), j in axes(g_matrix, 2)
+                    top = ifelse(v[basis[i]] < 0.2, 0.2, v[basis[i]])
+                    bot = ifelse(v[basis[j]] < 0.2, 0.2, v[basis[j]])
+
+                    weight = top / bot
+                    @test g_matrix[i, j] == h_matrix[i, j] * weight
                 end
             end
         end
@@ -616,8 +626,8 @@ end
                 address = starting_address(H)
                 dv = DVec(address => x)
                 # transforming the Hamiltonian again should be consistent
-                fsq = Rimu.Hamiltonians.TransformUndoer(G)
-                fHf = Rimu.Hamiltonians.TransformUndoer(G, H)
+                fsq = TransformUndoer(G)
+                fHf = TransformUndoer(G, H)
                 Ebare = dot(dv, H, dv)/dot(dv, dv)
                 Egutz = dot(dv, G, dv)/dot(dv, dv)
                 Etrans = dot(dv, fHf, dv)/dot(dv, fsq, dv)
@@ -626,7 +636,7 @@ end
                 # general operators
                 m = num_modes(address)
                 g2vals = map(d -> dot(dv, G2RealCorrelator(d), dv)/dot(dv, dv), 0:m-1)
-                g2transformed = map(d -> dot(dv, Rimu.Hamiltonians.TransformUndoer(G,G2RealCorrelator(d)), dv)/dot(dv, fsq, dv), 0:m-1)
+                g2transformed = map(d -> dot(dv, TransformUndoer(G,G2RealCorrelator(d)), dv)/dot(dv, fsq, dv), 0:m-1)
                 @test all(g2vals ≈ g2transformed)
             end
         end
@@ -666,8 +676,8 @@ end
             GuidingVectorSampling(H, v, 0.2),
         )
             # test supported constructor
-            @test !isa(try Rimu.Hamiltonians.TransformUndoer(G) catch e e end, Exception)
-            @test !isa(try Rimu.Hamiltonians.TransformUndoer(G,H) catch e e end, Exception)
+            @test !isa(try TransformUndoer(G) catch e e end, Exception)
+            @test !isa(try TransformUndoer(G,H) catch e e end, Exception)
         end
         # unsupported
         for H in (
@@ -675,8 +685,8 @@ end
             ExtendedHubbardReal1D(BoseFS((1,1,1,1,1,1,1,1,1,1,1,1)), u=6, t=2.0),
             ExtendedHubbardMom1D(BoseFS((1,1,1,1,1,1,1,1,1,1,1,1)), u=6, t=2.0),
         )
-            @test_throws ArgumentError Rimu.Hamiltonians.TransformUndoer(H)
-            @test_throws ArgumentError Rimu.Hamiltonians.TransformUndoer(H, H)
+            @test_throws ArgumentError TransformUndoer(H)
+            @test_throws ArgumentError TransformUndoer(H, H)
         end
     end
 end

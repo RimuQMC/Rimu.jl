@@ -68,10 +68,11 @@ using ..Interfaces
 using ..Interfaces: sum_mutating!
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
     offdiagonals, random_offdiagonal, LOStructure, allows_address_type, operator_column,
-    has_random_offdiagonal, has_iterable_offdiagonals, parent_operator
+    undo_transform, has_random_offdiagonal, has_iterable_offdiagonals, parent_operator
 
 export dimension, rayleigh_quotient, momentum
 
+export IdentityOperator
 export MatrixHamiltonian
 export HubbardReal1D, HubbardMom1D, ExtendedHubbardReal1D, ExtendedHubbardMom1D, HubbardRealSpace
 export HubbardReal1DEP, shift_lattice, shift_lattice_inv
@@ -122,13 +123,16 @@ include("ExtendedHubbardReal1D.jl")
 
 include("FroehlichPolaron.jl")
 
+include("Transcorrelated1D.jl")
+
+include("ModifiedHamiltonian.jl")
+include("TransformUndoer.jl")
 include("GutzwillerSampling.jl")
 include("GuidingVectorSampling.jl")
 include("ParitySymmetry.jl")
 include("TRSymmetry.jl")
 include("Stoquastic.jl")
 
-include("Transcorrelated1D.jl")
 include("correlation_functions.jl")
 include("G2MomCorrelator.jl")
 include("DensityMatrixDiagonal.jl")

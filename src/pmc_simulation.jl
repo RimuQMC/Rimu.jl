@@ -160,9 +160,8 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     report = Report()
     report_default_metadata!(report, state)
     report_metadata!(report, metadata) # add user metadata
-    # Sanity checks.
-    check_transform(state.replica_strategy, hamiltonian)
 
+    # Sanity checks.
     @assert allequal(i->state[i].algorithm, n_replicas * n_spectral) &&
         first(state).algorithm == algorithm
     @assert allequal(i -> state[i].hamiltonian, n_replicas * n_spectral) &&

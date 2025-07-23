@@ -31,6 +31,7 @@ Follow the links for the definitions of the interfaces!
 * [`get_offdiagonal`](@ref)
 * [`LOStructure`](@ref)
 * [`allows_address_type`](@ref)
+* [`undo_transform`](@ref)
 * [`has_random_offdiagonal`](@ref)
 * [`has_iterable_offdiagonals`](@ref)
 
@@ -75,7 +76,7 @@ export
     apply_operator!, sort_into_targets!, sum_mutating!
 export
     AbstractHamiltonian, diagonal_element, num_offdiagonals, get_offdiagonal, offdiagonals,
-    random_offdiagonal, starting_address, allows_address_type,
+    random_offdiagonal, starting_address, allows_address_type, undo_transform,
     LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint,
     AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn,
     AbstractOperatorColumn, parent_operator,
