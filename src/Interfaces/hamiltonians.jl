@@ -488,9 +488,8 @@ julia> diagonal_element(column) == column[address] # access elements with `getin
 true
 
 julia> DVec(column) # materialise as a `DVec`
-DVec{BoseFS{1, 3, BitString{3, 1, UInt8}},Float64} with 3 entries, style = IsDeterministic{Float64}()
+DVec{BoseFS{1, 3, BitString{3, 1, UInt8}},Float64} with 2 entries, style = IsDeterministic{Float64}()
   fs"|1 0 0⟩" => -1.0
-  fs"|0 1 0⟩" => 0.0
   fs"|0 0 1⟩" => -1.0
 ```
 

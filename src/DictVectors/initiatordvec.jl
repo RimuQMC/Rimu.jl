@@ -1,15 +1,16 @@
 """
-    InitiatorDVec{K,V} <: AbstractDVec{K,V}
+    InitiatorDVec(args...; kwargs...) <: AbstractDVec{K,V}
 
-Dictionary-based vector-like data structure for use with
-[`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem) and
+Dictionary-based vector-like data structure for storing `key <: K` and `value <: V` pairs
+for use with [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem) and
 [`KrylovKit.jl`](https://github.com/Jutho/KrylovKit.jl). See [`AbstractDVec`](@ref).
 Functionally identical to [`DVec`](@ref), but contains [`InitiatorValue`](@ref)s internally
 in order to facilitate initiator methods. Initiator methods for controlling the Monte Carlo
 sign problem were first introduced in
 [J. Chem. Phys. 132, 041103 (2010)](https://doi.org/10.1063/1.3302277).
 How the initiators are handled is controlled by specifying an [`InitiatorRule`](@ref) with
-the `initiator` keyword argument (see below).
+the `initiator` keyword argument (see below). Note that `value`s need to be comparable to
+real numbers with `isless`.
 
 See also: [`AbstractDVec`](@ref), [`DVec`](@ref), [`PDVec`](@ref).
 
@@ -18,8 +19,8 @@ See also: [`AbstractDVec`](@ref), [`DVec`](@ref), [`PDVec`](@ref).
 * `InitiatorDVec(dict::AbstractDict[; style, initiator, capacity])`: create an
   `InitiatorDVec` with `dict` for storage.  Note that the data may or may not be copied.
 
-* `InitiatorDVec(args...[; style, initiator, capacity])`: `args...` are passed to the `Dict`
-  constructor. The `Dict` is used for storage.
+* `InitiatorDVec(args...[; style, initiator, capacity])`: `args...` can be `key => value`
+  `Pair`s or an iterator over `Pair`s or `Tuple`s.
 
 * `InitiatorDVec{K,V}([; style, initiator, capacity])`: create an empty `InitiatorDVec{K,V}`.
 
@@ -51,21 +52,16 @@ end
 ###
 ### Constructors
 ###
-# Vararg
-function InitiatorDVec(args::Vararg{Pair}; kwargs...)
-    return InitiatorDVec(args; kwargs...)
-end
-# Iterator
-function InitiatorDVec(pairs; kwargs...)
-    storage = Dict(pairs)
-    return InitiatorDVec(storage; kwargs...)
+InitiatorDVec(vararg::Vararg{Pair}; kwargs...) = InitiatorDVec(vararg; kwargs...)
+function InitiatorDVec(iterator; kwargs...)
+    return abstractdvec_from_iterator(InitiatorDVec, iterator; kwargs...)
 end
 # Dict with InitiatorValues
 function InitiatorDVec(
     dict::AbstractDict{K,W};
     style=default_style(V),
-    initiator_threshold=one(eltype(style)),
-    initiator=Initiator(eltype(style)(initiator_threshold)),
+    initiator_threshold=real(one(eltype(style))),
+    initiator=Initiator(real(eltype(style))(initiator_threshold)),
     capacity=0,
 ) where {K,V,W<:AbstractInitiatorValue{V}}
     T = eltype(style)
@@ -85,8 +81,8 @@ end
 function InitiatorDVec(
     dict::AbstractDict{K,V};
     style=default_style(V),
-    initiator_threshold=one(eltype(style)),
-    initiator=Initiator(eltype(style)(initiator_threshold)),
+    initiator_threshold=real(one(eltype(style))),
+    initiator=Initiator(real(eltype(style))(initiator_threshold)),
     capacity=0,
 ) where {K,V}
     T = eltype(style)
@@ -102,8 +98,8 @@ end
 function InitiatorDVec{K,V}(
     ;
     style=default_style(V),
-    initiator_threshold=one(V),
-    initiator=Initiator(V(initiator_threshold)),
+    initiator_threshold=real(one(V)),
+    initiator=Initiator(real(V)(initiator_threshold)),
     kwargs...
 ) where {K,V}
     W = initiator_valtype(initiator, eltype(style))
@@ -113,8 +109,8 @@ end
 function InitiatorDVec(
     dv::AbstractDVec{K,V};
     style=StochasticStyle(dv),
-    initiator_threshold=one(eltype(style)),
-    initiator=Initiator(eltype(style)(initiator_threshold)),
+    initiator_threshold=real(one(eltype(style))),
+    initiator=Initiator(real(eltype(style))(initiator_threshold)),
     capacity=0,
 ) where {K,V}
     return InitiatorDVec(copy(storage(dv)); style, initiator, capacity)
@@ -194,7 +190,7 @@ function deposit!(w::InitiatorDVec{<:Any,V,W}, add, val, (p_add, p_val)) where {
     end
     return w
 end
-
+# val is already an InitiatorValue
 function deposit!(w::InitiatorDVec{<:Any,<:Any,W}, add, val::W, _) where {W}
     dict = storage(w)
     old_val = get(dict, add, zero(W))

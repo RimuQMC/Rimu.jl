@@ -9,20 +9,22 @@ function fastrange_hash(k, n::Int)
 end
 
 """
-    PDVec{K,V}(; kwargs...)
+    PDVec{K,V}(; kwargs...) <: AbstractDVec{K,V}
     PDVec(iter; kwargs...)
     PDVec(pairs...; kwargs...)
 
-Dictionary-based vector-like data structure for use with FCIQMC and
-[KrylovKit.jl](https://github.com/Jutho/KrylovKit.jl). While mostly behaving like a `Dict`,
-it supports various linear algebra operations such as `norm` and `dot`, and the interface
-defined in [VectorInterface](https://github.com/Jutho/VectorInterface.jl).
+Dictionary-based vector-like data structure for storing `key <: K` and `value <: V` pairs
+for use with [`ProjectorMonteCarloProblem`](@ref) and [`ExactDiagonalizationProblem`](@ref).
+Only pairs with non-zero `value`s are stored. `PDVec` supports various linear algebra
+operations such as `norm` and `dot`, as well as the full interface defined in
+[VectorInterface](https://github.com/Jutho/VectorInterface.jl).
 
-The P in `PDVec` stands for parallel. `PDVec`s perform `mapreduce`, `foreach`, and various
-linear algebra operations in a threaded manner. If MPI is available, these operations are
-automatically distributed as well. As such it is not recommended to iterate over `pairs`,
-`keys`, or `values` directly unless explicitly performing them on the [`localpart`](@ref) of
-the vector.
+The P in `PDVec` stands for parallel. `PDVec`s perform reductions such as `mapreduce`,
+`foreach`, and various linear algebra operations in a threaded manner on the available Julia
+threads. If MPI is available, the storage is distributed over the MPI ranks and reductions
+operate in parallel on the full distributed data structure. As such it is not recommended to
+iterate over `pairs`, `keys`, or `values` directly unless explicitly performing them on the
+[`localpart`](@ref) of the vector.
 
 See also: [`AbstractDVec`](@ref), [`DVec`](@ref), [`InitiatorDVec`](@ref).
 
@@ -38,60 +40,49 @@ See also: [`AbstractDVec`](@ref), [`DVec`](@ref), [`InitiatorDVec`](@ref).
   using MPI. The defaults are [`NotDistributed`](@ref) when not using MPI and
   [`AllToAll`](@ref) when using MPI.
 
-# Extended Help
-
-## Segmentation
-
-The vector is split into `Threads.nthreads()` subdictionaries called segments. Which
-dictionary a key-value pair is mapped to is determined by the hash of the key. The purpose
-of this segmentation is to allow parallel processing - functions such as `mapreduce`, `add!`
-or `dot` (full list below) process each subdictionary on a separate thread.
-
-See also [`PDWorkingMemory`](@ref).
-
 ### Example
 
-```julia
-julia> add = FermiFS2C((1,1,0,0), (0,0,1,1));
+```jldoctest
+julia> address = FermiFS2C((1,1,0,0), (0,0,1,1));
 
-julia> op = HubbardMom1D(add; t=4/π^2, u=4);
+julia> op = HubbardMom1D(address; t=4/π^2, u=4);
 
-julia> pv = PDVec(add => 1.0)
+julia> pv = PDVec(address => 1.0)
 1-element PDVec: style = IsDeterministic{Float64}()
   fs"|↑↑↓↓⟩" => 1.0
 
 julia> pv = op * pv
 7-element PDVec: style = IsDeterministic{Float64}()
-  fs"|↑↓↑↓⟩" => 1.0
   fs"|↑↑↓↓⟩" => 4.0
-  fs"|↓↑↓↑⟩" => 1.0
-  fs"|↓↑↑↓⟩" => -1.0
-  fs"|⇅⋅⋅⇅⟩" => 1.0
-  fs"|↑↓↓↑⟩" => -1.0
+  fs"|↑↓↑↓⟩" => 1.0
   fs"|⋅⇅⇅⋅⟩" => 1.0
+  fs"|↓↑↑↓⟩" => -1.0
+  fs"|↑↓↓↑⟩" => -1.0
+  fs"|⇅⋅⋅⇅⟩" => 1.0
+  fs"|↓↑↓↑⟩" => 1.0
 
 julia> scale!(pv, -1); pv
 7-element PDVec: style = IsDeterministic{Float64}()
-  fs"|↑↓↑↓⟩" => -1.0
   fs"|↑↑↓↓⟩" => -4.0
-  fs"|↓↑↓↑⟩" => -1.0
-  fs"|↓↑↑↓⟩" => 1.0
-  fs"|⇅⋅⋅⇅⟩" => -1.0
-  fs"|↑↓↓↑⟩" => 1.0
+  fs"|↑↓↑↓⟩" => -1.0
   fs"|⋅⇅⇅⋅⟩" => -1.0
+  fs"|↓↑↑↓⟩" => 1.0
+  fs"|↑↓↓↑⟩" => 1.0
+  fs"|⇅⋅⋅⇅⟩" => -1.0
+  fs"|↓↑↓↑⟩" => -1.0
 
 julia> dest = similar(pv)
 0-element PDVec: style = IsDeterministic{Float64}()
 
 julia> map!(x -> x + 2, dest, values(pv))
 7-element PDVec: style = IsDeterministic{Float64}()
-  fs"|↑↓↑↓⟩" => 1.0
   fs"|↑↑↓↓⟩" => -2.0
-  fs"|↓↑↓↑⟩" => 1.0
-  fs"|↓↑↑↓⟩" => 3.0
-  fs"|⇅⋅⋅⇅⟩" => 1.0
-  fs"|↑↓↓↑⟩" => 3.0
+  fs"|↑↓↑↓⟩" => 1.0
   fs"|⋅⇅⇅⋅⟩" => 1.0
+  fs"|↓↑↑↓⟩" => 3.0
+  fs"|↑↓↓↑⟩" => 3.0
+  fs"|⇅⋅⋅⇅⟩" => 1.0
+  fs"|↓↑↓↑⟩" => 1.0
 
 julia> sum(values(pv))
 -6.0
@@ -102,6 +93,17 @@ julia> dot(dest, pv)
 julia> dot(dest, op, pv)
 44.0
 ```
+
+# Extended Help
+
+## Segmentation
+
+The vector is split into `Threads.nthreads()` subdictionaries called segments. Which
+dictionary a key-value pair is mapped to is determined by the hash of the key. The purpose
+of this segmentation is to allow parallel processing - functions such as `mapreduce`, `add!`
+or `dot` (full list below) process each subdictionary on a separate thread.
+
+See also [`PDWorkingMemory`](@ref).
 
 ## MPI
 
@@ -122,22 +124,22 @@ does not distribute the memory load effectively, but does result in significant 
 
 ### Example
 
-```julia
+```jldoctest
 julia> using KrylovKit
 
-julia> add = BoseFS((0,0,5,0,0));
+julia> address = BoseFS((0,0,5,0,0));
 
-julia> op = HubbardMom1D(add; u=6.0);
+julia> op = HubbardMom1D(address; u=6.0);
 
-julia> pv = PDVec(add => 1.0);
+julia> pv = PDVec(address => 1.0);
 
 julia> results = eigsolve(op, pv, 4, :SR);
 
 julia> results[1][1:4]
 4-element Vector{Float64}:
- -3.4311156892322234
-  1.1821748602612363
-  3.7377753753082823
+ -3.431115689232223
+  1.182174860261238
+  3.737775375308286
   6.996390417443125
 ```
 
@@ -151,7 +153,6 @@ The following functions are threaded and MPI-compatible:
   `normalize`, `normalize!`
 * The full interface defined in
   [VectorInterface.jl](https://github.com/Jutho/VectorInterface.jl)
-
 """
 struct PDVec{
     K,V,N,S<:StochasticStyle{V},I<:InitiatorRule,C<:Communicator
@@ -202,18 +203,10 @@ function PDVec{K,V,N}(
 
     return PDVec(segments, style, irule, comm)
 end
-function PDVec(pairs; kwargs...)
-    # Copies made to get accurate eltype
-    keys = first.(pairs)
-    vals = last.(pairs)
-    K = eltype(keys)
-    V = eltype(vals)
-    t = PDVec{K,V}(; kwargs...)
-    copyto!(t, keys, vals)
-    return t
-end
-function PDVec(pairs::Vararg{Pair}; kwargs...)
-    return PDVec(pairs; kwargs...)
+
+PDVec(vararg::Vararg{Pair}; kwargs...) = PDVec(vararg; kwargs...)
+function PDVec(iterator; kwargs...)
+    return abstractdvec_from_iterator(PDVec, iterator; kwargs...)
 end
 function PDVec(dict::Dict{K,V}; kwargs...) where {K,V}
     t = PDVec{K,V}(; kwargs...)
