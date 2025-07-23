@@ -1,14 +1,14 @@
 # Advanced operator usage and custom Hamiltonians
 
 `Rimu` can be used to work with custom Hamiltonians and observables that are user-defined and
- not part of the `Rimu.jl` package. To make this possible and reliable, `Rimu` exposes a number 
- of interfaces and provides helper functions to test compliance with the interfaces through the 
+ not part of the `Rimu.jl` package. To make this possible and reliable, `Rimu` exposes a number
+ of interfaces and provides helper functions to test compliance with the interfaces through the
  submodule [`Rimu.InterfaceTests`](@ref), see [Interface tests](@ref). This section covers the
  relevant interfaces, the interface functions as well as potentially useful helper functions.
 
- In order to define custom Hamiltonians or observables it is useful to know how the operator 
- type hierarchy works in `Rimu`. For an example of how to implement custom Hamiltonians that 
- are not part of the `Rimu.jl` package, see 
+ In order to define custom Hamiltonians or observables it is useful to know how the operator
+ type hierarchy works in `Rimu`. For an example of how to implement custom Hamiltonians that
+ are not part of the `Rimu.jl` package, see
  [`RimuLegacyHamiltonians.jl`](https://github.com/RimuQMC/RimuLegacyHamiltonians.jl).
 
 ## Operator type hierarchy
@@ -18,14 +18,14 @@ for operators:
 ```julia
 AbstractHamiltonian <: AbstractOperator <: AbstractObservable
 ```
-The different abstract types have different requirements and are meant to be used for different purposes. 
+The different abstract types have different requirements and are meant to be used for different purposes.
 - [`AbstractHamiltonian`](@ref)s are fully featured models that define a Hilbert space and a linear operator over a scalar field. They can be passed as a Hamiltonian into [`ProjectorMonteCarloProblem`](@ref) or [`ExactDiagonalizationProblem`](@ref).
 - [`AbstractOperator`](@ref) and [`AbstractObservable`](@ref) are supertypes of [`AbstractHamiltonian`](@ref) with less stringent conditions. They are useful for defining observables that can be used in a three-way `dot` product, or passed as observables into a [`ReplicaStrategy`](@ref) that can be inserted with the keyword `replica_strategy` into a [`ProjectorMonteCarloProblem`](@ref).
 
 ## Hamiltonians interface
 
 Behind the implementation of a particular model is a more abstract interface for defining
-Hamiltonians. If you want to define a new model you should make use of this interface. A new 
+Hamiltonians. If you want to define a new model you should make use of this interface. A new
 model Hamiltonian should subtype to `AbstractHamiltonian` and implement the relevant methods.
 
 ```@docs
@@ -33,7 +33,7 @@ AbstractHamiltonian
 starting_address
 operator_column
 AbstractOperatorColumn
-parent_operator
+parent_operator(::AbstractOperatorColumn)
 diagonal_element
 offdiagonals
 random_offdiagonal
@@ -53,6 +53,7 @@ allows_address_type
 Base.eltype
 VectorInterface.scalartype
 mul!
+undo_transform
 ```
 
 This interface relies on unexported functionality, including
@@ -68,16 +69,29 @@ Hamiltonians.number_conserving_fermi_dimension
 Interfaces.OffdiagonalsOperatorColumn
 ```
 
-## Operator and observable interface 
+## Operator and observable interface
 
 ```@docs
 AbstractObservable
 AbstractOperator
 ```
 
+## Hamiltonian wrapper interface
+
+[`ModifiedHamiltonian`](@ref Main.Hamiltonians.ModifiedHamiltonian) provides an interface for wrapping
+Hamiltonians into a new type with modified properties. Fully implemented Hamiltonian
+wrappers are documented in the [Hamiltonians](@ref Hamiltonian-wrappers) section.
+
+```@docs
+Hamiltonians.ModifiedHamiltonian
+Hamiltonians.parent_operator(::Main.Hamiltonians.ModifiedHamiltonian)
+Hamiltonians.modify_diagonal
+Hamiltonians.modify_offdiagonal
+```
+
 ## Interface tests
-Helper functions that can be used for testing the various interfaces are provided in the 
-(unexported) submodule `Rimu.InterfaceTests`. 
+Helper functions that can be used for testing the various interfaces are provided in the
+(unexported) submodule `Rimu.InterfaceTests`.
 
 ```@docs
 Rimu.InterfaceTests

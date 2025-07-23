@@ -40,7 +40,7 @@ true
 ```
 See also [`TimeReversalSymmetry`](@ref).
 """
-struct ParitySymmetry{T,H<:AbstractHamiltonian{T}} <: AbstractHamiltonian{T}
+struct ParitySymmetry{T,H<:AbstractHamiltonian{T}} <: ModifiedHamiltonian{T}
     hamiltonian::H
     even::Bool
 end
@@ -64,36 +64,17 @@ LOStructure(h::ParitySymmetry) = LOStructure(h.hamiltonian)
 Base.adjoint(h::ParitySymmetry) = ParitySymmetry(h.hamiltonian', even=h.even)
 
 function starting_address(h::ParitySymmetry)
-    add = starting_address(h.hamiltonian)
-    return min(add, reverse(add))
+    addr = starting_address(h.hamiltonian)
+    return min(addr, reverse(addr))
 end
 
-dimension(h::ParitySymmetry, addr) = dimension(h.hamiltonian, addr) # upper bound
+parent_operator(h::ParitySymmetry) = h.hamiltonian
+modify_diagonal(::ParitySymmetry, _, val) = val
 
-get_offdiagonal(h::ParitySymmetry, add, i) = offdiagonals(h, add)[i]
-num_offdiagonals(h::ParitySymmetry, add) = num_offdiagonals(h.hamiltonian, add)
-
-struct ParitySymmetryOffdiagonals{
-    A,T,O<:AbstractVector{Tuple{A,T}}
-} <: AbstractOffdiagonals{A,T}
-    add::A
-    add_even::Bool
-    od::O
-    even::Bool
-end
-Base.size(o::ParitySymmetryOffdiagonals) = size(o.od)
-
-function offdiagonals(h::ParitySymmetry, add)
-    add_even = add == reverse(add)
-    return ParitySymmetryOffdiagonals(add, add_even, offdiagonals(h.hamiltonian, add), h.even)
-end
-
-function Base.getindex(o::ParitySymmetryOffdiagonals, i)
-    in = o.add
-    out, val = o.od[i]
+function modify_offdiagonal(h::ParitySymmetry, in, out, val)
+    in_even = in == reverse(in)
 
     rev_out = reverse(out)
-    in_even = o.add_even
     out_even = out == rev_out
 
     if in_even && !out_even
@@ -104,15 +85,11 @@ function Base.getindex(o::ParitySymmetryOffdiagonals, i)
         new_val = float(val)
     end
 
-    left_out = min(rev_out, out)
-    if !o.even && left_out ≠ out
+    final_out = min(rev_out, out)
+    if !h.even && final_out ≠ out
         new_val = -new_val
-    elseif !o.even && out_even
+    elseif !h.even && out_even
         new_val = zero(new_val)
     end
-    return left_out, new_val
-end
-
-function diagonal_element(h::ParitySymmetry, add)
-    return diagonal_element(h.hamiltonian, add)
+    return final_out => new_val
 end

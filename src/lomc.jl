@@ -113,7 +113,7 @@ function lomc!(
     address=starting_address(ham),
     params::FciqmcRunStrategy=RunTillLastStep(
         laststep=100,
-        shift=float(valtype(v))(diagonal_element(ham, address))
+        shift=float(valtype(v))(diagonal_element(operator_column(ham, address)))
     ),
     maxlength = nothing,
     wm = nothing
@@ -227,8 +227,6 @@ function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", me
     report = Report()
     report_default_metadata!(report, state)
     report_metadata!(report, problem.metadata) # add user metadata
-    # Sanity checks.
-    check_transform(state.replica_strategy, hamiltonian)
 
     simulation = PMCSimulation(
         problem, state, report, false, false, false, "", 0.0

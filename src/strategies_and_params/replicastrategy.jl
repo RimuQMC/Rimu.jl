@@ -57,11 +57,10 @@ struct NoStats{N} <: ReplicaStrategy{N} end
 NoStats(N=1) = NoStats{N}()
 
 replica_stats(::NoStats, _) = (), ()
-check_transform(::NoStats, _) = nothing
+undo_transforms(::NoStats{N}, _) where {N} = NoStats{N}()
 
-# TODO: add custom names
 """
-    AllOverlaps(n_replicas=2; operator=nothing, transform=nothing, vecnorm=true, mixed_spectral_overlaps=false)
+    AllOverlaps(n_replicas=2; operator=nothing, vecnorm=true, mixed_spectral_overlaps=false)
         <: ReplicaStrategy{n_replicas}
 
 Run `n_replicas` replicas and report overlaps between all pairs of replica vectors. If
@@ -76,7 +75,7 @@ The `r{i}s{k}_dot_r{j}s{k}` overlap can be omitted with the flag `vecnorm=false`
 
 By default, overlaps of different spectral states are omitted. To include overlaps of
 different spectral states `r{i}s{k}_dot_r{j}s{l}` and `r{i}s{k}_Op{m}_r{j}s{l}`, use the
-flag `mixed_spectral_overlaps=true`. 
+flag `mixed_spectral_overlaps=true`.
 
 See [`ProjectorMonteCarloProblem`](@ref), [`ReplicaStrategy`](@ref) and
 [`AbstractOperator`](@ref Interfaces.AbstractOperator) (for an interface for implementing
@@ -84,9 +83,10 @@ operators).
 
 # Transformed Hamiltonians
 
-If a transformed Hamiltonian `G` has been passed to [`ProjectorMonteCarloProblem`](@ref)
-then overlaps can be calculated by passing the same transformed Hamiltonian to `AllOverlaps`
-by setting `transform=G`. A warning is given if these two Hamiltonians do not match.
+If a transformed Hamiltonian `G` has been passed to [`ProjectorMonteCarloProblem`](@ref), an
+inverse transformation is applied to the operators in `AllOverlaps`. Additionally, an
+operator representing the inverse transform applied to the identity operator is added to
+the list of operators. Passing `transform` to `AllOverlaps` is deprecated.
 
 Implemented transformations are:
 
@@ -96,25 +96,22 @@ Implemented transformations are:
 In the case of a transformed Hamiltonian the overlaps are defined as follows. For a
 similarity transformation `G` of the Hamiltonian (see e.g. [`GutzwillerSampling`](@ref).)
 ```math
-    \\hat{G} = f \\hat{H} f^{-1}.
+    Ĝ = f Ĥ f⁻¹.
 ```
-The expectation value of an operator ``\\hat{A}`` is
+The expectation value of an operator ``Â`` is
 ```math
-    \\langle \\hat{A} \\rangle = \\langle \\psi | \\hat{A} | \\psi \\rangle
-        = \\frac{\\langle \\phi | f^{-1} \\hat{A} f^{-1} | \\phi \\rangle}{\\langle \\phi | f^{-2} | \\phi \\rangle}
+    ⟨Â⟩ = ⟨ψ| Â |ψ⟩ = \\frac{⟨ϕ| f⁻¹ Â f⁻¹ |ϕ⟩}{⟨ϕ| f⁻² |ϕ⟩}
 ```
 where
 ```math
-    | \\phi \\rangle = f | \\psi \\rangle
+    |ϕ⟩ = f |ψ⟩
 ```
-is the (right) eigenvector of ``\\hat{G}`` and ``| \\psi \\rangle`` is an eigenvector of
-``\\hat{H}``.
+is the (right) eigenvector of ``Ĝ`` and ``|ψ⟩`` is an eigenvector of ``Ĥ``.
 
 For an ``m``-tuple of input operators ``(\\hat{A}_1, ..., \\hat{A}_m)``, overlaps of
-``\\langle \\phi | f^{-1} \\hat{A} f^{-1} | \\phi \\rangle`` are reported as
-`r{i}s{k}_Op{m}_r{j}s{k}`. The correct vector-vector overlap ``\\langle \\phi | f^{-2} | \\phi
-\\rangle`` is reported *last* as `r{i}s{k}_Op{m+1}_r{j}s{k}`. This is in addition to the *bare*
-vector-vector overlap ``\\langle \\phi | \\phi \\rangle`` that is reported as 
+``⟨ϕ| f⁻¹ Â f⁻¹ |ϕ⟩`` are reported as `r{i}s{k}_Op{m}_r{j}s{k}`. The correct
+vector-vector overlap ``⟨ϕ| f⁻² |ϕ⟩`` is reported *last* as `r{i}s{k}_Op{m+1}_r{j}s{k}`.
+This is in addition to the *bare* vector-vector overlap ``⟨ϕ|ϕ⟩`` that is reported as
 `r{i}s{k}_dot_r{j}s{k}`.
 """
 struct AllOverlaps{N,M,O,B,S} <: ReplicaStrategy{N}
@@ -130,6 +127,10 @@ function AllOverlaps(
     vecnorm=true,
     mixed_spectral_overlaps=false
 )
+    if transform ≠ nothing
+        Base.depwarn("Passing `transform` to `AllOverlaps` is deprected. Transformation undoing is handled automatically.", :AllOverlaps)
+    end
+
     n_replicas isa Integer || throw(ArgumentError("n_replicas must be an integer"))
     if isnothing(operator)
         operators = ()
@@ -142,19 +143,18 @@ function AllOverlaps(
     else
         operators = (operator,)
     end
-    if isnothing(transform)
-        ops = operators
-    else
-        fsq = Rimu.Hamiltonians.TransformUndoer(transform)
-        ops = (map(op -> Rimu.Hamiltonians.TransformUndoer(transform, op), operators)..., fsq)
-    end
-    if !vecnorm && length(ops) == 0
+
+    if !vecnorm && length(operators) == 0
         return NoStats(n_replicas)
     end
-    return AllOverlaps{n_replicas,length(ops),typeof(ops),vecnorm,mixed_spectral_overlaps}(ops)
+    return AllOverlaps{
+        n_replicas,length(operators),typeof(operators),vecnorm,mixed_spectral_overlaps
+    }(operators)
 end
 
-function replica_stats(rs::AllOverlaps{N,<:Any,<:Any,B,S}, spectral_states::NTuple{N}) where {N,B,S}
+function replica_stats(
+    rs::AllOverlaps{N,<:Any,<:Any,B,S}, spectral_states::NTuple{N}
+) where {N,B,S}
     n_spectral = num_spectral_states(spectral_states[1])
     vecs = SMatrix{N,n_spectral}(
         spectral_states[i][j].v for i in 1:N, j in 1:n_spectral
@@ -166,7 +166,7 @@ function replica_stats(rs::AllOverlaps{N,<:Any,<:Any,B,S}, spectral_states::NTup
 end
 
 """
-    all_overlaps(operators, vectors, working_memories, vecnorm=true, mixed_spectral_overlaps=false)
+    all_overlaps(operators, vectors, working_memories; vecnorm=true, mixed_spectral_overlaps=false)
 
 Get all overlaps between vectors and operators.  The flag `vecnorm` can disable the
 vector-vector overlap `r{i}s{k}_dot_r{j}s{k}`.
@@ -188,24 +188,24 @@ function all_overlaps(
             for j in 1:N, l in k+1:M
                 if B
                     push!(names, "r$(i)s$(k)_dot_r$(j)s$(l)")
-                    push!(values, dot(vecs[i,k], vecs[j,l]))
+                    push!(values, dot(vecs[i, k], vecs[j, l]))
                 end
                 for (m, op) in enumerate(operators)
                     push!(names, "r$(i)s$(k)_Op$(m)_r$(j)s$(l)")
                     # Using dot_from_right here because dot will try to copy_to_local! if
                     # called directly.
-                    push!(values, dot_from_right(v, op, vecs[j,l]))
+                    push!(values, dot_from_right(v, op, vecs[j, l]))
                 end
             end
         end
         for j in i+1:N
             if B
                 push!(names, "r$(i)s$(k)_dot_r$(j)s$(k)")
-                push!(values, dot(vecs[i,k], vecs[j,k]))
+                push!(values, dot(vecs[i, k], vecs[j, k]))
             end
             for (m, op) in enumerate(operators)
                 push!(names, "r$(i)s$(k)_Op$(m)_r$(j)s$(k)")
-                push!(values, dot_from_right(v, op, vecs[j,k]))
+                push!(values, dot_from_right(v, op, vecs[j, k]))
             end
         end
     end
@@ -214,24 +214,13 @@ function all_overlaps(
     return SVector{num_reports,String}(names).data, SVector{num_reports,T}(values).data
 end
 
-"""
-    check_transform(r::AllOverlaps, ham)
-
-Check that the transformation provided to `r::AllOverlaps` matches the given Hamiltonian `ham`.
-Used as a sanity check before starting main [`ProjectorMonteCarloProblem`](@ref) loop.
-"""
-function check_transform(r::AllOverlaps, ham::AbstractHamiltonian)
-    ops = r.operators
-    if !isempty(ops)
-        op_transform = all(op -> typeof(op)<:Rimu.Hamiltonians.TransformUndoer, ops)
-        ham_transform = hasproperty(ham, :hamiltonian)    # need a better test for this
-        if op_transform && ham_transform && !all(op -> ham == op.transform, ops)
-            # both are transformed but different
-            @warn "Overlaps transformation not consistent with Hamiltonian transformation."
-        elseif op_transform ⊻ ham_transform
-            # only one is transformed
-            @warn "Expected overlaps and Hamiltonian to be transformed; got only one."
-        end
+function undo_transforms(
+    strat::AllOverlaps{N,M,<:Any,B,S}, ham::AbstractHamiltonian
+) where {N,M,B,S}
+    operators = map(op -> undo_transform(ham, op), strat.operators)
+    identity = undo_transform(ham, IdentityOperator())
+    if identity ≢ IdentityOperator()
+        operators = (operators..., identity)
     end
-    return nothing
+    return AllOverlaps{N,M,typeof(operators),B,S}(operators)
 end
