@@ -152,8 +152,8 @@ the whole matrix in one go.
 ```jldoctest
 julia> dvec_b = PDVec(BoseFS(1,1) => 0.5, BoseFS(2,0) => 0.5)
 2-element PDVec: style = IsDeterministic{Float64}()
-  fs"|1 1⟩" => 0.5
   fs"|2 0⟩" => 0.5
+  fs"|1 1⟩" => 0.5
 
 julia> Op1 = ReducedDensityMatrix(1)
 ReducedDensityMatrix{Float64}(1)
