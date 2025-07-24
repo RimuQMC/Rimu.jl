@@ -34,9 +34,10 @@ and `σ`, `τ` are component indices.
 
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 """
-local_interaction(b::SingleComponentFockAddress, u) = u * bose_hubbard_interaction(b) / 2
-local_interaction(f::FermiFS, _) = 0
-function local_interaction(b::SingleComponentFockAddress, u, occ)
+function local_interaction(b::SingleComponentFockAddress, u, occs::Tuple)
+    return local_interaction(b, u, only(occs))
+end
+function local_interaction(b::SingleComponentFockAddress, u, occ::ModeMap)
     bh_interaction = sum(occ) do index
         index.occnum * (index.occnum - 1)
     end
