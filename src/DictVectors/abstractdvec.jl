@@ -6,7 +6,7 @@ function Base.show(io::IO, dvec::AbstractDVec)
     summary(io, dvec)
     limit, _ = displaysize()
     # sort if length(dvec) is small to make doctests reproducible
-    pldvec = length(dvec) < 20 ? sort!(collect(pairs(localpart(dvec)))) :
+    pldvec = length(dvec) < 20 ? sort!(collect(pairs(localpart(dvec))); by=x->reim(x[2])) :
         pairs(localpart(dvec))
 
     for (i, p) in enumerate(pldvec)
