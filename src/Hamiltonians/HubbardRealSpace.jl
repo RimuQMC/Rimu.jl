@@ -36,7 +36,7 @@ See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 """
 local_interaction(b::SingleComponentFockAddress, u) = u * bose_hubbard_interaction(b) / 2
 local_interaction(f::FermiFS, _) = 0
-function local_interaction(b::SingleComponentFockAddress, u, (occ,))
+function local_interaction(b::SingleComponentFockAddress, u, occ)
     bh_interaction = sum(occ) do index
         index.occnum * (index.occnum - 1)
     end
@@ -370,45 +370,6 @@ function Base.getindex(data::HubbardRealSpaceComponentData, particle, direction)
     end
 end
 
-function _pick_particle(occ::ModeMap{<:Any,BoseFSIndex}, chosen)
-    src = 0
-    occnum = 0
-    while chosen > 0
-        src += 1
-        occnum = occ[src].occnum
-        chosen -= occnum
-    end
-    return src, occnum
-end
-function _pick_particle(occ::ModeMap{<:Any,FermiFSIndex}, chosen)
-    return chosen, 1
-end
-@inline function _split_index_direction(random_number, directions)
-    random_number -= 1
-    if directions == 2
-        col_index = random_number >> 1 + 1
-        row_index = random_number & 1 + 1
-    elseif directions == 4
-        col_index = random_number >> 2 + 1
-        row_index = random_number & 3 + 1
-    else
-        col_index, row_index = fldmod1(random_number, directions)
-    end
-    return col_index, row_index
-end
-function get_random_offdiagonal(data::HubbardRealSpaceComponentData, random_number)
-    directions = 2 * num_dimensions(data.geometry)
-
-    col_index, row_index = _split_index_direction(random_number, directions)
-
-    col_index = random_number >> 2 + 1
-    row_index = random_number & (directions - 1) + 1
-
-    chosen, occnum = _pick_particle(data.occmap, col_index)
-    address, value = data[chosen, row_index]
-    return address, occnum / num_particles(data.parent_address), value
-end
-
 # column ===================================================================================
 struct HubbardRealSpaceColumn{H,G,A,C<:Tuple} <: AbstractOperatorColumn{A,Float64,H}
     hamiltonian::H
@@ -460,9 +421,9 @@ function _split_index_component(column, i)
     chosen = 0
     while i > 0
         chosen += 1
-        i -= index_apply(x -> num_particles(x.address), components, chosen) * directions
+        i -= index_apply(length, components, chosen)
     end
-    i += index_apply(x -> num_particles(x.address), components, chosen) * directions
+    i += index_apply(length, components, chosen)
     return chosen, i
 end
 
