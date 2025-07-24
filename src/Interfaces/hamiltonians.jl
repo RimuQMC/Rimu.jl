@@ -103,10 +103,11 @@ Mandatory methods to implement:
     [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals) below
 
 Optional additional methods to implement:
-- [`VectorInterface.scalartype(op)`](@ref): defaults to `eltype(eltype(op))`
-- [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
-- [`dimension(op, addr)`](@ref Main.Hamiltonians.dimension): defaults to dimension of
+- [`VectorInterface.scalartype(ham)`](@ref): defaults to `eltype(eltype(ham))`
+- [`LOStructure(::Type{typeof(ham)})`](@ref LOStructure): defaults to `AdjointUnknown`
+- [`dimension(ham, addr)`](@ref Main.Hamiltonians.dimension): defaults to dimension of
   address space
+- [`undo_transform(ham, op)`](@ref): the default implementation returns `op`.
 - [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals):
   defaults to `true`
 - [`has_random_offdiagonal(::Type{typeof(op)})`](@ref has_random_offdiagonal): defaults to
@@ -124,7 +125,8 @@ and they can be separately generated:
     `AbstractVector` object.
 
 In order to calculate observables efficiently, it may make sense to implement custom methods
-for [`Interfaces.dot_from_right(x, op, y)`](@ref) and [`LinearAlgebra.mul!(y, op, x)`](@ref).
+for [`Interfaces.dot_from_right(x, ham, y)`](@ref) and
+[`LinearAlgebra.mul!(y, ham, x)`](@ref).
 
 See also [`AbstractHamiltonian`](@ref), [`Interfaces`](@ref).
 """
@@ -132,6 +134,7 @@ abstract type AbstractOperator{T} <: AbstractObservable{T} end
 
 @doc """
     LinearAlgebra.mul!(w::AbstractDVec, op::AbstractOperator, v::AbstractDVec)
+
 In place multiplication of `op` with `v` and storing the result in `w`. The result is
 returned. Note that `w` needs to have a `valtype` that can hold a product of instances
 of `eltype(op)` and `valtype(v)`. Moreover, the [`StochasticStyle`](@ref) of `w` needs to
@@ -336,6 +339,52 @@ Part of the [`AbstractHamiltonian`](@ref) interface. See also
 """
 starting_address
 
+"""
+    undo_transform(ham::AbstractHamiltonian, operator)
+
+Modify the `operator` in a way that undoes the transform that was applied to `ham`.
+See [`TransformUndoer`](@ref Main.Hamiltonians).
+"""
+undo_transform(::AbstractHamiltonian, op::AbstractObservable) = op
+
+"""
+    offdiagonals(column)
+    offdiagonals(h::AbstractHamiltonian, address) # (deprecated)
+
+Return an iterator over nonzero off-diagonal matrix elements of `h` in the same column as
+`address`. Will iterate over pairs `(newaddress, matrixelement)` or `newaddress => matrixelement`.
+
+# Example
+
+```jldoctest
+julia> address = BoseFS(3,2,1);
+
+
+julia> H = HubbardReal1D(address);
+
+
+julia> h = offdiagonals(H, address)
+6-element Rimu.Hamiltonians.Offdiagonals{BoseFS{6, 3, BitString{8, 1, UInt8}}, Float64, HubbardReal1D{Float64, BoseFS{6, 3, BitString{8, 1, UInt8}}, 1.0, 1.0}}:
+ (fs"|2 3 1⟩", -3.0)
+ (fs"|2 2 2⟩", -2.449489742783178)
+ (fs"|3 1 2⟩", -2.0)
+ (fs"|4 1 1⟩", -2.8284271247461903)
+ (fs"|4 2 0⟩", -2.0)
+ (fs"|3 3 0⟩", -1.7320508075688772)
+```
+Part of the [`AbstractHamiltonian`](@ref) interface.
+
+See also [`Offdiagonals`](@ref Main.Hamiltonians.Offdiagonals),
+[`AbstractOffdiagonals`](@ref Main.Hamiltonians.AbstractOffdiagonals).
+
+"""
+function offdiagonals(m::AbstractMatrix, i)
+    pairs = collect(zip(axes(m, 1), view(m, :, i)))
+    return filter!(pairs) do ((k, v))
+        k ≠ i && v ≠ 0
+    end
+end
+
 @doc """
     LOStructure(op::AbstractHamiltonian)
     LOStructure(typeof(op))
@@ -454,6 +503,8 @@ construct the column with [`operator_column`](@ref).
 Part of the [`AbstractHamiltonian`](@ref) and [`AbstractOperator`](@ref) interface.
 See also [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
+parent_operator(::AbstractOperatorColumn)
+
 parent_operator(c::OffdiagonalsOperatorColumn) = c.operator
 
 """

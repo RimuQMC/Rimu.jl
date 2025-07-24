@@ -136,7 +136,6 @@ using Rimu: replace_keys, delete_and_warn_if_present, clean_and_warn_if_others_p
     end
 end
 
-
 @safetestset "KrylovKit" begin
     include("KrylovKit.jl")
 end

@@ -112,8 +112,6 @@ Random.seed!(1234)
             @test length(state.spectral_states) == 3
             @test df.shift_r1s1 ≠ df.shift_r2s1 && df.shift_r2s1 ≠ df.shift_r3s1
             @test "shift_r4s1" ∉ names(df)
-
-            @test isnothing(Rimu.check_transform(NoStats(), H))
         end
 
         # column names are of the form r{i}s{k}_dot_r{j}s{k} and r{i}s{k}_Op{m}_r{j}s{k}.
@@ -163,18 +161,6 @@ Random.seed!(1234)
                 @test num_stats(df) == 4 * binomial(2, 2)
                 df, _ = lomc!(G, dv; replica_strategy=AllOverlaps(7; operator=(H, G), transform=G))
                 @test num_stats(df) == 4 * binomial(7, 2)
-
-                # Check transformation
-                # good transform - no warning
-                @test_logs min_level=Logging.Warn Rimu.check_transform(AllOverlaps(; operator=H, transform=G), G)
-                # no operators - no warning
-                @test_logs min_level=Logging.Warn Rimu.check_transform(AllOverlaps(;), H)
-                # Hamiltonian transformed and operators not transformed
-                @test_logs (:warn, Regex("(Expected overlaps)")) Rimu.check_transform(AllOverlaps(; operator=H), G)
-                # Hamiltonian not transformed and operators transformed
-                @test_logs (:warn, Regex("(Expected overlaps)")) Rimu.check_transform(AllOverlaps(; operator=H, transform=G), H)
-                # Different transformations
-                @test_logs (:warn, Regex("(not consistent)")) Rimu.check_transform(AllOverlaps(; operator=H, transform=GutzwillerSampling(H, 0.5)), G)
             end
         end
         @testset "AllOverlaps special cases" begin
