@@ -410,16 +410,16 @@ function get_random_offdiagonal(data::HubbardRealSpaceComponentData, random_numb
 end
 
 # column ===================================================================================
-struct HubbardRealSpaceColumn{H,G,A,C<:Tuple}
+struct HubbardRealSpaceColumn{H,G,A,C<:Tuple} <: AbstractOperatorColumn{A,Float64,H}
     hamiltonian::H
     geometry::G
     address::A
     components::C
     num_offdiagonals::Int
 end
-function Base.show(io::IO, column::HubbardRealSpaceColumn)
-    print(IOContext(io, :compat => true), column.hamiltonian, " * ", column.address)
-end
+
+parent_operator(column::HubbardRealSpaceColumn) = column.hamiltonian
+starting_address(column::HubbardRealSpaceColumn) = column.address
 
 function diagonal_element(col::HubbardRealSpaceColumn)
     h = col.hamiltonian
@@ -436,7 +436,6 @@ function operator_column(h::HubbardRealSpace, address)
         h, h.geometry, address, components, sum(length, components)
     )
 end
-
 
 @inline function _column_components(h::HubbardRealSpace, address::SingleComponentFockAddress)
     return (HubbardRealSpaceComponentData{1}(h.geometry, address, address, h.t[1]),)
@@ -476,7 +475,7 @@ function random_offdiagonal(column::HubbardRealSpaceColumn)
     return addr, 1/column.num_offdiagonals, val
 end
 
-struct HubbardRealSpaceColumnOffdiagonals2{A,G,C<:Tuple} <: AbstractVector{Pair{A,Float64}}
+struct HubbardRealSpaceColumnOffdiagonals{A,G,C<:Tuple} <: AbstractVector{Pair{A,Float64}}
     address::A
     geometry::G
     components::C
@@ -486,7 +485,7 @@ end
 function offdiagonals(column::HubbardRealSpaceColumn)
     components = map(attach_modemap, column.components)
 
-    return HubbardRealSpaceColumnOffdiagonals2(
+    return HubbardRealSpaceColumnOffdiagonals(
         column.address,
         column.hamiltonian.geometry,
         components,
@@ -495,7 +494,7 @@ function offdiagonals(column::HubbardRealSpaceColumn)
 end
 num_offdiagonals(column) = column.num_offdiagonals
 
-function Base.iterate(ods::HubbardRealSpaceColumnOffdiagonals2, state=(1,1,1))
+function Base.iterate(ods::HubbardRealSpaceColumnOffdiagonals, state=(1,1,1))
     i, j, k = state
     if k > 2 * num_dimensions(ods.geometry)
         k = 1
@@ -512,10 +511,10 @@ function Base.iterate(ods::HubbardRealSpaceColumnOffdiagonals2, state=(1,1,1))
         return result => (i, j, k + 1)
     end
 end
-Base.size(ods::HubbardRealSpaceColumnOffdiagonals2) = (ods.num_offdiagonals,)
-Base.eltype(::HubbardRealSpaceColumnOffdiagonals2{A}) where {A} = Pair{A,Float64}
+Base.size(ods::HubbardRealSpaceColumnOffdiagonals) = (ods.num_offdiagonals,)
+Base.eltype(::HubbardRealSpaceColumnOffdiagonals{A}) where {A} = Pair{A,Float64}
 
-function Base.getindex(column::HubbardRealSpaceColumnOffdiagonals2, i)
+function Base.getindex(column::HubbardRealSpaceColumnOffdiagonals, i)
     chosen, i = _split_index_component(column, i)
     return index_apply(getindex, column.components, chosen, i)
 end
