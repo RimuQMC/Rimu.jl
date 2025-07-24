@@ -43,7 +43,9 @@ function local_interaction(b::SingleComponentFockAddress, u, occ::ModeMap)
     end
     return bh_interaction * u[1] / 2
 end
-local_interaction(f::FermiFS, _, _) = 0
+local_interaction(f::FermiFS, _, ::Tuple) = 0
+local_interaction(f::FermiFS, _, ::ModeMap) = 0
+
 function local_interaction(
     a::SingleComponentFockAddress, b::SingleComponentFockAddress, u, occ_a, occ_b
 )
@@ -417,15 +419,14 @@ end
 end
 
 function _split_index_component(column, i)
-    directions = num_dimensions(column.geometry) * 2
     components = column.components
-    chosen = 0
+    chosen_component = 0
     while i > 0
-        chosen += 1
-        i -= index_apply(length, components, chosen)
+        chosen_component += 1
+        i -= index_apply(length, components, chosen_component)
     end
-    i += index_apply(length, components, chosen)
-    return chosen, i
+    i += index_apply(length, components, chosen_component)
+    return chosen_component, i
 end
 
 function random_offdiagonal(column::HubbardRealSpaceColumn)
