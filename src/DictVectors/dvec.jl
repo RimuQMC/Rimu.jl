@@ -1,11 +1,12 @@
 """
-    DVec{K,V,D<:AbstractDict{K,V},S}
+    DVec(args...; kwargs...) <: AbstractDVec{K,V}
 
-Dictionary-based vector-like data structure for use with FCIQMC and
-[KrylovKit](https://github.com/Jutho/KrylovKit.jl). While mostly behaving like a `Dict`, it
-supports various linear algebra operations such as `norm` and `dot`. It has a
-[`StochasticStyle`](@ref) that is used to select an appropriate spawning strategy in the
-FCIQMC algorithm.
+Dictionary-based vector-like data structure for storing `key <: K` and `value <: V` pairs
+for use with [`ProjectorMonteCarloProblem`](@ref) and [`ExactDiagonalizationProblem`](@ref).
+`DVec` supports the interface from VectorInterface.jl but stores only non-zero `value`s.
+
+`DVec` is fast but does not support [`Initiator`](@ref)s (see [`InitiatorDVec`](@ref)) or
+parallel and distributed vector operations (see [`PDVec`](@ref)).
 
 See also: [`AbstractDVec`](@ref), [`InitiatorDVec`](@ref), [`PDVec`](@ref).
 
@@ -14,19 +15,21 @@ See also: [`AbstractDVec`](@ref), [`InitiatorDVec`](@ref), [`PDVec`](@ref).
 * `DVec(dict::AbstractDict[; style, capacity])`: create a `DVec` with `dict` for storage.
   Note that the data may or may not be copied.
 
-* `DVec(args...[; style, capacity])`: `args...` are passed to the `Dict` constructor. The
-  `Dict` is used for storage.
+* `DVec(args...[; style, capacity])`: `args...` can be `key => value` `Pair`s or an
+  iterator over `Pair`s or `Tuple`s.
 
 * `DVec{K,V}([; style, capacity])`: create an empty `DVec{K,V}`.
 
 * `DVec(dv::AbstractDVec[; style, capacity])`: create a `DVec` with the same contents as
    `adv`. The `style` is inherited from `dv` by default.
 
-The default `style` is selected based on the `DVec`'s `valtype` (see
-[`default_style`](@ref)). If a style is given and the `valtype` does not match the `style`'s
-`eltype`, the values are converted to an appropriate type.
-
-The capacity argument is optional and sets the initial size of the `DVec` via `Base.sizehint!`.
+## Keyword arguments
+* `style::StochasticStyle` determines the mode of stochastic operations. See
+    [`StochasticStyle`](@ref). The default `style` is selected based on the `DVec`'s
+    `valtype` (see [`default_style`](@ref)). If a style is given and the `valtype` does not
+    match the `style`'s `eltype`, the values are converted to an appropriate type.
+* `capacity`: The capacity argument is optional and sets the initial size of the `DVec` via
+    `Base.sizehint!`.
 
 ## Examples
 
@@ -49,28 +52,9 @@ end
 ###
 ### Constructors
 ###
-# Vararg
-function DVec(args...; style = nothing, kwargs...)
-    storage = Dict(args...)
-    if style === nothing
-        return DVec(storage; kwargs...)
-    else
-        # if style is given, check value type compatibility and convert if necessary
-        V = valtype(storage)
-        S = scalartype(style)
-        if V <: AbstractArray
-            if eltype(V) != S
-                throw(ArgumentError("Style $(style) is incompatible with value type $(V). "*
-                            "Use a style with scalartype(style) == $(eltype(V)) instead."))
-            end
-            # no conversion necessary, the types are compatible
-        else # V is a scalar type
-            # try to convert storage to the appropriate type
-            K = keytype(storage)
-            storage = Dict{K,S}(storage)
-        end
-        return DVec(storage; style, kwargs...)
-    end
+DVec(vararg::Vararg{Pair}; kwargs...) = DVec(vararg; kwargs...)
+function DVec(iterator; kwargs...)
+    return abstractdvec_from_iterator(DVec, iterator; kwargs...)
 end
 
 # from Dict; check style compatibility

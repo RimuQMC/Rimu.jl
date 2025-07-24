@@ -14,9 +14,11 @@ function test_dvec_interface(type; kwargs...)
                 u = type(zip((:a, :b, :c), (1, 2, 3)); kwargs...)
                 v = type(Dict(:a => 1, :b => 2, :c => 3); kwargs...)
                 w = type(:a => 1, :b => 2, :c => 3; kwargs...)
+                x = type(:a => 1.0, :b => 4, :c => 3.0, :b => -2; kwargs...) # annihilation
+                y = type(k => i for (i,k) in enumerate((:a, :b, :c)); kwargs...) # generator
 
-                @test u[:a] == v[:a] == w[:a] == 1
-                @test u == v == w
+                @test u[:a] == v[:a] == w[:a] == x[:a] == y[:a] == 1
+                @test u == v == w == x == y
                 @test copy(u) == u
                 @test copy(u) ≢ u
 
@@ -114,8 +116,10 @@ function test_dvec_interface(type; kwargs...)
                 @test scalartype(zerovector(u, Int)) ≡ Int
                 @test scalartype(empty(u, Int)) ≡ Int
                 @test eltype(similar(u, Float64, Int)) ≡ Pair{Float64,Int}
-                @test eltype(similar(u, String)) ≡ Pair{Int,String}
-                @test eltype(similar(u, Float64, String)) ≡ Pair{Float64,String}
+                if type ≠ InitiatorDVec
+                    @test eltype(similar(u, String)) ≡ Pair{Int,String}
+                    @test eltype(similar(u, Float64, String)) ≡ Pair{Float64,String}
+                end
 
                 v = type(1 => 1; kwargs...)
                 @test zerovector!!(v, Int) ≡ v
@@ -266,7 +270,9 @@ function test_dvec_interface(type; kwargs...)
             @test StochasticStyle(type(:a => 1; kwargs...)) isa IsStochasticInteger{Int}
             @test StochasticStyle(type(:a => 1.5; kwargs...)) isa IsDeterministic
             @test StochasticStyle(type(:a => 1 + 2im; kwargs...)) isa IsStochastic2Pop
-            @test StochasticStyle(type(:a => SA[1 1; 1 1]; kwargs...)) isa StyleUnknown
+            if type ≠ InitiatorDVec # matrix as val doesn't make sense
+                @test StochasticStyle(type(:a => SA[1 1; 1 1]; kwargs...)) isa StyleUnknown
+            end
         end
         @testset "Stochastic styles convert eltype" begin
             u = type(:a => 0f0; kwargs...)
@@ -294,7 +300,7 @@ end
         sa = SA[1.0 2.0; 3.0 4.0]
         sai = SA[1 2; 3 4]
         @test DVec(:a => sa) == DVec(:a => sai)
-        @test_throws ArgumentError DVec(:a => sai; style=IsDynamicSemistochastic())
+        @test_throws MethodError DVec(:a => sai; style=IsDynamicSemistochastic())
         dict = Dict(:a => sai)
         @test_throws ArgumentError DVec(dict; style=IsDynamicSemistochastic())
         @test DVec(Dict(:a => sa)) == DVec(:a => sa)
