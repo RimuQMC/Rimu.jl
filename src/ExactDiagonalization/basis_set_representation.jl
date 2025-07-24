@@ -68,8 +68,8 @@ julia> ev = eigvecs(Matrix(bsr))[:,1]; ev = ev .* sign(ev[1]) # ground state eig
 
 julia> dv = DVec(zip(bsr.basis, ev)) # ground state as DVec
 DVec{BoseFS{1, 3, BitString{3, 1, UInt8}},Float64} with 3 entries, style = IsDeterministic{Float64}()
-  fs"|1 0 0⟩" => 0.57735
   fs"|0 1 0⟩" => 0.57735
+  fs"|1 0 0⟩" => 0.57735
   fs"|0 0 1⟩" => 0.57735
 ```
 Has methods for [`dimension`](@ref), [`sparse`](@ref), [`Matrix`](@ref),
