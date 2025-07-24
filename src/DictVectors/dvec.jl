@@ -37,8 +37,8 @@ DVec{Symbol,Int64} with 1 entry, style = IsStochasticInteger{Int64}()
 
 julia> dv = DVec(:a => 2, :b => 3; style=IsDeterministic())
 DVec{Symbol,Float64} with 2 entries, style = IsDeterministic{Float64}()
-  :b => 3.0
   :a => 2.0
+  :b => 3.0
 ```
 """
 struct DVec{K,V,S<:StochasticStyle,D<:AbstractDict{K,V}} <: AbstractDVec{K,V}
