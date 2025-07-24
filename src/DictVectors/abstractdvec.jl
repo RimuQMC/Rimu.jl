@@ -6,7 +6,7 @@ function Base.show(io::IO, dvec::AbstractDVec)
     summary(io, dvec)
     limit, _ = displaysize()
     # sort if length(dvec) is small to make doctests reproducible
-    pldvec = length(dvec) < 20 ? sort!(collect(pairs(localpart(dvec)))) :
+    pldvec = length(dvec) < 20 ? sort!(collect(pairs(localpart(dvec))); by=first) :
         pairs(localpart(dvec))
 
     for (i, p) in enumerate(pldvec)
@@ -320,4 +320,51 @@ function Interfaces.dot_from_right(target, op, source::AbstractDVec)
         dot(target, operator_column(op, address)) * value
     end
     return result::T
+end
+
+"""
+    abstractdvec_from_iterator(TYPE, iterator; kwargs...)
+
+Construct the [`AbstractDVec`](@ref) defined by `TYPE` using the data in `iterator` using
+[`deposit!`](@ref), i.e. adding multiple contributions referring to the same address.
+
+See also [`PDVec`](@ref), [`DVec`](@ref), [`InitiatorDVec`](@ref).
+"""
+function abstractdvec_from_iterator(::Type{TYPE}, iterator; kwargs...) where {TYPE}
+    E = eltype(iterator)
+    return abstractdvec_from_iterator(TYPE, E, iterator; kwargs...)
+end
+function abstractdvec_from_iterator(::Type{TYPE}, g::Base.Generator; kwargs...) where {TYPE}
+    E = Base.@default_eltype(g) # unexported Base functionality
+    return abstractdvec_from_iterator(TYPE, E, g; kwargs...)
+end
+# deconstruct eltype
+function abstractdvec_from_iterator(
+    ::Type{TYPE}, ::Type{Pair{K,V}}, iterator; kwargs...
+) where {K,V,TYPE}
+    return abstractdvec_from_iterator(TYPE, K, V, iterator; kwargs...)
+end
+# iterator with inhomogeneous value types
+function abstractdvec_from_iterator(
+    ::Type{TYPE}, ::Type{<:Pair{K}}, iterator; kwargs...
+) where {TYPE, K} # need to promote the values
+    V = promote_type((typeof(v) for (_, v) in iterator)...)
+    return abstractdvec_from_iterator(TYPE, K, V, iterator; kwargs...)
+end
+function abstractdvec_from_iterator(
+    ::Type{TYPE}, ::Type{Tuple{K,V}}, iterator; kwargs...
+) where {K,V,TYPE}
+    return abstractdvec_from_iterator(TYPE, K, V, iterator; kwargs...)
+end
+# fully deconstructed types
+function abstractdvec_from_iterator(
+    ::Type{TYPE}, ::Type{K}, ::Type{V}, iterator;
+    style::StochasticStyle=default_style(V), kwargs...
+) where {K,V,TYPE}
+    W = eltype(style) # try to convert if V ≠ W
+    dvec = TYPE{K, W}(; style, kwargs...)
+    for (k,v) in iterator
+        deposit!(dvec, k, v, k=>0)
+    end
+    return dvec
 end

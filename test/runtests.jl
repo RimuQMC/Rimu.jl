@@ -26,118 +26,24 @@ using ExplicitImports: check_no_implicit_imports
     # For example, replace `using Foo` with `using Foo: bar, baz`.
 end
 
-@safetestset "doctests" begin
-    include("doctests.jl")
-end
-
-@safetestset "excited states" begin
-    include("excited_states_tests.jl")
+@safetestset "Helpers" begin
+    include("helpers.jl")
 end
 
 @safetestset "Interfaces" begin
     include("Interfaces.jl")
 end
 
-@safetestset "ExactDiagonalization" begin
-    include("ExactDiagonalization.jl")
-end
-
-@safetestset "BitStringAddresses" begin
-    include("BitStringAddresses.jl")
+@safetestset "excited states" begin
+    include("excited_states_tests.jl")
 end
 
 @safetestset "StochasticStyles" begin
     include("StochasticStyles.jl")
 end
 
-@safetestset "DictVectors" begin
-    include("DictVectors.jl")
-end
-
-@testset "Hamiltonians" begin
-    include("Hamiltonians.jl")
-end
-
 @safetestset "projector_monte_carlo_problem" begin
     include("projector_monte_carlo_problem.jl")
-end
-
-@suppress_err @safetestset "lomc!" begin
-    include("lomc.jl")
-end
-
-@safetestset "RimuIO" begin
-    include("RimuIO.jl")
-end
-
-@safetestset "StatsTools" begin
-    include("StatsTools.jl")
-end
-
-using Rimu: replace_keys, delete_and_warn_if_present, clean_and_warn_if_others_present,
-    split_keys
-@testset "helpers" begin
-    @testset "walkernumber" begin
-        v = [1,2,3]
-        @test walkernumber(v) == norm(v,1)
-        dvc = DVec(:a => 2-5im)
-        @test StochasticStyle(dvc) isa StochasticStyles.IsStochastic2Pop
-        @test walkernumber(dvc) == 2.0 + 5.0im
-        dvi= DVec(:a=>Complex{Int32}(2-5im))
-        @test StochasticStyle(dvi) isa StochasticStyles.IsStochastic2Pop
-        dvr = DVec(i => randn() for i in 1:100; capacity = 100)
-        @test walkernumber(dvr) ≈ norm(dvr,1)
-    end
-    @testset "MultiScalar" begin
-        a = Rimu.MultiScalar(1, 1.0, SVector(1))
-        @test a[1] ≡ 1
-        @test a[2] ≡ 1.0
-        @test a[3] ≡ SVector(1)
-        @test length(a) == 3
-        @test collect(a) == [1, 1.0, SVector(1)]
-        b = Rimu.MultiScalar(SVector(2, 3.0, SVector(4)))
-        for op in (+, min, max)
-            c = op(a, b)
-            @test op(a[1], b[1]) == c[1]
-            @test op(a[2], b[2]) == c[2]
-            @test op(a[2], b[2]) == c[2]
-        end
-        @test_throws MethodError a + Rimu.MultiScalar(1, 1, 1)
-    end
-
-    @testset "keyword helpers" begin
-        nt = (; a=1, b=2, c=3, d=4)
-        nt2 = replace_keys(nt, (:a => :x, :b => :y, :u => :v))
-        @test nt2 == (c=3, d=4, x=1, y=2)
-        nt3 = @test_logs((:warn, "The keyword(s) \"a\", \"b\" are unused and will be ignored."),
-            delete_and_warn_if_present(nt, (:a, :b, :u)))
-        @test nt3 == (; c = 3, d = 4)
-        nt4 = @test_logs((:warn, "The keyword(s) \"c\", \"d\" are unused and will be ignored."),
-            clean_and_warn_if_others_present(nt, (:a, :b, :u)))
-        @test nt4 == (; a = 1, b = 2)
-
-        split, rest = split_keys(nt, :a, :b, :e)
-        @test split_keys(nt, :a) == split_keys(nt, (:a,))
-        @test split == (; a=1, b=2)
-        @test rest == (; c=3, d=4)
-
-        @test split_keys((;), :a, :b, :c) == split_keys((), :a, :b, :c) == ((;), (;))
-    end
-
-    @testset "index_apply" begin
-        t = (1, 1.0, 2 + 3im)
-        @test index_apply(isreal, t, 1)
-        @test index_apply(isreal, t, 2)
-        @test index_apply(!isreal, t, 3)
-
-        @test index_apply(+, t, 1, 0.2im) == 1 + 0.2im
-        @test index_apply(+, t, 2, 0.2im) == 1 + 0.2im
-        @test index_apply(+, t, 3, 0.2im) == 2 + 3.2im
-    end
-end
-
-@safetestset "KrylovKit" begin
-    include("KrylovKit.jl")
 end
 
 @testset "Logging" begin
@@ -156,6 +62,44 @@ end
         @info "No progress bar" sl
     end
     @test default_logger() isa Logging.ConsoleLogger
+end
+
+@safetestset "RimuIO" begin
+    include("RimuIO.jl")
+end
+
+@safetestset "StatsTools" begin
+    include("StatsTools.jl")
+end
+
+@safetestset "BitStringAddresses" begin
+    include("BitStringAddresses.jl")
+end
+
+# We test loading of extension packages here (and load them), so
+# this test should run before other tests that use them (like "doctests").
+@safetestset "ExactDiagonalization" begin
+    include("ExactDiagonalization.jl")
+end
+
+@safetestset "doctests" begin
+    include("doctests.jl")
+end
+
+@safetestset "DictVectors" begin
+    include("DictVectors.jl")
+end
+
+@testset "Hamiltonians" begin
+    include("Hamiltonians.jl")
+end
+
+@safetestset "KrylovKit" begin
+    include("KrylovKit.jl")
+end
+
+@suppress_err @safetestset "lomc!" begin
+    include("lomc.jl")
 end
 
 # Note: Running Rimu with several MPI ranks is tested seperately on GitHub CI and not here.
