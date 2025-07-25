@@ -118,19 +118,23 @@ a length `M` vector for a [`SingleComponentFockAddress`](@ref), or a `M×C` matr
 a [`CompositeFS `](@ref), where `M` is the number of modes and `C` the number of
 components.
 """
-function external_potential(::SingleComponentFockAddress, potential, occ)
-    return sum(occ) do (occnum, mode)
-        occnum * potential[mode]
+function external_potential(::SingleComponentFockAddress, potential, occ::ModeMap)
+    return sum(occ) do index
+        index.occnum * potential[index.mode]
     end
 end
-function external_potential(address::CompositeFS, potential, occs)
-    return _external_potential(address.components, potential, occs)
+function external_potential(addr::SingleComponentFockAddress, potential, occ::Tuple)
+    return external_potential(addr, potential, only(occ))
 end
-@inline function _external_potential(::Tuple{}, _, ::Tuple{})
+function external_potential(address::CompositeFS, potential, occs)
+    return _external_potential(address.components, potential, occs, 1)
+end
+@inline function _external_potential(::Tuple{}, _, ::Tuple{}, _)
     return 0.0
 end
-@inline function _external_potential((a, as...), potential, (occ, occs...))
-    return external_potential(a, potential, occ) + _external_potential(as, potential, occs)
+@inline function _external_potential((a, as...), potential, (occ, occs...), i)
+    pot = external_potential(a, view(potential[:, i]), occ)
+    return pot + _external_potential(as, potential, occs, i + 1)
 end
 
 ###
