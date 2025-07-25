@@ -133,7 +133,7 @@ end
     return 0.0
 end
 @inline function _external_potential((a, as...), potential, (occ, occs...), i)
-    pot = external_potential(a, view(potential[:, i]), occ)
+    pot = external_potential(a, view(potential, :, i), occ)
     return pot + _external_potential(as, potential, occs, i + 1)
 end
 
