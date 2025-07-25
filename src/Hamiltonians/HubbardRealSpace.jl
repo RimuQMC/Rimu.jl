@@ -471,7 +471,7 @@ function Base.iterate(ods::HubbardRealSpaceColumnOffdiagonals, state=(1,1,1))
         return nothing
     else
         result = index_apply(getindex, ods.components, i, j, k)
-        return result => (i, j, k + 1)
+        return result, (i, j, k + 1)
     end
 end
 Base.size(ods::HubbardRealSpaceColumnOffdiagonals) = (ods.num_offdiagonals,)

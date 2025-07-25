@@ -641,10 +641,10 @@ Part of the [`AbstractHamiltonian`](@ref) interface. See also
 offdiagonals
 
 # Iteration interface for AbstractOperatorColumn
-function Base.iterate(col::AbstractOperatorColumn)
+@inline function Base.iterate(col::AbstractOperatorColumn)
     return starting_address(col) => diagonal_element(col), nothing
 end
-function Base.iterate(col::AbstractOperatorColumn, state)
+@inline function Base.iterate(col::AbstractOperatorColumn, state)
     result = if state === nothing
         iterate(offdiagonals(col))
     else
