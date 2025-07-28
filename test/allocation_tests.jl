@@ -84,7 +84,16 @@ hamiltonians = begin
         Transcorrelated1D(CompositeFS(f3, f3)),
     ]
 end
+
+println("Warming up...")
+
 foreach(interface_alloc_check, hamiltonians)
+
+foreach(hamiltonians) do H
+    solve(ProjectorMonteCarloProblem(H; time_step=1e-6, last_step=10))
+end
+
+println("Done.")
 
 @testset "Allocations" begin
     # The purpose of these tests is to find type instabilities that might appear as the
