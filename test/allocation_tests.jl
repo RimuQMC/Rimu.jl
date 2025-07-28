@@ -84,6 +84,7 @@ hamiltonians = begin
         Transcorrelated1D(CompositeFS(f3, f3)),
     ]
 end
+foreach(interface_alloc_check, hamiltonians)
 
 @testset "Allocations" begin
     # The purpose of these tests is to find type instabilities that might appear as the
@@ -92,8 +93,6 @@ end
     for H in hamiltonians
         hamname = string(nameof(typeof(H)), "(", starting_address(H), ")")
         @testset "Allocation interface for $(hamname)" begin
-            interface_alloc_check(H)
-            interface_alloc_check(H)
             interface_alloc_check(H)
 
             @test @allocations(interface_alloc_check(H)) ≤ 1
