@@ -18,8 +18,8 @@ end
 end
 
 """
-    local_interaction(::AbstractFockAddress, u)
-    local_interaction(::AbstractFockAddress, ::AbstractFockAddress, v)
+    local_interaction(::AbstractFockAddress, u, occ)
+    local_interaction(::AbstractFockAddress, ::AbstractFockAddress, v, occ)
 
 Return the sum of (mode-wise) local interactions ``\\frac{u}{2} \\sum_i n_i(n_i-1)`` of a
 single component Fock state, or ``v \\sum_i n_{↑,i} n_{↓,i}`` between two Fock states. For a
@@ -31,6 +31,8 @@ multi-component Fock state, return the eigenvalue of
 
 where `u::SMatrix` is a symmetric matrix of interaction constants, `i` is a mode index,
 and `σ`, `τ` are component indices.
+`occ` is a [`ModeMap`](@ref) for single-component fock addresses or a tuple of
+[`ModeMap`](@ref)s for composite addresses.
 
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 """
@@ -56,7 +58,7 @@ function local_interaction(fs::CompositeFS, u, occs)
 end
 
 """
-    _interaction_col(a, bs::Tuple, us::Tuple)#TODO
+    _interaction_col(a, bs::Tuple, us::Tuple, occ::ModeMap, occs::Tuple)
 
 Sum the local interactions of the Fock state `a` with all states in `bs` using the
 interaction constants in `us`. This is used to compute all interactions in the column
@@ -68,10 +70,10 @@ below the diagonal of the interaction matrix.
 end
 
 """
-    _interactions(addresses, interaction_matrix) #TODO
+    _interactions(addresses, interaction_matrix, occs)
 
-Compute all pairwise interactions in a tuple of `addresses`. The `interaction_matrix` sets the
-intraction strengths.
+Compute all pairwise interactions in a tuple of `addresses`. The `interaction_matrix` sets
+the intraction strengths and `occs` holds the occupied modes of the adresses.
 
 The code is equivalent to the following.
 
@@ -106,10 +108,10 @@ It is implemented recursively to ensure type stability.
 end
 
 """
-    external_potential(add::AbstractFockAddress, pot) #TODO
+    external_potential(address::AbstractFockAddress, pot, occ)
 
 Calculate the value of a diagonal single particle operator (e.g. a trap potential) at
-the address `add`.
+the address `address` whose occupied modes are stored in `occ`.
 ```math
 \\sum_{iσ} v_{iσ} n_{iσ}
 ```
@@ -137,9 +139,7 @@ end
     return pot + _external_potential(as, potential, occs, i + 1)
 end
 
-###
-### HubbardRealSpace
-###
+# struct ================================================================================ #
 """
     HubbardRealSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C), u=ones(C, C), v=zeros(C, D))
 
@@ -308,8 +308,10 @@ starting_address(h::HubbardRealSpace) = h.address
 
 dimension(::HubbardRealSpace, address) = number_conserving_dimension(address)
 
-
-# offdiagonals =========================================================================== #
+# offdiaonals =========================================================================== #
+# Holds the offdiagonals for a single-component nearest neighbour one-body term. It's
+# structured like a matric where the first index determines the occupied site in the adress
+# and the second index determines the site the particle will hop to.
 struct HubbardRealSpaceComponentData{I,G,A,C,O,M} <: AbstractMatrix{Pair{A,Float64}}
     geometry::G
     parent_address::A
@@ -340,6 +342,7 @@ function _collect_modemap(address::BoseFS{<:Any,<:Any,<:BitString})
 end
 _collect_modemap(_) = nothing
 
+# Attach a full mode map to the `data`. This is done before iterating offdiagonals.
 function attach_modemap(data::HubbardRealSpaceComponentData{I}) where {I}
     modemap = _collect_modemap(data.address)
 
@@ -377,7 +380,7 @@ function Base.getindex(data::HubbardRealSpaceComponentData, particle, direction)
     end
 end
 
-# column ===================================================================================
+# column ================================================================================= #
 struct HubbardRealSpaceColumn{H,G,A,C<:Tuple} <: AbstractOperatorColumn{A,Float64,H}
     hamiltonian::H
     geometry::G
@@ -405,6 +408,7 @@ function operator_column(h::HubbardRealSpace, address)
     )
 end
 
+# Collect HubbardRealSpaceComponentData for each component of the address.
 @inline function _column_components(h::HubbardRealSpace, address::SingleComponentFockAddress)
     return (HubbardRealSpaceComponentData{1}(h.geometry, address, address, h.t[1]),)
 end

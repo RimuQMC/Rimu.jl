@@ -14,19 +14,35 @@ function apply_operator_wrap!(r::SingleState)
     return nothing
 end
 
-@testset "Allocations" begin
-    # The purpose of these tests is to find type instabilities that might appear as the
-    # Julia compiler changes. If allocations suddenly increase by a lot, there is a good
-    # chance that dynamic dispatch is happening somewhere in the code.
+function interface_alloc_check(H)
+    res = 0.0
+
+    column1 = operator_column(H, starting_address(H))
+    res += diagonal_element(column1)
+    for (k, v) in offdiagonals(column1)
+        res += v
+    end
+
+    addr, val = random_offdiagonal(column1)
+    column2 = operator_column(H, addr)
+
+    for (k, v) in column2
+        res += v
+    end
+
+    return abs(res)
+end
+
+hamiltonians = begin
     b1 = near_uniform(BoseFS{10,10})
     b2 = near_uniform(BoseFS{50,50})
     b3 = near_uniform(BoseFS{100,100})
 
-    f1 = near_uniform(FermiFS{9,10})
+    f1 = near_uniform(FermiFS{5,10})
     f2 = near_uniform(FermiFS{24,50})
     f3 = near_uniform(FermiFS{49,100})
 
-    for H in (
+    [
         HubbardReal1D(b1),
         HubbardReal1D(b2),
         HubbardReal1D(b3),
@@ -66,8 +82,27 @@ end
         Transcorrelated1D(CompositeFS(f1, f1)),
         Transcorrelated1D(CompositeFS(f2, f2)),
         Transcorrelated1D(CompositeFS(f3, f3)),
-        )
+    ]
+end
+
+@testset "Allocations" begin
+    # The purpose of these tests is to find type instabilities that might appear as the
+    # Julia compiler changes. If allocations suddenly increase by a lot, there is a good
+    # chance that dynamic dispatch is happening somewhere in the code.
+    for H in hamiltonians
+        hamname = string(nameof(typeof(H)), "(", starting_address(H), ")")
+        @testset "Allocation interface for $(hamname)" begin
+            interface_alloc_check(H)
+            interface_alloc_check(H)
+            interface_alloc_check(H)
+
+            @test @allocations(interface_alloc_check(H)) ≤ 1
+        end
+    end
+
+    for H in hamiltonians
         addr = starting_address(H)
+
         for dv_type in (DVec, InitiatorDVec)
             for style in (
                 IsDeterministic(),
@@ -78,7 +113,7 @@ end
                 hamname = string(
                     nameof(typeof(H)), "(", num_modes(addr), ")/", nameof(typeof(style))
                 )
-                @testset "Allocations for $(hamname)" begin
+                @testset "Allocations FCIQMC for $(hamname)" begin
                     dτ = if num_modes(addr) == 10
                         1e-4
                     elseif num_modes(addr) == 50
