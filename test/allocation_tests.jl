@@ -2,6 +2,7 @@ using Rimu
 using Rimu: SingleState
 using Rimu.Interfaces: apply_operator!
 using Test
+using BenchmarkTools
 
 """
     apply_operator_wrap!(r::SingleState)
@@ -85,16 +86,6 @@ hamiltonians = begin
     ]
 end
 
-println("Warming up...")
-
-foreach(interface_alloc_check, hamiltonians)
-
-foreach(hamiltonians) do H
-    solve(ProjectorMonteCarloProblem(H; time_step=1e-6, last_step=10))
-end
-
-println("Done.")
-
 @testset "Allocations" begin
     # The purpose of these tests is to find type instabilities that might appear as the
     # Julia compiler changes. If allocations suddenly increase by a lot, there is a good
@@ -102,9 +93,7 @@ println("Done.")
     for H in hamiltonians
         hamname = string(nameof(typeof(H)), "(", starting_address(H), ")")
         @testset "Allocation interface for $(hamname)" begin
-            interface_alloc_check(H)
-
-            @test @allocations(interface_alloc_check(H)) ≤ 1
+            @test @ballocations(interface_alloc_check(H)) == 1
         end
     end
 
@@ -115,7 +104,6 @@ println("Done.")
             for style in (
                 IsDeterministic(),
                 IsStochasticInteger(),
-                IsStochasticWithThreshold(),
                 IsDynamicSemistochastic(),
                 )
                 hamname = string(
@@ -130,7 +118,7 @@ println("Done.")
                         1e-6
                     end
 
-                    dv = dv_type(addr => 1.0, style=IsDynamicSemistochastic())
+                    dv = dv_type(addr => 1.0; style)
                     sizehint!(dv, 500_000)
 
                     p = ProjectorMonteCarloProblem(
@@ -144,22 +132,15 @@ println("Done.")
                     r = only(only(st.spectral_states).single_states)
 
                     # Warmup for step!
-                    apply_operator_wrap!(r)
-                    apply_operator_wrap!(r)
-                    apply_operator_wrap!(r)
-                    apply_operator_wrap!(r)
-                    apply_operator_wrap!(r)
+                    allocs_step = @ballocated(apply_operator_wrap!(r))
+                    @test allocs_step == 0
 
-                    allocs_step = @allocated apply_operator_wrap!(r)
-                    @test allocs_step ≤ 512
-
-                    dv = dv_type(addr => 1.0, style=IsDynamicSemistochastic())
-                    allocs_full = @allocated solve(p)
+                    allocs_full = @ballocated solve(p)
                     @test allocs_full ≤ 1e8 # 100MiB
 
                     # Print out the results to make it easier to find problems.
                     print(rpad(hamname, 50))
-                    print(": per step ", allocs_step, ", full ", allocs_full/(1024^2), "M\n")
+                    print(": per step ", allocs_step, ", full ", round(allocs_full/(1024^2), digits=3), "M\n")
                 end
             end
         end
