@@ -10,12 +10,12 @@ struct MolecularHamiltonian{T,A<:FermiFS2C,D<:FDump} <: AbstractHamiltonian{T}
     fcidump::D
 end
 
-function MolecularHamiltonian(fcidump::String)
+function MolecularHamiltonian(fcidump::String, starting_address::Union{Nothing,FermiFS2C}=nothing)
     fd = read_fcidump(fcidump, Val(4))
-    MolecularHamiltonian(fd)
+    MolecularHamiltonian(fd, starting_address)
 end
 
-function MolecularHamiltonian(fd::QFDump)
+function MolecularHamiltonian(fd::QFDump, starting_address::Union{Nothing,FermiFS2C}=nothing)
     n_orb = headvar(fd, "NORB")
     n_elec = headvar(fd, "NELEC")
     ms2 = headvar(fd, "MS2")
@@ -23,10 +23,16 @@ function MolecularHamiltonian(fd::QFDump)
     n_alpha_elec = (n_elec + ms2) ÷ 2
     n_beta_elec = (n_elec - ms2) ÷ 2
 
-    starting_address = FermiFS2C(near_uniform(FermiFS{n_alpha_elec,n_orb}), near_uniform(FermiFS{n_beta_elec,n_orb}))
+    if starting_address === nothing
+        starting_address = FermiFS2C(near_uniform(FermiFS{n_alpha_elec,n_orb}), near_uniform(FermiFS{n_beta_elec,n_orb}))
+    end
+
+    if num_modes(starting_address) != n_orb
+        throw(ArgumentError("starting_address provided must have same orbital numbers with FCIDUMP"))
+    end
 
     val_type = typeof(fd.int0)
-    addr_type = typeof(starting_address)
+    addr_type = FermiFS2C
     fd_type = typeof(fd)
     MolecularHamiltonian{val_type,addr_type,fd_type}(starting_address, fd)
 end

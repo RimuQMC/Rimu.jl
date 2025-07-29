@@ -9,15 +9,26 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     molecules = ("h2", "h2o")
     error = 1e-10
     @testset "Basic interface functionality" begin
-        fcidump = joinpath(@__DIR__, "/examples/h2.FCIDUMP")
+        fcidump = joinpath(@__DIR__, "examples/h2.FCIDUMP")
         h = MolecularHamiltonian(fcidump)
         test_hamiltonian_interface(h)
         test_hamiltonian_structure(h)
     end
 
+    @testset "User provided starting_address" begin
+        fcidump = joinpath(@__DIR__, "examples/h2.FCIDUMP")
+
+        ill_addr = FermiFS2C(near_uniform(FermiFS{0,1}), near_uniform(FermiFS{0,1}))
+        @test_throws ArgumentError MolecularHamiltonian(fcidump, ill_addr)
+
+        normal_addr = FermiFS2C(near_uniform(FermiFS{1,2}), near_uniform(FermiFS{1,2}))
+        h = MolecularHamiltonian(fcidump, normal_addr)
+        @test starting_address(h) == normal_addr
+    end
+
     @testset "Hartree-Fock ground state energy" begin
         for molecule in molecules
-            fcidump = joinpath(@__DIR__, "/examples/$(molecule).FCIDUMP")
+            fcidump = joinpath(@__DIR__, "examples/$(molecule).FCIDUMP")
             ref_hf_ground_energy = @bohf
             h = MolecularHamiltonian(fcidump)
             a = starting_address(h)
@@ -33,7 +44,7 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
             0 0.1809125853 -0.3437220243 0;
             0.1809125853 0 0 0.4746278719
         ]
-        fcidump = joinpath(@__DIR__, "/examples/h2.FCIDUMP")
+        fcidump = joinpath(@__DIR__, "examples/h2.FCIDUMP")
         h = MolecularHamiltonian(fcidump)
         bsr = BasisSetRepresentation(h, sort=true)
         @test bsr.sparse_matrix ≈ h2_fci_matrix atol = error
