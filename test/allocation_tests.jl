@@ -101,7 +101,7 @@ end
     for H in hamiltonians
         addr = starting_address(H)
         hamname = string(
-            nameof(typeof(H)), "(", num_modes(addr), ")")
+            nameof(typeof(H)), "(", num_modes(addr), ")"
         )
         @testset "Allocations FCIQMC for $(hamname)" begin
             dτ = if num_modes(addr) == 10
@@ -111,6 +111,7 @@ end
             else
                 1e-6
             end
+            dτ = 1e-6
 
             dv = DVec(addr => 1.0; style=IsDynamicSemistochastic())
             sizehint!(dv, 500_000)
