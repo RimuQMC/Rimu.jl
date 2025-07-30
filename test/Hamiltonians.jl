@@ -6,9 +6,13 @@ using Test
 using DataFrames
 using Suppressor
 using StaticArrays
+using BenchmarkTools
+using AllocCheck: AllocCheck, check_allocs
+
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
-    test_hamiltonian_interface, test_hamiltonian_structure
+    test_hamiltonian_interface, test_hamiltonian_structure,
+    checking_operator_interface_allocs, checking_operator_interface
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     AdjointUnknown
 
@@ -70,7 +74,7 @@ end
         HOCartesianCentralImpurity(BoseFS((1, 0, 0, 0, 0))),
         FroehlichPolaron(OccupationNumberFS(1, 1, 1)),
         FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
-        momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
+        momentum(HubbardMom1D(BoseFS(0, 1, 5, 2, 0))), # choose a nonzero momentum
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0))
     ]
@@ -79,6 +83,16 @@ end
         # GuidingVectorSampling because it includes a DVec.
         if !(H isa GuidingVectorSampling)
             @test eval(Meta.parse(repr(H))) == H
+        end
+        @testset "Allocation benchmark (measured) $(nameof(typeof(H)))" begin
+            @test 0 == @ballocations checking_operator_interface($H)
+        end
+        @testset "Compiler-flagged for possible allocation $(nameof(typeof(H)))" begin
+            @test Any[] == check_allocs(checking_operator_interface, (typeof(H),))
+            checking_operator_interface_allocs(H)
+        end
+        @testset "Consistent operator column $(nameof(typeof(H)))" begin
+            @test 0 < checking_operator_interface(H)
         end
     end
 end
