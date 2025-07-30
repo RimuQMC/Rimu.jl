@@ -93,7 +93,8 @@ end
     for H in hamiltonians
         hamname = string(nameof(typeof(H)), "(", starting_address(H), ")")
         @testset "Allocation interface for $(hamname)" begin
-            @test @ballocations(interface_alloc_check(H)) == 1
+            allocs = @ballocations interface_alloc_check($H)
+            @test allocs ≤ 1
         end
     end
 
@@ -132,10 +133,10 @@ end
                     r = only(only(st.spectral_states).single_states)
 
                     # Warmup for step!
-                    allocs_step = @ballocated(apply_operator_wrap!(r))
+                    allocs_step = @ballocated apply_operator_wrap!($r)
                     @test allocs_step == 0
 
-                    allocs_full = @ballocated solve(p)
+                    allocs_full = @ballocated solve($p)
                     @test allocs_full ≤ 1e8 # 100MiB
 
                     # Print out the results to make it easier to find problems.
