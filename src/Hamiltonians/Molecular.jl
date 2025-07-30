@@ -131,7 +131,12 @@ function init_offdiagonals(addr::A, op::MolecularHamiltonian{T,A,D}, modes::Mode
 
     for i in alpha_one_electron
         for j in beta_one_electron
-            push!(states, (FermiFS2C(i[1], j[1]), op.fcidump.int2[i[3][2][1], j[3][2][1], i[3][1][1], j[3][1][1]]))
+            if (i[4] * j[4] > 0)
+                interaction = op.fcidump.int2[i[3][2][1], j[3][2][1], i[3][1][1], j[3][1][1]]
+            else
+                interaction = -op.fcidump.int2[i[3][2][1], j[3][2][1], i[3][1][1], j[3][1][1]]
+            end
+            push!(states, (FermiFS2C(i[1], j[1]), interaction))
         end
     end
 
@@ -197,10 +202,10 @@ end
 
 function one_electron_excitation_state(chan::Int, addr::FermiFS2C, op::MolecularHamiltonian{T,A,D}, modes::Modes) where {T,A,D}
     # `addr` corresponds to the `mode`
-    new_addresses = Tuple{FermiFS,T,ModeTransition}[]
+    new_addresses = Tuple{FermiFS,T,ModeTransition,T}[]
     for i in modes.occupied[chan]
         for j in modes.unoccupied[chan]
-            new_address, interaction = excitation(addr.components[chan], (j,), (i,))
+            new_address, sign = excitation(addr.components[chan], (j,), (i,))
             # print(interaction, " ")
             one_body = op.fcidump.int1[j.mode, i.mode]
             two_body = zero(T)
@@ -214,8 +219,8 @@ function one_electron_excitation_state(chan::Int, addr::FermiFS2C, op::Molecular
                 two_body += op.fcidump.int2[j.mode, k.mode, i.mode, k.mode]
                 # print("+ < $(j.mode), $(k.mode) | $(i.mode), $(k.mode) >")
             end
-            interaction *= one_body + two_body
-            push!(new_addresses, (new_address, interaction, ModeTransition((i.mode, chan), (j.mode, chan))))
+            interaction = sign * (one_body + two_body)
+            push!(new_addresses, (new_address, interaction, ModeTransition((i.mode, chan), (j.mode, chan)), sign))
             # println()
         end
     end
@@ -229,10 +234,14 @@ function two_electron_excitation_state(chan::Int, addr::FermiFS2C, op::Molecular
             for a in modes.unoccupied[chan]
                 for b in modes.unoccupied[chan]
                     if i.mode < j.mode && a.mode < b.mode
-                        new_address, interaction = excitation(addr.components[chan], (a, b), (i, j))
+                        tmp_address, interaction1 = excitation(addr.components[chan], (a,), (i,))
+                        new_address, interaction2 = excitation(tmp_address, (b,), (j,))
                         two_body = op.fcidump.int2[a.mode, b.mode, i.mode, j.mode] - op.fcidump.int2[a.mode, b.mode, j.mode, i.mode]
-                        interaction *= two_body
-                        push!(new_addresses, (new_address, interaction))
+                        if interaction1 * interaction2 > 0
+                            push!(new_addresses, (new_address, two_body))
+                        else
+                            push!(new_addresses, (new_address, -two_body))
+                        end
                     end
                 end
             end
