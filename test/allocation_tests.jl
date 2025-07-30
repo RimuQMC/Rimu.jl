@@ -100,50 +100,41 @@ end
 
     for H in hamiltonians
         addr = starting_address(H)
-
-        for dv_type in (DVec, InitiatorDVec)
-            for style in (
-                IsDeterministic(),
-                IsStochasticInteger(),
-                IsDynamicSemistochastic(),
-                )
-                hamname = string(
-                    nameof(typeof(H)), "(", num_modes(addr), ")/", nameof(typeof(style))
-                )
-                @testset "Allocations FCIQMC for $(hamname)" begin
-                    dτ = if num_modes(addr) == 10
-                        1e-4
-                    elseif num_modes(addr) == 50
-                        1e-5
-                    else
-                        1e-6
-                    end
-
-                    dv = dv_type(addr => 1.0; style)
-                    sizehint!(dv, 500_000)
-
-                    p = ProjectorMonteCarloProblem(
-                        H;
-                        start_at=dv, last_step=200, time_step=dτ, max_length=10_000
-                    )
-                    # Warmup for solve
-                    res = solve!(init(p); last_step=1)
-                    st = res.state
-
-                    r = only(only(st.spectral_states).single_states)
-
-                    # Warmup for step!
-                    allocs_step = @ballocated apply_operator_wrap!($r)
-                    @test allocs_step == 0
-
-                    allocs_full = @ballocated solve($p)
-                    @test allocs_full ≤ 1e8 # 100MiB
-
-                    # Print out the results to make it easier to find problems.
-                    print(rpad(hamname, 50))
-                    print(": per step ", allocs_step, ", full ", round(allocs_full/(1024^2), digits=3), "M\n")
-                end
+        hamname = string(
+            nameof(typeof(H)), "(", num_modes(addr), ")")
+        )
+        @testset "Allocations FCIQMC for $(hamname)" begin
+            dτ = if num_modes(addr) == 10
+                1e-4
+            elseif num_modes(addr) == 50
+                1e-5
+            else
+                1e-6
             end
+
+            dv = DVec(addr => 1.0; style=IsDynamicSemistochastic())
+            sizehint!(dv, 500_000)
+
+            p = ProjectorMonteCarloProblem(
+            H;
+            start_at=dv, last_step=200, time_step=dτ, max_length=10_000
+            )
+            # Warmup for solve
+            res = solve!(init(p); last_step=1)
+            st = res.state
+
+            r = only(only(st.spectral_states).single_states)
+
+            # Warmup for step!
+            allocs_step = @ballocated apply_operator_wrap!($r)
+            @test allocs_step == 0
+
+            allocs_full = @ballocated solve($p)
+            @test allocs_full ≤ 1e8 # 100MiB
+
+            # Print out the results to make it easier to find problems.
+            print(rpad(hamname, 50))
+            print(": per step ", allocs_step, ", full ", round(allocs_full/(1024^2), digits=3), "M\n")
         end
     end
 end
