@@ -206,7 +206,7 @@ function find_mode(b::BoseFS, index, occ=occupied_modes(b))
     return BoseFSIndex(0, index, offset)
 end
 # Multiple in a single pass
-function find_mode(b::BoseFS, indices::NTuple{N}) where {N}
+function find_mode(b::BoseFS, indices::NTuple{N}, occ=occupied_modes(b)) where {N}
     # Idea: find permutation, then use the permutation to find indices in order even though
     # they are not sorted.
     perm = sortperm(SVector(indices))
