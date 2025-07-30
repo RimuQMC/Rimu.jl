@@ -27,5 +27,5 @@ jobs:
         uses: julia-actions/julia-buildpkg@v1
       - name: "Run test"
         run: |
-          julia --project=@. "using Pkg; Pkg.add(\"BenchmarkTools\")"
+          julia --project=@. -e "using Pkg; Pkg.add(\"BenchmarkTools\")"
           julia -O3 --project=@. test/allocation_tests.jl
