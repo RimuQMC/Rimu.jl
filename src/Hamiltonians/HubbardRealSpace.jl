@@ -345,7 +345,7 @@ function Base.getindex(data::HubbardRealSpaceComponentData, particle, direction)
     if neighbor == 0
         return data.parent_address => 0.0
     else
-        dst = find_mode(data.address, neighbor)
+        dst = find_mode(data.address, neighbor, data.occmap)
         new_add, val = excitation(data.address, (dst,), (src,))
         if data.parent_address isa CompositeFS
             new_parent = BitStringAddresses.update_component(

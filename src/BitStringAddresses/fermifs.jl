@@ -136,7 +136,7 @@ unoccupied_modes(a::FermiFS{N,M,S}) where {N,M,S} = FermiUnoccupiedModes{M - N,S
 
 """
     unoccupied_mode_map(addr::FermiFS) <: AbstractVector
-    
+
 Get a map of unoccupied modes in [`FermiFS`](@ref) address as an `AbstractVector`
 of indices compatible with [`excitation`](@ref).
 
@@ -157,7 +157,7 @@ julia> mf = unoccupied_mode_map(f)
 2-element Rimu.BitStringAddresses.ModeMap{2, FermiFSIndex}:
  FermiFSIndex(occnum=0, mode=3, offset=2)
  FermiFSIndex(occnum=0, mode=4, offset=3)
- 
+
 julia> mf == collect(unoccupied_modes(f))
 true
 
@@ -189,7 +189,7 @@ end
     return SVector(result)
 end
 
-find_mode(a::FermiFS, i) = fermi_find_mode(a.bs, i)
+find_mode(a::FermiFS, i, occ=nothing) = fermi_find_mode(a.bs, i)
 
 function find_occupied_mode(a::FermiFS, i::Integer)
     for k in occupied_modes(a)

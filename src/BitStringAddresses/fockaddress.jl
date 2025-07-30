@@ -34,11 +34,12 @@ Compute and return the occupation number representation of the Fock state `fs` a
 onr
 
 """
-    find_mode(::SingleComponentFockAddress, i)
+    find_mode(::SingleComponentFockAddress, i[, occ])
 
 Find the `i`-th mode in address. Returns [`BoseFSIndex`](@ref) for [`BoseFS`](@ref), and
 [`FermiFSIndex`](@ref) for [`FermiFS`](@ref). Can work on a tuple of modes. Does not check
-bounds.
+bounds. Setting, `occ` can to the [`ModeMap`](@ref) returned by [`occupied_mode_map`](@ref),
+which can increase performance for [`BoseFS`](@ref).
 
 ```jldoctest
 julia> find_mode(BoseFS(1, 0, 2), 2)

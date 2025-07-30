@@ -225,8 +225,8 @@ end
 
 # `SingleComponentFockAddress` interface
 
-find_mode(ofs::OccupationNumberFS, n::Integer) = BoseFSIndex(ofs.onr[n], n, n)
-function find_mode(ofs::OccupationNumberFS, ns::NTuple{N,Integer}) where N
+find_mode(ofs::OccupationNumberFS, n::Integer, occ=nothing) = BoseFSIndex(ofs.onr[n], n, n)
+function find_mode(ofs::OccupationNumberFS, ns::NTuple{N,Integer}, occ=nothing) where N
     return ntuple(i -> find_mode(ofs, ns[i]), Val(N))
 end
 

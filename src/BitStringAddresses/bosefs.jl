@@ -189,9 +189,9 @@ function occupied_modes(b::BoseFS{N,M,S}) where {N,M,S}
     return BoseOccupiedModes{N,M,S}(b.bs)
 end
 
-function find_mode(b::BoseFS, index)
+function find_mode(b::BoseFS, index, occ=occupied_modes(b))
     last_occnum = last_mode = last_offset = 0
-    for (occnum, mode, offset) in occupied_modes(b)
+    for (occnum, mode, offset) in occ
         dist = index - mode
         if dist == 0
             return BoseFSIndex(occnum, index, offset)
@@ -219,7 +219,7 @@ function find_mode(b::BoseFS, indices::NTuple{N}) where {N}
 
     result = ntuple(_ -> BoseFSIndex(0, 0, 0), Val(N))
     last_occnum = last_mode = last_offset = 0
-    @inbounds for (occnum, mode, offset) in occupied_modes(b)
+    @inbounds for (occnum, mode, offset) in occ
         dist = index - mode
         # While loop handles duplicate entries in indices.
         while dist ≤ 0
