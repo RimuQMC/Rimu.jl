@@ -24,6 +24,7 @@ Other
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
 - [`HamiltonianProduct`](@ref)
+- [`HamiltonianSum`](@ref)
 
 ## [Wrappers](#Hamiltonian-wrappers)
 - [`GutzwillerSampling`](@ref)
@@ -97,6 +98,7 @@ export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
 export HamiltonianProduct
+export HamiltonianSum
 
 if VERSION < v"1.10"
     # used for ReducedDensityMatrix
@@ -148,4 +150,5 @@ include("ho-cart-tools.jl")
 include("angular_momentum.jl")
 
 include("Product.jl")
+include("Sum.jl")
 end

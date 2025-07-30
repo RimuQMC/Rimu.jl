@@ -47,6 +47,14 @@ function LinearAlgebra.adjoint(op::HamiltonianProduct{<:Any,<:Any,<:Any,C}) wher
     return HamiltonianProduct(op.op2',op.op1'; commuting=C)
 end
 
+function has_iterable_offdiagonals(::Type{<:HamiltonianProduct{<:Any,H1,H2}}) where {H1,H2}
+    return has_iterable_offdiagonals(H1) && has_iterable_offdiagonals(H2)
+end
+
+function has_random_offdiagonal(::Type{<:HamiltonianProduct{<:Any,H1,H2}}) where {H1, H2}
+    return has_random_offdiagonal(H1) && has_random_offdiagonal(H2)
+end
+
 struct ProductColumn{A,T,O<:HamiltonianProduct{T},C1,C2} <: AbstractOperatorColumn{A,T,O}
     operator::O
     address::A

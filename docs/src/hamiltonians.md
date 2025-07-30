@@ -64,6 +64,7 @@ TimeReversalSymmetry
 Stoquastic
 Hamiltonians.TransformUndoer
 HamiltonianProduct
+HamiltonianSum
 ```
 
 ## Observables

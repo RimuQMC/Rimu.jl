@@ -72,7 +72,8 @@ end
         FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
-        HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0))
+        HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
+        HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0))
     ]
         test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL. Does not work with
@@ -1790,6 +1791,42 @@ end
     c = operator_column(P, addr)
     @test iszero(last.(collect(offdiagonals(c))))
 end
+
+@testset "HamiltonianSum" begin
+    addr = BoseFS(0,1,2,3,4)
+    H1 = HubbardReal1D(addr; u=2, t=2)
+    H2 = ExtendedHubbardReal1D(addr; v=3)
+    S1 = H1+H2
+
+    basis = build_basis(addr)
+    @test Matrix(H1, basis) + Matrix(H2, basis) ≈ Matrix(S1, basis)
+
+    result = solve(ExactDiagonalizationProblem(S1))
+    energy = result.values[1]
+    vec = result.vectors[1]
+    @test energy ≈ rayleigh_quotient(H1, vec) + rayleigh_quotient(H2, vec)
+
+    od1 = collect(offdiagonals(H1*addr))
+    od2 = collect(offdiagonals(H2*addr))
+
+    col = S1*addr
+
+    @test DVec(od1) + DVec(od2) == sum(DVec(od) for od in offdiagonals(col))
+
+    for _ in 1:20
+        a, p, v = random_offdiagonal(col)
+        @test (a, v) in od1 || (a, v) in od2
+        @test (a => v) in offdiagonals(col)
+    end
+
+    S2 = HamiltonianSum(H1, H2; a=2.0im, b=3)
+    @test rayleigh_quotient(S2, vec) ≈ 2im*rayleigh_quotient(H1, vec) + 3*rayleigh_quotient(H2, vec)
+
+    addr = FermiFS(1,0,0)
+    H3 = HubbardReal1D(addr)
+    @test_throws ArgumentError H1 + H3
+end
+
 @testset "Operator Traits" begin
     struct TestHamiltonian <: Rimu.AbstractHamiltonian{Float64} end
     struct TestColumn{A,O} <: Rimu.AbstractOperatorColumn{A,Float64,O}
