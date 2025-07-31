@@ -1797,6 +1797,7 @@ end
     H1 = HubbardReal1D(addr; u=2, t=2)
     H2 = ExtendedHubbardReal1D(addr; v=3)
     S1 = H1+H2
+    @test LOStructure(S1) == IsHermitian()
 
     basis = build_basis(addr)
     @test Matrix(H1, basis) + Matrix(H2, basis) ≈ Matrix(S1, basis)
@@ -1818,11 +1819,16 @@ end
     end
 
     S2 = HamiltonianSum(H1, H2; a=2.0im, b=3)
+    @test LOStructure(S2) == AdjointKnown()
     @test rayleigh_quotient(S2, vec) ≈ 2im*rayleigh_quotient(H1, vec) + 3*rayleigh_quotient(H2, vec)
 
+    H3 = HubbardReal1D(addr; t=0)
+    S3 = H3 + H1
+    @test DVec(offdiagonals(S3*addr)) == DVec(offdiagonals(H1*addr))
+
     addr = FermiFS(1,0,0)
-    H3 = HubbardReal1D(addr)
-    @test_throws ArgumentError H1 + H3
+    H4 = HubbardReal1D(addr)
+    @test_throws ArgumentError H1 + H4
 end
 
 @testset "Operator Traits" begin
