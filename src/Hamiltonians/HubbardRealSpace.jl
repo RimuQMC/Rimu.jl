@@ -7,7 +7,7 @@ single component Fock state, or ``v \\sum_i n_{↑,i} n_{↓,i}`` between two Fo
 multi-component Fock state, return the eigenvalue of
 
 ```math
-\\frac{1}{2}\\sum_{i, σ, τ} u_{σ,τ} a^†_{σ,i}a^†_{τ,i}a^†_{τ,i}a^†_{σ,i} ,
+\\frac{1}{2}\\sum_{i, σ, τ} u_{σ,τ} a^†_{σ,i}a^†_{τ,i}a_{τ,i}a_{σ,i} ,
 ```
 
 where `u::SMatrix` is a symmetric matrix of interaction constants, `i` is a mode index,
@@ -20,36 +20,119 @@ local_interaction(f::FermiFS, _) = 0
 function local_interaction(a::SingleComponentFockAddress, b::SingleComponentFockAddress, u)
     return u * dot(occupied_modes(a), occupied_modes(b))
 end
-function local_interaction(fs::CompositeFS, u)
-    return _interactions(fs.components, u)
+
+"""
+    nearest_neighbour_interaction(f::SingleComponentFockAddress, σ, geometry::CubicGrid, map::ModeMap)
+    nearest_neighbour_interaction(f1::SingleComponentFockAddress, f2::SingleComponentFockAddress, 
+        Δ, geometry::CubicGrid, map1::ModeMap)
+
+Calculate the nearest neighbour interaction ``\\σ \\sum_{⟨i,j⟩} n_i n_j`` for a single component 
+Fock state `f` or ``Δ \\sum_{⟨i,j⟩} n_{↑,i} n_{↓,j}`` between two Fock states.For a
+multi-component Fock state, return the eigenvalue of
+
+```math
+\\frac{1}{2}\\sum_{⟨i,j⟩, σ, τ} Δ_{σ,τ} a^†_{σ,i}a^†_{τ,j}a_{τ,j}a_{σ,i} ,
+```
+
+where `Δ::SMatrix` is a symmetric matrix of interaction constants, `i, j` are the mode indices,
+and `σ`, `τ` are component indices.
+
+See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
+"""
+function nearest_neighbour_interaction(f::SingleComponentFockAddress, Δ, 
+    geometry::CubicGrid{D,S,B}, map::ModeMap) where {D,S,B}
+    N = length(map)
+    ONR = onr(f)
+    ext_result = 0
+    for i in 1:N
+        for j in 1:D
+            occ_mode = map[i].mode
+            if !B[j] && check_boundary(occ_mode, j, S)
+                continue # skip the dimension if it is hard wall
+            end
+            neigh = neighbor_site(geometry, occ_mode, j)
+            ext_result += ONR[occ_mode] * ONR[neigh]
+        end
+    end
+    return Δ*ext_result
+end
+function nearest_neighbour_interaction(f1::SingleComponentFockAddress, f2::SingleComponentFockAddress, 
+    Δ, geometry::CubicGrid{D,S,B}, map1::ModeMap
+    ) where {D,S,B}
+    N1 = length(map1)
+    ONR1 = onr(f1)
+    ONR2 = onr(f2)
+    ext_result = 0
+    for i in 1:N1
+        for j in 1:D
+            occ_mode1 = map1[i].mode
+            if !B[j] && check_boundary(occ_mode1, j, S)
+                continue # skip the dimension if it is hard wall
+            end
+            neigh = neighbor_site(geometry, occ_mode1, j)
+            if neigh in occupied_modes(f2)
+                ext_result += ONR1[occ_mode1] * ONR2[neigh]
+            end
+        end
+    end
+    return Δ*ext_result
+    
+end
+
+function check_boundary(mode, dim, S)
+    P = prod(S[1:dim])
+    _, C = fldmod1(mode,P)
+    if dim == 1
+        return C == S[1]
+    else
+        return C >= P - prod(S[1:dim-1])-1 && C <= P
+    end
+end
+
+function _interactions_(fs::CompositeFS, u, Δ, geometry::CubicGrid) 
+    return _interactions(fs.components, u, Δ, geometry)
 end
 
 """
-    _interaction_col(a, bs::Tuple, us::Tuple)
+    _interaction_col(a, bs::Tuple, us::Tuple, Δs::Tuple, geometry::CubicGrid)
 
-Sum the local interactions of the Fock state `a` with all states in `bs` using the
-interaction constants in `us`. This is used to compute all interactions in the column
-below the diagonal of the interaction matrix.
+Sum the local interactions of the Fock state `a` with all states in `bs` using the onsite 
+and nearest neighbour interaction constants in `us` and `Δs`. This is used to compute 
+all interactions in the column below the diagonal of the interaction matrix. 
 """
-@inline _interaction_col(a, ::Tuple{}, ::Tuple{}) = 0
-@inline function _interaction_col(a, (b, bs...), (u, us...))
-    return local_interaction(a, b, u) + _interaction_col(a, bs, us)
+@inline _interaction_col(a, ::Tuple{}, ::Tuple{}, ::Tuple{}, ::CubicGrid) = 0
+@inline function _interaction_col(a, (b, bs...), (u, us...), (Δ, Δs...), g::CubicGrid)
+    return local_interaction(a, b, u) + _interaction_col(a, bs, us, Δs, g) +
+        nearest_neighbour_interaction(a, b, Δ, g, occupied_mode_map(a))
 end
-
+@inline _interaction_col(a, ::Tuple{}, ::Tuple{}, ::Nothing, ::CubicGrid) = 0
+@inline function _interaction_col(a, (b, bs...), (u, us...), Δ::Nothing, g::CubicGrid)
+    return local_interaction(a, b, u) + _interaction_col(a, bs, us, Δ, g)
+end
+@inline _interaction_col(a, ::Tuple{}, ::Nothing, ::Tuple{}, ::CubicGrid) = 0
+@inline function _interaction_col(a, (b, bs...), u::Nothing, (Δ, Δs...), g::CubicGrid)
+    return _interaction_col(a, bs, u, Δs, g) +
+        nearest_neighbour_interaction(a, b, Δ, g, occupied_mode_map(a))
+end
 """
-    _interactions(addresses, interaction_matrix)
+    _interactions(addresses, onsite_int_matrix, nearest_neighbour_int_matrix, geometry)
 
-Compute all pairwise interactions in a tuple of `addresses`. The `interaction_matrix` sets the
-intraction strengths.
+Compute all pairwise interactions in a tuple of `addresses`. The `onsite_int_matrix` and 
+`nearest_neighbour_int_matrix` sets the intraction strengths of the onsite interaction and 
+the nearest neighbour interaction.
 
 The code is equivalent to the following.
 
 ```julia
 acc = 0.0
 for (i, a) in enumerate(addresses)
-    acc += local_interaction(a, interaction_matrix[i, i])
+    acc += local_interaction(a, onsite_int_matrix[i, i]) +
+        nearest_neighbour_int_matrix(a, nearest_neighbour_int_matrix[i,i],
+        occupied_mode_map(a), geometry)
     for (j, b) in enumerate(addresses[i+1:end])
-        acc += local_interaction(a, b, interaction_matrix[i, j])
+        acc += local_interaction(a, b, onsite_int_matrix[i, j]) +
+            nearest_neighbour_int_matrix(a, b, nearest_neighbour_int_matrix[i,j],
+            occupied_mode_map(a), geometry)
     end
 end
 return acc
@@ -57,21 +140,53 @@ return acc
 
 It is implemented recursively to ensure type stability.
 """
-@inline _interactions(::Tuple{}, ::SMatrix{0,0}) = 0.0
-@inline function _interactions(
-    (a, as...)::NTuple{N,AbstractFockAddress}, m::SMatrix{N,N}
+@inline _interactions(::Tuple{}, ::SMatrix{0,0},::SMatrix{0,0}, ::CubicGrid) = 0.0
+@inline function _interactions((a, as...)::NTuple{N,AbstractFockAddress}, 
+    m::SMatrix{N,N}, σ::SMatrix{N,N}, g::CubicGrid
 ) where {N}
     # Split the matrix into the column we need now, and the rest.
-    (u, column...) = Tuple(m[:, 1])
+    (u, u_column...) = Tuple(m[:, 1])
+    (Δ, Δ_column...) = Tuple(σ[:, 1])
     # Type-stable way to subset SMatrix:
-    rest = SMatrix{N-1,N-1}(view(m, 2:N, 2:N))
-
+    m_rest = SMatrix{N-1,N-1}(view(m, 2:N, 2:N))
+    σ_rest = SMatrix{N-1,N-1}(view(σ, 2:N, 2:N))
     # Get the self-interaction first.
-    self = local_interaction(a, u)
+    self = local_interaction(a, u) + 
+        nearest_neighbour_interaction(a, Δ, g, occupied_mode_map(a))
     # Get the interactions for the rest of the row.
-    row = _interaction_col(a, as, column)
+    row = _interaction_col(a, as, u_column, Δ_column, g)
     # Get the interaction for the rest of the rows.
-    return self + row + _interactions(as, rest)
+    return self + row + _interactions(as, m_rest, σ_rest, g)
+end
+@inline _interactions(::Tuple{}, ::Nothing,::SMatrix{0,0}, ::CubicGrid) = 0.0
+@inline function _interactions((a, as...)::NTuple{N,AbstractFockAddress}, 
+    m::Nothing, σ::SMatrix{N,N}, g::CubicGrid
+) where {N}
+    # Split the matrix into the column we need now, and the rest.
+    (Δ, Δ_column...) = Tuple(σ[:, 1])
+    # Type-stable way to subset SMatrix:
+    σ_rest = SMatrix{N-1,N-1}(view(σ, 2:N, 2:N))
+    # Get the self-interaction first.
+    self = nearest_neighbour_interaction(a, Δ, g, occupied_mode_map(a))
+    # Get the interactions for the rest of the row.
+    row = _interaction_col(a, as, u_column, Δ_column, g)
+    # Get the interaction for the rest of the rows.
+    return self + row + _interactions(as, m, σ_rest, g)
+end
+@inline _interactions(::Tuple{}, ::SMatrix{0,0},::Nothing, ::CubicGrid) = 0.0
+@inline function _interactions((a, as...)::NTuple{N,AbstractFockAddress}, 
+    m::SMatrix{N,N}, σ::Nothing, g::CubicGrid
+) where {N}
+    # Split the matrix into the column we need now, and the rest.
+    (u, u_column...) = Tuple(m[:, 1])
+    # Type-stable way to subset SMatrix:
+    m_rest = SMatrix{N-1,N-1}(view(m, 2:N, 2:N))
+    # Get the self-interaction first.
+    self = local_interaction(a, u) 
+    # Get the interactions for the rest of the row.
+    row = _interaction_col(a, as, u_column, σ, g)
+    # Get the interaction for the rest of the rows.
+    return self + row + _interactions(as, m_rest, σ, g)
 end
 
 """
@@ -109,15 +224,16 @@ end
 ### HubbardRealSpace
 ###
 """
-    HubbardRealSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C), u=ones(C, C), v=zeros(C, D))
+    HubbardRealSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C, D), u=ones(C, C), Δ=ones(C, C), v=zeros(C, D))
 
 Hubbard model in real space. Supports single or multi-component Fock state
 addresses (with `C` components) and various (rectangular) lattice geometries
 in `D` dimensions.
 
 ```math
-  \\hat{H} = -\\sum_{\\langle i,j\\rangle,σ} t_σ a^†_{iσ} a_{jσ} +
-  \\frac{1}{2}\\sum_{i,σ} u_{σσ} n_{iσ} (n_{iσ} - 1) +
+  \\hat{H} = -\\sum_{\\langle i,j\\rangle,σ} t_{iσ} a^†_{iσ} a_{jσ} +
+  \\frac{1}{2}\\sum_{i,σ,σ'} u_{σσ'} n_{iσ} (n_{iσ'} - δ_{σ,σ'}) + 
+  \\sum_{⟨i,j⟩,σ,σ'} Δ_{iσ,jσ'} n_{iσ} n_{jσ} +
   \\sum_{i,σ≠τ}u_{στ} n_{iσ} n_{iτ}
 ```
 
@@ -136,7 +252,7 @@ along dimension ``d``.
 * [`CompositeFS`](@ref): For multi-component models.
 
 Note that a single component of fermions cannot interact with itself. A warning
-is produced if `address`is incompatible with the interaction parameters `u`.
+is produced if `address`is incompatible with the interaction parameters `u` and `Δ`.
 
 ## Geometries
 
@@ -151,29 +267,36 @@ number of sites `M` inferred from the number of modes in `address`.
 
 ## Other parameters
 
-* `t`: the hopping strengths. Must be a vector of length `C`. The `i`-th element of the
-  vector corresponds to the hopping strength of the `i`-th component.
+* `t`: the hopping strengths. Must be a matrix of length `C × D `. The `i`-th and `j`-th element of the
+  matrix corresponds to the hopping strength of the `i`-th component and `j`-th direction.
 * `u`: the on-site interaction parameters. Must be a symmetric matrix. `u[i, j]`
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
   corresponds to the interaction of a component with itself. Note that `u[i,i]` must
   be zero for fermionic components.
+* `Δ`: the nearest neighbour interaction parameters. Must be a symmetric matrix. `Δ[i, j]`
+  corresponds to the interaction between the `i`-th and `j`-th component. `Δ[i, i]`
+  corresponds to the interaction of a component with itself.
+  `Δ[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
 * `v`: the trap potential strengths. Must be a matrix of size `C × D`. `v[i,j]` is
   the strength of the trap for component `i` in the `j`th dimension.
 """
 struct HubbardRealSpace{
+    TT,
     C, # components
     A<:AbstractFockAddress,
     G<:CubicGrid,
     D, # dimension
     # The following need to be type params.
-    T<:SVector{C,Float64},
-    U<:Union{SMatrix{C,C,Float64},Nothing},
-    V<:Union{SMatrix{C,D,Float64},Nothing},
-    P<:Union{Matrix{Float64},Nothing}
-} <: AbstractHamiltonian{Float64}
+    T<:SMatrix{C,D,TT},
+    U<:Union{SMatrix{C,C,TT},Nothing},
+    DELTA<:Union{SMatrix{C,C,TT},Nothing},
+    V<:Union{SMatrix{C,D,TT},Nothing},
+    P<:Union{Matrix{TT},Nothing}
+} <: AbstractHamiltonian{TT}
     address::A
     t::T # hopping strengths
     u::U # interactions
+    Δ::DELTA # nearest neighbour interactions
     v::V # trap strengths
     potential::P # potential energy of each component at each lattice site
     geometry::G
@@ -182,8 +305,9 @@ end
 function HubbardRealSpace(
     address::AbstractFockAddress;
     geometry::CubicGrid=PeriodicBoundaries((num_modes(address),)),
-    t=ones(num_components(address)),
+    t=ones(num_components(address), num_dimensions(geometry)),
     u=ones(num_components(address), num_components(address)),
+    Δ=ones(num_components(address), num_components(address)),
     v=zeros(num_components(address), num_dimensions(geometry))
 )
     C = num_components(address)
@@ -197,8 +321,12 @@ function HubbardRealSpace(
         throw(ArgumentError("`u` must be symmetric"))
     elseif length(u) ≠ C * C
         throw(ArgumentError("`u` must be a $C × $C matrix"))
-    elseif size(t) ≠ (C,)
-        throw(ArgumentError("`t` must be a vector of length $C"))
+    elseif length(Δ) ≠ 1 && !issymmetric(Δ)
+        throw(ArgumentError("`u` must be symmetric"))
+    elseif length(Δ) ≠ C * C
+        throw(ArgumentError("`u` must be a $C × $C matrix"))
+    elseif length(t) ≠ C*D
+        throw(ArgumentError("`t` must be a $C × $D matrix"))
     elseif length(v) ≠ C * D
         throw(ArgumentError("`v` must be a $C × $D matrix"))
     elseif !(address isa SingleComponentFockAddress || address isa CompositeFS)
@@ -208,8 +336,10 @@ function HubbardRealSpace(
     end
     warn_fermi_interaction(address, u)
 
-    t_vec = SVector{C,Float64}(t)
-    u_mat = iszero(u) ? nothing : SMatrix{C,C,Float64}(u)
+    TT = eltype(t)==Int ? Float64 : eltype(t)
+    t_mat = SMatrix{C,D,TT}(t)
+    u_mat = iszero(u) ? nothing : SMatrix{C,C,TT}(u)
+    Δ_mat = iszero(Δ) ? nothing : SMatrix{C,C,TT}(Δ)
 
     # Precompute the trap potential terms
     if iszero(v)
@@ -225,8 +355,8 @@ function HubbardRealSpace(
         end
     end
 
-    return HubbardRealSpace{C,typeof(address),typeof(geometry),D,typeof(t_vec),typeof(u_mat),typeof(v_mat),typeof(pot_vec)}(
-        address, t_vec, u_mat, v_mat, pot_vec, geometry,
+    return HubbardRealSpace{TT,C,typeof(address),typeof(geometry),D,typeof(t_mat),typeof(u_mat),typeof(Δ_mat),typeof(v_mat),typeof(pot_vec)}(
+        address, t_mat, u_mat, Δ_mat, v_mat, pot_vec, geometry,
     )
 end
 
@@ -254,7 +384,7 @@ warn_fermi_interaction(_, _) = nothing
 
 LOStructure(::Type{<:HubbardRealSpace}) = IsHermitian()
 
-function Base.show(io::IO, h::HubbardRealSpace{C}) where C
+function Base.show(io::IO, h::HubbardRealSpace{<:Any,C}) where C
     io = IOContext(io, :compact => true)
     println(io, "HubbardRealSpace(")
     println(io, "  ", starting_address(h), ",")
@@ -276,20 +406,22 @@ starting_address(h::HubbardRealSpace) = h.address
 
 dimension(::HubbardRealSpace, address) = number_conserving_dimension(address)
 
-function diagonal_element(h::HubbardRealSpace, address)
-    int = isnothing(h.u) ? 0.0 : local_interaction(address, h.u)
+function diagonal_element(h::HubbardRealSpace{TT}, address) where {TT}
+    int = (isnothing(h.u) && isnothing(h.Δ))  ? 0.0 : _interactions_(address, h.u, h.Δ, h.geometry)
     pot = isnothing(h.v) ? 0.0 : external_potential(address, h.potential)
-    return int + pot
+    return convert(TT,int + pot)
 end
-function diagonal_element(h::HubbardRealSpace{1}, address)
+function diagonal_element(h::HubbardRealSpace{TT,1}, address) where {TT}
     int = isnothing(h.u) ? 0.0 : local_interaction(address, h.u[1])
+    int_NN = isnothing(h.Δ) ? 0.0 : nearest_neighbour_interaction(address, h.Δ[1], 
+        h.geometry, occupied_mode_map(address))
     pot = if isnothing(h.v)
             0.0
         else
             @boundscheck checkbounds(h.potential, 1:num_modes(address), 1)
             @inbounds external_potential(address, @view h.potential[:,1])
         end
-    return int + pot
+    return convert(TT,int + pot + int_NN)
 end
 
 ###
@@ -301,52 +433,55 @@ get_offdiagonal(h::HubbardRealSpace, add, i) = offdiagonals(h, add)[i]
 num_offdiagonals(h::HubbardRealSpace, add) = length(offdiagonals(h, add))
 
 """
-    HubbardRealSpaceCompOffdiagonals{G,A} <: AbstractOffdiagonals{A,Float64}
+    HubbardRealSpaceCompOffdiagonals{TT,D,G,A} <: AbstractOffdiagonals{A,TT}
 
-Offdiagonals for a single address component. Used with [`HubbardRealSpace`](@ref) model
+Offdiagonals for a single address component of D dimensional CubicGrid. Used with [`HubbardRealSpace`](@ref) model
 with a single-component address, or a component of a [`CompositeFS`](@ref).
 """
-struct HubbardRealSpaceCompOffdiagonals{G,A} <: AbstractOffdiagonals{A,Float64}
+struct HubbardRealSpaceCompOffdiagonals{TT,D,G,A} <: AbstractOffdiagonals{A,TT}
     geometry::G
     address::A
-    t::Float64
+    t::SMatrix{1,D,TT}
     length::Int
 end
 
-function offdiagonals(h::HubbardRealSpace, comp, add)
-    neighbours = 2 * num_dimensions(h.geometry)
-    return HubbardRealSpaceCompOffdiagonals(
-        h.geometry, add, h.t[comp], num_occupied_modes(add) * neighbours
+function offdiagonals(h::HubbardRealSpace{TT}, comp, add) where {TT}
+    D = num_dimensions(h.geometry)
+    return HubbardRealSpaceCompOffdiagonals{TT, D, typeof(h.geometry), typeof(add)}(
+        h.geometry, add, h.t[comp,:], num_occupied_modes(add) * D * 2
     )
 end
 
 Base.size(o::HubbardRealSpaceCompOffdiagonals) = (o.length,)
 
-@inline function Base.getindex(o::HubbardRealSpaceCompOffdiagonals, chosen)
-    neighbours = 2 * num_dimensions(o.geometry)
-    particle, neigh = fldmod1(chosen, neighbours)
+@inline function Base.getindex(o::HubbardRealSpaceCompOffdiagonals{TT,D}, chosen) where {TT,D}
+    particle, neigh = fldmod1(chosen, 2 * D)
     src_index = find_occupied_mode(o.address, particle)
-    neigh = neighbor_site(o.geometry, src_index.mode, neigh)
+    n_neigh = neighbor_site(o.geometry, src_index.mode, neigh)
 
-    if neigh == 0
+    if n_neigh == 0
         return o.address, 0.0
     else
-        dst_index = find_mode(o.address, neigh)
+        dst_index = find_mode(o.address, n_neigh)
         new_add, value = excitation(o.address, (dst_index,), (src_index,))
-        return new_add, -o.t * value
+        if neigh > D
+            return new_add, convert(TT,conj(-o.t[neigh - D] * value))
+        else        
+            return new_add, convert(TT,-o.t[neigh] * value)
+        end
     end
 end
 
 # For simple models with one component.
-offdiagonals(h::HubbardRealSpace{1,A}, add::A) where {A} = offdiagonals(h, 1, add)
+offdiagonals(h::HubbardRealSpace{<:Any,1,A}, add::A) where {A} = offdiagonals(h, 1, add)
 
 # Multi-component part
 """
-    HubbardRealSpaceOffdiagonals{A,T<:Tuple} <: AbstractOffdiagonals{A,Float64}
+    HubbardRealSpaceOffdiagonals{TT,A,T<:Tuple} <: AbstractOffdiagonals{A,TT}
 
 Offdiagonals of a [`HubbardRealSpace`](@ref) model with a [`CompositeFS`](@ref) address.
 """
-struct HubbardRealSpaceOffdiagonals{A,T<:Tuple} <: AbstractOffdiagonals{A,Float64}
+struct HubbardRealSpaceOffdiagonals{TT,A,T<:Tuple} <: AbstractOffdiagonals{A,TT}
     address::A
     parts::T
     length::Int
@@ -368,9 +503,9 @@ end
 end
 @inline _get_comp_offdiags(::Tuple{}, h, ::Val) = ()
 
-function offdiagonals(h::HubbardRealSpace{C,A}, address::A) where {C,A<:CompositeFS}
+function offdiagonals(h::HubbardRealSpace{TT,C,A}, address::A) where {TT,C,A<:CompositeFS}
     parts = get_comp_offdiags(h, address)
-    return HubbardRealSpaceOffdiagonals(address, parts, sum(length, parts))
+    return HubbardRealSpaceOffdiagonals{TT,A,typeof(parts)}(address, parts, sum(length, parts))
 end
 
 Base.size(o::HubbardRealSpaceOffdiagonals) = (o.length,)
