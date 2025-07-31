@@ -384,18 +384,23 @@ warn_fermi_interaction(_, _) = nothing
 
 LOStructure(::Type{<:HubbardRealSpace}) = IsHermitian()
 
-function Base.show(io::IO, h::HubbardRealSpace{<:Any,C}) where C
+function Base.show(io::IO, h::HubbardRealSpace{TT,C}) where {TT,C}
     io = IOContext(io, :compact => true)
     println(io, "HubbardRealSpace(")
     println(io, "  ", starting_address(h), ",")
     println(io, "  geometry = ", h.geometry, ",")
-    println(io, "  t = ", Float64.(h.t), ",")
+    println(io, "  t = ", TT.(h.t), ",")
     if isnothing(h.u)
         println(io, "  u = ", zeros(C,C), ",")
     else
-        println(io, "  u = ", Float64.(h.u), ",")
+        println(io, "  u = ", TT.(h.u), ",")
     end
-    !isnothing(h.v) && println(io, "  v = ", Float64.(h.v), ",")
+    if isnothing(h.Δ)
+        println(io, "  Δ = ", zeros(C,C), ",")
+    else
+        println(io, "  Δ = ", TT.(h.Δ), ",")
+    end
+    !isnothing(h.v) && println(io, "  v = ", TT.(h.v), ",")
     print(io, ")")
 end
 
