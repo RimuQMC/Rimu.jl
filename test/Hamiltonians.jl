@@ -1808,15 +1808,13 @@ end
 
     od1 = collect(offdiagonals(H1*addr))
     od2 = collect(offdiagonals(H2*addr))
-
     col = S1*addr
-
-    @test DVec(od1) + DVec(od2) == sum(DVec(od) for od in offdiagonals(col))
+    odsum = collect(offdiagonals(col))
+    @test DVec(od1) + DVec(od2) == DVec(odsum)
 
     for _ in 1:20
         a, p, v = random_offdiagonal(col)
-        @test (a, v) in od1 || (a, v) in od2
-        @test (a => v) in offdiagonals(col)
+        @test (a => v) in odsum
     end
 
     S2 = HamiltonianSum(H1, H2; a=2.0im, b=3)
