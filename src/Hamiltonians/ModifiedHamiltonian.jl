@@ -11,7 +11,7 @@ The `ModifiedHamiltonian` can only be used to implement wrappers that modify the
 elements to the Hamiltonian.
 
 The following need to be implemented
-* [`parent_operator`](@ref Main.Hamiltonians.parent_operator)
+* [`parent_operator`](@ref Main.Hamiltonians.parent_operator(::Main.Hamiltonians.ModifiedHamiltonian))
 * [`modify_diagonal`](@ref Main.Hamiltonians.modify_diagonal)
 * [`modify_offdiagonal`](@ref Main.Hamiltonians.modify_offdiagonal)
 * [`LOStructure(p)`](@ref) and `Base.adjoint` if known, defaults to `AdjointUnknown`.
