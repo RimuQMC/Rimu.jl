@@ -47,11 +47,10 @@ function nearest_neighbour_interaction(f::SingleComponentFockAddress, Δ,
     for i in 1:N
         for j in 1:D
             occ_mode = map[i].mode
-            if !B[j] && check_boundary(occ_mode, j, S)
-                continue # skip the dimension if it is hard wall
-            end
             neigh = neighbor_site(geometry, occ_mode, j)
-            ext_result += ONR[occ_mode] * ONR[neigh]
+            if !iszero(neigh)
+                ext_result += ONR[occ_mode] * ONR[neigh]
+            end
         end
     end
     return Δ*ext_result
