@@ -1,5 +1,5 @@
 """
-    HamiltonianSum(A::AbstractHamiltonian, B::AbstractHamiltonian; a::Number=1, b::Number=1, weight::Real=1)
+    HamiltonianSum(A::AbstractHamiltonian, B::AbstractHamiltonian; a=1, b=1, weight=1)
     +(A::AbstractHamiltonian, B::AbstractHamiltonian)
 
 The sum of two [`AbstractHamiltonian`](@ref)s with coefficients, `aA + bB`. The two
@@ -9,9 +9,9 @@ spawns from `B` is controlled by `weight`.
 struct HamiltonianSum{T, H1<:AbstractHamiltonian, H2<:AbstractHamiltonian} <: AbstractHamiltonian{T}
     h1::H1
     h2::H2
-    a::Number
-    b::Number
-    weight::Number
+    a::T
+    b::T
+    weight::Float64
 end
 function HamiltonianSum(h1::AbstractHamiltonian{T1}, h2::AbstractHamiltonian{T2}; a=1, b=1, weight=1) where {T1, T2}
     if !(allows_address_type(h2, starting_address(h1))) || !(allows_address_type(h1, starting_address(h2)))
