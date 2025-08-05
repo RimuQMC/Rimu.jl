@@ -17,7 +17,8 @@ function HamiltonianSum(h1::AbstractHamiltonian{T1}, h2::AbstractHamiltonian{T2}
     if !(allows_address_type(h2, starting_address(h1))) || !(allows_address_type(h1, starting_address(h2)))
         throw(ArgumentError("The Hamiltonians are not compatible."))
     end
-    return HamiltonianSum{promote_type(T1,T2,typeof(a),typeof(b)), typeof(h1), typeof(h2)}(h1, h2, a, b, abs(weight))
+    T = promote_type(T1,T2,typeof(a),typeof(b))
+    return HamiltonianSum{T, typeof(h1), typeof(h2)}(h1, h2, T(a), T(b), abs(weight))
 end
 Base.:+(h1::AbstractHamiltonian, h2::AbstractHamiltonian) = HamiltonianSum(h1, h2)
 
@@ -57,9 +58,9 @@ struct SumColumn{A,T,O<:HamiltonianSum{T},C1,C2} <: AbstractOperatorColumn{A,T,O
     address::A
     col1::C1
     col2::C2
-    a::Number
-    b::Number
-    weight::Real
+    a::T
+    b::T
+    weight::Float64
 end
 function operator_column(s::HamiltonianSum, add)
     return SumColumn(s, add, operator_column(s.h1, add), operator_column(s.h2, add), s.a, s.b, s.weight)
@@ -88,8 +89,8 @@ struct SumOffdiagonals{A,T,O<:HamiltonianSum{T},OD1,OD2}
     address::A
     ods1::OD1
     ods2::OD2
-    a::Number
-    b::Number
+    a::T
+    b::T
 end
 function offdiagonals(c::SumColumn)
     return SumOffdiagonals(c.operator, c.address, offdiagonals(c.col1), offdiagonals(c.col2), c.a, c.b)

@@ -94,18 +94,38 @@ function random_offdiagonal(c::ProductColumn)
     end
 end
 
-struct ProductOffdiagonals{A,T,O<:HamiltonianProduct{T},C,OD1,OD2}
+struct ProductOffdiagonals{A,T,O<:HamiltonianProduct{T},OD1,OD2,S2}
     operator::O
     address::A
-    col2::C
+    diag2::T
     ods1::OD1
     ods2::OD2
+    state2::S2
 end
-offdiagonals(c::ProductColumn) = ProductOffdiagonals(c.operator, c.address, c.col2, offdiagonals(c.col1), offdiagonals(c.col2))
+function offdiagonals(c::ProductColumn{<:Any,T}) where {T}
+    ods2 = offdiagonals(c.col2)
+    first2 = iterate(ods2)
+    return ProductOffdiagonals(
+        c.operator,
+        c.address,
+        T(diagonal_element(c.col2)),
+        offdiagonals(c.col1),
+        ods2,
+        isnothing(first2) ? nothing : last(first2)
+    )
+end
+
 Base.IteratorSize(::ProductOffdiagonals) = Base.SizeUnknown()
 Base.eltype(::ProductOffdiagonals{A,T}) where {A,T} = Pair{A,T}
 
-function Base.iterate(o::ProductOffdiagonals)
+struct ProductIterState{S1,S2,O,T}
+    state1::Union{Nothing,S1}
+    state2::Union{Nothing,S2}
+    ods1::Union{Nothing,O}
+    val2::T
+end
+
+function Base.iterate(o::ProductOffdiagonals{<:Any,T,<:Any,OD1,<:Any,S2}) where {T,OD1,S2}
     #start with diagonal of op2, offdiagonals of op1
     first1 = iterate(o.ods1)
     if isnothing(first1)# no offdiagonals for op1, go to offdiagonals of op2
@@ -115,20 +135,19 @@ function Base.iterate(o::ProductOffdiagonals)
         end
         (add2, val2), state2 = first2
         col1 = operator_column(o.operator.op1, add2)
-        val1 = diagonal_element(col1)
-        state = (state2, col1, val2)
-        return add2 => val1*val2, state
+        state = ProductIterState{Nothing,S2,OD1,T}(nothing, state2, offdiagonals(col1), val2)
+        return add2 => diagonal_element(col1)*val2, state
     else
         (add1, val1), state1 = first1
-        state = (o.ods1, state1)
-        return add1 => val1*diagonal_element(o.col2), state
+        state = ProductIterState{typeof(state1),S2,OD1,T}(state1, nothing, nothing, o.diag2)
+        return add1 => val1*o.diag2, state
     end
 end
 
-function Base.iterate(o::ProductOffdiagonals, state)
-    if length(state) == 2# diagonal of op2, iterating op1
-        ods1, state1 = state
-        next1 = iterate(ods1, state1)
+function Base.iterate(o::ProductOffdiagonals, state::ProductIterState{S1,S2,OD1,T}) where {S1,S2,OD1,T}
+    (;state1, state2, ods1, val2) = state
+    if isnothing(state2)# diagonal of op2, iterating op1
+        next1 = iterate(o.ods1, state1)
         if isnothing(next1)
             first2 = iterate(o.ods2)
             if isnothing(first2)
@@ -136,17 +155,14 @@ function Base.iterate(o::ProductOffdiagonals, state)
             end
             (add2, val2), state2 = first2
             col1 = operator_column(o.operator.op1, add2)
-            val1 = diagonal_element(col1)
-            state = (state2, col1, val2)
-            return add2 => val1*val2, state
+            state = ProductIterState{S1,S2,OD1,T}(nothing, state2, offdiagonals(col1), val2)
+            return add2 => diagonal_element(col1)*val2, state
         else
             (add1, val1), state1 = next1
-            state = (ods1, state1)
-            return add1 => val1*diagonal_element(o.col2), state
+            state = ProductIterState{S1,S2,OD1,T}(state1, nothing, nothing, o.diag2)
+            return add1 => val1*o.diag2, state
         end
-    elseif length(state) == 3# just did diagonal element of op1, we have the column
-        state2, col1, val2 = state
-        ods1 = offdiagonals(col1)
+    elseif isnothing(state1)# just did diagonal element of op1
         first1 = iterate(ods1)
         if isnothing(first1)# no offdiagonals for op1, go back to op2
             next2 = iterate(o.ods2, state2)
@@ -155,16 +171,13 @@ function Base.iterate(o::ProductOffdiagonals, state)
             end
             (add2, val2), state2 = next2
             col1 = operator_column(o.operator.op1, add2)
-            val1 = diagonal_element(col1)
-            state = (state2, col1, val2)
-            return add2 => val1*val2, state
+            state = ProductIterState{S1,S2,OD1,T}(nothing, state2, offdiagonals(col1), val2)
+            return add2 => diagonal_element(col1)*val2, state
         else
             (add1, val1), state1 = first1
-            state = (state1, state2, ods1, val2)
-            return add1 => val1*val2, state
+            return add1 => val1*val2, ProductIterState{typeof(state1),S2,OD1,T}(state1, state2, ods1, val2)
         end
     else# we have op1 offdiagonals and its state
-        state1, state2, ods1, val2 = state
         next1 = iterate(ods1, state1)
         if isnothing(next1)# reached the end of op1 column, go back to op2
             next2 = iterate(o.ods2, state2)
@@ -173,13 +186,10 @@ function Base.iterate(o::ProductOffdiagonals, state)
             end
             (add2, val2), state2 = next2
             col1 = operator_column(o.operator.op1, add2)
-            val1 = diagonal_element(col1)
-            state = (state2, col1, val2)
-            return add2 => val1*val2, state
+            return add2 => diagonal_element(col1)*val2, ProductIterState{S1,S2,OD1,T}(nothing, state2, offdiagonals(col1), val2)
         else
             (add1, val1), state1 = next1
-            state = (state1, state2, ods1, val2)
-            return add1 => val1*val2, state
+            return add1 => val1*val2, ProductIterState{S1,S2,OD1,T}(state1, state2, ods1, val2)
         end
     end
 end
