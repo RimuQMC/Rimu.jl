@@ -436,7 +436,7 @@ function Base.getindex(data::HubbardRealSpaceComponentData{TT, D}, particle, dir
         if direction > D
             return new_parent => convert(TT,conj(-data.t[direction - D] * val))
         else
-            return new_parent => convert(TT, data.t[direction] * val)
+            return new_parent => convert(TT, -data.t[direction] * val)
         end
     end
 end
