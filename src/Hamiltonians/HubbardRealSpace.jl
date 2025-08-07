@@ -195,7 +195,7 @@ end
 
 # struct ================================================================================ #
 """
-    HubbardRealSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C, D), u=ones(C, C), Δ=ones(C, C), v=zeros(C, D))
+    HubbardRealSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C, D), u=ones(C, C), Δ=zeros(C, C), v=zeros(C, D))
 
 Hubbard model in real space. Supports single or multi-component Fock state
 addresses (with `C` components) and various (rectangular) lattice geometries
@@ -278,7 +278,7 @@ function HubbardRealSpace(
     geometry::CubicGrid=PeriodicBoundaries((num_modes(address),)),
     t=ones(num_components(address), num_dimensions(geometry)),
     u=ones(num_components(address), num_components(address)),
-    Δ=ones(num_components(address), num_components(address)),
+    Δ=zeros(num_components(address), num_components(address)),
     v=zeros(num_components(address), num_dimensions(geometry))
 )
     C = num_components(address)
