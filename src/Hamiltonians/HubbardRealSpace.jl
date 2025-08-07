@@ -284,7 +284,12 @@ function HubbardRealSpace(
     C = num_components(address)
     D = num_dimensions(geometry)
     S = size(geometry)
-
+    if t isa Vector && D != 1
+        t_n = zeros(eltype(t), C, D)
+        t_n .= t
+    else
+        t_n = t
+    end
     # Sanity checks
     if prod(size(geometry)) ≠ num_modes(address)
         throw(ArgumentError("`geometry` does not have the correct number of sites"))
@@ -308,7 +313,7 @@ function HubbardRealSpace(
     warn_fermi_interaction(address, u)
 
     TT = eltype(t)==Int ? Float64 : eltype(t)
-    t_mat = SMatrix{C,D,TT}(t)
+    t_mat = SMatrix{C,D,TT}(t_n)
     u_mat = iszero(u) ? nothing : SMatrix{C,C,TT}(u)
     Δ_mat = iszero(Δ) ? nothing : SMatrix{C,C,TT}(Δ)
 
