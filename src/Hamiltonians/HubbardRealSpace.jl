@@ -285,7 +285,7 @@ function HubbardRealSpace(
     D = num_dimensions(geometry)
     S = size(geometry)
     if t isa Vector && D != 1
-        t_n = zeros(eltype(t), C, D)
+        t_n = zeros(eltype(t), length(t), D)
         t_n .= t
     else
         t_n = t
