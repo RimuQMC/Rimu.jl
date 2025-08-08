@@ -90,8 +90,12 @@ end
 @inline nearest_neighbour_interaction(::SVector, ::SVector, 
     ::Nothing, ::CubicGrid,_) = 0
 
-function _interactions_(fs::CompositeFS, u, Δ, occs, geometry::CubicGrid) 
-    return _interactions(fs.components, u, Δ, occs, geometry)
+@inline function _interactions_(addr::SingleComponentFockAddress, u, Δ, occs, geometry::CubicGrid) 
+    return local_interaction(addr, u, occs) + 
+        nearest_neighbour_interaction(onr(addr), onr(addr), Δ, geometry, occupied_mode_map(addr))
+end
+@inline function _interactions_(addr::CompositeFS, u, Δ, occs, geometry::CubicGrid) 
+    return _interactions(addr.components, u, Δ, occs, geometry)
 end
 
 """
