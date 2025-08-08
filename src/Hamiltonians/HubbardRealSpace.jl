@@ -87,12 +87,11 @@ See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
     end
     return Δ*ext_result
 end
-@inline nearest_neighbour_interaction(::SVector, ::SVector, 
-    ::Nothing, ::CubicGrid,_) = 0
+@inline nearest_neighbour_interaction(::SVector, ::SVector, ::Nothing,_,_) = 0
 
 @inline function _interactions_(addr::SingleComponentFockAddress, u, Δ, occs, geometry::CubicGrid) 
     return local_interaction(addr, u, occs) + 
-        nearest_neighbour_interaction(onr(addr), onr(addr), Δ, geometry, occupied_mode_map(addr))
+        nearest_neighbour_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
 end
 @inline function _interactions_(addr::CompositeFS, u, Δ, occs, geometry::CubicGrid) 
     return _interactions(addr.components, u, Δ, occs, geometry)
@@ -427,7 +426,7 @@ function Base.getindex(data::HubbardRealSpaceComponentData{TT, D}, particle, dir
     src = data.occmap[particle]
     neighbor = neighbor_site(data.geometry, src.mode, direction)
     if neighbor == 0
-        return data.parent_address => 0.0
+        return data.parent_address => convert(TT, 0.0)
     else
         dst = find_mode(data.address, neighbor, data.occmap)
         new_add, val = excitation(data.address, (dst,), (src,))
@@ -439,7 +438,7 @@ function Base.getindex(data::HubbardRealSpaceComponentData{TT, D}, particle, dir
             new_parent = new_add
         end
         if direction > D
-            return new_parent => convert(TT,conj(-data.t[direction - D] * val))
+            return new_parent => convert(TT, -conj(data.t[direction - D]) * val)
         else
             return new_parent => convert(TT, -data.t[direction] * val)
         end
