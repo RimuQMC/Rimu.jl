@@ -84,26 +84,6 @@ function num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
     return length(column.ods)
 end
 
-function ref_num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
-    n_orb = num_modes(column.address.components[1])
-    n_alpha_elec = num_particles(column.address.components[1])
-    n_beta_elec = num_particles(column.address.components[2])
-
-    n_alpha_hole = n_orb - n_alpha_elec
-    n_beta_hole = n_orb - n_beta_elec
-
-    # One-electron excitation
-    n_one_electron_excitation = n_alpha_elec * n_alpha_hole + n_beta_elec * n_beta_hole
-
-    # Two-electron excitation
-    n_two_electron_excitation =
-        binomial(n_alpha_elec, 2) * binomial(n_alpha_hole, 2) +
-        binomial(n_beta_elec, 2) * binomial(n_beta_hole, 2) +
-        (n_alpha_elec * n_alpha_hole) * (n_beta_elec * n_beta_hole)
-
-    n_one_electron_excitation + n_two_electron_excitation
-end
-
 function offdiagonals(column::MolecularHamiltonianOperatorColumn)
     return collect(column.ods)
 end

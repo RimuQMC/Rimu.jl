@@ -56,10 +56,30 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
         @test s.values[1] ≈ -1.137312593210905 atol = error
     end
 
-    @testset "Off-diagonal matrix terms iterator for daul H2 Molecules" begin
+    @testset "Off-diagonal matrix terms for dual H2 Molecules" begin
         struct ModeTransition
             from::Int64
             to::Int64
+        end
+
+        function ref_num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
+            n_orb = num_modes(column.address.components[1])
+            n_alpha_elec = num_particles(column.address.components[1])
+            n_beta_elec = num_particles(column.address.components[2])
+
+            n_alpha_hole = n_orb - n_alpha_elec
+            n_beta_hole = n_orb - n_beta_elec
+
+            # One-electron excitation
+            n_one_electron_excitation = n_alpha_elec * n_alpha_hole + n_beta_elec * n_beta_hole
+
+            # Two-electron excitation
+            n_two_electron_excitation =
+                binomial(n_alpha_elec, 2) * binomial(n_alpha_hole, 2) +
+                binomial(n_beta_elec, 2) * binomial(n_beta_hole, 2) +
+                (n_alpha_elec * n_alpha_hole) * (n_beta_elec * n_beta_hole)
+
+            n_one_electron_excitation + n_two_electron_excitation
         end
 
         function init_offdiagonals(addr::A, op::MolecularHamiltonian{T,A,D}, modes::Rimu.Hamiltonians.Modes) where {T,A<:Rimu.FermiFS2C,D}
@@ -156,6 +176,14 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
         modes = Rimu.Hamiltonians.modes_extract(a)
         ref_ods = init_offdiagonals(a, h, modes)
         c = operator_column(h, a)
-        @test collect(c.ods) == ref_ods
+        ods = offdiagonals(c)
+
+        @testset "Off-diagonal term number test" begin
+            @test ref_num_offdiagonals(c) == length(ods)
+        end
+
+        @testset "Off-diagonal term test" begin
+            @test collect(ods) == ref_ods
+        end
     end
 end
