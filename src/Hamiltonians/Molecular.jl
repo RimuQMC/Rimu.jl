@@ -105,11 +105,11 @@ function ref_num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
 end
 
 function offdiagonals(column::MolecularHamiltonianOperatorColumn)
-    return column.ods
+    return collect(column.ods)
 end
 
 function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
-    r = rand(column.ods)
+    r = rand(offdiagonals(column))
     return r[1], 1 / length(column.ods), r[2]
 end
 
@@ -211,11 +211,11 @@ function MolecularHamiltonianOffDiagonalsIteratorState(na::Int, nb::Int)
     return MolecularHamiltonianOffDiagonalsIteratorState(ModeIndex{na}(), ModeIndex{na}(), ModeIndex{nb}(), ModeIndex{nb}())
 end
 
-struct MolecularHamiltonianOffdiagonalsOperatorColumn
+struct MolecularHamiltonianOffdiagonalsOperatorColumn{A<:FermiFS2C,T}
     iters::SVector{5,MolecularHamiltonianOffDiagonalsIterator}
 end
 
-function MolecularHamiltonianOffdiagonalsOperatorColumn(column::MolecularHamiltonianOperatorColumn)
+function MolecularHamiltonianOffdiagonalsOperatorColumn(column::MolecularHamiltonianOperatorColumn{A,T,O,OD,M}) where {A<:FermiFS2C,T,O,OD,M}
     return MolecularHamiltonianOffdiagonalsOperatorColumn(column.address, column.op, column.modes)
 end
 
@@ -227,7 +227,11 @@ function MolecularHamiltonianOffdiagonalsOperatorColumn(addr::FermiFS2C, op::Mol
         MolecularHamiltonianOffDiagonalsIterator(1, 1, addr, op, m),
         MolecularHamiltonianOffDiagonalsIterator(2, 0, addr, op, m),
     )
-    return MolecularHamiltonianOffdiagonalsOperatorColumn(iters)
+    return MolecularHamiltonianOffdiagonalsOperatorColumn{typeof(addr),eltype(op)}(iters)
+end
+
+function Base.eltype(::MolecularHamiltonianOffdiagonalsOperatorColumn{A,T}) where {A,T}
+    return Tuple{A,T}
 end
 
 function Base.iterate(odoc::MolecularHamiltonianOffdiagonalsOperatorColumn, state=(1, nothing))
@@ -269,7 +273,7 @@ function Base.iterate(iter::MolecularHamiltonianOffDiagonalsIterator{0,2}, state
 end
 
 function Base.length(iter::MolecularHamiltonianOffDiagonalsIterator{0,2})
-    return binomial(num_unoccupied_modes(iter.modes, 2), 2)
+    return binomial(length(iter.modes.unoccupied[2]), 2)
 end
 
 function Base.iterate(iter::MolecularHamiltonianOffDiagonalsIterator{2,0})
@@ -292,7 +296,7 @@ function Base.iterate(iter::MolecularHamiltonianOffDiagonalsIterator{2,0}, state
 end
 
 function Base.length(iter::MolecularHamiltonianOffDiagonalsIterator{2,0})
-    return binomial(num_unoccupied_modes(iter.modes, 1), 2)
+    return binomial(length(iter.modes.unoccupied[1]), 2)
 end
 
 function two_electron_excitation_state(chan::Int, addr::FermiFS2C, op::MolecularHamiltonian, m::Modes, from::ModeIndex{2}, to::ModeIndex{2})
