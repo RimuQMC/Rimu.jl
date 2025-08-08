@@ -55,12 +55,10 @@ end
 end
 
 """
-    nearest_neighbour_interaction(f::SingleComponentFockAddress, σ, geometry::CubicGrid, map::ModeMap)
-    nearest_neighbour_interaction(f1::SingleComponentFockAddress, f2::SingleComponentFockAddress, 
-        Δ, geometry::CubicGrid, map1::ModeMap)
+    nearest_neighbour_interaction(onr1::SVector, onr2::SVector, Δ, geometry::CubicGrid, map1::ModeMap)
 
-Calculate the nearest neighbour interaction ``\\σ \\sum_{⟨i,j⟩} n_i n_j`` for a single component 
-Fock state `f` or ``Δ \\sum_{⟨i,j⟩} n_{↑,i} n_{↓,j}`` between two Fock states.For a
+Calculate the nearest neighbour interaction ``Δ \\sum_{⟨i,j⟩} n_{↑, i} n_{↓, j}`` for an occupation
+number representation `onr1` and `onr2` of the two single-component Fock states. For a 
 multi-component Fock state, return the eigenvalue of
 
 ```math
@@ -144,8 +142,8 @@ It is implemented recursively to ensure type stability.
 """
 @inline _interactions(::Tuple{}, ::SMatrix{0,0},::SMatrix{0,0}, _, ::CubicGrid) = 0.0
 @inline function _interactions((a, as...)::NTuple{N,AbstractFockAddress}, 
-    m::SMatrix{N,N}, σ::SMatrix{N,N}, (occ, occs...), g::CubicGrid
-) where {N}
+    m::Union{SMatrix{N,N},Nothing}, σ::Union{SMatrix{N,N},Nothing}, (occ, occs...),
+    g::CubicGrid) where {N}
     # Split the matrix into the column we need now, and the rest.
     (u, u_column...) = isnothing(m) ? (nothing, nothing) : Tuple(m[:, 1])
     (Δ, Δ_column...) = isnothing(σ) ? (nothing, nothing) : Tuple(σ[:, 1])
