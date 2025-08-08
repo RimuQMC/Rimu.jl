@@ -89,6 +89,10 @@ See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 end
 @inline nearest_neighbour_interaction(::SVector, ::SVector, ::Nothing,_,_) = 0
 
+@inline _interactions_(addr::SingleComponentFockAddress, ::Nothing, Δ, occs, 
+    geometry::CubicGrid) = nearest_neighbour_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
+@inline _interactions_(addr::SingleComponentFockAddress, u, ::Nothing, occs, 
+    ::CubicGrid) = local_interaction(addr, u, occs)
 @inline function _interactions_(addr::SingleComponentFockAddress, u, Δ, occs, geometry::CubicGrid) 
     return local_interaction(addr, u, occs) + 
         nearest_neighbour_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
