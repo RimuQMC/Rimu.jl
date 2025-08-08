@@ -53,7 +53,8 @@ end
 )
     return u * dot(occ_a, occ_b)
 end
-
+@inline local_interaction(::SingleComponentFockAddress, ::SingleComponentFockAddress, 
+    ::Nothing,_,_) = 0
 """
     nearest_neighbour_interaction(onr1::SVector, onr2::SVector, Δ, geometry::CubicGrid, map1::ModeMap)
 
@@ -70,7 +71,7 @@ and `σ`, `τ` are component indices.
 
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 """
-function nearest_neighbour_interaction(onr1::SVector, onr2::SVector, 
+@inline function nearest_neighbour_interaction(onr1::SVector, onr2::SVector, 
     Δ, geometry::CubicGrid{D,S,B}, map1::ModeMap
     ) where {D,S,B}
     N1 = length(map1)
@@ -86,6 +87,8 @@ function nearest_neighbour_interaction(onr1::SVector, onr2::SVector,
     end
     return Δ*ext_result
 end
+@inline nearest_neighbour_interaction(::SVector, ::SVector, 
+    ::Nothing, ::CubicGrid,_) = 0
 
 function _interactions_(fs::CompositeFS, u, Δ, occs, geometry::CubicGrid) 
     return _interactions(fs.components, u, Δ, occs, geometry)
