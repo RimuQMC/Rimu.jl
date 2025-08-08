@@ -301,7 +301,7 @@ function HubbardRealSpace(
         throw(ArgumentError("`u` must be symmetric"))
     elseif length(Δ) ≠ C * C
         throw(ArgumentError("`Δ` must be a $C × $C matrix"))
-    elseif length(t) ≠ C*D
+    elseif length(t_n) ≠ C * D
         throw(ArgumentError("`t` must be a $C × $D matrix"))
     elseif length(v) ≠ C * D
         throw(ArgumentError("`v` must be a $C × $D matrix"))
