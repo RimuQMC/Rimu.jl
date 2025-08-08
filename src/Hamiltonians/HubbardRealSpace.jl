@@ -87,7 +87,7 @@ See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
     end
     return Δ*ext_result
 end
-@inline nearest_neighbour_interaction(::SVector, ::SVector, ::Nothing,_,_) = 0
+@inline nearest_neighbour_interaction(::SVector, ::SVector, ::Nothing, ::CubicGrid, ::ModeMap) = 0
 
 @inline _interactions_(addr::SingleComponentFockAddress, ::Nothing, Δ, occs, 
     geometry::CubicGrid) = nearest_neighbour_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
