@@ -150,7 +150,8 @@ return acc
 
 It is implemented recursively to ensure type stability.
 """
-@inline _interactions(::Tuple{}, ::SMatrix{0,0},::SMatrix{0,0}, _, ::CubicGrid) = 0.0
+@inline _interactions(::Tuple{}, ::Union{SMatrix{0,0},Nothing}, Union{SMatrix{0,0},Nothing}, 
+    ::Tuple{}, ::CubicGrid) = 0.0
 @inline function _interactions((a, as...)::NTuple{N,AbstractFockAddress}, 
     m::Union{SMatrix{N,N},Nothing}, σ::Union{SMatrix{N,N},Nothing}, (occ, occs...),
     g::CubicGrid) where {N}
