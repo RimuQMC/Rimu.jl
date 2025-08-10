@@ -108,15 +108,16 @@ Sum the local interactions of the Fock state `a` with all states in `bs` using t
 and nearest neighbour interaction constants in `us` and `Δs`. This is used to compute 
 all interactions in the column below the diagonal of the interaction matrix. 
 """
-@inline _interaction_col(::SingleComponentFockAddress, ::Tuple{}, ::Union{Tuple{},Tuple{Nothing}},
-    ::Union{Tuple{},Tuple{Nothing}}, ::ModeMap, ::Tuple{}, ::CubicGrid) = 0
+@inline _interaction_col(a, ::Tuple{}, ::Tuple{}, ::Tuple{}, ::ModeMap, ::Tuple{}, ::CubicGrid) = 0
 @inline function _interaction_col(a, (b, bs...), (u, us...), (Δ, Δs...), occ_a, (occ_b, occs...), g::CubicGrid)
     return local_interaction(a, b, u, occ_a, occ_b) + _interaction_col(a, bs, us, Δs, occ_a, occs, g) +
         nearest_neighbour_interaction(onr(a), onr(b), Δ, g, occ_a)
 end
+@inline _interaction_col(a, ::Tuple{}, ::Tuple{}, ::Tuple{Nothing}, ::ModeMap, ::Tuple{}, ::CubicGrid) = 0
 @inline function _interaction_col(a, (b, bs...), (u, us...), Δ::Tuple{Nothing}, occ_a, (occ_b, occs...), g::CubicGrid)
     return local_interaction(a, b, u, occ_a, occ_b) + _interaction_col(a, bs, us, Δ, occ_a, occs, g)
 end
+@inline _interaction_col(a, ::Tuple{}, ::Tuple{Nothing}, ::Tuple{}, ::ModeMap, ::Tuple{}, ::CubicGrid) = 0
 @inline function _interaction_col(a, (b, bs...), u::Tuple{Nothing}, (Δ, Δs...), occ_a, (occ_b, occs...), g::CubicGrid)
     return _interaction_col(a, bs, u, Δs, occ_a, occs, g) +
         nearest_neighbour_interaction(onr(a), onr(b), Δ, g, occ_a)
