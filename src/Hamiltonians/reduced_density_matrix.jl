@@ -239,7 +239,9 @@ function (calc!::ReducedDensityMatrixCalculcator!{TT, P})(result, pair) where {T
 
             addr_left, elem = excitation(addr_right, dsts, srcs)
             @inbounds result[i, j] += TT(conj(left[addr_left]) * elem * val_right)
-            @inbounds result[j, i] = conj(result[i, j])
+            if i ≠ j
+                @inbounds result[j, i] = conj(result[i, j])
+            end
         end
     end
     return result
