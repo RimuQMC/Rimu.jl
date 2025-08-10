@@ -32,7 +32,7 @@ function MolecularHamiltonian(fd::QFDump, starting_address::Union{Nothing,FermiF
     end
 
     val_type = typeof(fd.int0)
-    addr_type = FermiFS2C
+    addr_type = typeof(starting_address)
     fd_type = typeof(fd)
     MolecularHamiltonian{val_type,addr_type,fd_type}(starting_address, fd)
 end
@@ -82,7 +82,7 @@ function num_offdiagonals(column::MolecularHamiltonianOperatorColumn)
 end
 
 function offdiagonals(column::MolecularHamiltonianOperatorColumn)
-    return MolecularHamiltonianOffdiagonalsOperatorColumn(column.address, column.op, column.modes)
+    return Iterators.flatten(get_offdiagonal_iterators(column.address, column.op, column.modes))
 end
 
 function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
@@ -164,14 +164,14 @@ function ModeIndex{2}()
     return ModeIndex{}((1, 2))
 end
 
-struct MolecularHamiltonianOffDiagonalsIterator{NA,NB}
-    address::FermiFS2C
-    op::MolecularHamiltonian
-    modes::Modes
+struct MolecularHamiltonianOffDiagonalsIterator{NA,NB,T,A<:FermiFS2C,D,OA,OB,UA,UB,TI<:FermiFSIndex}
+    address::A
+    op::MolecularHamiltonian{T,A,D}
+    modes::Modes{OA,OB,UA,UB,TI}
 end
 
-function MolecularHamiltonianOffDiagonalsIterator(na::Int, nb::Int, addr::FermiFS2C, op::MolecularHamiltonian, m::Modes)
-    return MolecularHamiltonianOffDiagonalsIterator{na,nb}(addr, op, m)
+function MolecularHamiltonianOffDiagonalsIterator(na::Int, nb::Int, addr::A, op::MolecularHamiltonian{T,A,D}, m::Modes{OA,OB,UA,UB,TI}) where {T,A,D,OA,OB,UA,UB,TI}
+    return MolecularHamiltonianOffDiagonalsIterator{na,nb,T,A,D,OA,OB,UA,UB,TI}(addr, op, m)
 end
 
 function num_excitation(::MolecularHamiltonianOffDiagonalsIterator{NA,NB}) where {NA,NB}
@@ -189,45 +189,12 @@ function MolecularHamiltonianOffDiagonalsIteratorState(na::Int, nb::Int)
     return MolecularHamiltonianOffDiagonalsIteratorState(ModeIndex{na}(), ModeIndex{na}(), ModeIndex{nb}(), ModeIndex{nb}())
 end
 
-struct MolecularHamiltonianOffdiagonalsOperatorColumn{A<:FermiFS2C,T}
-    iters::SVector{5,MolecularHamiltonianOffDiagonalsIterator}
-end
-
-function MolecularHamiltonianOffdiagonalsOperatorColumn(column::MolecularHamiltonianOperatorColumn{A,T,O,M}) where {A<:FermiFS2C,T,O,M}
-    return MolecularHamiltonianOffdiagonalsOperatorColumn(column.address, column.op, column.modes)
-end
-
-function MolecularHamiltonianOffdiagonalsOperatorColumn(addr::FermiFS2C, op::MolecularHamiltonian, m::Modes)
-    iters = SVector{5,MolecularHamiltonianOffDiagonalsIterator}(
-        MolecularHamiltonianOffDiagonalsIterator(0, 1, addr, op, m),
+function get_offdiagonal_iterators(addr::FermiFS2C, op::MolecularHamiltonian, m::Modes)
+    return (MolecularHamiltonianOffDiagonalsIterator(0, 1, addr, op, m),
         MolecularHamiltonianOffDiagonalsIterator(0, 2, addr, op, m),
         MolecularHamiltonianOffDiagonalsIterator(1, 0, addr, op, m),
         MolecularHamiltonianOffDiagonalsIterator(1, 1, addr, op, m),
-        MolecularHamiltonianOffDiagonalsIterator(2, 0, addr, op, m),
-    )
-    return MolecularHamiltonianOffdiagonalsOperatorColumn{typeof(addr),eltype(op)}(iters)
-end
-
-function Base.eltype(::MolecularHamiltonianOffdiagonalsOperatorColumn{A,T}) where {A,T}
-    return Tuple{A,T}
-end
-
-function Base.iterate(odoc::MolecularHamiltonianOffdiagonalsOperatorColumn, state=(1, nothing))
-    i, substate = state
-    while i <= 5
-        val = substate === nothing ? iterate(odoc.iters[i]) : iterate(odoc.iters[i], substate)
-        if val !== nothing
-            v, new_substate = val
-            return (v, (i, new_substate))
-        end
-        i += 1
-        substate = nothing
-    end
-    return nothing
-end
-
-function Base.length(odoc::MolecularHamiltonianOffdiagonalsOperatorColumn)
-    return sum(length, odoc.iters)
+        MolecularHamiltonianOffDiagonalsIterator(2, 0, addr, op, m))
 end
 
 function Base.iterate(iter::MolecularHamiltonianOffDiagonalsIterator{0,2})
@@ -238,11 +205,10 @@ end
 function Base.iterate(iter::MolecularHamiltonianOffDiagonalsIterator{0,2}, state::MolecularHamiltonianOffDiagonalsIteratorState{0,2})
     chan = 2
 
-    ret = two_electron_excitation_state(chan, iter.address, iter.op, iter.modes, state.beta_from, state.beta_to)
-    if isnothing(ret)
+    addr, interaction, next_from, next_to = two_electron_excitation_state(chan, iter.address, iter.op, iter.modes, state.beta_from, state.beta_to)
+    if isnothing(addr)
         return nothing
     else
-        addr, interaction, next_from, next_to = ret
         nstate = MolecularHamiltonianOffDiagonalsIteratorState{0,2}(state.alpha_from, state.alpha_to, next_from, next_to)
         naddr = FermiFS2C(iter.address.components[1], addr)
         return (naddr, interaction), nstate
@@ -260,11 +226,10 @@ end
 
 function Base.iterate(iter::MolecularHamiltonianOffDiagonalsIterator{2,0}, state::MolecularHamiltonianOffDiagonalsIteratorState{2,0})
     chan = 1
-    ret = two_electron_excitation_state(chan, iter.address, iter.op, iter.modes, state.alpha_from, state.alpha_to)
-    if isnothing(ret)
+    addr, interaction, next_from, next_to = two_electron_excitation_state(chan, iter.address, iter.op, iter.modes, state.alpha_from, state.alpha_to)
+    if isnothing(addr)
         return nothing
     else
-        addr, interaction, next_from, next_to = ret
         nstate = MolecularHamiltonianOffDiagonalsIteratorState{2,0}(next_from, next_to, state.beta_from, state.beta_to)
         naddr = FermiFS2C(addr, iter.address.components[2])
         return (naddr, interaction), nstate
@@ -275,7 +240,7 @@ function Base.length(iter::MolecularHamiltonianOffDiagonalsIterator{2,0})
     return binomial(length(iter.modes.unoccupied[1]), 2)
 end
 
-function two_electron_excitation_state(chan::Int, addr::FermiFS2C, op::MolecularHamiltonian, m::Modes, from::ModeIndex{2}, to::ModeIndex{2})
+function two_electron_excitation_state(chan::Int, addr::A, op::MolecularHamiltonian{T,A,D}, m::Modes, from::ModeIndex{2}, to::ModeIndex{2}) where {T,A,D}
     ii, ij = from.index[1], from.index[2]
     ik, il = to.index[1], to.index[2]
 
@@ -304,7 +269,7 @@ function two_electron_excitation_state(chan::Int, addr::FermiFS2C, op::Molecular
         ik = 1
         il = ik + 1
     end
-    return nothing
+    return nothing, zero(T), ModeIndex{2}(), ModeIndex{2}()
 end
 
 function Base.iterate(iter::MolecularHamiltonianOffDiagonalsIterator{0,1})
@@ -314,11 +279,10 @@ end
 
 function Base.iterate(iter::MolecularHamiltonianOffDiagonalsIterator{0,1}, state::MolecularHamiltonianOffDiagonalsIteratorState{0,1})
     chan = 2
-    ret = one_electron_excitation_state(chan, iter.address, iter.op, iter.modes, state.beta_from, state.beta_to)
-    if isnothing(ret)
+    addr, interaction, next_from, next_to = one_electron_excitation_state(chan, iter.address, iter.op, iter.modes, state.beta_from, state.beta_to)
+    if isnothing(addr)
         return nothing
     else
-        addr, interaction, next_from, next_to = ret
         nstate = MolecularHamiltonianOffDiagonalsIteratorState{0,1}(state.alpha_from, state.alpha_to, next_from, next_to)
         naddr = FermiFS2C(iter.address.components[1], addr)
         return (naddr, interaction), nstate
@@ -336,11 +300,10 @@ end
 
 function Base.iterate(iter::MolecularHamiltonianOffDiagonalsIterator{1,0}, state::MolecularHamiltonianOffDiagonalsIteratorState{1,0})
     chan = 1
-    ret = one_electron_excitation_state(chan, iter.address, iter.op, iter.modes, state.alpha_from, state.alpha_to)
-    if isnothing(ret)
+    addr, interaction, next_from, next_to = one_electron_excitation_state(chan, iter.address, iter.op, iter.modes, state.alpha_from, state.alpha_to)
+    if isnothing(addr)
         return nothing
     else
-        addr, interaction, next_from, next_to = ret
         nstate = MolecularHamiltonianOffDiagonalsIteratorState{1,0}(next_from, next_to, state.beta_from, state.beta_to)
         naddr = FermiFS2C(addr, iter.address.components[2])
         return (naddr, interaction), nstate
@@ -351,7 +314,7 @@ function Base.length(iter::MolecularHamiltonianOffDiagonalsIterator{1,0})
     return length(iter.modes.occupied[1]) * length(iter.modes.unoccupied[1])
 end
 
-function one_electron_excitation_state(chan::Int, addr::FermiFS2C, op::MolecularHamiltonian{T,A,D}, m::Modes, from::ModeIndex{1}, to::ModeIndex{1}) where {T,A,D}
+function one_electron_excitation_state(chan::Int, addr::A, op::MolecularHamiltonian{T,A,D}, m::Modes, from::ModeIndex{1}, to::ModeIndex{1}) where {T,A,D}
     # `addr` corresponds to the `mode`
     ii = from.index[1]
     ij = to.index[1]
@@ -382,9 +345,8 @@ function one_electron_excitation_state(chan::Int, addr::FermiFS2C, op::Molecular
         ii += 1
         ij = 1
     end
-    return nothing
+    return nothing, zero(T), ModeIndex{1}(), ModeIndex{1}()
 end
-
 
 function Base.iterate(iter::MolecularHamiltonianOffDiagonalsIterator{1,1})
     initial = MolecularHamiltonianOffDiagonalsIteratorState{1,1}(ModeIndex{1}(), ModeIndex{1}(), ModeIndex{1}(), ModeIndex{1}())
