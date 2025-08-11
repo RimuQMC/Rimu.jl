@@ -230,14 +230,18 @@ end
 function (calc!::ReducedDensityMatrixCalculcator!{TT, P})(result, pair) where {TT, P}
     addr_right, val_right = pair
     left = calc!.left
-
-    for j in axes(result, 2)
+    dim = calc!.dim
+    
+    for j in 1:dim
         dsts = find_mode(addr_right, vertices(j, Val(P)))
-        for i in axes(result, 1)
+        for i in j:dim
             srcs = reverse(find_mode(addr_right, vertices(i, Val(P))))
 
             addr_left, elem = excitation(addr_right, dsts, srcs)
             @inbounds result[i, j] += TT(conj(left[addr_left]) * elem * val_right)
+            if i ≠ j
+                @inbounds result[j, i] = conj(result[i, j])
+            end
         end
     end
     return result
