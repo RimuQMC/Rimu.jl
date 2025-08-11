@@ -252,7 +252,7 @@ function find_mode(b::BoseFS, indices::NTuple{N}, occ=occupied_modes(b)) where {
 end
 
 # Specialised version of each_mode for iterating modes in BoseFS with BitString storage.
-# This is necessary because get_mode in a BitString-backed BoseFS is inefficient.
+# This is necessary because find_mode in a BitString-backed BoseFS is inefficient.
 struct BoseBitStringEachMode{M,A<:BoseFS{<:Any,M,<:BitString}}
     address::A
 end

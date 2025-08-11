@@ -31,7 +31,7 @@ multi-component Fock state, return the eigenvalue of
 
 where `u::SMatrix` is a symmetric matrix of interaction constants, `i` is a mode index,
 and `σ`, `τ` are component indices.
-`occ` is a [`ModeMap`](@ref) for single-component fock addresses or a tuple of
+`occ` is a [`ModeMap`](@ref) for single-component Fock addresses or a tuple of
 [`ModeMap`](@ref)s for composite addresses.
 
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
@@ -310,7 +310,7 @@ dimension(::HubbardRealSpace, address) = number_conserving_dimension(address)
 
 # offdiaonals =========================================================================== #
 # Holds the offdiagonals for a single-component nearest neighbour one-body term. It's
-# structured like a matric where the first index determines the occupied site in the adress
+# structured like a matrix where the first index determines the occupied site in the address
 # and the second index determines the site the particle will hop to.
 struct HubbardRealSpaceComponentData{I,G,A,C,O} <: AbstractMatrix{Pair{A,Float64}}
     geometry::G
@@ -404,20 +404,25 @@ end
     return (data, rest...)
 end
 
-function _split_index_component(column, i)
+# Split one-dimensional array `index` that indexes over many components simultaneously into
+# a two-dimensional one. The dimension of the new index picks the component, while the
+# second picks the offdiagonal within the component.
+function _split_index_component(column, index)
     components = column.components
     chosen_component = 0
-    while i > 0
+    while index > 0
         chosen_component += 1
-        i -= index_apply(length, components, chosen_component)
+        # the follwing is equivalent to
+        # index -= length(components[chosen_component])
+        index -= index_apply(length, components, chosen_component)
     end
-    i += index_apply(length, components, chosen_component)
-    return chosen_component, i
+    index += index_apply(length, components, chosen_component)
+    return chosen_component, index
 end
 
 function random_offdiagonal(column::HubbardRealSpaceColumn)
     directions = 2 * num_dimensions(column.hamiltonian.geometry)
-    random_number = rand(1:num_offdiagonals(column))
+    random_number = rand(1:column.num_offdiagonals)
     component, remainder = _split_index_component(column, random_number)
 
     addr, val = index_apply(getindex, column.components, component, remainder)
@@ -442,26 +447,30 @@ end
 num_offdiagonals(column) = column.num_offdiagonals
 
 @inline function Base.iterate(ods::HubbardRealSpaceColumnOffdiagonals, state=(1,1,1))
-    i, j, k = state
-    if k > 2 * num_dimensions(ods.geometry)
-        k = 1
-        j += 1
+    component_index, particle_index, dimension_index = state
+    if dimension_index > 2 * num_dimensions(ods.geometry)
+        dimension_index = 1
+        particle_index += 1
     end
-    if j > index_apply(size, ods.components, i, 1)
-        j = 1
-        i += 1
+    if particle_index > index_apply(size, ods.components, component_index, 1)
+        particle_index = 1
+        component_index += 1
     end
-    if i > length(ods.components)
+    if component_index > length(ods.components)
         return nothing
     else
-        result = index_apply(getindex, ods.components, i, j, k)
-        return result, (i, j, k + 1)
+        # the follwing is equivalent to
+        # result = ods.components[component_index][particle_index, dimension_index]
+        result = index_apply(
+            getindex, ods.components, component_index, particle_index, dimension_index
+        )
+        return result, (component_index, particle_index, dimension_index + 1)
     end
 end
 Base.size(ods::HubbardRealSpaceColumnOffdiagonals) = (ods.num_offdiagonals,)
 Base.eltype(::HubbardRealSpaceColumnOffdiagonals{A}) where {A} = Pair{A,Float64}
 
-function Base.getindex(column::HubbardRealSpaceColumnOffdiagonals, i)
-    chosen, i = _split_index_component(column, i)
-    return index_apply(getindex, column.components, chosen, i)
+function Base.getindex(column::HubbardRealSpaceColumnOffdiagonals, index)
+    component_index, inner_index = _split_index_component(column, index)
+    return index_apply(getindex, column.components, component_index, inner_index)
 end
