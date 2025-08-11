@@ -407,7 +407,7 @@ end
 # Split one-dimensional array `index` that indexes over many components simultaneously into
 # a two-dimensional one. The dimension of the new index picks the component, while the
 # second picks the offdiagonal within the component.
-function _split_index_component(column, index)
+function _split_component_from_index(column, index)
     components = column.components
     chosen_component = 0
     while index > 0
@@ -423,7 +423,7 @@ end
 function random_offdiagonal(column::HubbardRealSpaceColumn)
     directions = 2 * num_dimensions(column.hamiltonian.geometry)
     random_number = rand(1:column.num_offdiagonals)
-    component, remainder = _split_index_component(column, random_number)
+    component, remainder = _split_component_from_index(column, random_number)
 
     addr, val = index_apply(getindex, column.components, component, remainder)
     return addr, 1/column.num_offdiagonals, val
@@ -471,6 +471,6 @@ Base.size(ods::HubbardRealSpaceColumnOffdiagonals) = (ods.num_offdiagonals,)
 Base.eltype(::HubbardRealSpaceColumnOffdiagonals{A}) where {A} = Pair{A,Float64}
 
 function Base.getindex(column::HubbardRealSpaceColumnOffdiagonals, index)
-    component_index, inner_index = _split_index_component(column, index)
+    component_index, inner_index = _split_component_from_index(column, index)
     return index_apply(getindex, column.components, component_index, inner_index)
 end
