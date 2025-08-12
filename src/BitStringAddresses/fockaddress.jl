@@ -34,11 +34,12 @@ Compute and return the occupation number representation of the Fock state `fs` a
 onr
 
 """
-    find_mode(::SingleComponentFockAddress, i)
+    find_mode(::SingleComponentFockAddress, i[, occ])
 
 Find the `i`-th mode in address. Returns [`BoseFSIndex`](@ref) for [`BoseFS`](@ref), and
 [`FermiFSIndex`](@ref) for [`FermiFS`](@ref). Can work on a tuple of modes. Does not check
-bounds.
+bounds. Setting, `occ` can to the result of [`occupied_mode_map`](@ref), which can increase
+performance for [`BoseFS`](@ref).
 
 ```jldoctest
 julia> find_mode(BoseFS(1, 0, 2), 2)
@@ -144,7 +145,7 @@ occupied_modes
     unoccupied_modes(::FermiFS)
 
 Return a lazy iterator over all unoccupied modes in an Fermi type address. Iterates over
-over [`FermiFSIndex`](@ref)s for [`FermiFS`](@ref). 
+over [`FermiFSIndex`](@ref)s for [`FermiFS`](@ref).
 See [`unoccupied_mode_map`](@ref) for an eager version.
 
 # Example
@@ -198,11 +199,11 @@ excitation
 """
     ModeMap <: AbstractVector
 
-A unified storage structure for indices of `SingleComponentFockAddress`. 
+A unified storage structure for indices of `SingleComponentFockAddress`.
 It stores the FSIndex of corresponding address as an `AbstractVector` compatible with
 [`excitation`](@ref) - [`BoseFSIndex`](@ref) or [`FermiFSIndex`](@ref).
 
-This struct is not intended to be constructed directly. Use [`occupied_mode_map`](@ref) or 
+This struct is not intended to be constructed directly. Use [`occupied_mode_map`](@ref) or
 [`unoccupied_mode_map`](@ref) to obtain an instance.
 
 See also [`SingleComponentFockAddress`](@ref).
@@ -219,7 +220,7 @@ Base.@deprecate OccupiedModeMap(addr) occupied_mode_map(addr)
 
 """
     occupied_mode_map(addr) <: AbstractVector
-    
+
 Get a map of occupied modes in address as an `AbstractVector` of indices compatible with
 [`excitation`](@ref) - [`BoseFSIndex`](@ref) or [`FermiFSIndex`](@ref).
 
@@ -805,4 +806,27 @@ Base.size(opm::OccupiedPairsMap) = (opm.length,)
 function Base.getindex(opm::OccupiedPairsMap, i)
     @boundscheck 1 ≤ i ≤ opm.length || throw(BoundsError(opm, i))
     return opm.pairs[i]
+end
+
+struct LazyEachMode{M,A<:SingleComponentFockAddress{<:Any,M},I} <: AbstractVector{I}
+    address::A
+
+    function LazyEachMode(addr::SingleComponentFockAddress)
+        I = typeof(find_mode(addr, 1))
+        return new{num_modes(addr),typeof(addr),I}(addr)
+    end
+end
+
+Base.size(::LazyEachMode{M}) where {M} = (M,)
+Base.getindex(em::LazyEachMode, i) = find_mode(em.address, i)
+Base.show(io::IO, em::LazyEachMode) = print(io, "each_mode($(em.address))")
+
+"""
+    each_mode(address::SingleComponentFockAddress)
+
+Return an iterator that iterates over each mode in an address. Iterates value of either
+[`BoseFSIndex`](@ref) or [`FermiFSIndex`](@ref).
+"""
+function each_mode(addr::SingleComponentFockAddress)
+    return LazyEachMode(addr)
 end

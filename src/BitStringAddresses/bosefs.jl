@@ -189,9 +189,9 @@ function occupied_modes(b::BoseFS{N,M,S}) where {N,M,S}
     return BoseOccupiedModes{N,M,S}(b.bs)
 end
 
-function find_mode(b::BoseFS, index)
+function find_mode(b::BoseFS, index, occ=occupied_modes(b))
     last_occnum = last_mode = last_offset = 0
-    for (occnum, mode, offset) in occupied_modes(b)
+    for (occnum, mode, offset) in occ
         dist = index - mode
         if dist == 0
             return BoseFSIndex(occnum, index, offset)
@@ -206,7 +206,7 @@ function find_mode(b::BoseFS, index)
     return BoseFSIndex(0, index, offset)
 end
 # Multiple in a single pass
-function find_mode(b::BoseFS, indices::NTuple{N}) where {N}
+function find_mode(b::BoseFS, indices::NTuple{N}, occ=occupied_modes(b)) where {N}
     # Idea: find permutation, then use the permutation to find indices in order even though
     # they are not sorted.
     perm = sortperm(SVector(indices))
@@ -219,7 +219,7 @@ function find_mode(b::BoseFS, indices::NTuple{N}) where {N}
 
     result = ntuple(_ -> BoseFSIndex(0, 0, 0), Val(N))
     last_occnum = last_mode = last_offset = 0
-    @inbounds for (occnum, mode, offset) in occupied_modes(b)
+    @inbounds for (occnum, mode, offset) in occ
         dist = index - mode
         # While loop handles duplicate entries in indices.
         while dist ≤ 0
@@ -249,6 +249,30 @@ function find_mode(b::BoseFS, indices::NTuple{N}) where {N}
         index = indices[curr_i]
     end
     return result # not reached
+end
+
+# Specialised version of each_mode for iterating modes in BoseFS with BitString storage.
+# This is necessary because find_mode in a BitString-backed BoseFS is inefficient.
+struct BoseBitStringEachMode{M,A<:BoseFS{<:Any,M,<:BitString}}
+    address::A
+end
+Base.eltype(::BoseBitStringEachMode) = BoseFSIndex
+Base.length(::BoseBitStringEachMode{M}) where {M} = M
+
+function Base.iterate(em::BoseBitStringEachMode{M}, state=(0, 1, em.address.bs)) where {M}
+    offset, mode, bitstring = state
+    if mode > M
+        return nothing
+    else
+        bosons = Int32(trailing_ones(bitstring))
+        bitstring >>>= (bosons + 1) % UInt
+
+        return BoseFSIndex(bosons, mode, offset), (offset + bosons + 1, mode + 1, bitstring)
+    end
+end
+
+function each_mode(addr::BoseFS{<:Any,<:Any,<:BitString})
+    return BoseBitStringEachMode(addr)
 end
 
 # find_occupied_mode provided by generic implementation

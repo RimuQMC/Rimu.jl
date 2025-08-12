@@ -15,14 +15,17 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
-      - name: "Set up Julia"
+      - name: "Checkout"
+        uses: actions/checkout@v4
+      - name: "Setup Julia"
         uses: julia-actions/setup-julia@v2
         with:
           version: ${{ matrix.julia-version }}
-          arch: ${{ matrix.julia-arch }}
-      - uses: julia-actions/cache@v2
+      - name: "Load cache"
+        uses: julia-actions/cache@v2
+      - name: "Build"
+        uses: julia-actions/julia-buildpkg@v1
       - name: "Run test"
         run: |
-          julia --project=@. -e "using Pkg; Pkg.instantiate(); Pkg.build()"
+          julia --project=@. -e "using Pkg; Pkg.add(\"BenchmarkTools\")"
           julia -O3 --project=@. test/allocation_tests.jl

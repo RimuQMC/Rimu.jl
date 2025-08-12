@@ -175,8 +175,7 @@ using SparseArrays
             FermiFS(1),
             BoseFS(1),
         )
-            H = HubbardReal1D(addr)
-            @test build_basis(addr) == build_basis(H; sort=true)
+            @test build_basis(addr) == [addr]
         end
     end
 end

@@ -52,4 +52,14 @@ using Rimu: replace_keys, delete_and_warn_if_present, clean_and_warn_if_others_p
 
         @test split_keys((;), :a, :b, :c) == split_keys((), :a, :b, :c) == ((;), (;))
     end
+    @testset "index_apply" begin
+        t = (1, 1.0, 2 + 3im)
+        @test Rimu.Hamiltonians.index_apply(isreal, t, 1)
+        @test Rimu.Hamiltonians.index_apply(isreal, t, 2)
+        @test Rimu.Hamiltonians.index_apply(!isreal, t, 3)
+
+        @test Rimu.Hamiltonians.index_apply(+, t, 1, 0.2im) == 1 + 0.2im
+        @test Rimu.Hamiltonians.index_apply(+, t, 2, 0.2im) == 1 + 0.2im
+        @test Rimu.Hamiltonians.index_apply(+, t, 3, 0.2im) == 2 + 3.2im
+    end
 end

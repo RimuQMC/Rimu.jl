@@ -292,11 +292,9 @@ end
                         for i in 1:num_occupied_modes(bose) * 2
                     )
 
-                    occupied = [
-                        find_occupied_mode(bose, i).mode
-                        for i in 1:num_occupied_modes(bose)
-                    ]
-                    @test occupied == findall(!iszero, onr(bose))
+                    @test map(i -> i.mode, occupied_modes(bose)) == findall(≠(0), input)
+                    @test map(i -> i.occnum, each_mode(bose)) == input
+                    @test map(i -> i.mode, each_mode(bose)) == eachindex(input)
 
                     check_single_excitations(bose, 64)
                     check_double_excitations(bose, 8)
@@ -371,6 +369,13 @@ end
             @test getproperty.(sites, :mode) == findall(==(0), onr(f))
         end
     end
+    @testset "each_mode" begin
+        for o in (small, big, giant)
+            f = FermiFS(o)
+            @test map(i -> i.occnum, each_mode(f)) == o
+            @test map(i -> i.mode, each_mode(f)) == eachindex(o)
+        end
+    end
     @testset "Randomized Tests" begin
         function rand_onr_fermi(N, M)
             return SVector{M}(shuffle([ones(Int,N); zeros(Int,M - N)]))
@@ -390,12 +395,10 @@ end
                     check_double_excitations(fermi, 8)
                     check_triple_excitations(fermi, 4)
 
-                    f = FermiFS(input)
-                    sites = Int[]
-                    foreach(occupied_modes(f)) do i
-                        push!(sites, i.mode)
-                    end
-                    @test sites == findall(≠(0), onr(f))
+                    @test map(i -> i.mode, occupied_modes(fermi)) == findall(≠(0), input)
+                    @test map(i -> i.mode, unoccupied_modes(fermi)) == findall(==(0), input)
+                    @test map(i -> i.occnum, each_mode(fermi)) == input
+                    @test map(i -> i.mode, each_mode(fermi)) == eachindex(input)
 
                     @test onr(reverse(fermi)) == reverse(input)
 

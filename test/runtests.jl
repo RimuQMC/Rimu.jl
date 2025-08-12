@@ -45,6 +45,7 @@ end
 @safetestset "projector_monte_carlo_problem" begin
     include("projector_monte_carlo_problem.jl")
 end
+
 @testset "Logging" begin
     default_logger()
     l = Base.global_logger()

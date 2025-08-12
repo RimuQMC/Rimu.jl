@@ -311,25 +311,25 @@ end
         f = near_uniform(FermiFS{3,12})
 
         H = HubbardRealSpace(f, geometry=PeriodicBoundaries(3, 4))
-        od_values = last.(offdiagonals(H, f))
+        od_values = last.(offdiagonals(H * f))
         od_nonzeros = filter(!iszero, od_values)
         @test length(od_values) == 12
         @test length(od_nonzeros) == 6
 
         H = HubbardRealSpace(f, geometry=PeriodicBoundaries(4, 3))
-        od_values = last.(offdiagonals(H, f))
+        od_values = last.(offdiagonals(H * f))
         od_nonzeros = filter(!iszero, od_values)
         @test length(od_values) == 12
         @test length(od_nonzeros) == 8
 
         H = HubbardRealSpace(f, geometry=HardwallBoundaries(3, 4))
-        od_values = last.(offdiagonals(H, f))
+        od_values = last.(offdiagonals(H * f))
         od_nonzeros = filter(!iszero, od_values)
         @test length(od_values) == 12
         @test length(od_nonzeros) == 3
 
         H = HubbardRealSpace(f, geometry=HardwallBoundaries(4, 3))
-        od_values = last.(offdiagonals(H, f))
+        od_values = last.(offdiagonals(H * f))
         od_nonzeros = filter(!iszero, od_values)
         @test length(od_values) == 12
         @test length(od_nonzeros) == 4

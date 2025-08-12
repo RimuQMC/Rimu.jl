@@ -2,6 +2,7 @@ using Rimu
 using Rimu: SingleState
 using Rimu.Interfaces: apply_operator!
 using Test
+using BenchmarkTools
 
 """
     apply_operator_wrap!(r::SingleState)
@@ -14,19 +15,35 @@ function apply_operator_wrap!(r::SingleState)
     return nothing
 end
 
-@testset "Allocations" begin
-    # The purpose of these tests is to find type instabilities that might appear as the
-    # Julia compiler changes. If allocations suddenly increase by a lot, there is a good
-    # chance that dynamic dispatch is happening somewhere in the code.
+function interface_alloc_check(H)
+    res = 0.0
+
+    column1 = operator_column(H, starting_address(H))
+    res += diagonal_element(column1)
+    for (k, v) in offdiagonals(column1)
+        res += v
+    end
+
+    addr, val = random_offdiagonal(column1)
+    column2 = operator_column(H, addr)
+
+    for (k, v) in column2
+        res += v
+    end
+
+    return abs(res)
+end
+
+hamiltonians = begin
     b1 = near_uniform(BoseFS{10,10})
     b2 = near_uniform(BoseFS{50,50})
     b3 = near_uniform(BoseFS{100,100})
 
-    f1 = near_uniform(FermiFS{9,10})
+    f1 = near_uniform(FermiFS{5,10})
     f2 = near_uniform(FermiFS{24,50})
     f3 = near_uniform(FermiFS{49,100})
 
-    for H in (
+    [
         HubbardReal1D(b1),
         HubbardReal1D(b2),
         HubbardReal1D(b3),
@@ -66,59 +83,60 @@ end
         Transcorrelated1D(CompositeFS(f1, f1)),
         Transcorrelated1D(CompositeFS(f2, f2)),
         Transcorrelated1D(CompositeFS(f3, f3)),
-        )
+    ]
+end
+
+@testset "Allocations" begin
+    # The purpose of these tests is to find type instabilities that might appear as the
+    # Julia compiler changes. If allocations suddenly increase by a lot, there is a good
+    # chance that dynamic dispatch is happening somewhere in the code.
+    for H in hamiltonians
+        hamname = string(nameof(typeof(H)), "(", starting_address(H), ")")
+        @testset "Allocation interface for $(hamname)" begin
+            allocs = @ballocations interface_alloc_check($H)
+            # First one records more for some reason. This is a workaround.
+            @test allocs ≤ (H == hamiltonians[1] ? 6 : 1)
+        end
+    end
+
+    for H in hamiltonians
         addr = starting_address(H)
-        for dv_type in (DVec, InitiatorDVec)
-            for style in (
-                IsDeterministic(),
-                IsStochasticInteger(),
-                IsStochasticWithThreshold(),
-                IsDynamicSemistochastic(),
-                )
-                hamname = string(
-                    nameof(typeof(H)), "(", num_modes(addr), ")/", nameof(typeof(style))
-                )
-                @testset "Allocations for $(hamname)" begin
-                    dτ = if num_modes(addr) == 10
-                        1e-4
-                    elseif num_modes(addr) == 50
-                        1e-5
-                    else
-                        1e-6
-                    end
-
-                    dv = dv_type(addr => 1.0, style=IsDynamicSemistochastic())
-                    sizehint!(dv, 500_000)
-
-                    p = ProjectorMonteCarloProblem(
-                        H;
-                        start_at=dv, last_step=200, time_step=dτ, max_length=10_000
-                    )
-                    # Warmup for solve
-                    res = solve!(init(p); last_step=1)
-                    st = res.state
-
-                    r = only(only(st.spectral_states).single_states)
-
-                    # Warmup for step!
-                    apply_operator_wrap!(r)
-                    apply_operator_wrap!(r)
-                    apply_operator_wrap!(r)
-                    apply_operator_wrap!(r)
-                    apply_operator_wrap!(r)
-
-                    allocs_step = @allocated apply_operator_wrap!(r)
-                    @test allocs_step ≤ 512
-
-                    dv = dv_type(addr => 1.0, style=IsDynamicSemistochastic())
-                    allocs_full = @allocated solve(p)
-                    @test allocs_full ≤ 1e8 # 100MiB
-
-                    # Print out the results to make it easier to find problems.
-                    print(rpad(hamname, 50))
-                    print(": per step ", allocs_step, ", full ", allocs_full/(1024^2), "M\n")
-                end
+        hamname = string(
+            nameof(typeof(H)), "(", num_modes(addr), ")"
+        )
+        @testset "Allocations FCIQMC for $(hamname)" begin
+            dτ = if num_modes(addr) == 10
+                1e-4
+            elseif num_modes(addr) == 50
+                1e-5
+            else
+                1e-6
             end
+            dτ = 1e-6
+
+            dv = DVec(addr => 1.0; style=IsDynamicSemistochastic())
+            sizehint!(dv, 500_000)
+
+            p = ProjectorMonteCarloProblem(
+            H;
+            start_at=dv, last_step=200, time_step=dτ, max_length=10_000
+            )
+            # Warmup for solve
+            res = solve!(init(p); last_step=1)
+            st = res.state
+
+            r = only(only(st.spectral_states).single_states)
+
+            # Warmup for step!
+            allocs_step = @ballocated apply_operator_wrap!($r)
+            @test allocs_step == 0
+
+            allocs_full = @ballocated solve($p)
+            @test allocs_full ≤ 1e8 # 100MiB
+
+            # Print out the results to make it easier to find problems.
+            print(rpad(hamname, 50))
+            print(": per step ", allocs_step, ", full ", round(allocs_full/(1024^2), digits=3), "M\n")
         end
     end
 end

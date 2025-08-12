@@ -59,7 +59,7 @@ using Parameters: Parameters, @unpack
 using Setfield: Setfield
 using SparseArrays: SparseArrays, rowvals, nzrange, nonzeros
 using SpecialFunctions: SpecialFunctions, gamma
-using StaticArrays: StaticArrays, SA, SMatrix, SVector, SArray, setindex
+using StaticArrays: StaticArrays, SA, SMatrix, SVector, SArray, MVector, setindex
 using TupleTools: TupleTools
 
 using ..BitStringAddresses

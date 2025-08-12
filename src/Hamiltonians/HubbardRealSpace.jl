@@ -1,6 +1,25 @@
 """
-    local_interaction(::AbstractFockAddress, u)
-    local_interaction(::AbstractFockAddress, ::AbstractFockAddress, v)
+    index_apply(f, tuple, i, args...)
+
+Return `f(tuple[i], args...)` in a type-stable manner when `tuple` is a heterogeneous tuple,
+but `f` always returns a value of the same type.
+"""
+@inline function index_apply(f::F, tuple, i, args...) where {F}
+    @boundscheck if i < 1 || i > length(tuple)
+        throw(BoundsError(tuple, i))
+    end
+    return _index_apply(f, tuple, i, 1, args...)
+end
+@inline function _index_apply(f::F, (t, ts...), chosen, current, args...) where {F}
+    if current == chosen
+        return f(t, args...)
+    end
+    return _index_apply(f, ts, chosen, current + 1, args...)
+end
+
+"""
+    local_interaction(::AbstractFockAddress, u, occ)
+    local_interaction(::AbstractFockAddress, ::AbstractFockAddress, v, occ)
 
 Return the sum of (mode-wise) local interactions ``\\frac{u}{2} \\sum_i n_i(n_i-1)`` of a
 single component Fock state, or ``v \\sum_i n_{↑,i} n_{↓,i}`` between two Fock states. For a
@@ -12,35 +31,49 @@ multi-component Fock state, return the eigenvalue of
 
 where `u::SMatrix` is a symmetric matrix of interaction constants, `i` is a mode index,
 and `σ`, `τ` are component indices.
+`occ` is a [`ModeMap`](@ref) for single-component Fock addresses or a tuple of
+[`ModeMap`](@ref)s for composite addresses.
 
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 """
-local_interaction(b::SingleComponentFockAddress, u) = u * bose_hubbard_interaction(b) / 2
-local_interaction(f::FermiFS, _) = 0
-function local_interaction(a::SingleComponentFockAddress, b::SingleComponentFockAddress, u)
-    return u * dot(occupied_modes(a), occupied_modes(b))
+@inline function local_interaction(b::SingleComponentFockAddress, u, occs::Tuple)
+    return local_interaction(b, u, only(occs))
 end
-function local_interaction(fs::CompositeFS, u)
-    return _interactions(fs.components, u)
+@inline function local_interaction(b::SingleComponentFockAddress, u, occ::ModeMap)
+    bh_interaction = sum(occ) do index
+        index.occnum * (index.occnum - 1)
+    end
+    return bh_interaction * u[1] / 2
+end
+@inline local_interaction(f::FermiFS, _, ::Tuple) = 0
+@inline local_interaction(f::FermiFS, _, ::ModeMap) = 0
+
+@inline function local_interaction(
+    a::SingleComponentFockAddress, b::SingleComponentFockAddress, u, occ_a, occ_b
+)
+    return u * dot(occ_a, occ_b)
+end
+@inline function local_interaction(fs::CompositeFS, u, occs)
+    return _interactions(fs.components, u, occs)
 end
 
 """
-    _interaction_col(a, bs::Tuple, us::Tuple)
+    _interaction_col(a, bs::Tuple, us::Tuple, occ::ModeMap, occs::Tuple)
 
 Sum the local interactions of the Fock state `a` with all states in `bs` using the
 interaction constants in `us`. This is used to compute all interactions in the column
 below the diagonal of the interaction matrix.
 """
-@inline _interaction_col(a, ::Tuple{}, ::Tuple{}) = 0
-@inline function _interaction_col(a, (b, bs...), (u, us...))
-    return local_interaction(a, b, u) + _interaction_col(a, bs, us)
+@inline _interaction_col(a, ::Tuple{}, ::Tuple{}, _, _) = 0
+@inline function _interaction_col(a, (b, bs...), (u, us...), occ_a, (occ_b, occs...))
+    return local_interaction(a, b, u, occ_a, occ_b) + _interaction_col(a, bs, us, occ_a, occs)
 end
 
 """
-    _interactions(addresses, interaction_matrix)
+    _interactions(addresses, interaction_matrix, occs)
 
-Compute all pairwise interactions in a tuple of `addresses`. The `interaction_matrix` sets the
-intraction strengths.
+Compute all pairwise interactions in a tuple of `addresses`. The `interaction_matrix` sets
+the intraction strengths and `occs` holds the occupied modes of the adresses.
 
 The code is equivalent to the following.
 
@@ -57,9 +90,9 @@ return acc
 
 It is implemented recursively to ensure type stability.
 """
-@inline _interactions(::Tuple{}, ::SMatrix{0,0}) = 0.0
+@inline _interactions(::Tuple{}, ::SMatrix{0,0}, ::Tuple{}) = 0.0
 @inline function _interactions(
-    (a, as...)::NTuple{N,AbstractFockAddress}, m::SMatrix{N,N}
+    (a, as...)::NTuple{N,AbstractFockAddress}, m::SMatrix{N,N}, (occ, occs...)
 ) where {N}
     # Split the matrix into the column we need now, and the rest.
     (u, column...) = Tuple(m[:, 1])
@@ -67,18 +100,18 @@ It is implemented recursively to ensure type stability.
     rest = SMatrix{N-1,N-1}(view(m, 2:N, 2:N))
 
     # Get the self-interaction first.
-    self = local_interaction(a, u)
+    self = local_interaction(a, u, occ)
     # Get the interactions for the rest of the row.
-    row = _interaction_col(a, as, column)
+    row = _interaction_col(a, as, column, occ, occs)
     # Get the interaction for the rest of the rows.
-    return self + row + _interactions(as, rest)
+    return self + row + _interactions(as, rest, occs)
 end
 
 """
-    external_potential(add::AbstractFockAddress, pot)
+    external_potential(address::AbstractFockAddress, pot, occ)
 
 Calculate the value of a diagonal single particle operator (e.g. a trap potential) at
-the address `add`.
+the address `address` whose occupied modes are stored in `occ`.
 ```math
 \\sum_{iσ} v_{iσ} n_{iσ}
 ```
@@ -87,27 +120,26 @@ a length `M` vector for a [`SingleComponentFockAddress`](@ref), or a `M×C` matr
 a [`CompositeFS `](@ref), where `M` is the number of modes and `C` the number of
 components.
 """
-Base.@propagate_inbounds function external_potential(add::SingleComponentFockAddress, pot)
-    pe = 0.0
-    @boundscheck checkbounds(pot, 1:num_modes(add))
-    for (n,i) in occupied_modes(add)
-        pe += n * pot[i]
+@inline function external_potential(::SingleComponentFockAddress, potential, occ::ModeMap)
+    return sum(occ) do index
+        index.occnum * potential[index.mode]
     end
-    return pe
+end
+@inline function external_potential(addr::SingleComponentFockAddress, potential, occ::Tuple)
+    return external_potential(addr, potential, only(occ))
+end
+@inline function external_potential(address::CompositeFS, potential, occs)
+    return _external_potential(address.components, potential, occs, 1)
+end
+@inline function _external_potential(::Tuple{}, _, ::Tuple{}, _)
+    return 0.0
+end
+@inline function _external_potential((a, as...), potential, (occ, occs...), i)
+    pot = external_potential(a, view(potential, :, i), occ)
+    return pot + _external_potential(as, potential, occs, i + 1)
 end
 
-function external_potential(add::CompositeFS, pot::Matrix)
-    pe = 0.0
-    @boundscheck checkbounds(pot, 1:num_modes(add), 1:num_components(add))
-    for (i,c) in enumerate(add.components)
-        @inbounds pe += external_potential(c, @view pot[:,i])
-    end
-    return pe
-end
-
-###
-### HubbardRealSpace
-###
+# struct ================================================================================ #
 """
     HubbardRealSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C), u=ones(C, C), v=zeros(C, D))
 
@@ -276,116 +308,169 @@ starting_address(h::HubbardRealSpace) = h.address
 
 dimension(::HubbardRealSpace, address) = number_conserving_dimension(address)
 
-function diagonal_element(h::HubbardRealSpace, address)
-    int = isnothing(h.u) ? 0.0 : local_interaction(address, h.u)
-    pot = isnothing(h.v) ? 0.0 : external_potential(address, h.potential)
-    return int + pot
+# offdiaonals =========================================================================== #
+# Holds the offdiagonals for a single-component nearest neighbour one-body term. It's
+# structured like a matrix where the first index determines the occupied site in the address
+# and the second index determines the site the particle will hop to.
+struct HubbardRealSpaceComponentData{I,G,A,C,O} <: AbstractMatrix{Pair{A,Float64}}
+    geometry::G
+    parent_address::A
+    address::C
+    t::Float64
+    occmap::O
+
+    function HubbardRealSpaceComponentData{I}(
+        geometry::G,
+        parent::A,
+        address::C,
+        t::Float64,
+        occmap::O=occupied_mode_map(address),
+    ) where {I,G,A,C,O}
+        return new{I,G,A,C,O}(geometry, parent, address, t, occmap)
+    end
 end
-function diagonal_element(h::HubbardRealSpace{1}, address)
-    int = isnothing(h.u) ? 0.0 : local_interaction(address, h.u[1])
-    pot = if isnothing(h.v)
-            0.0
+
+function Base.size(data::HubbardRealSpaceComponentData)
+    return (length(data.occmap), 2 * num_dimensions(data.geometry))
+end
+
+component_index(::HubbardRealSpaceComponentData{I}) where {I} = I
+
+function Base.getindex(data::HubbardRealSpaceComponentData, particle, direction)
+    @boundscheck if !(0 < particle ≤ size(data, 1)) || !(0 < direction ≤ size(data, 2))
+        throw(BoundsError(data, (particle, direction)))
+    end
+    src = data.occmap[particle]
+    neighbor = neighbor_site(data.geometry, src.mode, direction)
+    if neighbor == 0
+        return data.parent_address => 0.0
+    else
+        dst = find_mode(data.address, neighbor, data.occmap)
+        new_add, val = excitation(data.address, (dst,), (src,))
+        if data.parent_address isa CompositeFS
+            new_parent = BitStringAddresses.update_component(
+                data.parent_address, new_add, Val(component_index(data))
+            )
         else
-            @boundscheck checkbounds(h.potential, 1:num_modes(address), 1)
-            @inbounds external_potential(address, @view h.potential[:,1])
+            new_parent = new_add
         end
-    return int + pot
+        return new_parent => -data.t * val
+    end
 end
 
-###
-### Offdiagonals
-###
-# This may be an inefficient implementation, but it is not actually used anywhere in the
-# main algorithm.
-get_offdiagonal(h::HubbardRealSpace, add, i) = offdiagonals(h, add)[i]
-num_offdiagonals(h::HubbardRealSpace, add) = length(offdiagonals(h, add))
-
-"""
-    HubbardRealSpaceCompOffdiagonals{G,A} <: AbstractOffdiagonals{A,Float64}
-
-Offdiagonals for a single address component. Used with [`HubbardRealSpace`](@ref) model
-with a single-component address, or a component of a [`CompositeFS`](@ref).
-"""
-struct HubbardRealSpaceCompOffdiagonals{G,A} <: AbstractOffdiagonals{A,Float64}
+# column ================================================================================= #
+struct HubbardRealSpaceColumn{H,G,A,C<:Tuple} <: AbstractOperatorColumn{A,Float64,H}
+    hamiltonian::H
     geometry::G
     address::A
-    t::Float64
-    length::Int
+    components::C
+    num_offdiagonals::Int
 end
 
-function offdiagonals(h::HubbardRealSpace, comp, add)
-    neighbours = 2 * num_dimensions(h.geometry)
-    return HubbardRealSpaceCompOffdiagonals(
-        h.geometry, add, h.t[comp], num_occupied_modes(add) * neighbours
+parent_operator(column::HubbardRealSpaceColumn) = column.hamiltonian
+starting_address(column::HubbardRealSpaceColumn) = column.address
+
+function diagonal_element(col::HubbardRealSpaceColumn)
+    h = col.hamiltonian
+    occmaps = map(c -> c.occmap, col.components)
+    int = isnothing(h.u) ? 0.0 : local_interaction(col.address, h.u, occmaps)
+    pot = isnothing(h.v) ? 0.0 : external_potential(col.address, h.potential, occmaps)
+
+    return int + pot
+end
+
+function operator_column(h::HubbardRealSpace, address)
+    components = _column_components(h, address)
+    return HubbardRealSpaceColumn(
+        h, h.geometry, address, components, sum(length, components)
     )
 end
 
-Base.size(o::HubbardRealSpaceCompOffdiagonals) = (o.length,)
-
-@inline function Base.getindex(o::HubbardRealSpaceCompOffdiagonals, chosen)
-    neighbours = 2 * num_dimensions(o.geometry)
-    particle, neigh = fldmod1(chosen, neighbours)
-    src_index = find_occupied_mode(o.address, particle)
-    neigh = neighbor_site(o.geometry, src_index.mode, neigh)
-
-    if neigh == 0
-        return o.address, 0.0
-    else
-        dst_index = find_mode(o.address, neigh)
-        new_add, value = excitation(o.address, (dst_index,), (src_index,))
-        return new_add, -o.t * value
-    end
+# Collect HubbardRealSpaceComponentData for each component of the address.
+@inline function _column_components(h::HubbardRealSpace, address::SingleComponentFockAddress)
+    return (HubbardRealSpaceComponentData{1}(h.geometry, address, address, h.t[1]),)
+end
+@inline function _column_components(h::HubbardRealSpace, address::CompositeFS)
+    return _column_components(h, address, address.components, Val(1))
+end
+@inline function _column_components(::HubbardRealSpace, _, ::Tuple{}, ::Val)
+    return ()
+end
+@inline function _column_components(
+    h::HubbardRealSpace, address, (a, as...), ::Val{I}
+) where {I}
+    data = HubbardRealSpaceComponentData{I}(h.geometry, address, a, h.t[I])
+    rest = _column_components(h, address, as, Val(I + 1))
+    return (data, rest...)
 end
 
-# For simple models with one component.
-offdiagonals(h::HubbardRealSpace{1,A}, add::A) where {A} = offdiagonals(h, 1, add)
+# Split one-dimensional array `index` that indexes over many components simultaneously into
+# a two-dimensional one. The dimension of the new index picks the component, while the
+# second picks the offdiagonal within the component.
+function _split_component_from_index(column, index)
+    components = column.components
+    chosen_component = 0
+    while index > 0
+        chosen_component += 1
+        # the follwing is equivalent to
+        # index -= length(components[chosen_component])
+        index -= index_apply(length, components, chosen_component)
+    end
+    index += index_apply(length, components, chosen_component)
+    return chosen_component, index
+end
 
-# Multi-component part
-"""
-    HubbardRealSpaceOffdiagonals{A,T<:Tuple} <: AbstractOffdiagonals{A,Float64}
+function random_offdiagonal(column::HubbardRealSpaceColumn)
+    directions = 2 * num_dimensions(column.hamiltonian.geometry)
+    random_number = rand(1:column.num_offdiagonals)
+    component, remainder = _split_component_from_index(column, random_number)
 
-Offdiagonals of a [`HubbardRealSpace`](@ref) model with a [`CompositeFS`](@ref) address.
-"""
-struct HubbardRealSpaceOffdiagonals{A,T<:Tuple} <: AbstractOffdiagonals{A,Float64}
+    addr, val = index_apply(getindex, column.components, component, remainder)
+    return addr, 1/column.num_offdiagonals, val
+end
+
+struct HubbardRealSpaceColumnOffdiagonals{A,G,C<:Tuple} <: AbstractVector{Pair{A,Float64}}
     address::A
-    parts::T
-    length::Int
+    geometry::G
+    components::C
+    num_offdiagonals::Int
 end
 
-"""
-    get_comp_offdiags(h::HubbardRealSpace, add)
-
-Get offdiagonals of all components of address in a type-stable manner.
-"""
-@inline function get_comp_offdiags(h::HubbardRealSpace, address)
-    return _get_comp_offdiags(address.components, h, Val(1))
+function offdiagonals(column::HubbardRealSpaceColumn)
+    return HubbardRealSpaceColumnOffdiagonals(
+        column.address,
+        column.hamiltonian.geometry,
+        column.components,
+        column.num_offdiagonals,
+    )
 end
+num_offdiagonals(column) = column.num_offdiagonals
 
-# All steps of recursive function (should) get inlined, creating a type-stable tuple of
-# offdiagonals.
-@inline function _get_comp_offdiags((a,as...), h, ::Val{I}) where {I}
-    return (offdiagonals(h, I, a), _get_comp_offdiags(as, h, Val(I+1))...)
-end
-@inline _get_comp_offdiags(::Tuple{}, h, ::Val) = ()
-
-function offdiagonals(h::HubbardRealSpace{C,A}, address::A) where {C,A<:CompositeFS}
-    parts = get_comp_offdiags(h, address)
-    return HubbardRealSpaceOffdiagonals(address, parts, sum(length, parts))
-end
-
-Base.size(o::HubbardRealSpaceOffdiagonals) = (o.length,)
-
-# Becomes type unstable without inline for lots of components. Recursive function is used
-# because the type of the result of `o.parts[i]` can not be inferred.
-@inline function Base.getindex(o::HubbardRealSpaceOffdiagonals{A}, chosen) where {A}
-    return _getindex(o.parts, o.address, chosen, Val(1))
-end
-@inline function _getindex((p, ps...), address::A, chosen, comp::Val{I}) where {A,I}
-    if chosen ≤ length(p)
-        new_add, val = p[chosen]
-        return BitStringAddresses.update_component(address, new_add, comp), val
-    else
-        chosen -= length(p)
-        return _getindex(ps, address, chosen, Val(I + 1))
+@inline function Base.iterate(ods::HubbardRealSpaceColumnOffdiagonals, state=(1,1,1))
+    component_index, particle_index, dimension_index = state
+    if dimension_index > 2 * num_dimensions(ods.geometry)
+        dimension_index = 1
+        particle_index += 1
     end
+    if particle_index > index_apply(size, ods.components, component_index, 1)
+        particle_index = 1
+        component_index += 1
+    end
+    if component_index > length(ods.components)
+        return nothing
+    else
+        # the follwing is equivalent to
+        # result = ods.components[component_index][particle_index, dimension_index]
+        result = index_apply(
+            getindex, ods.components, component_index, particle_index, dimension_index
+        )
+        return result, (component_index, particle_index, dimension_index + 1)
+    end
+end
+Base.size(ods::HubbardRealSpaceColumnOffdiagonals) = (ods.num_offdiagonals,)
+Base.eltype(::HubbardRealSpaceColumnOffdiagonals{A}) where {A} = Pair{A,Float64}
+
+function Base.getindex(column::HubbardRealSpaceColumnOffdiagonals, index)
+    component_index, inner_index = _split_component_from_index(column, index)
+    return index_apply(getindex, column.components, component_index, inner_index)
 end
