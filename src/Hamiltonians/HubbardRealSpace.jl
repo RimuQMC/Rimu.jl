@@ -31,7 +31,7 @@ multi-component Fock state, return the eigenvalue of
 
 where `u::SMatrix` is a symmetric matrix of interaction constants, `i` is a mode index,
 and `σ`, `τ` are component indices.
-`occ` is a [`ModeMap`](@ref) for single-component fock addresses or a tuple of
+`occ` is a [`ModeMap`](@ref) for single-component Fock addresses or a tuple of
 [`ModeMap`](@ref)s for composite addresses.
 
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
