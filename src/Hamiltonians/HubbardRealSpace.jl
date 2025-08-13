@@ -496,21 +496,24 @@ end
     return (data, rest...)
 end
 
-function _split_index_component(column, i)
+# Split one-dimensional array `index` that indexes over many components simultaneously into
+# a two-dimensional one. The dimension of the new index picks the component, while the
+# second picks the offdiagonal within the component.
+function _split_component_from_index(column, index)
     components = column.components
     chosen_component = 0
-    while i > 0
+    while index > 0
         chosen_component += 1
-        i -= index_apply(length, components, chosen_component)
+        index -= index_apply(length, components, chosen_component)
     end
-    i += index_apply(length, components, chosen_component)
-    return chosen_component, i
+    index += index_apply(length, components, chosen_component)
+    return chosen_component, index
 end
 
 function random_offdiagonal(column::HubbardRealSpaceColumn)
     directions = 2 * num_dimensions(column.hamiltonian.geometry)
-    random_number = rand(1:num_offdiagonals(column))
-    component, remainder = _split_index_component(column, random_number)
+    random_number = rand(1:column.num_offdiagonals)
+    component, remainder = _split_component_from_index(column, random_number)
 
     addr, val = index_apply(getindex, column.components, component, remainder)
     return addr, 1/column.num_offdiagonals, val
@@ -534,26 +537,30 @@ end
 num_offdiagonals(column) = column.num_offdiagonals
 
 @inline function Base.iterate(ods::HubbardRealSpaceColumnOffdiagonals, state=(1,1,1))
-    i, j, k = state
-    if k > 2 * num_dimensions(ods.geometry)
-        k = 1
-        j += 1
+    component_index, particle_index, dimension_index = state
+    if dimension_index > 2 * num_dimensions(ods.geometry)
+        dimension_index = 1
+        particle_index += 1
     end
-    if j > index_apply(size, ods.components, i, 1)
-        j = 1
-        i += 1
+    if particle_index > index_apply(size, ods.components, component_index, 1)
+        particle_index = 1
+        component_index += 1
     end
-    if i > length(ods.components)
+    if component_index > length(ods.components)
         return nothing
     else
-        result = index_apply(getindex, ods.components, i, j, k)
-        return result, (i, j, k + 1)
+        # the follwing is equivalent to
+        # result = ods.components[component_index][particle_index, dimension_index]
+        result = index_apply(
+            getindex, ods.components, component_index, particle_index, dimension_index
+        )
+        return result, (component_index, particle_index, dimension_index + 1)
     end
 end
 Base.size(ods::HubbardRealSpaceColumnOffdiagonals) = (ods.num_offdiagonals,)
 Base.eltype(::HubbardRealSpaceColumnOffdiagonals{TT,A}) where {TT,A} = Pair{A,TT}
 
-function Base.getindex(column::HubbardRealSpaceColumnOffdiagonals, i)
-    chosen, i = _split_index_component(column, i)
-    return index_apply(getindex, column.components, chosen, i)
+function Base.getindex(column::HubbardRealSpaceColumnOffdiagonals, index)
+    component_index, inner_index = _split_component_from_index(column, index)
+    return index_apply(getindex, column.components, component_index, inner_index)
 end
