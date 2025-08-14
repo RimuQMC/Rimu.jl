@@ -396,7 +396,7 @@ dimension(::HubbardRealSpace, address) = number_conserving_dimension(address)
 
 # offdiaonals =========================================================================== #
 # Holds the offdiagonals for a single-component nearest neighbour one-body term. It's
-# structured like a matric where the first index determines the occupied site in the adress
+# structured like a matrix where the first index determines the occupied site in the address
 # and the second index determines the site the particle will hop to.
 struct HubbardRealSpaceComponentData{TT,D,I,G,A,C,O} <: AbstractMatrix{Pair{A,TT}}
     geometry::G
