@@ -73,7 +73,8 @@ end
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
-        HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0))
+        HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
+        2*HubbardReal1D(BoseFS(2,0,0); u=1.0im)
     ]
         test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL. Does not work with
@@ -1790,6 +1791,22 @@ end
     P = H4*H4
     c = operator_column(P, addr)
     @test iszero(last.(collect(offdiagonals(c))))
+
+    @testset "ScaledHamiltonian" begin
+        addr = BoseFS(2,0,0)
+        basis = build_basis(addr)
+        H = HubbardReal1D(addr)
+
+        H1 = 2*H
+        @test Matrix(H1) == 2*Matrix(H)
+        @test LOStructure(H1) == LOStructure(H)
+
+        H2 = 3im*H
+        @test Matrix(H2) == 3im*Matrix(H)
+        @test eltype(H2) <: Complex
+        @test LOStructure(H2) == AdjointKnown()
+        @test H2' == -3im*H
+    end
 end
 
 @testset "HamiltonianSum" begin
@@ -1818,7 +1835,7 @@ end
         @test (a => v) in odsum
     end
 
-    S2 = HamiltonianSum(H1, H2; a=2.0im, b=3)
+    S2 = 2im*H1 + 3*H2
     @test LOStructure(S2) == AdjointKnown()
     @test rayleigh_quotient(S2, vec) ≈ 2im*rayleigh_quotient(H1, vec) + 3*rayleigh_quotient(H2, vec)
 

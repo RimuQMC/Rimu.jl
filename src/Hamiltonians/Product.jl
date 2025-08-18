@@ -193,3 +193,56 @@ function Base.iterate(o::ProductOffdiagonals, state::ProductIterState{S1,S2,OD1,
         end
     end
 end
+
+"""
+    ScaledHamiltonian(H::AbstractHamiltonian, α)
+
+The product of the Hamiltonian `H` with the scalar `α`.
+"""
+struct ScaledHamiltonian{T,H} <: ModifiedHamiltonian{T}
+    hamiltonian::H
+    α::T
+end
+
+function ScaledHamiltonian(h::AbstractHamiltonian{T1}, α::T2) where {T1,T2}
+    T = promote_type(T1,T2)
+    ScaledHamiltonian{T, typeof(h)}(h, T(α))
+end
+
+function Base.show(io::IO, h::ScaledHamiltonian{T}) where {T}
+    if T <: Real
+        print(io, h.α, " * ", h.hamiltonian)
+    else
+        print(io, "(", h.α, ") * ", h.hamiltonian)
+    end
+end
+
+function LOStructure(::Type{<:ScaledHamiltonian{T,H}}) where {T,H}
+    if LOStructure(H) == IsHermitian()
+        if T <: Real
+            return IsHermitian()
+        else
+            return AdjointKnown()
+        end
+    else
+        return LOStructure(H)
+    end
+end
+
+function LinearAlgebra.adjoint(h::ScaledHamiltonian)
+    return ScaledHamiltonian(h.hamiltonian', conj(h.α))
+end
+
+parent_operator(h::ScaledHamiltonian) = h.hamiltonian
+modify_diagonal(h::ScaledHamiltonian, _, value) = value*h.α
+modify_offdiagonal(h::ScaledHamiltonian, _, addr, value) = addr => value*h.α
+
+function VectorInterface.scale(h::AbstractHamiltonian, α::T) where {T<:Number}
+    if α == 1
+        return h
+    end
+    return ScaledHamiltonian(h, α)
+end
+
+Base.:*(α::Number, h::AbstractHamiltonian) = scale(h, α)
+Base.:*(h::AbstractHamiltonian, α::Number) = α * h

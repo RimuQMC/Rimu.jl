@@ -1,26 +1,34 @@
 """
-    HamiltonianSum(A::AbstractHamiltonian, B::AbstractHamiltonian; a=1, b=1, weight=1)
+    add(A::AbstractHamiltonian, B::AbstractHamiltonian; a=1, b=1, weight=0.5) -> HamiltonianSum
+    HamiltonianSum(A::AbstractHamiltonian, B::AbstractHamiltonian; weight=0.5)
     +(A::AbstractHamiltonian, B::AbstractHamiltonian)
 
 The sum of two [`AbstractHamiltonian`](@ref)s with coefficients, `aA + bB`. The two
-Hamiltonians must act on the same address space. The ratio of random spawns from `A` and
-spawns from `B` is controlled by `weight`.
+Hamiltonians must act on the same address space. The keyword argument `weight` is the
+probability of random spawns from `A`, with `1 - weight` the probability of spawning from
+`B`.
 """
 struct HamiltonianSum{T, H1<:AbstractHamiltonian, H2<:AbstractHamiltonian} <: AbstractHamiltonian{T}
     h1::H1
     h2::H2
-    a::T
-    b::T
     weight::Float64
 end
-function HamiltonianSum(h1::AbstractHamiltonian{T1}, h2::AbstractHamiltonian{T2}; a=1, b=1, weight=1) where {T1, T2}
+function HamiltonianSum(h1::AbstractHamiltonian{T1}, h2::AbstractHamiltonian{T2}; weight=0.5) where {T1, T2}
     if !(allows_address_type(h2, starting_address(h1))) || !(allows_address_type(h1, starting_address(h2)))
         throw(ArgumentError("The Hamiltonians are not compatible."))
     end
-    T = promote_type(T1,T2,typeof(a),typeof(b))
-    return HamiltonianSum{T, typeof(h1), typeof(h2)}(h1, h2, T(a), T(b), abs(weight))
+    T = promote_type(T1,T2)
+    return HamiltonianSum{T, typeof(h1), typeof(h2)}(h1, h2, min(abs(weight), 1.0))
 end
 Base.:+(h1::AbstractHamiltonian, h2::AbstractHamiltonian) = HamiltonianSum(h1, h2)
+
+function Base.show(io::IO, s::HamiltonianSum)
+    print(io, "HamiltonianSum(", s.h1, ", ", s.h2, "; weight=", s.weight, ")")
+end
+
+function VectorInterface.add(h1::AbstractHamiltonian, h2::AbstractHamiltonian, a::Number, b::Number; weight=0.5)
+    return HamiltonianSum(a*h1, b*h2; weight)
+end
 
 starting_address(s::HamiltonianSum) = starting_address(s.h1)
 
@@ -28,12 +36,12 @@ function allows_address_type(s::HamiltonianSum, ::Type{A}) where {A}
     return allows_address_type(s.h2, A) && allows_address_type(s.h1, A)
 end
 
-function LOStructure(::Type{<:HamiltonianSum{T,H1,H2}}) where {T,H1,H2}
+function LOStructure(::Type{<:HamiltonianSum{<:Any,H1,H2}}) where {H1,H2}
     l1 = LOStructure(H1)
     l2 = LOStructure(H2)
     if l1 == IsDiagonal() && l2 == IsDiagonal()
         return IsDiagonal()
-    elseif T <: Real && l1 == IsHermitian() && l2 == IsHermitian()
+    elseif l1 == IsHermitian() && l2 == IsHermitian()
         return IsHermitian()
     elseif l1 != AdjointUnknown() && l2 != AdjointUnknown()
         return AdjointKnown()
@@ -41,8 +49,9 @@ function LOStructure(::Type{<:HamiltonianSum{T,H1,H2}}) where {T,H1,H2}
         return AdjointUnknown()
     end
 end
+
 function LinearAlgebra.adjoint(s::HamiltonianSum)
-    return HamiltonianSum(s.h1', s.h2'; a=conj(s.a), b=conj(s.b), weight=s.weight)
+    return HamiltonianSum(s.h1', s.h2'; weight=s.weight)
 end
 
 function has_iterable_offdiagonals(::Type{<:HamiltonianSum{<:Any,H1,H2}}) where {H1,H2}
@@ -58,12 +67,10 @@ struct SumColumn{A,T,O<:HamiltonianSum{T},C1,C2} <: AbstractOperatorColumn{A,T,O
     address::A
     col1::C1
     col2::C2
-    a::T
-    b::T
     weight::Float64
 end
 function operator_column(s::HamiltonianSum, add)
-    return SumColumn(s, add, operator_column(s.h1, add), operator_column(s.h2, add), s.a, s.b, s.weight)
+    return SumColumn(s, add, operator_column(s.h1,add), operator_column(s.h2,add), s.weight)
 end
 
 parent_operator(c::SumColumn) = c.operator
@@ -71,16 +78,16 @@ starting_address(c::SumColumn) = c.address
 num_offdiagonals(c::SumColumn) = num_offdiagonals(c.col1) + num_offdiagonals(c.col2)
 
 function diagonal_element(c::SumColumn{<:Any,T}) where {T}
-    return T(c.a*diagonal_element(c.col1) + c.b*diagonal_element(c.col2))
+    return T(diagonal_element(c.col1) + diagonal_element(c.col2))
 end
 
 function random_offdiagonal(c::SumColumn{<:Any,T}) where {T}
-    if rand() < c.weight/(c.weight+1)
+    if rand() < c.weight
         add, prob, val = random_offdiagonal(c.col1)
-        return add, prob*c.weight/(c.weight+1), T(val*c.a)
+        return add, prob*c.weight, T(val)
     else
         add, prob, val = random_offdiagonal(c.col2)
-        return add, prob/(c.weight+1), T(val*c.b)
+        return add, prob*(1-c.weight), T(val)
     end
 end
 
@@ -89,11 +96,9 @@ struct SumOffdiagonals{A,T,O<:HamiltonianSum{T},OD1,OD2}
     address::A
     ods1::OD1
     ods2::OD2
-    a::T
-    b::T
 end
 function offdiagonals(c::SumColumn)
-    return SumOffdiagonals(c.operator, c.address, offdiagonals(c.col1), offdiagonals(c.col2), c.a, c.b)
+    return SumOffdiagonals(c.operator, c.address, offdiagonals(c.col1), offdiagonals(c.col2))
 end
 
 Base.IteratorSize(::SumOffdiagonals) = Base.SizeUnknown()
@@ -107,10 +112,10 @@ function Base.iterate(o::SumOffdiagonals)
             return nothing
         end
         (add, val), state = first
-        return add => val*o.b, (state, false)
+        return add => val, (state, false)
     end
     (add, val), state = first
-    return add => val*o.a, (state, true)
+    return add => val, (state, true)
 end
 
 function Base.iterate(o::SumOffdiagonals, state)
@@ -122,16 +127,16 @@ function Base.iterate(o::SumOffdiagonals, state)
                 return nothing
             end
             (add, val), state = first
-            return add => val*o.b, (state, false)
+            return add => val, (state, false)
         end
         (add, val), state = next
-        return add => val*o.a, (state, true)
+        return add => val, (state, true)
     else
         next = iterate(o.ods2, state[1])
         if isnothing(next)
             return nothing
         end
         (add, val), state = next
-        return add => val*o.b, (state, false)
+        return add => val, (state, false)
     end
 end
