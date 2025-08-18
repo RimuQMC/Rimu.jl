@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        julia-version: [1, 'nightly']
+        julia-version: ['1', 'pre']
         julia-arch: [x64]
       fail-fast: false
 
