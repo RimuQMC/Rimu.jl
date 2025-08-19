@@ -502,6 +502,30 @@ end
             @test exact_energy(H1) ≈ exact_energy(H2)
         end
     end
+    @testset "HubbardRealSpace with complex parameters" begin
+        for H in (
+            HubbardRealSpace(FermiFS(1, 0, 1, 0); geometry = PeriodicBoundaries((2,2,))), # Hermitian
+            HubbardRealSpace(FermiFS(1, 0, 1, 0); geometry = HardwallBoundaries((2,2,))), # Hermitian
+            HubbardRealSpace(FermiFS(1, 0, 1, 0), t=[2.0+3im], geometry = PeriodicBoundaries((2,2,))), # Hermitian
+            HubbardRealSpace(BoseFS(1, 0, 1, 0), Δ=[6], t=[2.0+3im], geometry = PeriodicBoundaries((2,2,))), # Hermitian
+            HubbardRealSpace(OccupationNumberFS(3, 0, 1), t=[0]), # diagonal and Hermitian
+            HubbardRealSpace(BoseFS(1,1,1),t=[1.0im]),    )
+            test_hamiltonian_structure(H)
+        end
+        h = HubbardRealSpace(OccupationNumberFS(3, 0, 1, 0); t=[im], geometry = PeriodicBoundaries((2,2,))) # diagonal and Hermitian
+        @test LOStructure(h) isa IsHermitian
+        @test adjoint(h) == h
+    end
+    @testset "nearest_neighbour_interaction in HubbardRealSpace" begin
+        addr = near_uniform(BoseFS{4,4})
+        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries((4,)), Δ=[2.0])
+        H2 = ExtendedHubbardReal1D(addr; v=2.0)
+        @test Matrix(H1) == Matrix(H2)
+        addr = near_uniform(FermiFS{2,4})
+        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries((4,)), Δ=[-1.0])
+        H2 = ExtendedHubbardReal1D(addr; v=-1.0)
+        @test Matrix(H1) == Matrix(H2)
+    end
 end
 
 @testset "Importance sampling" begin
