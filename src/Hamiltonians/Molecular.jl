@@ -1,7 +1,7 @@
 """
-    MolecularMolecularHamiltonian(fcidump::String)
+    MolecularMolecularHamiltonian(fcidump::String[, starting_address])
     
-    MolecularMolecularHamiltonian(fd::ElemCo.FciDumps.FDump)
+    MolecularMolecularHamiltonian(fd::ElemCo.FciDumps.FDump[, starting_address])
 
 Implements a Molecular Hamiltonian with ElemCo.jl.
 """
@@ -95,7 +95,10 @@ end
 #     return rand(column.ods), 1 / length(column.ods)
 # end
 
-function one_electron_integral(int1::Array{T,2}, occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}) where {T<:Number}
+function one_electron_integral(
+    int1::Array{T,2},
+    occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}
+)::T where {T<:Number}
     one_elec_int = zero(T)
     for occ_mode in occ_modes
         for i in occ_mode
@@ -105,14 +108,18 @@ function one_electron_integral(int1::Array{T,2}, occ_modes::Tuple{AbstractVector
     one_elec_int
 end
 
-function two_electron_integral(int2::Array{T,4}, occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}})::T where {T<:Number}
+function two_electron_integral(
+    int2::Array{T,4},
+    occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}
+)::T where {T<:Number}
     two_elec_int = zero(T)
 
     sum_alpha_alpha = zero(T)
     for i in occ_modes[1]
         for j in occ_modes[1]
             if i.mode ≠ j.mode
-                sum_alpha_alpha += int2[i.mode, j.mode, i.mode, j.mode] - int2[i.mode, j.mode, j.mode, i.mode]
+                sum_alpha_alpha += int2[i.mode, j.mode, i.mode, j.mode] -
+                                   int2[i.mode, j.mode, j.mode, i.mode]
             end
         end
     end
@@ -130,7 +137,8 @@ function two_electron_integral(int2::Array{T,4}, occ_modes::Tuple{AbstractVector
     for i in occ_modes[2]
         for j in occ_modes[2]
             if i.mode ≠ j.mode
-                sum_beta_beta += int2[i.mode, j.mode, i.mode, j.mode] - int2[i.mode, j.mode, j.mode, i.mode]
+                sum_beta_beta += int2[i.mode, j.mode, i.mode, j.mode] -
+                                 int2[i.mode, j.mode, j.mode, i.mode]
             end
         end
     end
@@ -148,7 +156,13 @@ end
     end
 end
 
-struct MolecularHamiltonianOffDiagonalsIterator{T,A<:FermiFS2C,D,OA,OB,UA,UB,TI<:FermiFSIndex}
+"""
+This struct is used internally to represent the iterator for 
+off-diagonal terms generation.
+"""
+struct MolecularHamiltonianOffDiagonalsIterator{
+    T,A<:FermiFS2C,D,OA,OB,UA,UB,TI<:FermiFSIndex
+}
     address::A
     op::MolecularHamiltonian{T,A,D}
     modes::Modes{OA,OB,UA,UB,TI}
@@ -170,17 +184,105 @@ function Base.eltype(
     return Tuple{A,T}
 end
 
+"""
+This struct is used internally to represent the state during 
+off-diagonal terms generation.
+
+* `n_excited`: Tuple of 2 indices represents the how many electrons are excited in 
+alpha(1) and beta(2) channel.
+* `from`: Records the indices of `ModeMap` arrays where electrons are excited from.
+* `to`: Records the indices of `ModeMap` arrays where electrons are excited to.
+
+Both `from = (0,0)` and `to = (0,0)` represent a special state when there is no more
+state in current `n_excited` situation, this is used to notify upper caller.
+
+When used to represents one-electron-excitation case, only `from[1]` and `to[1]`
+are used. 
+When used to represents one-one-electrons-excitation case, index `1` represention
+alpha spin channel and index `2` represention beta spin channel repectively.
+"""
 struct MolecularHamiltonianOffDiagonalsIteratorState
     n_excited::Tuple{Int,Int}
     from::Tuple{Int,Int}
     to::Tuple{Int,Int}
 end
 
+"""
+    is_void_state(s::MolecularHamiltonianOffDiagonalsIteratorState)
+
+"""
 function is_void_state(s::MolecularHamiltonianOffDiagonalsIteratorState)
     if s.from == (0, 0) && s.to == (0, 0)
         return true
     end
     return false
+end
+
+"""
+    is_invalid_state(iter::MolecularHamiltonianOffDiagonalsIterator, s::MolecularHamiltonianOffDiagonalsIteratorState)
+
+This function is used to check if `s` is a valid state. It checks if the `from` and
+`to` are in the range of corresponding `ModeMap` array indices.
+"""
+function is_invalid_state(
+    iter::MolecularHamiltonianOffDiagonalsIterator,
+    s::MolecularHamiltonianOffDiagonalsIteratorState
+)
+    if s.n_excited == (0, 1)
+        if ((1 <= s.from[1] <= length(iter.modes.occupied[2]))
+            &&
+            (1 <= s.to[1] <= length(iter.modes.unoccupied[2])))
+            return false
+        else
+            return true
+        end
+    elseif s.n_excited == (1, 0)
+        if ((1 <= s.from[1] <= length(iter.modes.occupied[1]))
+            &&
+            (1 <= s.to[1] <= length(iter.modes.unoccupied[1])))
+            return false
+        else
+            return true
+        end
+    elseif s.n_excited == (0, 2)
+        if ((1 <= s.from[1] <= length(iter.modes.occupied[2]))
+            &&
+            (1 <= s.from[2] <= length(iter.modes.occupied[2]))
+            &&
+            (1 <= s.to[1] <= length(iter.modes.unoccupied[2]))
+            &&
+            (1 <= s.to[2] <= length(iter.modes.unoccupied[2])))
+            return false
+        else
+            return true
+        end
+    elseif s.n_excited == (2, 0)
+        if ((1 <= s.from[1] <= length(iter.modes.occupied[1]))
+            &&
+            (1 <= s.from[2] <= length(iter.modes.occupied[1]))
+            &&
+            (1 <= s.to[1] <= length(iter.modes.unoccupied[1]))
+            &&
+            (1 <= s.to[2] <= length(iter.modes.unoccupied[1])))
+            return false
+        else
+            return true
+        end
+    elseif s.n_excited == (1, 1)
+        if ((1 <= s.from[1] <= length(iter.modes.occupied[1]))
+            &&
+            (1 <= s.from[2] <= length(iter.modes.occupied[2]))
+            &&
+            (1 <= s.to[1] <= length(iter.modes.unoccupied[1]))
+            &&
+            (1 <= s.to[2] <= length(iter.modes.unoccupied[2])))
+            return false
+        else
+            return true
+        end
+    else
+        return true
+    end
 end
 
 function MolecularHamiltonianOffDiagonalsIteratorState(
@@ -223,53 +325,61 @@ function Base.iterate(
 )
     na, nb = state.n_excited
     if (na, nb) == (0, 1)
-        if is_void_state(state)
-            return iterate(iter, MolecularHamiltonianOffDiagonalsIteratorState(1, 0))
+        if is_void_state(state) || is_invalid_state(iter, state)
+            return iterate(
+                iter, MolecularHamiltonianOffDiagonalsIteratorState(1, 0)
+            )
         end
         r = one_electron_excitation(2, iter.address, iter.op, iter.modes, state)
-        nstate = one_electron_excitation_generator(iter, state)
+        nstate = one_electron_excitation_next(iter, state)
         return r, nstate
     elseif (na, nb) == (1, 0)
-        if is_void_state(state)
-            return iterate(iter, MolecularHamiltonianOffDiagonalsIteratorState(0, 2))
+        if is_void_state(state) || is_invalid_state(iter, state)
+            return iterate(
+                iter, MolecularHamiltonianOffDiagonalsIteratorState(0, 2)
+            )
         end
         r = one_electron_excitation(1, iter.address, iter.op, iter.modes, state)
-        nstate = one_electron_excitation_generator(iter, state)
+        nstate = one_electron_excitation_next(iter, state)
         return r, nstate
     elseif (na, nb) == (0, 2)
-        if is_void_state(state)
-            return iterate(iter, MolecularHamiltonianOffDiagonalsIteratorState(2, 0))
+        if is_void_state(state) || is_invalid_state(iter, state)
+            return iterate(
+                iter, MolecularHamiltonianOffDiagonalsIteratorState(2, 0)
+            )
         end
         r = two_electron_excitation(2, iter.address, iter.op, iter.modes, state)
-        nstate = two_electron_excitation_generator(iter, state)
+        nstate = two_electron_excitation_next(iter, state)
         return r, nstate
     elseif (na, nb) == (2, 0)
-        if is_void_state(state)
-            return iterate(iter, MolecularHamiltonianOffDiagonalsIteratorState(1, 1))
+        if is_void_state(state) || is_invalid_state(iter, state)
+            return iterate(
+                iter, MolecularHamiltonianOffDiagonalsIteratorState(1, 1)
+            )
         end
         r = two_electron_excitation(1, iter.address, iter.op, iter.modes, state)
-        nstate = two_electron_excitation_generator(iter, state)
+        nstate = two_electron_excitation_next(iter, state)
         return r, nstate
     elseif (na, nb) == (1, 1)
-        if is_void_state(state)
+        if is_void_state(state) || is_invalid_state(iter, state)
             return nothing
         end
         r = one_one_electron_excitation(iter.address, iter.op, iter.modes, state)
-        nstate = one_one_electron_excitation_generator(iter, state)
+        nstate = one_one_electron_excitation_next(iter, state)
         return r, nstate
     end
 end
 
 function Base.length(iter::MolecularHamiltonianOffDiagonalsIterator)
-    return length(iter.modes.occupied[1]) * length(iter.modes.unoccupied[1]) +
-           length(iter.modes.occupied[2]) * length(iter.modes.unoccupied[2]) +
-           binomial(length(iter.modes.unoccupied[1]), 2) +
-           binomial(length(iter.modes.unoccupied[2]), 2) +
+    return length(iter.modes.occupied[1]) * length(iter.modes.unoccupied[1]) + # 1-alpha
+           length(iter.modes.occupied[2]) * length(iter.modes.unoccupied[2]) + # 1-beta
+           binomial(length(iter.modes.unoccupied[1]), 2) + # 2-alpha
+           binomial(length(iter.modes.unoccupied[2]), 2) + # 2-beta
            (length(iter.modes.occupied[1]) * length(iter.modes.unoccupied[1]) *
-            length(iter.modes.occupied[2]) * length(iter.modes.unoccupied[2]))
+            length(iter.modes.occupied[2]) * length(iter.modes.unoccupied[2])) # 1-alpha, 1-beta
 end
 
-function two_electron_excitation_generator(
+function two_electron_excitation_next(
     iter::MolecularHamiltonianOffDiagonalsIterator,
     state::MolecularHamiltonianOffDiagonalsIteratorState
 )
@@ -332,6 +442,27 @@ function two_electron_excitation(
     return naddr, two_body
 end
 
+function one_electron_excitation_next(
+    iter::MolecularHamiltonianOffDiagonalsIterator,
+    state::MolecularHamiltonianOffDiagonalsIteratorState
+)
+    na, nb = state.n_excited
+    chan = (na == 1) ? 1 : 2
+
+    ii = state.from[1]
+    ij = state.to[1]
+
+    ij += 1
+    if ij > length(iter.modes.unoccupied[chan])
+        ii += 1
+        ij = 1
+    end
+    if ii > length(iter.modes.occupied[chan])
+        return MolecularHamiltonianOffDiagonalsIteratorState((na, nb), 0, 0)
+    end
+    return MolecularHamiltonianOffDiagonalsIteratorState((na, nb), ii, ij)
+end
+
 function one_electron_excitation(
     chan::Int, addr::A, op::MolecularHamiltonian{T,A,D}, m::Modes,
     state::MolecularHamiltonianOffDiagonalsIteratorState
@@ -368,28 +499,7 @@ function one_electron_excitation(
     return naddr, interaction
 end
 
-function one_electron_excitation_generator(
-    iter::MolecularHamiltonianOffDiagonalsIterator,
-    state::MolecularHamiltonianOffDiagonalsIteratorState
-)
-    na, nb = state.n_excited
-    chan = (na == 1) ? 1 : 2
-
-    ii = state.from[1]
-    ij = state.to[1]
-
-    ij += 1
-    if ij > length(iter.modes.unoccupied[chan])
-        ii += 1
-        ij = 1
-    end
-    if ii > length(iter.modes.occupied[chan])
-        return MolecularHamiltonianOffDiagonalsIteratorState((na, nb), 0, 0)
-    end
-    return MolecularHamiltonianOffDiagonalsIteratorState((na, nb), ii, ij)
-end
-
-function one_one_electron_excitation_generator(
+function one_one_electron_excitation_next(
     iter::MolecularHamiltonianOffDiagonalsIterator,
     state::MolecularHamiltonianOffDiagonalsIteratorState
 )

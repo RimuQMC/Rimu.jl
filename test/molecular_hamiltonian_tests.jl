@@ -56,6 +56,72 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
         @test s.values[1] ≈ -1.137312593210905 atol = error
     end
 
+    @testset "Off-diagonal term generation" begin
+        excitation_type_map = ((0, 1), (1, 0), (0, 2), (2, 0), (1, 1))
+        @testset "Corner cases: no enough electrons" begin
+            fcidump = joinpath(@__DIR__, "examples/h2.FCIDUMP")
+            h = MolecularHamiltonian(fcidump)
+            a = starting_address(h)
+            c = operator_column(h, a)
+            ods = offdiagonals(c)
+            excitation_type_indices = (3, 4)
+            for t in excitation_type_indices
+                ref_next_state = Rimu.Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState(
+                    (1, 1), (0, 0), (0, 0)
+                )
+                _, next_state = iterate(ods,
+                    Rimu.Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState(
+                        excitation_type_map[t]...
+                    ))
+                @test ref_next_state == next_state
+            end
+        end
+
+        @testset "Corner cases: boundary" begin
+            fcidump = joinpath(@__DIR__, "examples/h2_dual.FCIDUMP")
+            h = MolecularHamiltonian(fcidump)
+            a = starting_address(h)
+            c = operator_column(h, a)
+            ods = offdiagonals(c)
+
+            boundary_states = (
+                Rimu.Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState(
+                    excitation_type_map[1],
+                    (length(c.modes.occupied[2]), 0),
+                    (length(c.modes.unoccupied[2]), 0)
+                ),
+                Rimu.Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState(
+                    excitation_type_map[2],
+                    (length(c.modes.occupied[1]), 0),
+                    (length(c.modes.unoccupied[1]), 0)
+                ),
+                Rimu.Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState(
+                    excitation_type_map[3],
+                    (length(c.modes.occupied[2]) - 1, length(c.modes.occupied[2])),
+                    (length(c.modes.unoccupied[2]) - 1, length(c.modes.unoccupied[2]))
+                ),
+                Rimu.Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState(
+                    excitation_type_map[4],
+                    (length(c.modes.occupied[1]) - 1, length(c.modes.occupied[1])),
+                    (length(c.modes.unoccupied[1]) - 1, length(c.modes.unoccupied[1]))
+                ),
+                Rimu.Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState(
+                    excitation_type_map[5],
+                    (length(c.modes.occupied[1]), length(c.modes.occupied[2])),
+                    (length(c.modes.unoccupied[1]), length(c.modes.unoccupied[2]))
+                ),
+            )
+
+            for (i, t) in enumerate(excitation_type_map)
+                _, next_state = iterate(ods, boundary_states[i])
+                ref_next_state = Rimu.Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState(
+                    excitation_type_map[i], (0, 0), (0, 0)
+                )
+                @test next_state == ref_next_state
+            end
+        end
+    end
+
     @testset "Off-diagonal matrix terms for dual H2 Molecules" begin
         struct ModeTransition
             from::Int64
@@ -94,11 +160,15 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
                 push!(states, (FermiFS2C(addr.components[1], i[1]), i[2]))
             end
 
+            for i in alpha_one_electron
+                push!(states, (FermiFS2C(i[1], addr.components[2]), i[2]))
+            end
+
             for i in beta_two_electron
                 push!(states, (FermiFS2C(addr.components[1], i[1]), i[2]))
             end
 
-            for i in alpha_one_electron
+            for i in alpha_two_electron
                 push!(states, (FermiFS2C(i[1], addr.components[2]), i[2]))
             end
 
@@ -114,9 +184,6 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
                 end
             end
 
-            for i in alpha_two_electron
-                push!(states, (FermiFS2C(i[1], addr.components[2]), i[2]))
-            end
             states
         end
 
