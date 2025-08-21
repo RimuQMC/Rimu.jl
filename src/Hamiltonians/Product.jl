@@ -213,6 +213,10 @@ function ScaledHamiltonian(h::AbstractHamiltonian{T1}, α::T2) where {T1,T2}
     ScaledHamiltonian{T, typeof(h)}(h, T(α))
 end
 
+function ScaledHamiltonian(h::ScaledHamiltonian, β::Number)
+    return ScaledHamiltonian(h.hamiltonian, h.α*β)
+end
+
 function Base.show(io::IO, h::ScaledHamiltonian{T}) where {T}
     if T <: Real
         print(io, h.α, " * ", h.hamiltonian)
@@ -241,6 +245,7 @@ parent_operator(h::ScaledHamiltonian) = h.hamiltonian
 modify_diagonal(h::ScaledHamiltonian, _, value) = value*h.α
 modify_offdiagonal(h::ScaledHamiltonian, _, addr, value) = addr => value*h.α
 
+@doc (@doc ScaledHamiltonian)
 function VectorInterface.scale(h::AbstractHamiltonian, α::T) where {T<:Number}
     if α == 1
         return h
@@ -249,4 +254,3 @@ function VectorInterface.scale(h::AbstractHamiltonian, α::T) where {T<:Number}
 end
 
 Base.:*(α::Number, h::AbstractHamiltonian) = scale(h, α)
-Base.:*(h::AbstractHamiltonian, α::Number) = α * h

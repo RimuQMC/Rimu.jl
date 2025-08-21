@@ -1800,6 +1800,8 @@ end
         H1 = 2*H
         @test Matrix(H1) == 2*Matrix(H)
         @test LOStructure(H1) == LOStructure(H)
+        @test 2*H1 == 4*H
+        @test 1*H1 == H1
 
         H2 = 3im*H
         @test Matrix(H2) == 3im*Matrix(H)
@@ -1814,6 +1816,7 @@ end
     H1 = HubbardReal1D(addr; u=2, t=2)
     H2 = ExtendedHubbardReal1D(addr; v=3)
     S1 = H1+H2
+    @test S1 == add(H1, H2; weight=0.5)
     @test LOStructure(S1) == IsHermitian()
 
     basis = build_basis(addr)
@@ -1836,6 +1839,7 @@ end
     end
 
     S2 = 2im*H1 + 3*H2
+    @test S2 == add(H1, H2, 2im, 3)
     @test LOStructure(S2) == AdjointKnown()
     @test rayleigh_quotient(S2, vec) ≈ 2im*rayleigh_quotient(H1, vec) + 3*rayleigh_quotient(H2, vec)
 

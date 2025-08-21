@@ -1,5 +1,5 @@
 """
-    add(A::AbstractHamiltonian, B::AbstractHamiltonian; a=1, b=1, weight=0.5) -> HamiltonianSum
+    add(A::AbstractHamiltonian, B::AbstractHamiltonian, [a=1, b=1]; weight=0.5) -> HamiltonianSum
     HamiltonianSum(A::AbstractHamiltonian, B::AbstractHamiltonian; weight=0.5)
     +(A::AbstractHamiltonian, B::AbstractHamiltonian)
 
@@ -26,6 +26,7 @@ function Base.show(io::IO, s::HamiltonianSum)
     print(io, "HamiltonianSum(", s.h1, ", ", s.h2, "; weight=", s.weight, ")")
 end
 
+@doc (@doc HamiltonianSum)
 function VectorInterface.add(h1::AbstractHamiltonian, h2::AbstractHamiltonian, a::Number=1, b::Number=1; weight=0.5)
     return HamiltonianSum(a*h1, b*h2; weight)
 end
@@ -105,38 +106,38 @@ Base.IteratorSize(::SumOffdiagonals) = Base.SizeUnknown()
 Base.eltype(::SumOffdiagonals{A,T}) where {A,T} = Pair{A,T}
 
 function Base.iterate(o::SumOffdiagonals)
-    first = iterate(o.ods1)
-    if isnothing(first)
-        first = iterate(o.ods2)
-        if isnothing(first)
+    first1 = iterate(o.ods1)
+    if isnothing(first1)
+        first2 = iterate(o.ods2)
+        if isnothing(first2)
             return nothing
         end
-        (add, val), state = first
+        (add, val), state = first2
         return add => val, (state, false)
     end
-    (add, val), state = first
+    (add, val), state = first1
     return add => val, (state, true)
 end
 
 function Base.iterate(o::SumOffdiagonals, state)
     if state[2] # iterating offdiagonals of first Hamiltonian
-        next = iterate(o.ods1, state[1])
-        if isnothing(next)
-            first = iterate(o.ods2)
-            if isnothing(first)
+        next1 = iterate(o.ods1, state[1])
+        if isnothing(next1)
+            first2 = iterate(o.ods2)
+            if isnothing(first2)
                 return nothing
             end
-            (add, val), state = first
+            (add, val), state = first2
             return add => val, (state, false)
         end
-        (add, val), state = next
+        (add, val), state = next1
         return add => val, (state, true)
     else
-        next = iterate(o.ods2, state[1])
-        if isnothing(next)
+        next2 = iterate(o.ods2, state[1])
+        if isnothing(next2)
             return nothing
         end
-        (add, val), state = next
+        (add, val), state = next2
         return add => val, (state, false)
     end
 end
