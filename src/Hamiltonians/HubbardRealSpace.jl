@@ -53,13 +53,13 @@ end
 )
     return u * dot(occ_a, occ_b)
 end
-@inline local_interaction(::SingleComponentFockAddress, ::SingleComponentFockAddress, 
+@inline local_interaction(::SingleComponentFockAddress, ::SingleComponentFockAddress,
     ::Nothing,_,_) = 0
 """
     nearest_neighbor_interaction(onr1::SVector, onr2::SVector, Δ, geometry::CubicGrid, map1::ModeMap)
 
 Calculate the nearest neighbour interaction ``Δ \\sum_{⟨i,j⟩} n_{↑, i} n_{↓, j}`` for an occupation
-number representation `onr1` and `onr2` of the two single-component Fock states. For a 
+number representation `onr1` and `onr2` of the two single-component Fock states. For a
 multi-component Fock state, return the eigenvalue of
 
 ```math
@@ -71,7 +71,7 @@ and `σ`, `τ` are component indices.
 
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 """
-@inline function nearest_neighbor_interaction(onr1::SVector, onr2::SVector, 
+@inline function nearest_neighbor_interaction(onr1::SVector, onr2::SVector,
     Δ, geometry::CubicGrid{D,S,B}, map1::ModeMap
     ) where {D,S,B}
     N1 = length(map1)
@@ -89,24 +89,24 @@ See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 end
 @inline nearest_neighbor_interaction(::SVector, ::SVector, ::Nothing, ::CubicGrid, ::ModeMap) = 0
 
-@inline _interactions_(addr::SingleComponentFockAddress, ::Nothing, Δ, occs, 
+@inline _interactions_(addr::SingleComponentFockAddress, ::Nothing, Δ, occs,
     geometry::CubicGrid) = nearest_neighbor_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
-@inline _interactions_(addr::SingleComponentFockAddress, u, ::Nothing, occs, 
+@inline _interactions_(addr::SingleComponentFockAddress, u, ::Nothing, occs,
     ::CubicGrid) = local_interaction(addr, u, occs)
-@inline function _interactions_(addr::SingleComponentFockAddress, u, Δ, occs, geometry::CubicGrid) 
-    return local_interaction(addr, u, occs) + 
+@inline function _interactions_(addr::SingleComponentFockAddress, u, Δ, occs, geometry::CubicGrid)
+    return local_interaction(addr, u, occs) +
         nearest_neighbor_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
 end
-@inline function _interactions_(addr::CompositeFS, u, Δ, occs, geometry::CubicGrid) 
+@inline function _interactions_(addr::CompositeFS, u, Δ, occs, geometry::CubicGrid)
     return _interactions(addr.components, u, Δ, occs, geometry)
 end
 
 """
     _interaction_col(a, bs::Tuple, us::Tuple, Δs::Tuple, occ::ModeMap, occs::Tuple, geometry::CubicGrid)
 
-Sum the local interactions of the Fock state `a` with all states in `bs` using the onsite 
-and nearest neighbour interaction constants in `us` and `Δs`. This is used to compute 
-all interactions in the column below the diagonal of the interaction matrix. 
+Sum the local interactions of the Fock state `a` with all states in `bs` using the onsite
+and nearest neighbour interaction constants in `us` and `Δs`. This is used to compute
+all interactions in the column below the diagonal of the interaction matrix.
 """
 @inline _interaction_col(a, ::Tuple{}, ::Tuple{}, ::Tuple{}, ::ModeMap, ::Tuple{}, ::CubicGrid) = 0
 @inline function _interaction_col(a, (b, bs...), (u, us...), (Δ, Δs...), occ_a, (occ_b, occs...), g::CubicGrid)
@@ -125,8 +125,8 @@ end
 """
     _interactions(addresses, onsite_int_matrix, nearest_neighbour_int_matrix, occs, geometry)
 
-Compute all pairwise interactions in a tuple of `addresses`. The `onsite_int_matrix` and 
-`nearest_neighbour_int_matrix` sets the intraction strengths of the onsite interaction and 
+Compute all pairwise interactions in a tuple of `addresses`. The `onsite_int_matrix` and
+`nearest_neighbour_int_matrix` sets the intraction strengths of the onsite interaction and
 the nearest neighbour interaction. Moreover, `occs` holds the occupied modes of the adresses
 
 The code is equivalent to the following.
@@ -148,9 +148,9 @@ return acc
 
 It is implemented recursively to ensure type stability.
 """
-@inline _interactions(::Tuple{}, ::Union{SMatrix{0,0},Nothing}, ::Union{SMatrix{0,0},Nothing}, 
+@inline _interactions(::Tuple{}, ::Union{SMatrix{0,0},Nothing}, ::Union{SMatrix{0,0},Nothing},
     ::Tuple{}, ::CubicGrid) = 0.0
-@inline function _interactions((a, as...)::NTuple{N,AbstractFockAddress}, 
+@inline function _interactions((a, as...)::NTuple{N,AbstractFockAddress},
     m::Union{SMatrix{N,N},Nothing}, σ::Union{SMatrix{N,N},Nothing}, (occ, occs...),
     g::CubicGrid) where {N}
     # Split the matrix into the column we need now, and the rest.
@@ -160,7 +160,7 @@ It is implemented recursively to ensure type stability.
     m_rest = isnothing(m) ? nothing : SMatrix{N-1,N-1}(view(m, 2:N, 2:N))
     σ_rest = isnothing(σ) ? nothing : SMatrix{N-1,N-1}(view(σ, 2:N, 2:N))
     # Get the self-interaction first.
-    self = local_interaction(a, u, occ) + 
+    self = local_interaction(a, u, occ) +
         nearest_neighbor_interaction(onr(a),onr(a), Δ, g, occ)
     # Get the interactions for the rest of the row.
     row = _interaction_col(a, as, u_column, Δ_column, occ, occs, g)
@@ -210,7 +210,7 @@ in `D` dimensions.
 
 ```math
   \\hat{H} = -\\sum_{\\langle i,j\\rangle,σ} t_{iσ} a^†_{iσ} a_{jσ} +
-  \\frac{1}{2}\\sum_{i,σ,σ'} u_{σσ'} n_{iσ} (n_{iσ'} - δ_{σ,σ'}) + 
+  \\frac{1}{2}\\sum_{i,σ,σ'} u_{σσ'} n_{iσ} (n_{iσ'} - δ_{σ,σ'}) +
   \\sum_{⟨i,j⟩,σ,σ'} Δ_{iσ,jσ'} n_{iσ} n_{jσ} +
   \\sum_{i,σ≠τ}u_{στ} n_{iσ} n_{iτ}
 ```
@@ -245,8 +245,9 @@ number of sites `M` inferred from the number of modes in `address`.
 
 ## Other parameters
 
-* `t`: the hopping strengths. Must be a matrix of length `C × D `. The `i`-th and `j`-th element of the
-  matrix corresponds to the hopping strength of the `i`-th component and `j`-th direction.
+* `t`: the hopping strengths. Must be a matrix of size `C × D` or a vector of length `C`.
+  The (`i`, `j`)-th element of the matrix corresponds to the hopping strength of the
+  `i`-th component and `j`-th direction.
 * `u`: the on-site interaction parameters. Must be a symmetric matrix. `u[i, j]`
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
   corresponds to the interaction of a component with itself. Note that `u[i,i]` must
@@ -266,9 +267,9 @@ struct HubbardRealSpace{
     D, # dimension
     # The following need to be type params.
     T<:SMatrix{C,D,TT},
-    U<:Union{SMatrix{C,C,TT},Nothing},
-    DELTA<:Union{SMatrix{C,C,TT},Nothing},
-    V<:Union{SMatrix{C,D,TT},Nothing},
+    U<:Union{SMatrix{C,C,Float64},Nothing},
+    DELTA<:Union{SMatrix{C,C,Float64},Nothing},
+    V<:Union{SMatrix{C,D,Float64},Nothing},
     P<:Union{Matrix{TT},Nothing}
 } <: AbstractHamiltonian{TT}
     address::A
@@ -282,57 +283,35 @@ end
 
 function HubbardRealSpace(
     address::AbstractFockAddress;
-    geometry::CubicGrid=PeriodicBoundaries((num_modes(address),)),
-    t=ones(num_components(address), num_dimensions(geometry)),
-    u=ones(num_components(address), num_components(address)),
-    Δ=zeros(num_components(address), num_components(address)),
-    v=zeros(num_components(address), num_dimensions(geometry))
+    geometry::CubicGrid=CubicGrid(num_modes(address)), t=1.0, u=1.0, Δ=0.0, v=0.0,
 )
     C = num_components(address)
     D = num_dimensions(geometry)
     S = size(geometry)
-    if t isa Vector && D != 1
-        t_n = zeros(eltype(t), length(t), D)
-        t_n .= t
-    else
-        t_n = t
-    end
+    TT = float(eltype(t))
+
     # Sanity checks
     if prod(size(geometry)) ≠ num_modes(address)
         throw(ArgumentError("`geometry` does not have the correct number of sites"))
-    elseif length(u) ≠ 1 && !issymmetric(u)
-        throw(ArgumentError("`u` must be symmetric"))
-    elseif length(u) ≠ C * C
-        throw(ArgumentError("`u` must be a $C × $C matrix"))
-    elseif length(Δ) ≠ 1 && !issymmetric(Δ)
-        throw(ArgumentError("`u` must be symmetric"))
-    elseif length(Δ) ≠ C * C
-        throw(ArgumentError("`Δ` must be a $C × $C matrix"))
-    elseif length(t_n) ≠ C * D
-        throw(ArgumentError("`t` must be a $C × $D matrix"))
-    elseif length(v) ≠ C * D
-        throw(ArgumentError("`v` must be a $C × $D matrix"))
     elseif !(address isa SingleComponentFockAddress || address isa CompositeFS)
         throw(ArgumentError(
             "unsupported address type detected use `CompositeFS` or `<: SingleComponentFockAddress`"
         ))
     end
-    warn_fermi_interaction(address, u)
+    t_mat = _t_or_v_to_matrix(:t, t, C, D; zero_is_nothing=false)
+    u_mat = _u_or_Δ_to_matrix(:u, u, C)
+    Δ_mat = _u_or_Δ_to_matrix(:Δ, Δ, C)
+    v_mat = _t_or_v_to_matrix(:v, v, C, D)
 
-    TT = eltype(t)==Int ? Float64 : eltype(t)
-    t_mat = SMatrix{C,D,TT}(t_n)
-    u_mat = iszero(u) ? nothing : SMatrix{C,C,TT}(u)
-    Δ_mat = iszero(Δ) ? nothing : SMatrix{C,C,TT}(Δ)
+    warn_fermi_interaction(address, u_mat)
 
     # Precompute the trap potential terms
-    if iszero(v)
-        v_mat = nothing
+    if isnothing(v_mat)
         pot_vec = nothing
     else
-        v_mat = SMatrix{C,D,Float64}(v)
         ranges = Tuple(range(-fld(M,2); length=M) for M in S)
         x_sq = map(x -> Tuple(x).^2, CartesianIndices(ranges))
-        pot_vec = zeros(prod(S), C) # or undef...
+        pot_vec = zeros(prod(S), C)
         for c in 1:C
             pot_vec[:,c] .= vec(map(x -> sum(v_mat[c,:] .* x), x_sq))
         end
@@ -341,6 +320,45 @@ function HubbardRealSpace(
     return HubbardRealSpace{TT,C,typeof(address),typeof(geometry),D,typeof(t_mat),typeof(u_mat),typeof(Δ_mat),typeof(v_mat),typeof(pot_vec)}(
         address, t_mat, u_mat, Δ_mat, v_mat, pot_vec, geometry,
     )
+end
+
+# Convert input of t or v to static matrix
+function _t_or_v_to_matrix(name, value, num_comps, num_dims; zero_is_nothing=true)
+    if zero_is_nothing && iszero(value)
+        return nothing
+    else
+        if value isa Number
+            value = fill(value, (num_comps, num_dims))
+        elseif size(value, 2) == 1 # column-vector
+            value = reduce(hcat, value for _ in 1:num_dims)
+        elseif size(value, 1) == 1 # row-vector
+            value = reduce(vcat, value for _ in 1:num_comps)
+        end
+        if (size(value, 1), size(value, 2)) ≠ (num_comps, num_dims)
+            throw(ArgumentError(
+                "`$name` must be a number, $num_comps × $num_dims matrix, or vector of length $num_comps"
+            ))
+        end
+        return SMatrix{num_comps,num_dims,float(eltype(value))}(value)
+    end
+end
+# Convert input of u or Δ to static matrix
+function _u_or_Δ_to_matrix(name, value, num_comps)
+    if iszero(value)
+        return nothing
+    else
+        if value isa Number
+            value = fill(value, (num_comps, num_comps))
+        end
+        if (size(value, 1), size(value, 2)) ≠ (num_comps, num_comps) ||
+            value isa Matrix && !issymmetric(value)
+
+            throw(ArgumentError(
+                "`$name` must be a number or a symmetric $num_comps × $num_comps matrix"
+            ))
+        end
+        return SMatrix{num_comps,num_comps,Float64}(value)
+    end
 end
 
 """
@@ -364,6 +382,8 @@ function warn_fermi_interaction(address::FermiFS, u)
     end
 end
 warn_fermi_interaction(_, _) = nothing
+warn_fermi_interaction(::CompositeFS, ::Nothing) = nothing
+warn_fermi_interaction(::FermiFS, ::Nothing) = nothing
 
 LOStructure(::Type{<:HubbardRealSpace}) = IsHermitian()
 
@@ -372,17 +392,13 @@ function Base.show(io::IO, h::HubbardRealSpace{TT,C}) where {TT,C}
     println(io, "HubbardRealSpace(")
     println(io, "  ", starting_address(h), ",")
     println(io, "  geometry = ", h.geometry, ",")
-    println(io, "  t = ", TT.(h.t), ",")
+    println(io, "  t = ", h.t, ",")
     if isnothing(h.u)
-        println(io, "  u = ", zeros(C,C), ",")
+        println(io, "  u = 0.0")
     else
-        println(io, "  u = ", TT.(h.u), ",")
+        println(io, "  u = ", h.u, ",")
     end
-    if isnothing(h.Δ)
-        println(io, "  Δ = ", zeros(C,C), ",")
-    else
-        println(io, "  Δ = ", TT.(h.Δ), ",")
-    end
+    !isnothing(h.Δ) && println(io, "  Δ = ", h.Δ, ",")
     !isnothing(h.v) && println(io, "  v = ", TT.(h.v), ",")
     print(io, ")")
 end
