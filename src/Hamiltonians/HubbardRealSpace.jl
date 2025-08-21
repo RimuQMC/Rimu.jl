@@ -274,7 +274,7 @@ struct HubbardRealSpace{
     address::A
     t::T # hopping strengths
     u::U # interactions
-    w::X # nearest neighbour interactions
+    w::W # nearest neighbour interactions
     v::V # trap strengths
     potential::P # potential energy of each component at each lattice site
     geometry::G
