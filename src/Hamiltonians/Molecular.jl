@@ -16,9 +16,13 @@ function MolecularHamiltonian(fcidump::String, starting_address::Union{Nothing,F
 end
 
 function MolecularHamiltonian(fd::QFDump, starting_address::Union{Nothing,FermiFS2C}=nothing)
-    n_orb = headvar(fd, "NORB")
-    n_elec = headvar(fd, "NELEC")
-    ms2 = headvar(fd, "MS2")
+    n_orb = headvar(fd, "NORB", Int)
+    n_elec = headvar(fd, "NELEC", Int)
+    ms2 = headvar(fd, "MS2", Int)
+
+    if isnothing(n_orb) || isnothing(n_elec) || isnothing(ms2)
+        throw(ArgumentError("invalid input FCIDUMP file"))
+    end
 
     n_alpha_elec = (n_elec + ms2) ÷ 2
     n_beta_elec = (n_elec - ms2) ÷ 2
