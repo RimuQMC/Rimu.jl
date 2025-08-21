@@ -1,14 +1,14 @@
 """
-    MolecularMolecularHamiltonian(fcidump::String[, starting_address])
+    MolecularMolecularHamiltonian(fcidump::String[, starting_address::FermiFS2C])
     
-    MolecularMolecularHamiltonian(fd::ElemCo.FciDumps.FDump[, starting_address])
+    MolecularMolecularHamiltonian(fd::ElemCo.FciDumps.FDump[, starting_address::FermiFS2C])
 
 Implements a Molecular Hamiltonian with [ElemCo.jl](https://elem.co.il). 
 
 The expression of Hamiltonian under Bohn-Oppenheimer approximation is 
 ```math
 \\begin{aligned}
-    \\hat{H} & = \\hat{H} = \\hat{H}_0 + \\hat{H}_1 + \\hat{H}_2, \\\\
+    \\hat{H}   & = \\hat{H}_0 + \\hat{H}_1 + \\hat{H}_2, \\\\
     \\hat{H}_1 & = \\sum_{i,j} h_{ij} a^{\\dagger}_j a_i, \\\\
     \\hat{H}_2 & = \\sum_{kl,ij} V_{kl,ij} a^{\\dagger}_{k} a^\\dagger_{l} a_j a_i.
 \\end{aligned}
@@ -18,6 +18,8 @@ The expression of Hamiltonian under Bohn-Oppenheimer approximation is
 * `fcidump`: The path to FCIDUMP file of molecular.
 * `fd`: The FCIDUMP structure defined in [ElemCo.jl](https://elem.co.il).
 * `starting_address`: The starting address, defines number of particles and sites.
+
+See also [`FermiFS2C`](@ref)
 
 !!! warning
     The FCIDUMP file is assumed to be a Restricted Hartree-Fock(RHF) Hamiltonian.
@@ -33,19 +35,25 @@ function MolecularHamiltonian(fcidump::String, starting_address::Union{Nothing,F
 end
 
 function MolecularHamiltonian(fd::QFDump, starting_address::Union{Nothing,FermiFS2C}=nothing)
+    if !fd_exists(fd)
+        throw(ArgumentError("invalid input FCIDUMP file"))
+    end
     n_orb = headvar(fd, "NORB", Int)
     n_elec = headvar(fd, "NELEC", Int)
     ms2 = headvar(fd, "MS2", Int)
 
     if isnothing(n_orb) || isnothing(n_elec) || isnothing(ms2)
-        throw(ArgumentError("invalid input FCIDUMP file"))
+        throw(ArgumentError("input FCIDUMP file must have `NORB`, `NELEC`, and `MS2` defined in header"))
     end
 
     n_alpha_elec = (n_elec + ms2) ÷ 2
     n_beta_elec = (n_elec - ms2) ÷ 2
 
     if starting_address === nothing
-        starting_address = FermiFS2C(near_uniform(FermiFS{n_alpha_elec,n_orb}), near_uniform(FermiFS{n_beta_elec,n_orb}))
+        starting_address = FermiFS2C(
+            near_uniform(FermiFS{n_alpha_elec,n_orb}),
+            near_uniform(FermiFS{n_beta_elec,n_orb})
+        )
     end
 
     if num_modes(starting_address) != n_orb
