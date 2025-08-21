@@ -38,13 +38,13 @@ end
         ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); t=1 + 0.5im),
         ExtendedHubbardMom1D(OccupationNumberFS(1,2,0,0); u=1.0, v=2.0, t=3.0),
         ExtendedHubbardMom1D(FermiFS(1,1,0,0); u=1.0, v=2.0, t=3.0),
-        HubbardRealSpace(BoseFS((1, 2, 3)); u=[1], t=[3], Δ=[1]),
+        HubbardRealSpace(BoseFS((1, 2, 3)); u=[1], t=[3], w=[1]),
         HubbardRealSpace(FermiFS((1, 1, 1, 1, 1, 0, 0, 0)); u=[0], t=[3]),
         HubbardRealSpace(
             CompositeFS(
                 FermiFS((1, 1, 1, 1, 1, 0, 0, 0)),
                 FermiFS((1, 1, 1, 1, 0, 0, 0, 0)),
-            ); t=[1, 2], u=[0 3; 3 0], Δ=[1 0.5; 0.5 1]
+            ); t=[1, 2], u=[0 3; 3 0], w=[1 0.5; 0.5 1]
         ),
         GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6 + 2im); g=0.3),
         GutzwillerSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))); g=0.1),
@@ -295,7 +295,7 @@ end
             comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], u=[1 2; 3 4],
         )
         @test_throws ArgumentError HubbardRealSpace(
-            comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], Δ=[1 2; 3 4],
+            comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], w=[1 2; 3 4],
         )
         @test_throws ArgumentError HubbardRealSpace(
             comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], u=[2 2; 2 2; 2 2],
@@ -511,7 +511,7 @@ end
         address = FermiFS(1, 0, 1, 0)
         for H in (
             HubbardRealSpace(address; t=[2.0 + 3im], geometry=CubicGrid(2, 2)),
-            HubbardRealSpace(address; Δ=[6], t=[2.0 + 3im], geometry=CubicGrid(4)),
+            HubbardRealSpace(address; w=[6], t=[2.0 + 3im], geometry=CubicGrid(4)),
             HubbardRealSpace(address; t=[im 2im], geometry=CubicGrid(2, 2)),
         )
             @test eltype(H) ≡ ComplexF64
@@ -521,17 +521,17 @@ end
     end
     @testset "Nearest neighbour interaction" begin
         addr = near_uniform(BoseFS{4,4})
-        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(4), Δ=[2.0])
+        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(4), w=[2.0])
         H2 = ExtendedHubbardReal1D(addr; v=2.0)
         @test Matrix(H1) == Matrix(H2)
         addr = near_uniform(FermiFS{2,4})
-        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(4), Δ=[-1.0])
+        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(4), w=[-1.0])
         H2 = ExtendedHubbardReal1D(addr; v=-1.0)
         @test Matrix(H1) == Matrix(H2)
 
         addr = BoseFS(1,1,0, 0,0,0, 0,0,0)
-        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(3, 3), Δ=[2])
-        H2 = HubbardRealSpace(addr; geometry=HardwallBoundaries(3, 3), Δ=[2])
+        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(3, 3), w=[2])
+        H2 = HubbardRealSpace(addr; geometry=HardwallBoundaries(3, 3), w=[2])
         @test diagonal_element(H1 * addr) == 2
         @test diagonal_element(H2 * BoseFS(1,0,1, 0,0,0, 0,0,0)) == 0
 
