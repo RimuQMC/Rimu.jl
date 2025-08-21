@@ -68,7 +68,8 @@ function FermiFS{N,M,S}(onr::Union{SVector{M},MVector{M},NTuple{M}}) where {N,M,
     @boundscheck begin
         check_fermi_onr(onr, N, M)
         if S <: BitString
-            M == num_bits(S) || throw(ArgumentError(
+            B = num_bits(S)
+            M == B || throw(ArgumentError(
                 "invalid ONR: $B-bit BitString does not fit $M modes"
             ))
         elseif S <: SortedParticleList
