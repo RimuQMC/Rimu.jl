@@ -255,7 +255,6 @@ number of sites `M` inferred from the number of modes in `address`.
 * `Δ`: the nearest neighbour interaction parameters. Must be a symmetric matrix. `Δ[i, j]`
   corresponds to the interaction between the `i`-th and `j`-th component. `Δ[i, i]`
   corresponds to the interaction of a component with itself.
-  `Δ[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
 * `v`: the trap potential strengths. Must be a matrix of size `C × D`. `v[i,j]` is
   the strength of the trap for component `i` in the `j`th dimension.
 """
