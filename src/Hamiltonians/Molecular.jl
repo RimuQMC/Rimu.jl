@@ -3,7 +3,24 @@
     
     MolecularMolecularHamiltonian(fd::ElemCo.FciDumps.FDump[, starting_address])
 
-Implements a Molecular Hamiltonian with ElemCo.jl.
+Implements a Molecular Hamiltonian with [ElemCo.jl](https://elem.co.il). 
+
+The expression of Hamiltonian under Bohn-Oppenheimer approximation is 
+```math
+\\begin{aligned}
+    \\hat{H} & = \\hat{H} = \\hat{H}_0 + \\hat{H}_1 + \\hat{H}_2, \\\\
+    \\hat{H}_1 & = \\sum_{i,j} h_{ij} a^{\\dagger}_j a_i, \\\\
+    \\hat{H}_2 & = \\sum_{kl,ij} V_{kl,ij} a^{\\dagger}_{k} a^\\dagger_{l} a_j a_i.
+\\end{aligned}
+```
+
+# Arguments
+* `fcidump`: The path to FCIDUMP file of molecular.
+* `fd`: The FCIDUMP structure defined in [ElemCo.jl](https://elem.co.il).
+* `starting_address`: The starting address, defines number of particles and sites.
+
+!!! warning
+    The FCIDUMP file is assumed to be a Restricted Hartree-Fock(RHF) Hamiltonian.
 """
 struct MolecularHamiltonian{T,A<:FermiFS2C,D<:FDump} <: AbstractHamiltonian{T}
     starting_address::A
@@ -99,6 +116,25 @@ end
 #     return rand(column.ods), 1 / length(column.ods)
 # end
 
+"""
+    one_electron_integral(
+        int1::Array{T,2},
+        occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}
+    )::T where {T<:Number}
+
+Calculate the one body operator diagonal term ``\\langle U | \\hat{H}_1 | U \\rangle``.
+
+```math
+\\begin{aligned}
+    \\langle U | \\hat{H}_1| U \\rangle & = 
+    \\sum_{i=1}^{N} h_{ii} \\langle \\psi_i | a^{\\dagger}_{i} a_{i} | \\psi_j \\rangle  \\\\
+    & = \\sum_{i=1}^{n_{\\alpha}} h_{ii} 
+        \\langle \\varphi_i | a^{\\dagger}_{i} a_{i} | \\varphi_i \\rangle 
+      + \\sum_{i=1}^{n_{\\beta}} h_{ii} 
+        \\langle \\varphi_i | a^{\\dagger}_{i} a_{i} | \\varphi_i \\rangle.
+\\end{aligned}
+```
+"""
 function one_electron_integral(
     int1::Array{T,2},
     occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}
@@ -112,6 +148,24 @@ function one_electron_integral(
     one_elec_int
 end
 
+"""
+    two_electron_integral(
+        int2::Array{T,4},
+        occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}
+    )::T where {T<:Number}
+
+Calculate the two body operator diagonal term ``\\langle U | \\hat{H}_2| U \\rangle`` 
+with Slater-Condon rules.
+
+```math
+\\begin{aligned}
+    \\langle U | \\hat{H}_2| U \\rangle 
+        & = \\sum_{i<j}^{n_\\alpha} [\\langle ij|ij\\rangle - \\langle ij|ji\\rangle] \\\\
+        & + \\sum_{i<j}^{n_\\beta} [\\langle ij|ij\\rangle - \\langle ij|ji\\rangle] \\\\
+        & + \\sum_{i}^{n_\\alpha}\\sum_{j}^{n_\\beta} \\langle ij|ij\\rangle. \\\\
+\\end{aligned}
+```
+"""
 function two_electron_integral(
     int2::Array{T,4},
     occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}
@@ -154,8 +208,7 @@ end
 @inline function flip_spin_chan(chan::Int)::Int
     if chan == 1
         return 2
-    else
-        chan == 2
+    elseif chan == 2
         return 1
     end
 end
@@ -178,7 +231,9 @@ function MolecularHamiltonianOffDiagonalsIterator(
     return MolecularHamiltonianOffDiagonalsIterator{T,A,D,OA,OB,UA,UB,TI}(addr, op, m)
 end
 
-function MolecularHamiltonianOffDiagonalsIterator(c::MolecularHamiltonianOperatorColumn)
+function MolecularHamiltonianOffDiagonalsIterator(
+    c::MolecularHamiltonianOperatorColumn
+)
     return MolecularHamiltonianOffDiagonalsIterator(c.address, c.op, c.modes)
 end
 
@@ -223,7 +278,10 @@ function is_void_state(s::MolecularHamiltonianOffDiagonalsIteratorState)
 end
 
 """
-    is_invalid_state(iter::MolecularHamiltonianOffDiagonalsIterator, s::MolecularHamiltonianOffDiagonalsIteratorState)
+    is_invalid_state(
+        iter::MolecularHamiltonianOffDiagonalsIterator, 
+        s::MolecularHamiltonianOffDiagonalsIteratorState
+    )
 
 This function is used to check if `s` is a valid state. It checks if the `from` and
 `to` are in the range of corresponding `ModeMap` array indices.

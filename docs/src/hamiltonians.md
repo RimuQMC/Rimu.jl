@@ -41,6 +41,7 @@ HOCartesianCentralImpurity
 MatrixHamiltonian
 Transcorrelated1D
 FroehlichPolaron
+MolecularHamiltonian
 ```
 
 ## Convenience functions
