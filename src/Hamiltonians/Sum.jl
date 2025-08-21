@@ -26,7 +26,7 @@ function Base.show(io::IO, s::HamiltonianSum)
     print(io, "HamiltonianSum(", s.h1, ", ", s.h2, "; weight=", s.weight, ")")
 end
 
-function VectorInterface.add(h1::AbstractHamiltonian, h2::AbstractHamiltonian, a::Number, b::Number; weight=0.5)
+function VectorInterface.add(h1::AbstractHamiltonian, h2::AbstractHamiltonian, a::Number=1, b::Number=1; weight=0.5)
     return HamiltonianSum(a*h1, b*h2; weight)
 end
 
@@ -119,7 +119,7 @@ function Base.iterate(o::SumOffdiagonals)
 end
 
 function Base.iterate(o::SumOffdiagonals, state)
-    if state[2]
+    if state[2] # iterating offdiagonals of first Hamiltonian
         next = iterate(o.ods1, state[1])
         if isnothing(next)
             first = iterate(o.ods2)

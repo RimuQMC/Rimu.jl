@@ -195,9 +195,13 @@ function Base.iterate(o::ProductOffdiagonals, state::ProductIterState{S1,S2,OD1,
 end
 
 """
-    ScaledHamiltonian(H::AbstractHamiltonian, α)
+    ScaledHamiltonian(H::AbstractHamiltonian, α) <: AbstractHamiltonian
+    scale(H, α)
+    α * H
 
 The product of the Hamiltonian `H` with the scalar `α`.
+
+See also [`HamiltonianSum`](@ref), [`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref).
 """
 struct ScaledHamiltonian{T,H} <: ModifiedHamiltonian{T}
     hamiltonian::H
