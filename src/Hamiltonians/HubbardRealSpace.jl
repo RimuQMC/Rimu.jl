@@ -269,7 +269,7 @@ struct HubbardRealSpace{
     U<:Union{SMatrix{C,C,Float64},Nothing},
     DELTA<:Union{SMatrix{C,C,Float64},Nothing},
     V<:Union{SMatrix{C,D,Float64},Nothing},
-    P<:Union{Matrix{TT},Nothing}
+    P<:Union{Matrix{Float64},Nothing}
 } <: AbstractHamiltonian{TT}
     address::A
     t::T # hopping strengths
