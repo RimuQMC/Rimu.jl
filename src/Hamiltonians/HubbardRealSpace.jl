@@ -472,7 +472,7 @@ end
 parent_operator(column::HubbardRealSpaceColumn) = column.hamiltonian
 starting_address(column::HubbardRealSpaceColumn) = column.address
 
-function diagonal_element(col::HubbardRealSpaceColumn{TT,<:Any,<:Any,<:SingleComponentFockAddress}) where {TT}
+function diagonal_element(col::HubbardRealSpaceColumn{TT}) where {TT}
     h = col.hamiltonian
     occmaps = map(c -> c.occmap, col.components)
     int = isnothing(h.u) && isnothing(h.w) ? 0.0 : _interactions(comp_address(col.address), h.u, h.w, occmaps, h.geometry)
