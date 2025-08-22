@@ -153,7 +153,7 @@ It is implemented recursively to ensure type stability.
     return self + row + _interactions(as, u_rest, w_rest, occs, g)
 end
 
-@inline function _dismantle_int_matrix(mat::SMatrix{N,N})
+@inline function _dismantle_int_matrix(mat::SMatrix{N,N}) where {N}
     # Split the matrix into the column we need now, and the rest.
     (m, mat_column...) = Tuple(mat[:, 1])
     # Type-stable way to subset SMatrix:
