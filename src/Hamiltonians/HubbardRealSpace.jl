@@ -71,8 +71,8 @@ and `σ`, `τ` are component indices.
 
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 """
-@inline function nearest_neighbor_interaction(onr1::SVector, onr2::SVector,
-    w, geometry::CubicGrid{D,S,B}, map1::ModeMap
+@inline function nearest_neighbor_interaction(
+    onr1::SVector, onr2::SVector, w, geometry::CubicGrid{D,S,B}, map1::ModeMap
     ) where {D,S,B}
     N1 = length(map1)
     ext_result = 0
@@ -89,18 +89,6 @@ See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 end
 @inline nearest_neighbor_interaction(::SVector, ::SVector, ::Nothing, ::CubicGrid, ::ModeMap) = 0
 
-@inline _interactions_(addr::SingleComponentFockAddress, ::Nothing, w, occs,
-    geometry::CubicGrid) = nearest_neighbor_interaction(onr(addr), onr(addr), w[1], geometry, occs[1])
-@inline _interactions_(addr::SingleComponentFockAddress, u, ::Nothing, occs,
-    ::CubicGrid) = local_interaction(addr, u, occs)
-@inline function _interactions_(addr::SingleComponentFockAddress, u, w, occs, geometry::CubicGrid)
-    return local_interaction(addr, u, occs) +
-        nearest_neighbor_interaction(onr(addr), onr(addr), w[1], geometry, occs[1])
-end
-@inline function _interactions_(addr::CompositeFS, u, w, occs, geometry::CubicGrid)
-    return _interactions(addr.components, u, w, occs, geometry)
-end
-
 """
     _interaction_col(a, bs::Tuple, us::Tuple, ws::Tuple, occ::ModeMap, occs::Tuple, geometry::CubicGrid)
 
@@ -113,12 +101,12 @@ all interactions in the column below the diagonal of the interaction matrix.
     return local_interaction(a, b, u, occ_a, occ_b) + _interaction_col(a, bs, us, ws, occ_a, occs, g) +
         nearest_neighbor_interaction(onr(a), onr(b), w, g, occ_a)
 end
-@inline _interaction_col(a, ::Tuple{}, ::Tuple{}, ::Tuple{Nothing}, ::ModeMap, ::Tuple{}, ::CubicGrid) = 0
-@inline function _interaction_col(a, (b, bs...), (u, us...), w::Tuple{Nothing}, occ_a, (occ_b, occs...), g::CubicGrid)
+@inline _interaction_col(a, ::Tuple{}, ::Tuple{}, ::Nothing, ::ModeMap, ::Tuple{}, ::CubicGrid) = 0
+@inline function _interaction_col(a, (b, bs...), (u, us...), w::Nothing, occ_a, (occ_b, occs...), g::CubicGrid)
     return local_interaction(a, b, u, occ_a, occ_b) + _interaction_col(a, bs, us, w, occ_a, occs, g)
 end
-@inline _interaction_col(a, ::Tuple{}, ::Tuple{Nothing}, ::Tuple{}, ::ModeMap, ::Tuple{}, ::CubicGrid) = 0
-@inline function _interaction_col(a, (b, bs...), u::Tuple{Nothing}, (w, ws...), occ_a, (occ_b, occs...), g::CubicGrid)
+@inline _interaction_col(a, ::Tuple{}, ::Nothing, ::Tuple{}, ::ModeMap, ::Tuple{}, ::CubicGrid) = 0
+@inline function _interaction_col(a, (b, bs...), u::Nothing, (w, ws...), occ_a, (occ_b, occs...), g::CubicGrid)
     return _interaction_col(a, bs, u, ws, occ_a, occs, g) +
         nearest_neighbor_interaction(onr(a), onr(b), w, g, occ_a)
 end
@@ -151,21 +139,30 @@ It is implemented recursively to ensure type stability.
 @inline _interactions(::Tuple{}, ::Union{SMatrix{0,0},Nothing}, ::Union{SMatrix{0,0},Nothing},
     ::Tuple{}, ::CubicGrid) = 0.0
 @inline function _interactions((a, as...)::NTuple{N,AbstractFockAddress},
-    m::Union{SMatrix{N,N},Nothing}, σ::Union{SMatrix{N,N},Nothing}, (occ, occs...),
+    u_matrix::Union{SMatrix{N,N},Nothing}, w_matrix::Union{SMatrix{N,N},Nothing}, (occ, occs...),
     g::CubicGrid) where {N}
     # Split the matrix into the column we need now, and the rest.
-    (u, u_column...) = isnothing(m) ? (nothing, nothing) : Tuple(m[:, 1])
-    (w, w_column...) = isnothing(σ) ? (nothing, nothing) : Tuple(σ[:, 1])
-    # Type-stable way to subset SMatrix:
-    m_rest = isnothing(m) ? nothing : SMatrix{N-1,N-1}(view(m, 2:N, 2:N))
-    σ_rest = isnothing(σ) ? nothing : SMatrix{N-1,N-1}(view(σ, 2:N, 2:N))
+    u, u_column, u_rest = _dismantle_int_matrix(u_matrix)
+    w, w_column, w_rest = _dismantle_int_matrix(w_matrix)
     # Get the self-interaction first.
     self = local_interaction(a, u, occ) +
         nearest_neighbor_interaction(onr(a),onr(a), w, g, occ)
     # Get the interactions for the rest of the row.
     row = _interaction_col(a, as, u_column, w_column, occ, occs, g)
     # Get the interaction for the rest of the rows.
-    return self + row + _interactions(as, m_rest, σ_rest, occs, g)
+    return self + row + _interactions(as, u_rest, w_rest, occs, g)
+end
+
+@inline function _dismantle_int_matrix(mat::SMatrix{N,N})
+    # Split the matrix into the column we need now, and the rest.
+    (m, mat_column...) = Tuple(mat[:, 1])
+    # Type-stable way to subset SMatrix:
+    mat_rest = SMatrix{N-1,N-1}(view(mat, 2:N, 2:N))
+    return m, mat_column, mat_rest
+end
+
+@inline function _dismantle_int_matrix(mat::Nothing)
+    return nothing, nothing, nothing
 end
 
 """
@@ -475,14 +472,17 @@ end
 parent_operator(column::HubbardRealSpaceColumn) = column.hamiltonian
 starting_address(column::HubbardRealSpaceColumn) = column.address
 
-function diagonal_element(col::HubbardRealSpaceColumn{TT}) where {TT}
+function diagonal_element(col::HubbardRealSpaceColumn{TT,<:Any,<:Any,<:SingleComponentFockAddress}) where {TT}
     h = col.hamiltonian
     occmaps = map(c -> c.occmap, col.components)
-    int = isnothing(h.u) && isnothing(h.w) ? 0.0 : _interactions_(col.address, h.u, h.w, occmaps, h.geometry)
+    int = isnothing(h.u) && isnothing(h.w) ? 0.0 : _interactions(comp_address(col.address), h.u, h.w, occmaps, h.geometry)
     pot = isnothing(h.v) ? 0.0 : external_potential(col.address, h.potential, occmaps)
 
     return convert(TT, int + pot)
 end
+
+@inline comp_address(addr::SingleComponentFockAddress) = addr
+@inline comp_address(addr::CompositeFS) = addr.components
 
 function operator_column(h::HubbardRealSpace{TT,<:Any,A,G}, address) where {TT,A,G}
     components = _column_components(h, address)
