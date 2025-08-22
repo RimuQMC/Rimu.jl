@@ -154,12 +154,12 @@ It is implemented recursively to ensure type stability.
 end
 
 @inline _interactions(addr::SingleComponentFockAddress, ::Nothing, Δ, occs, 
-    geometry::CubicGrid) = nearest_neighbour_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
+    geometry::CubicGrid) = nearest_neighbor_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
 @inline _interactions(addr::SingleComponentFockAddress, u, ::Nothing, occs, 
     ::CubicGrid) = local_interaction(addr, u, occs)
 @inline function _interactions(addr::SingleComponentFockAddress, u, Δ, occs, geometry::CubicGrid) 
     return local_interaction(addr, u, occs) + 
-        nearest_neighbour_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
+        nearest_neighbor_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
 end
 
 @inline function _dismantle_int_matrix(mat::SMatrix{N,N}) where {N}
