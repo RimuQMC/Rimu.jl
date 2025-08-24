@@ -4,6 +4,8 @@
 
 The product of two [`AbstractHamiltonian`](@ref)s, acting from right to left. The two Hamiltonians
 must act on the same address space. Set `commuting` to `true` if `A` and `B` commute.
+
+See also [`ScaledHamiltonian`](@ref), [`HamiltonianSum`](@ref), [`AbstractHamiltonian`](@ref).
 """
 struct HamiltonianProduct{T, O1<:AbstractHamiltonian, O2<:AbstractHamiltonian, C} <: AbstractHamiltonian{T}
     op1::O1
@@ -175,7 +177,8 @@ function Base.iterate(o::ProductOffdiagonals, state::ProductIterState{S1,S2,OD1,
             return add2 => diagonal_element(col1)*val2, state
         else
             (add1, val1), state1 = first1
-            return add1 => val1*val2, ProductIterState{typeof(state1),S2,OD1,T}(state1, state2, ods1, val2)
+            state = ProductIterState{typeof(state1),S2,OD1,T}(state1, state2, ods1, val2)
+            return add1 => val1*val2, state
         end
     else# we have op1 offdiagonals and its state
         next1 = iterate(ods1, state1)
@@ -186,10 +189,12 @@ function Base.iterate(o::ProductOffdiagonals, state::ProductIterState{S1,S2,OD1,
             end
             (add2, val2), state2 = next2
             col1 = operator_column(o.operator.op1, add2)
-            return add2 => diagonal_element(col1)*val2, ProductIterState{S1,S2,OD1,T}(nothing, state2, offdiagonals(col1), val2)
+            state = ProductIterState{S1,S2,OD1,T}(nothing, state2, offdiagonals(col1), val2)
+            return add2 => diagonal_element(col1)*val2, state
         else
             (add1, val1), state1 = next1
-            return add1 => val1*val2, ProductIterState{S1,S2,OD1,T}(state1, state2, ods1, val2)
+            state = ProductIterState{S1,S2,OD1,T}(state1, state2, ods1, val2)
+            return add1 => val1*val2, state
         end
     end
 end

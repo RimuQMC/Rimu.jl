@@ -1,9 +1,9 @@
 """
-    HamiltonianSum(A::AbstractHamiltonian, B::AbstractHamiltonian; weight=0.5) :> AbstractHamiltonian
+    HamiltonianSum(A::AbstractHamiltonian, B::AbstractHamiltonian; weight=0.5) <: AbstractHamiltonian
     add(A::AbstractHamiltonian, B::AbstractHamiltonian, [a=1, b=1]; weight=0.5) -> HamiltonianSum
     +(A::AbstractHamiltonian, B::AbstractHamiltonian)
 
-The sum of two [`AbstractHamiltonian`](@ref)s, ``A + B``. The twoHamiltonians must act 
+The sum of two [`AbstractHamiltonian`](@ref)s, ``A + B``. The two Hamiltonians must act 
 on the same address space. The keyword argument `weight` affects random spawning
 with [`random_offdiagonal`](@ref) and determines the probability of random spawns 
 from `A`, with `1 - weight` the probability of spawning from `B`.
@@ -18,8 +18,11 @@ struct HamiltonianSum{T, H1<:AbstractHamiltonian, H2<:AbstractHamiltonian} <: Ab
     h2::H2
     weight::Float64
 end
-function HamiltonianSum(h1::AbstractHamiltonian{T1}, h2::AbstractHamiltonian{T2}; weight=0.5) where {T1, T2}
-    if !(allows_address_type(h2, starting_address(h1))) || !(allows_address_type(h1, starting_address(h2)))
+function HamiltonianSum(
+    h1::AbstractHamiltonian{T1}, h2::AbstractHamiltonian{T2}; weight=0.5
+) where {T1, T2}
+    if !(allows_address_type(h2, starting_address(h1))) ||
+        !(allows_address_type(h1, starting_address(h2)))
         throw(ArgumentError("The Hamiltonians are not compatible."))
     end
     T = promote_type(T1,T2)
@@ -32,7 +35,9 @@ function Base.show(io::IO, s::HamiltonianSum)
 end
 
 @doc (@doc HamiltonianSum)
-function VectorInterface.add(h1::AbstractHamiltonian, h2::AbstractHamiltonian, a::Number=1, b::Number=1; weight=0.5)
+function VectorInterface.add(
+    h1::AbstractHamiltonian, h2::AbstractHamiltonian, a::Number=1, b::Number=1; weight=0.5
+)
     return HamiltonianSum(a*h1, b*h2; weight)
 end
 
