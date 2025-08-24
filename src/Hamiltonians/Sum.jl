@@ -1,12 +1,17 @@
 """
+    HamiltonianSum(A::AbstractHamiltonian, B::AbstractHamiltonian; weight=0.5) :> AbstractHamiltonian
     add(A::AbstractHamiltonian, B::AbstractHamiltonian, [a=1, b=1]; weight=0.5) -> HamiltonianSum
-    HamiltonianSum(A::AbstractHamiltonian, B::AbstractHamiltonian; weight=0.5)
     +(A::AbstractHamiltonian, B::AbstractHamiltonian)
 
-The sum of two [`AbstractHamiltonian`](@ref)s with coefficients, `aA + bB`. The two
-Hamiltonians must act on the same address space. The keyword argument `weight` is the
-probability of random spawns from `A`, with `1 - weight` the probability of spawning from
-`B`.
+The sum of two [`AbstractHamiltonian`](@ref)s, ``A + B``. The twoHamiltonians must act 
+on the same address space. The keyword argument `weight` affects random spawning
+with [`random_offdiagonal`](@ref) and determines the probability of random spawns 
+from `A`, with `1 - weight` the probability of spawning from `B`.
+
+If coefficients `a` and `b` are given, the Hamiltonians are scaled with [`ScaledHamiltonian`](@ref),
+to represent ``aA + bB``.
+
+See also [`ScaledHamiltonian`](@ref), [`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref).
 """
 struct HamiltonianSum{T, H1<:AbstractHamiltonian, H2<:AbstractHamiltonian} <: AbstractHamiltonian{T}
     h1::H1
