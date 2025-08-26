@@ -68,7 +68,7 @@ using VectorInterface: add, scale
 import ElemCo.FciDumps: FDump, QFDump, read_fcidump, headvar, fd_exists
 
 using ..BitStringAddresses
-import ..BitStringAddresses: ModeMap
+import ..BitStringAddresses: ModeMap, FermiFS2CModes, full_mode_maps
 using ..Interfaces
 using ..Interfaces: sum_mutating!
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
@@ -91,7 +91,7 @@ export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron
 export ParticleNumberOperator
 
-export MolecularHamiltonian, MolecularHamiltonianOperatorColumn
+export MolecularHamiltonian
 
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
