@@ -172,13 +172,13 @@ It is implemented recursively to ensure type stability.
     return self + row + _interactions(as, u_rest, w_rest, occs, g)
 end
 
-@inline _interactions(addr::SingleComponentFockAddress, ::Nothing, Δ, occs, 
-    geometry::CubicGrid) = nearest_neighbor_interaction(onr(addr), Δ[1], geometry, occs[1])
+@inline _interactions(addr::SingleComponentFockAddress, ::Nothing, w, occs, 
+    geometry::CubicGrid) = nearest_neighbor_interaction(onr(addr), w[1], geometry, occs[1])
 @inline _interactions(addr::SingleComponentFockAddress, u, ::Nothing, occs, 
     ::CubicGrid) = local_interaction(addr, u, occs)
-@inline function _interactions(addr::SingleComponentFockAddress, u, Δ, occs, geometry::CubicGrid) 
+@inline function _interactions(addr::SingleComponentFockAddress, u, w, occs, geometry::CubicGrid) 
     return local_interaction(addr, u, occs) + 
-        nearest_neighbor_interaction(onr(addr), Δ[1], geometry, occs[1])
+        nearest_neighbor_interaction(onr(addr), w[1], geometry, occs[1])
 end
 
 @inline function _dismantle_int_matrix(mat::SMatrix{N,N}) where {N}
