@@ -400,15 +400,14 @@ function warn_fermi_interaction(address::CompositeFS, u)
             U[c,c] = 0
         end
     end
-    return SMatrix{size(U)...}(U)
+    return SMatrix{size(U)...,eltype(u)}(U)
 end
 function warn_fermi_interaction(address::FermiFS, u)
     if u[1, 1] ≠ 0
         @warn "address is fermionic, but was given a self-interaction " *
             "strength of $(u[1,1])" maxlog=1
-        u[1,1] = 0
     end
-    return SMatrix{1,1}(0)
+    return SMatrix{1,1,eltype(u)}(0)
 end
 warn_fermi_interaction(_, _) = nothing
 warn_fermi_interaction(::CompositeFS, ::Nothing) = nothing
