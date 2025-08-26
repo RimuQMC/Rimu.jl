@@ -56,11 +56,12 @@ end
 @inline local_interaction(::SingleComponentFockAddress, ::SingleComponentFockAddress,
     ::Nothing,_,_) = 0
 """
+    nearest_neighbor_interaction(onr::SVector, w, geometry::CubicGrid, map::ModeMap)
     nearest_neighbor_interaction(onr1::SVector, onr2::SVector, w, geometry::CubicGrid, map1::ModeMap)
 
 Calculate the nearest neighbour interaction ``w \\sum_{⟨i,j⟩} n_{↑, i} n_{↓, j}`` for an occupation
-number representation `onr1` and `onr2` of the two single-component Fock states. For a
-multi-component Fock state, return the eigenvalue of
+number representation `onr` of a single-component Fock states or for `onr1` and `onr2` of the two 
+single-component Fock states. For a multi-component Fock state, return the eigenvalue of
 
 ```math
 \\frac{1}{2}\\sum_{⟨i,j⟩, σ, τ} w_{σ,τ} a^†_{σ,i}a^†_{τ,j}a_{τ,j}a_{σ,i} ,
@@ -72,12 +73,30 @@ and `σ`, `τ` are component indices.
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 """
 @inline function nearest_neighbor_interaction(
+    onr1::SVector, w, geometry::CubicGrid{D,S,B}, map::ModeMap
+    ) where {D,S,B}
+    N = length(map)
+    ext_result = 0
+    for i in 1:N1
+        for j in 1:D
+            occ_mode1 = map[i].mode
+            neigh = neighbor_site(geometry, occ_mode1, j)
+            if !iszero(neigh)
+                ext_result += onr[occ_mode1] * onr[neigh]
+            end
+        end
+    end
+    return w*ext_result
+end
+@inline nearest_neighbor_interaction(::SVector, ::Nothing, ::CubicGrid, ::ModeMap) = 0
+
+@inline function nearest_neighbor_interaction(
     onr1::SVector, onr2::SVector, w, geometry::CubicGrid{D,S,B}, map1::ModeMap
     ) where {D,S,B}
     N1 = length(map1)
     ext_result = 0
     for i in 1:N1
-        for j in 1:D
+        for j in 1:2D
             occ_mode1 = map1[i].mode
             neigh = neighbor_site(geometry, occ_mode1, j)
             if !iszero(neigh)
@@ -146,7 +165,7 @@ It is implemented recursively to ensure type stability.
     w, w_column, w_rest = _dismantle_int_matrix(w_matrix)
     # Get the self-interaction first.
     self = local_interaction(a, u, occ) +
-        nearest_neighbor_interaction(onr(a),onr(a), w, g, occ)
+        nearest_neighbor_interaction(onr(a), w, g, occ)
     # Get the interactions for the rest of the row.
     row = _interaction_col(a, as, u_column, w_column, occ, occs, g)
     # Get the interaction for the rest of the rows.
@@ -154,12 +173,12 @@ It is implemented recursively to ensure type stability.
 end
 
 @inline _interactions(addr::SingleComponentFockAddress, ::Nothing, Δ, occs, 
-    geometry::CubicGrid) = nearest_neighbor_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
+    geometry::CubicGrid) = nearest_neighbor_interaction(onr(addr), Δ[1], geometry, occs[1])
 @inline _interactions(addr::SingleComponentFockAddress, u, ::Nothing, occs, 
     ::CubicGrid) = local_interaction(addr, u, occs)
 @inline function _interactions(addr::SingleComponentFockAddress, u, Δ, occs, geometry::CubicGrid) 
     return local_interaction(addr, u, occs) + 
-        nearest_neighbor_interaction(onr(addr), onr(addr), Δ[1], geometry, occs[1])
+        nearest_neighbor_interaction(onr(addr), Δ[1], geometry, occs[1])
 end
 
 @inline function _dismantle_int_matrix(mat::SMatrix{N,N}) where {N}
