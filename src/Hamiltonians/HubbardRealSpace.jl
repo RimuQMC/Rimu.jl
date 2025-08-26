@@ -73,11 +73,11 @@ and `σ`, `τ` are component indices.
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 """
 @inline function nearest_neighbor_interaction(
-    onr1::SVector, w, geometry::CubicGrid{D,S,B}, map::ModeMap
+    onr::SVector, w, geometry::CubicGrid{D,S,B}, map::ModeMap
     ) where {D,S,B}
     N = length(map)
     ext_result = 0
-    for i in 1:N1
+    for i in 1:N
         for j in 1:D
             occ_mode1 = map[i].mode
             neigh = neighbor_site(geometry, occ_mode1, j)
