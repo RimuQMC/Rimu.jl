@@ -3,14 +3,20 @@
     
     MolecularMolecularHamiltonian(fd::ElemCo.FciDumps.FDump[, starting_address::FermiFS2C])
 
-Implements a Molecular Hamiltonian with [ElemCo.jl](https://elem.co.il). 
+Implements an electronic ab-initio Hamiltonian based on electron overlap integrals in
+FCIDUMP format. It can be used to describe the electronic structure of a molecule
+with fixed nuclear positions (i.e. under the Born-Oppenheimer approximation).
+The parse of FCIDUMP file depends on [ElemCo.jl](https://elem.co.il). 
 
 The expression of Hamiltonian under Bohn-Oppenheimer approximation is 
 ```math
 \\begin{aligned}
     \\hat{H}   & = \\hat{H}_0 + \\hat{H}_1 + \\hat{H}_2, \\\\
-    \\hat{H}_1 & = \\sum_{i,j} h_{ij} a^{\\dagger}_j a_i, \\\\
-    \\hat{H}_2 & = \\sum_{kl,ij} V_{kl,ij} a^{\\dagger}_{k} a^\\dagger_{l} a_j a_i.
+    \\hat{H}_1 & = \\sum_{\\sigma_i, \\sigma_j}\\sum_{i,j} h_{ij} 
+        a^{\\dagger}_{j,\\sigma_{j}} a_{i,\\sigma_{i}} \\delta_{ij}, \\\\
+    \\hat{H}_2 & = \\sum_{\\sigma_k, \\sigma_l} \\sum_{\\sigma_i, \\sigma_j} \\sum_{kl,ij} 
+        V_{kl,ij} a^{\\dagger}_{k,\\sigma_k} a^\\dagger_{l,\\sigma_l} a_{j,\\sigma_j} a_{i,\\sigma_i} 
+        - V_{kl,ji} a^{\\dagger}_{k,\\sigma_k} a^\\dagger_{l,\\sigma_l} a_{i,\\sigma_i} a_{j,\\sigma_j} \\delta_{ij}.
 \\end{aligned}
 ```
 
@@ -25,16 +31,21 @@ See also [`FermiFS2C`](@ref)
     The FCIDUMP file is assumed to be a Restricted Hartree-Fock(RHF) Hamiltonian.
 """
 struct MolecularHamiltonian{T,A<:FermiFS2C,D<:FDump} <: AbstractHamiltonian{T}
+    fcidump_path::String
     starting_address::A
     fcidump::D
 end
 
 function MolecularHamiltonian(fcidump::String, starting_address::Union{Nothing,FermiFS2C}=nothing)
     fd = read_fcidump(fcidump, Val(4))
-    MolecularHamiltonian(fd, starting_address)
+    MolecularHamiltonian(fcidump, fd, starting_address)
 end
 
-function MolecularHamiltonian(fd::QFDump, starting_address::Union{Nothing,FermiFS2C}=nothing)
+function MolecularHamiltonian(
+    fcidump_path::String,
+    fd::QFDump,
+    starting_address::Union{Nothing,FermiFS2C}=nothing
+)
     if !fd_exists(fd)
         throw(ArgumentError("invalid input FCIDUMP file"))
     end
@@ -63,7 +74,14 @@ function MolecularHamiltonian(fd::QFDump, starting_address::Union{Nothing,FermiF
     val_type = typeof(fd.int0)
     addr_type = typeof(starting_address)
     fd_type = typeof(fd)
-    MolecularHamiltonian{val_type,addr_type,fd_type}(starting_address, fd)
+    MolecularHamiltonian{val_type,addr_type,fd_type}(fcidump_path, starting_address, fd)
+end
+
+function Base.show(io::IO, h::MolecularHamiltonian)
+    io = IOContext(io, :compact => true)
+    print(io, "MolecularHamiltonian(\n\t\"", h.fcidump_path, "\",\n\tstarting_addresss=")
+    show(io, h.starting_address)
+    print(io, "\n)")
 end
 
 struct MolecularHamiltonianOperatorColumn{A<:FermiFS2C,T,O<:MolecularHamiltonian{T,A},M<:FermiFS2CModes} <: AbstractOperatorColumn{A,T,O}
