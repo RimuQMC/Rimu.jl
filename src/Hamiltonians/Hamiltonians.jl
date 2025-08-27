@@ -23,7 +23,6 @@ Other
 - [`FroehlichPolaron`](@ref)
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
-- [`HamiltonianProduct`](@ref)
 
 ## [Wrappers](#Hamiltonian-wrappers)
 - [`GutzwillerSampling`](@ref)
@@ -31,6 +30,9 @@ Other
 - [`ParitySymmetry`](@ref)
 - [`TimeReversalSymmetry`](@ref)
 - [`Stoquastic`](@ref)
+- [`HamiltonianProduct`](@ref)
+- [`ScaledHamiltonian`](@ref)
+- [`HamiltonianSum`](@ref)
 
 ## [Observables](#Observables)
 - [`ParticleNumberOperator`](@ref)
@@ -61,6 +63,7 @@ using SparseArrays: SparseArrays, rowvals, nzrange, nonzeros
 using SpecialFunctions: SpecialFunctions, gamma
 using StaticArrays: StaticArrays, SA, SMatrix, SVector, SArray, MVector, setindex
 using TupleTools: TupleTools
+using VectorInterface: add, scale
 
 using ..BitStringAddresses
 import ..BitStringAddresses: ModeMap
@@ -96,7 +99,8 @@ export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCarte
 export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
-export HamiltonianProduct
+export HamiltonianProduct, ScaledHamiltonian
+export HamiltonianSum
 
 if VERSION < v"1.10"
     # used for ReducedDensityMatrix
@@ -148,4 +152,5 @@ include("ho-cart-tools.jl")
 include("angular_momentum.jl")
 
 include("Product.jl")
+include("Sum.jl")
 end

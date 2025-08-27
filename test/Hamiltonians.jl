@@ -72,7 +72,9 @@ end
         FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
-        HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0))
+        HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
+        HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
+        2*HubbardReal1D(BoseFS(2,0,0); u=1.0im)
     ]
         test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL. Does not work with
@@ -1789,9 +1791,70 @@ end
     P = H4*H4
     c = operator_column(P, addr)
     @test iszero(last.(collect(offdiagonals(c))))
+
+    @testset "ScaledHamiltonian" begin
+        addr = BoseFS(2,0,0)
+        basis = build_basis(addr)
+        H = HubbardReal1D(addr)
+
+        H1 = 2*H
+        @test Matrix(H1) == 2*Matrix(H)
+        @test LOStructure(H1) == LOStructure(H)
+        @test 2*H1 == 4*H
+        @test 1*H1 == H1
+
+        H2 = 3im*H
+        @test Matrix(H2) == 3im*Matrix(H)
+        @test eltype(H2) <: Complex
+        @test LOStructure(H2) == AdjointKnown()
+        @test H2' == -3im*H
+    end
 end
+
+@testset "HamiltonianSum" begin
+    addr = BoseFS(0,1,2,3,4)
+    H1 = HubbardReal1D(addr; u=2, t=2)
+    H2 = ExtendedHubbardReal1D(addr; v=3)
+    S1 = H1+H2
+    @test S1 == add(H1, H2; weight=0.5)
+    @test LOStructure(S1) == IsHermitian()
+
+    basis = build_basis(addr)
+    @test Matrix(H1, basis) + Matrix(H2, basis) ≈ Matrix(S1, basis)
+
+    result = solve(ExactDiagonalizationProblem(S1))
+    energy = result.values[1]
+    vec = result.vectors[1]
+    @test energy ≈ rayleigh_quotient(H1, vec) + rayleigh_quotient(H2, vec)
+
+    od1 = collect(offdiagonals(H1*addr))
+    od2 = collect(offdiagonals(H2*addr))
+    col = S1*addr
+    odsum = collect(offdiagonals(col))
+    @test DVec(od1) + DVec(od2) == DVec(odsum)
+
+    for _ in 1:20
+        a, p, v = random_offdiagonal(col)
+        @test (a => v) in odsum
+    end
+
+    S2 = 2im*H1 + 3*H2
+    @test S2 == add(H1, H2, 2im, 3)
+    @test LOStructure(S2) == AdjointKnown()
+    @test rayleigh_quotient(S2, vec) ≈ 2im*rayleigh_quotient(H1, vec) + 3*rayleigh_quotient(H2, vec)
+
+    H3 = HubbardReal1D(addr; t=0)
+    S3 = H3 + H1
+    @test DVec(offdiagonals(S3*addr)) == DVec(offdiagonals(H1*addr))
+
+    addr = FermiFS(1,0,0)
+    H4 = HubbardReal1D(addr)
+    @test_throws ArgumentError H1 + H4
+end
+
 @testset "Operator Traits" begin
     struct TestHamiltonian <: Rimu.AbstractHamiltonian{Float64} end
+    Rimu.allows_address_type(::TestHamiltonian, ::Type{<:Any}) = true
     struct TestColumn{A,O} <: Rimu.AbstractOperatorColumn{A,Float64,O}
         operator::O
         address::A
