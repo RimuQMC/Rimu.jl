@@ -1854,6 +1854,7 @@ end
 
 @testset "Operator Traits" begin
     struct TestHamiltonian <: Rimu.AbstractHamiltonian{Float64} end
+    Rimu.allows_address_type(::TestHamiltonian, ::Type{<:Any}) = true
     struct TestColumn{A,O} <: Rimu.AbstractOperatorColumn{A,Float64,O}
         operator::O
         address::A
