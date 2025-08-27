@@ -133,13 +133,21 @@ end
 
 function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
     ods = offdiagonals(column)
+    l = length(ods)
+    ri = rand(1:l)
+    state = linear_to_state(ods, ri)
+    r = iterate(ods, state)
+    if isnothing(r)
+        return (column.address, 0, 0)
+    end
+    return r[1], 1 / l, r[2]
+end
+
+function random_offdiagonal_old(column::MolecularHamiltonianOperatorColumn)
+    ods = offdiagonals(column)
     r = rand(collect(ods))
     return r[1], 1 / length(ods), r[2]
 end
-
-# function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
-#     return rand(column.ods), 1 / length(column.ods)
-# end
 
 """
     one_electron_integral(
@@ -248,12 +256,22 @@ struct MolecularHamiltonianOffDiagonals{
     address::A
     op::H
     modes::M
+    ind_cap::Tuple{Int,Int,Int,Int,Int}
 end
 
 function MolecularHamiltonianOffDiagonals(
     c::MolecularHamiltonianOperatorColumn
 )
-    return MolecularHamiltonianOffDiagonals(c.address, c.op, c.modes)
+    ind_cap_beta_1 = length(c.modes.occupied[2]) * length(c.modes.unoccupied[2])
+    ind_cap_alpha_1 = ind_cap_beta_1 + length(c.modes.occupied[1]) * length(c.modes.unoccupied[1])
+    ind_cap_beta_2 = ind_cap_alpha_1 + binomial(length(c.modes.occupied[2]), 2) *
+                                       binomial(length(c.modes.unoccupied[2]), 2)
+    ind_cap_alpha_2 = ind_cap_beta_2 + binomial(length(c.modes.occupied[1]), 2) *
+                                       binomial(length(c.modes.unoccupied[1]), 2)
+    ind_cap_alpha_1_beta_1 = ind_cap_alpha_2 + length(c.modes.occupied[1]) * length(c.modes.unoccupied[1]) *
+                                               length(c.modes.occupied[2]) * length(c.modes.unoccupied[2])
+    ind_cap = (ind_cap_beta_1, ind_cap_alpha_1, ind_cap_beta_2, ind_cap_alpha_2, ind_cap_alpha_1_beta_1)
+    return MolecularHamiltonianOffDiagonals(c.address, c.op, c.modes, ind_cap)
 end
 
 function Base.eltype(
@@ -624,4 +642,84 @@ function one_one_electron_excitation(
     interaction = (sign_alpha * sign_beta) * op.fcidump.int2[k.mode, l.mode, i.mode, j.mode]
 
     return (FermiFS2C(new_address_alpha, new_address_beta) => interaction)
+end
+
+function linear_to_state(
+    iter::MolecularHamiltonianOffDiagonals, ods_index::Int
+)::MolecularHamiltonianOffDiagonalsIteratorState
+    if 1 <= ods_index <= iter.ind_cap[1]
+        ods_offset = ods_index - 1
+        from = ods_offset ÷ length(iter.modes.unoccupied[2]) + 1
+        to = ods_offset % length(iter.modes.unoccupied[2]) + 1
+        state = MolecularHamiltonianOffDiagonalsIteratorState((0, 1), (from, 0), (to, 0))
+    elseif iter.ind_cap[1] + 1 <= ods_index <= iter.ind_cap[2]
+        ods_offset = ods_index - iter.ind_cap[1] - 1
+        from = ods_offset ÷ length(iter.modes.unoccupied[1]) + 1
+        to = ods_offset % length(iter.modes.unoccupied[1]) + 1
+        state = MolecularHamiltonianOffDiagonalsIteratorState((1, 0), (from, 0), (to, 0))
+    elseif iter.ind_cap[2] + 1 <= ods_index <= iter.ind_cap[3]
+        ods_offset = ods_index - iter.ind_cap[2] - 1
+        from_index = ods_offset ÷ binomial(length(iter.modes.unoccupied[2]), 2) + 1
+        to_index = ods_offset % binomial(length(iter.modes.unoccupied[2]), 2) + 1
+        from_tuple = unrank_combination(length(iter.modes.occupied[2]), from_index)
+        to_tuple = unrank_combination(length(iter.modes.unoccupied[2]), to_index)
+        state = MolecularHamiltonianOffDiagonalsIteratorState((0, 2), from_tuple, to_tuple)
+    elseif iter.ind_cap[3] + 1 <= ods_index <= iter.ind_cap[4]
+        ods_offset = ods_index - iter.ind_cap[3] - 1
+        from_index = ods_offset ÷ binomial(length(iter.modes.unoccupied[1]), 2) + 1
+        to_index = ods_offset % binomial(length(iter.modes.unoccupied[1]), 2) + 1
+        from_tuple = unrank_combination(length(iter.modes.occupied[1]), from_index)
+        to_tuple = unrank_combination(length(iter.modes.unoccupied[1]), to_index)
+        state = MolecularHamiltonianOffDiagonalsIteratorState((2, 0), from_tuple, to_tuple)
+    elseif iter.ind_cap[4] <= ods_index <= iter.ind_cap[5]
+        ods_offset = ods_index - iter.ind_cap[4] - 1
+        alpha_from = ods_offset ÷ (
+            length(iter.modes.unoccupied[1]) * length(iter.modes.occupied[2]) * length(iter.modes.unoccupied[2])
+        )
+        ods_offset -= alpha_from * (
+            length(iter.modes.unoccupied[1]) * length(iter.modes.occupied[2]) * length(iter.modes.unoccupied[2])
+        )
+        alpha_to = ods_offset ÷ (length(iter.modes.occupied[2]) * length(iter.modes.unoccupied[2]))
+        ods_offset -= alpha_to * (length(iter.modes.occupied[2]) * length(iter.modes.unoccupied[2]))
+        beta_from = ods_offset ÷ length(iter.modes.unoccupied[2])
+        beta_to = ods_offset % length(iter.modes.unoccupied[2])
+        state = MolecularHamiltonianOffDiagonalsIteratorState(
+            (1, 1), (alpha_from + 1, beta_from + 1), (alpha_to + 1, beta_to + 1)
+        )
+    end
+    return state
+end
+
+
+function unrank_combination(n::Int, i::Int)
+    idx = i - 1
+    x = 0
+    y = 0
+    start = 1
+    remaining = 2
+
+    for j in start:n
+        count = binomial(n - j, remaining - 1)
+        if idx < count
+            x = j
+            start = j + 1
+            remaining -= 1
+            break
+        else
+            idx -= count
+        end
+    end
+
+    for j in start:n
+        count = binomial(n - j, remaining - 1)
+        if idx < count
+            y = j
+            start = j + 1
+            remaining -= 1
+            break
+        else
+            idx -= count
+        end
+    end
+    return (x, y)
 end
