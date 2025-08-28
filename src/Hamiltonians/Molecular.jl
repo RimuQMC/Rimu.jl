@@ -13,17 +13,17 @@ FCIDUMP format. It can be used to describe the electronic structure of a molecul
 with fixed nuclear positions (i.e. under the Born-Oppenheimer approximation).
 The parse of FCIDUMP file depends on [ElemCo.jl](https://elem.co.il). 
 
-The expression of Hamiltonian under Bohn-Oppenheimer approximation is 
+The expression for the Hamiltonian is
 ```math
 \\begin{aligned}
-    \\hat{H}   & = \\hat{H}_0 + \\hat{H}_1 + \\hat{H}_2, \\\\
-    \\hat{H}_1 & = \\sum_{\\sigma_i, \\sigma_j}\\sum_{i,j} h_{ij} 
-        a^{\\dagger}_{j,\\sigma_{j}} a_{i,\\sigma_{i}} \\delta_{ij}, \\\\
-    \\hat{H}_2 & = \\sum_{\\sigma_k, \\sigma_l} \\sum_{\\sigma_i, \\sigma_j} \\sum_{kl,ij} 
-        V_{kl,ij} a^{\\dagger}_{k,\\sigma_k} a^\\dagger_{l,\\sigma_l} a_{j,\\sigma_j} a_{i,\\sigma_i} 
-        - V_{kl,ji} a^{\\dagger}_{k,\\sigma_k} a^\\dagger_{l,\\sigma_l} a_{i,\\sigma_i} a_{j,\\sigma_j} \\delta_{ij}.
+    Ĥ  & = h₀ + Ĥ₁ + Ĥ₂, \\\\
+    Ĥ₁ & = \\sum_{i,j,σ} h_{ij}  a^†_{j,σ} a_{i,σ}, \\\\
+    Ĥ₂ & = ½ \\sum_{i,j,σ,τ} V_{ijkl} a^†_{i,σ} a^†_{j,τ} a_{l,τ} a_{k,σ}.
 \\end{aligned}
 ```
+where the constants ``h₀``, ``h_{ij}``, and ``V_{ijkl}`` are provided by the FCIDUMP `fd`.
+See the documentation of [ElemCo.jl](https://elem.co.il) for generating FCIDUMP information
+with a Hartree-Fock calculation, or parsing them from a file.
 
 # Arguments
 * `fcidump_path`: The path to FCIDUMP file of molecular.
