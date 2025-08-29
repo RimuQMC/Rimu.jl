@@ -36,7 +36,11 @@ a = starting_address(h)
 using KrylovKit
 
 p = ExactDiagonalizationProblem(h, algorithm=KrylovKitSolver(true))
-s = solve(p)
+
+# Then it can be solved by executing
+# ```julia
+# s = solve(p)
+# ```
 
 
 # ### Projector Monte Carlo / FCIQMC
@@ -55,3 +59,6 @@ p = ProjectorMonteCarloProblem(h;
 )
 result = solve(p)
 df = DataFrame(result);
+
+# Then the analysis of energy shift can be finished by [`shift_estimator`](@ref).
+se = shift_estimator(df; skip=steps_equilibrate)
