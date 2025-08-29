@@ -94,6 +94,8 @@ function Base.show(io::IO, h::MolecularHamiltonian)
     show(io, h.starting_address)
 end
 
+LOStructure(::Type{<:MolecularHamiltonian{<:Real}}) = IsHermitian()
+
 struct MolecularHamiltonianOperatorColumn{A<:FermiFS2C,T,O<:MolecularHamiltonian{T,A},M<:FermiFS2CModes} <: AbstractOperatorColumn{A,T,O}
     address::A # Contains address Psi_i, provided by operator_column
     op::O   # Represent Hamiltonian itself, provided by operator_column
