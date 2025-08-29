@@ -86,12 +86,19 @@ end
 
 function Base.show(io::IO, h::MolecularHamiltonian)
     io = IOContext(io, :compact => true)
-    print(io, "MolecularHamiltonian\n")
-    if h.specifier != ""
-        print(io, "specifier: ", h.specifier, "\n")
+    print(io, "MolecularHamiltonian(")
+    if ispath(h.specifier)
+        print(io, "\"", h.specifier, "\"")
+    else
+        print(io, typeof(h.fcidump))
     end
-    print(io, "starting_addresss: ")
+    print(io, ", starting_addresss=")
     show(io, h.starting_address)
+    if ispath(h.specifier)
+        print(io, ")")
+    else
+        print(io, ", specifier=\"", h.specifier, "\")")
+    end
 end
 
 LOStructure(::Type{<:MolecularHamiltonian{<:Real}}) = IsHermitian()

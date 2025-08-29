@@ -12,12 +12,12 @@ using Rimu
 # ## Setting up the model
 
 # We specify the path to the FCIDUMP file describing the H₂O molecule.
-fcidump = joinpath(pkgdir(Rimu), "test/examples/h2o.FCIDUMP")
+fcidump = joinpath(pkgdir(Rimu), "test/examples/h2o.FCIDUMP");
 
 # Next we construct the Hamiltonian by the constructor. The Hartree-Fock ground state 
 # is generated automatically at the same time. 
 h = MolecularHamiltonian(fcidump)
-a = starting_address(h)
+a = starting_address(h);
 
 # ## Running the calculation
 
@@ -48,17 +48,21 @@ p = ExactDiagonalizationProblem(h, algorithm=KrylovKitSolver(true))
 # Set up the FCIQMC parameters.
 steps_equilibrate = 1_000
 steps_measure = 2_000
-target_walkers = 10000
-time_step = 0.001
+target_walkers = 1_000
+time_step = 0.001;
 
 # Define the problem via [`ProjectorMonteCarloProblem`](@ref) interface.
 p = ProjectorMonteCarloProblem(h;
     time_step,
     last_step = steps_equilibrate + steps_measure,
     target_walkers,
+    initiator=true,
 )
-result = solve(p)
+# Run the calculation.
+result = solve(p);
+
+# Store the result into DataFrame. 
 df = DataFrame(result);
 
-# Then the analysis of energy shift can be finished by [`shift_estimator`](@ref).
+# To analyse the energy shift, we can use [`shift_estimator`](@ref).
 se = shift_estimator(df; skip=steps_equilibrate)
