@@ -718,39 +718,49 @@ end
     unrank_combination(n::Int, i::Int)
 
 Return the 2-element combination (in lex order) of set {1,...,n} with index i.
+When generating the excitation state with 2 electrons excited in a single spin
+channel, we use the indice of array storing (un)occupied mode maps. For example,
+we select 2 non-repeating indices of array storing unoccupied mode maps to
+represent modes the electrons should go to as `to_unoccupieds` tuple in 
+[`MolecularHamiltonianOffDiagonalsIteratorState`](@ref). 
+If there are 4 unoccupied modes, all the possible combination of chosen in 
+lexicographic order should be:
+
+    index:       1      2      3      4      5      6
+    combination: (1, 2) (1, 3) (1, 4) (2, 3) (2, 4) (3, 4)
+
+The length of all the combinations is ``4C2 = 6``.
+Given the index(`i`), to determin the value of 1st position(`x`) in the
+combination, we can first determine how many combinations when `x` is 
+from 1 to `n`, it is calculated by ``(n-x)C1``
+
+    x = 1, count = 3
+    x = 2, count = 2
+    x = 3, count = 1
+    x = 4, count = 0
+
+If `i` falls into the range ``[1, 3]``, it means `x=1`. If `i` is 
+larger than `3`, it substract `3` from itself and check if it next falls
+into the range ``[1, 2]`` and so on. 
+After `x` is determined, then `i` becomes the offset between `x` and `y`.
 """
 function unrank_combination(n::Int, i::Int)
-    idx = i - 1
     x = 0
     y = 0
-    start = 1
-    remaining = 2
 
     # Determine the 1st position in the combination and store it in x
-    for j in start:n
+    for j in 1:n
         # Count the number of combinations exist if we fix 1st position to j
-        count = binomial(n - j, remaining - 1)
-        if idx < count
+        count = n - j
+        if i <= count
             x = j
-            start = j + 1
-            remaining -= 1
             break
         else
-            idx -= count
+            i -= count
         end
     end
 
     # Determine the 2nd position in the combination and store it in y
-    for j in start:n
-        count = binomial(n - j, remaining - 1)
-        if idx < count
-            y = j
-            start = j + 1
-            remaining -= 1
-            break
-        else
-            idx -= count
-        end
-    end
+    y = x + i
     return (x, y)
 end
