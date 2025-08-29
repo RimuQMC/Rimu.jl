@@ -322,10 +322,10 @@ number of sites `M` inferred from the number of modes in `address`.
 * `t`: the hopping strengths. Must be a matrix of size `C × D` or a vector of length `C`.
   The (`i`, `j`)-th element of the matrix corresponds to the hopping strength of the
   `i`-th component and `j`-th direction.
-* `u`: the on-site interaction parameters. Must be a symmetric matrix. `u[i, j]`
-  corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
-  corresponds to the interaction of a component with itself. Note that `u[i,i]` must
-  be zero for fermionic components.
+* `u`: the on-site interaction parameters. Must be a symmetric matrix of size
+  `C × C`. `u[i, j]` corresponds to the interaction between the `i`-th and `j`-th 
+  component. `u[i, i]` corresponds to the interaction of a component with itself.
+  Note that the self interaction will have no effect on fermionic components.
 * `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix of size
   `C × C`. `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
    `w[i, i]` corresponds to the interaction of a component with itself.
