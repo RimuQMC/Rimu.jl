@@ -284,9 +284,8 @@ in `D` dimensions.
 
 ```math
   Ĥ = -∑_{⟨i,j⟩,σ} t_{i,σ} a^†_{i,σ} a_{j,σ} +
-  \\frac{1}{2} ∑_{i,σ,σ'} u_{σ,σ'} n_{i,σ} (n_{i,σ'} - w_{σ,σ'}) +
-  ∑_{⟨i,j⟩,σ,σ'} w_{i,σ,j,σ'} n_{i,σ} n_{j,σ} +
-  ∑_{i,σ≠τ} u_{σ,τ} n_{i,σ} n_{i,τ}
+  \\frac{1}{2} ∑_{i,σ,σ'} u_{σ,σ'} n_{i,σ} (n_{i,σ'} - 1) +
+  ∑_{⟨i,j⟩,σ,σ'} w_{σ,σ'} n_{i,σ} n_{j,σ}
 ```
 
 If `v` is nonzero then this calculates ``\\hat{H} + \\hat{V}`` by adding the
