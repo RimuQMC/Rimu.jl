@@ -114,12 +114,16 @@ LadderBoundaries
 ## Additional documentation of internal functions
 The following internal functions and types are documented here for completeness, 
 but are not part of the public API and may change any time. Use at your own risk.
-```@autodocs
-Modules = [Hamiltonians]
-Pages = [
-    "Molecular.jl,
-]
-Public = false
+```@docs
+one_electron_integral
+two_electron_integral
+MolecularHamiltonianOffDiagonals
+MolecularHamiltonianOffDiagonalsIteratorState
+flip_spin_components
+is_void_state
+is_invalid_state
+linear_to_state
+unrank_combination
 ```
 
 ## Index
