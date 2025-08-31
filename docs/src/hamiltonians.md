@@ -116,6 +116,9 @@ The following internal functions and types are documented here for completeness,
 but are not part of the public API and may change any time. Use at your own risk.
 ```@autodocs
 Modules = [Hamiltonians]
+Pages = [
+    "Molecular.jl,
+]
 Public = false
 ```
 
