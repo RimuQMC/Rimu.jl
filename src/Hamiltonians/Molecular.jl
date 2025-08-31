@@ -1,7 +1,7 @@
 """
     MolecularHamiltonian(fcidump_path::String[, starting_address::FermiFS2C]) <: AbstractHamiltonian
     MolecularHamiltonian(
-        fd::ElemCo.FciDumps.FDump[, 
+        fd::ElemCo.FciDumps.FDump[,
             starting_address::FermiFS2C,
             specifier::String,
         ]
@@ -29,7 +29,7 @@ with a Hartree-Fock calculation, or parsing them from a file.
 * `fd`: Struct containing FCIDUMP information defined in [ElemCo.jl](https://elem.co.il).
 * `starting_address`: The starting address (configuration) defines number of alpha and beta
     electrons and orbitals.
-* `specifier`: Arbitrary identifier. It may store the path to the FCIDUMP file or a user 
+* `specifier`: Arbitrary identifier. It may store the path to the FCIDUMP file or a user
     specified name.
 
 See also [`FermiFS2C`](@ref)
@@ -182,11 +182,11 @@ Calculate the one body operator diagonal term ``\\langle U | \\hat{H}_1 | U \\ra
 
 ```math
 \\begin{aligned}
-    \\langle U | \\hat{H}_1| U \\rangle & = 
+    \\langle U | \\hat{H}_1| U \\rangle & =
     \\sum_{i=1}^{N} h_{ii} \\langle \\psi_i | a^{\\dagger}_{i} a_{i} | \\psi_j \\rangle  \\\\
-    & = \\sum_{i=1}^{n_{\\alpha}} h_{ii} 
-        \\langle \\varphi_i | a^{\\dagger}_{i} a_{i} | \\varphi_i \\rangle 
-      + \\sum_{i=1}^{n_{\\beta}} h_{ii} 
+    & = \\sum_{i=1}^{n_{\\alpha}} h_{ii}
+        \\langle \\varphi_i | a^{\\dagger}_{i} a_{i} | \\varphi_i \\rangle
+      + \\sum_{i=1}^{n_{\\beta}} h_{ii}
         \\langle \\varphi_i | a^{\\dagger}_{i} a_{i} | \\varphi_i \\rangle.
 \\end{aligned}
 ```
@@ -210,12 +210,12 @@ end
         occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}
     )::T where {T<:Number}
 
-Calculate the two body operator diagonal term ``\\langle U | \\hat{H}_2| U \\rangle`` 
+Calculate the two body operator diagonal term ``\\langle U | \\hat{H}_2| U \\rangle``
 with Slater-Condon rules.
 
 ```math
 \\begin{aligned}
-    \\langle U | \\hat{H}_2| U \\rangle 
+    \\langle U | \\hat{H}_2| U \\rangle
         & = \\sum_{i<j}^{n_\\alpha} [\\langle ij|ij\\rangle - \\langle ij|ji\\rangle] \\\\
         & + \\sum_{i<j}^{n_\\beta} [\\langle ij|ij\\rangle - \\langle ij|ji\\rangle] \\\\
         & + \\sum_{i}^{n_\\alpha}\\sum_{j}^{n_\\beta} \\langle ij|ij\\rangle. \\\\
@@ -266,7 +266,7 @@ end
 """
     flip_spin_components(component::Int)::Int
 
-This is an inline function used to flip the spin component index. 
+This is an inline function used to flip the spin component index.
 """
 @inline flip_spin_components(component::Int)::Int = 3 - component
 
@@ -275,7 +275,7 @@ This is an inline function used to flip the spin component index.
 
 This struct is used internally to represent the iterator for the generation
 of off-diagonal terms from the [`operator_column`](@ref) of a
-[`MolecularHamiltonian`](@ref). 
+[`MolecularHamiltonian`](@ref).
 
 The iteration proceeds by going through the five possible excitation types:
 
@@ -329,29 +329,29 @@ end
 """
     MolecularHamiltonianOffDiagonalsIteratorState
 
-This struct is used internally to represent the state during 
+This struct is used internally to represent the state during
 off-diagonal terms generation.
 
-* `excitations_per_channel`: Tuple contains 2 values represents the how many electrons 
-are excited in alpha(1) and beta(2) channel. 
-* `from_occupieds`: Records the indices of `FermiFS2CModes` arrays which modes electrons 
+* `excitations_per_channel`: Tuple contains 2 values represents the how many electrons
+are excited in alpha(1) and beta(2) channel.
+* `from_occupieds`: Records the indices of `FermiFS2CModes` arrays which modes electrons
 being excited from.
-* `to_unoccupieds`: Records the indices of `FermiFS2CModes` arrays which modes electrons 
+* `to_unoccupieds`: Records the indices of `FermiFS2CModes` arrays which modes electrons
 being excited to.
 
 Both `from_occupieds == (0,0)` and `to_unoccupieds == (0,0)` represent a special "void"
-state when there is no more state in current `n_excited` situation, this is used to 
-notify upper caller that it should move to next valiad `excitations_per_channel`. 
+state when there is no more state in current `n_excited` situation, this is used to
+notify upper caller that it should move to next valiad `excitations_per_channel`.
 This is checked by the function [`is_void_state`](@ref).
 
-When used to represents one-electron-excitation cases, only `from_occupieds[1]` 
-and `to_unoccupieds[1]` are used. 
-When used to represents two-electrons-excitation cases, `from_occupieds[1]`, 
-`to_unoccupieds[1]`, `from_occupieds[2]` and `to_unoccupieds[2]` are all used. 
+When used to represents one-electron-excitation cases, only `from_occupieds[1]`
+and `to_unoccupieds[1]` are used.
+When used to represents two-electrons-excitation cases, `from_occupieds[1]`,
+`to_unoccupieds[1]`, `from_occupieds[2]` and `to_unoccupieds[2]` are all used.
 When used to represents one-one-electrons-excitation case, index `1` represention
 alpha spin channel and index `2` represention beta spin channel repectively.
 
-See also [`FermiFS2CModes`](@ref).
+See also [`FermiFS2CModes`](@ref BitStringAddresses.FermiFS2CModes).
 """
 struct MolecularHamiltonianOffDiagonalsIteratorState
     excitations_per_channel::Tuple{Int,Int} # either 0, 1, 2
@@ -362,7 +362,7 @@ end
 """
     is_void_state(s::MolecularHamiltonianOffDiagonalsIteratorState)
 
-When `from_occupieds == (0,0)` and `to_unoccupieds == (0,0)` are both 
+When `from_occupieds == (0,0)` and `to_unoccupieds == (0,0)` are both
 satisfied, the state is considered a void state.
 """
 function is_void_state(s::MolecularHamiltonianOffDiagonalsIteratorState)
@@ -374,12 +374,12 @@ end
 
 """
     is_invalid_state(
-        iter::MolecularHamiltonianOffDiagonalsIterator, 
+        iter::MolecularHamiltonianOffDiagonalsIterator,
         s::MolecularHamiltonianOffDiagonalsIteratorState
     )
 
 This function is used to check if `s` is a valid state. It checks if its field
-`from_occupieds` and `to_unoccupieds` tuples hold the indices within the range 
+`from_occupieds` and `to_unoccupieds` tuples hold the indices within the range
 of corresponding `FermiFS2CModes` array.
 """
 function is_invalid_state(
@@ -775,9 +775,9 @@ Return the 2-element combination (in lex order) of set {1,...,n} with index i.
 When generating the excitation state with 2 electrons excited in a single spin
 channel, we use the indice of array storing (un)occupied mode maps. For example,
 we select 2 non-repeating indices of array storing unoccupied mode maps to
-represent modes the electrons should go to as `to_unoccupieds` tuple in 
-[`MolecularHamiltonianOffDiagonalsIteratorState`](@ref). 
-If there are 4 unoccupied modes, all the possible combination of chosen in 
+represent modes the electrons should go to as `to_unoccupieds` tuple in
+[`MolecularHamiltonianOffDiagonalsIteratorState`](@ref).
+If there are 4 unoccupied modes, all the possible combination of chosen in
 lexicographic order should be:
 
     index:       1      2      3      4      5      6
@@ -785,7 +785,7 @@ lexicographic order should be:
 
 The length of all the combinations is ``4C2 = 6``.
 Given the index(`i`), to determin the value of 1st position(`x`) in the
-combination, we can first determine how many combinations when `x` is 
+combination, we can first determine how many combinations when `x` is
 from 1 to `n`, the number is calculated by ``(n-x)C1 = (n-x)``.
 
     x = 1, count = 3
@@ -793,9 +793,9 @@ from 1 to `n`, the number is calculated by ``(n-x)C1 = (n-x)``.
     x = 3, count = 1
     x = 4, count = 0
 
-If `i` falls into the range ``[1, 3]``, it means `x=1`. If `i` is 
+If `i` falls into the range ``[1, 3]``, it means `x=1`. If `i` is
 larger than `3`, it substract `3` from itself and check if it next falls
-into the range ``[1, 2]`` and so on. 
+into the range ``[1, 2]`` and so on.
 After `x` is determined, then `i` becomes the offset between `x` and `y`.
 """
 function unrank_combination(n::Int, i::Int)
