@@ -381,7 +381,7 @@ function HubbardRealSpace(
     w_mat = _u_or_w_to_matrix(:w, w, C)
     v_mat = _t_or_v_to_matrix(:v, v, C, D)
 
-    u_mat = warn_fermi_interaction(address, u_mat)
+    warn_fermi_interaction(address, u_mat)
 
     # Precompute the trap potential terms
     if isnothing(v_mat)
@@ -460,22 +460,18 @@ Warn and modify if interaction matrix `u` does not make sense for `address`.
 """
 function warn_fermi_interaction(address::CompositeFS, u)
     C = num_components(address)
-    U = Matrix(u)
     for c in 1:C
         if address.components[c] isa FermiFS && u[c, c] ≠ 0
             @warn "component $(c) is fermionic, but was given a self-interaction " *
                 "strength of $(u[c,c])" maxlog=1
-            U[c, c] = 0
         end
     end
-    return SMatrix{size(U)...,eltype(u)}(U)
 end
 function warn_fermi_interaction(address::FermiFS, u)
     if u[1, 1] ≠ 0
         @warn "address is fermionic, but was given a self-interaction " *
             "strength of $(u[1,1])" maxlog=1
     end
-    return SMatrix{1,1,eltype(u)}(0)
 end
 warn_fermi_interaction(_, _) = nothing
 warn_fermi_interaction(::CompositeFS, ::Nothing) = nothing
