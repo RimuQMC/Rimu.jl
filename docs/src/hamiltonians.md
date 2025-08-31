@@ -111,16 +111,11 @@ HardwallBoundaries
 LadderBoundaries
 ```
 
-## Additional docstrings of internal functions
+## Additional documentation of internal functions
 The following internal functions and types are documented here for completeness, 
-but are not part of the public API.
+but are not part of the public API and may change any time. Use at your own risk.
 ```@autodocs
 Modules = [Hamiltonians]
-<!-- Pages = [
-    "abstract.jl",
-    "excitations.jl",
-    "Molecular.jl",
-] -->
 Public = false
 ```
 
