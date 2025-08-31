@@ -115,15 +115,15 @@ LadderBoundaries
 The following internal functions and types are documented here for completeness, 
 but are not part of the public API and may change any time. Use at your own risk.
 ```@docs
-one_electron_integral
-two_electron_integral
-MolecularHamiltonianOffDiagonals
-MolecularHamiltonianOffDiagonalsIteratorState
-flip_spin_components
-is_void_state
-is_invalid_state
-linear_to_state
-unrank_combination
+Hamiltonians.one_electron_integral
+Hamiltonians.two_electron_integral
+Hamiltonians.MolecularHamiltonianOffDiagonals
+Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState
+Hamiltonians.flip_spin_components
+Hamiltonians.is_void_state
+Hamiltonians.is_invalid_state
+Hamiltonians.linear_to_state
+Hamiltonians.unrank_combination
 ```
 
 ## Index
