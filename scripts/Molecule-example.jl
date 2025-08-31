@@ -41,6 +41,8 @@ p = ExactDiagonalizationProblem(h, algorithm=KrylovKitSolver(true))
 # ```julia
 # s = solve(p)
 # ```
+# !!! warning
+# Executing `solve` is time-consuming and may require large computational resources.
 
 
 # ### Projector Monte Carlo / FCIQMC

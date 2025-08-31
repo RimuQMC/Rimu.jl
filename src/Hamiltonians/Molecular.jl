@@ -172,12 +172,6 @@ function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
     return r[1][1], 1 / l, r[1][2]
 end
 
-function random_offdiagonal_old(column::MolecularHamiltonianOperatorColumn)
-    ods = offdiagonals(column)
-    r = rand(collect(ods))
-    return r[1], 1 / length(ods), r[2]
-end
-
 """
     one_electron_integral(
         int1::Array{T,2},
@@ -277,14 +271,24 @@ This is an inline function used to flip the spin component index.
 @inline flip_spin_components(component::Int)::Int = 3 - component
 
 """
-This struct is used internally to represent the iterator for off-diagonal 
-terms generation, which is the returned value type of [`operator_column`](@ref) 
-function when applying on [`MolecularHamiltonian`](@ref). 
+    MolecularHamiltonianOffDiagonals
 
-The `excitation_prefix_sums` field stores the prefix sums of excitation counts
-for each type, where each entry represents the cumulative number of excitations.
-Its length is fixed at 5. The ordering of excitation types must be consistent with
-the iteration order of `MolecularHamiltonianOffDiagonals`.
+This struct is used internally to represent the iterator for the generation
+of off-diagonal terms from the [`operator_column`](@ref) of a
+[`MolecularHamiltonian`](@ref). 
+
+The iteration proceeds by going through the five possible excitation types:
+
+1. single (particle - hole) excitations of the beta electrons
+2. single (p-h) excitations of the alpha electrons
+3. double (2p-2h) excitations of the beta electrons
+4. double (2p-2h) excitations of the alpha electrons
+5. mixed double excitations (p-h of alpha and p-h of beta electrons)
+
+The field `excitation_prefix_sums` stores the sums of excitation counts for each
+of the five excitation types in order.
+
+See also [`offdiagonals`](@ref).
 """
 struct MolecularHamiltonianOffDiagonals{
     T,A<:FermiFS2C,H<:MolecularHamiltonian{T,A},M<:FermiFS2CModes
