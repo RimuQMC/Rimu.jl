@@ -1,4 +1,4 @@
-# # Example 6: Molecular Hamiltonian Caluculation
+# # Example 6: Molecular Hamiltonian Calculation
 
 # This is an example calculation of the water molecule (H₂O).
 
@@ -14,8 +14,8 @@ using Rimu
 # We specify the path to the FCIDUMP file describing the H₂O molecule.
 fcidump = joinpath(pkgdir(Rimu), "test/examples/h2o.FCIDUMP");
 
-# Next we construct the Hamiltonian by the constructor. The Hartree-Fock ground state 
-# is generated automatically at the same time. 
+# Next we construct the Hamiltonian by the constructor [`MolecularHamiltonian`](@ref). 
+# The Hartree-Fock ground state is generated automatically at the same time. 
 h = MolecularHamiltonian(fcidump)
 a = starting_address(h);
 
