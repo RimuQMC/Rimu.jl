@@ -6,8 +6,9 @@
 # [here](https://github.com/RimuQMC/Rimu.jl/blob/develop/scripts/Molecule-example.jl).
 # Run it with `julia Molecule-example.jl`.
 
-# First, we load the reqired packages. `Rimu` for FCIQMC calculation.
+# First, we load the reqired packages. `Rimu` for the calculation and `ElemCo` for loading the FCIDUMP file.
 using Rimu
+using ElemCo
 
 # ## Setting up the model
 
