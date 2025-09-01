@@ -124,7 +124,6 @@ Hamiltonians.is_void_state
 Hamiltonians.is_invalid_state
 Hamiltonians.linear_to_state
 Hamiltonians.unrank_combination
-BitStringAddresses.FermiFS2CModes
 ```
 
 ## Index
