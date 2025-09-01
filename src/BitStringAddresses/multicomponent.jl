@@ -154,13 +154,13 @@ This struct stores the occupied and unoccupied mode maps associated with an
 address of type [`FermiFS2C`](@ref). It should be constructed using the 
 [`full_mode_maps`](@ref) function.  
 
-The struct contains two fields, `occupied` and `unoccupied`, each holding a 
-`ModeMap` in the form of a two-element `Tuple`.  
+The struct has two fields, `occupied` and `unoccupied`, each containing a 
+`ModeMap` represented as a two-element `Tuple`:  
 
-- Index `1` corresponds to the ``alpha`` spin channel.  
-- Index `2` corresponds to the ``beta`` spin channel.  
+- Index `1` corresponds to the α spin channel
+- Index `2` corresponds to the β spin channel
 
-This convention is consistent with the spin-channel ordering in [`FermiFS2C`](@ref).
+This convention follows the spin-channel indexing defined in [`FermiFS2C`](@ref).
 
 See also 
 [`FermiFS2C`](@ref), [`ModeMap`](@ref), [`occupied_mode_map`](@ref), 
