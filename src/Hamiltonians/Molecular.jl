@@ -37,7 +37,7 @@ See also [`FermiFS2C`](@ref)
 !!! warning
     The FCIDUMP file is assumed to be a Restricted Hartree-Fock(RHF) Hamiltonian.
 """
-struct MolecularHamiltonian{T,A<:FermiFS2C,D<:FDump} <: AbstractHamiltonian{T}
+struct MolecularHamiltonian{T,A<:FermiFS2C,D} <: AbstractHamiltonian{T}
     specifier::String
     starting_address::A
     fcidump::D
@@ -48,52 +48,12 @@ function MolecularHamiltonian(
     starting_address::Union{Nothing,FermiFS2C}=nothing,
     specifier::String="",
 )
-    fd = read_fcidump(fcidump_path, Val(4))
+    ext = Base.get_extension(@__MODULE__, :ElemCoExt)
+    if isnothing(ext)
+        error("MolecularHamiltonian requires that ElemCo is loaded, i.e. `using ElemCo`")
+    end
+    fd = ext.read_fcidump(fcidump_path, Val(4))
     return MolecularHamiltonian(fd, starting_address, fcidump_path)
-end
-
-function MolecularHamiltonian(
-    fd::QFDump,
-    starting_address::Union{Nothing,FermiFS2C{}}=nothing,
-    specifier::String="",
-)
-    if !fd_exists(fd)
-        throw(ArgumentError("invalid input FCIDUMP file"))
-    end
-    n_orb = headvar(fd, "NORB", Int)
-    n_elec = headvar(fd, "NELEC", Int)
-    ms2 = headvar(fd, "MS2", Int)
-
-    if isnothing(n_orb) || isnothing(n_elec) || isnothing(ms2)
-        throw(
-            ArgumentError(
-                "input FCIDUMP file must have `NORB`, `NELEC`, and `MS2` defined in header"
-            ),
-        )
-    end
-
-    n_alpha_elec = (n_elec + ms2) ÷ 2
-    n_beta_elec = (n_elec - ms2) ÷ 2
-
-    if starting_address === nothing
-        starting_address = FermiFS2C(
-            near_uniform(FermiFS{n_alpha_elec,n_orb}),
-            near_uniform(FermiFS{n_beta_elec,n_orb}),
-        )
-    end
-
-    if num_modes(starting_address) != n_orb
-        throw(
-            ArgumentError(
-                "starting_address must have the same number of orbital as the FCIDUMP."
-            ),
-        )
-    end
-
-    val_type = typeof(fd.int0)
-    addr_type = typeof(starting_address)
-    fd_type = typeof(fd)
-    return MolecularHamiltonian{val_type,addr_type,fd_type}(specifier, starting_address, fd)
 end
 
 function Base.show(io::IO, h::MolecularHamiltonian)

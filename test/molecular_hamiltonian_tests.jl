@@ -1,9 +1,17 @@
 using Rimu
-using ElemCo
 using Test
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
 
+@testset "MolecularHamitonian: Package extention" begin
+    ext = Base.get_extension(Rimu, :ElemCoExt)
+    fcidump = joinpath(@__DIR__, "examples/h2.FCIDUMP")
+    if ext === nothing
+        @test_throws ErrorException MolecularHamiltonian(fcidump)
+    end
+end
+
+using ElemCo
 
 @testset "MolecularHamitonian" begin
     molecules = ("h2", "h2o")

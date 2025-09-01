@@ -66,8 +66,6 @@ using StaticArrays: StaticArrays, SA, SMatrix, SVector, SArray, MVector, setinde
 using TupleTools: TupleTools
 using VectorInterface: add, scale
 
-import ElemCo.FciDumps: FDump, QFDump, read_fcidump, headvar, fd_exists
-
 using ..BitStringAddresses
 import ..BitStringAddresses: ModeMap, FermiFS2CModes, full_mode_maps
 using ..Interfaces
