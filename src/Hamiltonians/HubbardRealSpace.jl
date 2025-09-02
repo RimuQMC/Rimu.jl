@@ -456,7 +456,7 @@ end
 """
     warn_fermi_interaction(address, u)
 
-Warn and modify if interaction matrix `u` does not make sense for `address`.
+Warn if interaction matrix `u` does not make sense for `address`.
 """
 function warn_fermi_interaction(address::CompositeFS, u)
     C = num_components(address)
