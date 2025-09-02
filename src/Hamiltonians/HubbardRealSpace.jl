@@ -381,7 +381,7 @@ function HubbardRealSpace(
     w_mat = _u_or_w_to_matrix(:w, w, C)
     v_mat = _t_or_v_to_matrix(:v, v, C, D)
 
-    warn_fermi_interaction(address, u_mat)
+    u ≢ 1.0 && warn_fermi_interaction(address, u_mat)
 
     # Precompute the trap potential terms
     if isnothing(v_mat)
