@@ -1,11 +1,14 @@
 """
-    MolecularHamiltonian(fcidump_path::String[, starting_address::FermiFS2C]) <: AbstractHamiltonian
     MolecularHamiltonian(
-        fd::ElemCo.FciDumps.FDump[,
-            starting_address::FermiFS2C,
-            specifier::String,
-        ]
-    )
+        fcidump_path::String;
+        starting_address::Union{Nothing,FermiFS2C}=nothing,
+        specifier::String="",
+    ) <: AbstractHamiltonian
+    MolecularHamiltonian(
+        fd::ElemCo.FciDumps.FDump;
+        starting_address::Union{Nothing,FermiFS2C}=nothing,
+        specifier::String="",
+    ) <: AbstractHamiltonian
 
 Implements an electronic ab-initio Hamiltonian based on electron overlap integrals in
 FCIDUMP format. It can be used to describe the electronic structure of a molecule
@@ -27,15 +30,20 @@ with a Hartree-Fock calculation, or parsing them from a file.
 * `fcidump_path`: Path to the FCIDUMP file of overlap integrals. This can be generated with
     standard quantum chemistry packages
 * `fd`: Struct containing FCIDUMP information defined in [ElemCo.jl](https://elem.co.il).
-* `starting_address`: The starting address (configuration) defines number of alpha and beta
-    electrons and orbitals.
-* `specifier`: Arbitrary identifier. It may store the path to the FCIDUMP file or a user
+
+# Keyword Arguments
+* `starting_address::FermiFS2C=nothing`: The starting address (configuration) defines 
+    number of alpha and beta electrons and orbitals.
+* `specifier::String=""`: Arbitrary identifier. It may store the path to the FCIDUMP file or a user
     specified name.
 
 See also [`FermiFS2C`](@ref)
 
-!!! warning
+!!! note
     The FCIDUMP file is assumed to be a Restricted Hartree-Fock(RHF) Hamiltonian.
+
+!!! note
+    Requires the [ElemCo.jl](https://elem.co.il) package to be loaded with `using ElemCo`.
 """
 struct MolecularHamiltonian{T,A<:FermiFS2C,D} <: AbstractHamiltonian{T}
     specifier::String
@@ -44,16 +52,20 @@ struct MolecularHamiltonian{T,A<:FermiFS2C,D} <: AbstractHamiltonian{T}
 end
 
 function MolecularHamiltonian(
-    fcidump_path::String,
+    fcidump_path::String;
     starting_address::Union{Nothing,FermiFS2C}=nothing,
     specifier::String="",
 )
     ext = Base.get_extension(@__MODULE__, :ElemCoExt)
     if isnothing(ext)
         error("MolecularHamiltonian requires that ElemCo is loaded, i.e. `using ElemCo`")
+        return nothing
     end
     fd = ext.read_fcidump(fcidump_path, Val(4))
-    return MolecularHamiltonian(fd, starting_address, fcidump_path)
+    if specifier == ""
+        specifier = fcidump_path
+    end
+    return MolecularHamiltonian(fd; starting_address=starting_address, specifier=specifier)
 end
 
 function Base.show(io::IO, h::MolecularHamiltonian)
@@ -94,8 +106,8 @@ function operator_column(
     modes = full_mode_maps(a)
 
     diag = zero(T)
-    diag_one_elec_int = one_electron_integral(h.fcidump.int1, modes.occupied)
-    diag_two_elec_int = two_electron_integral(h.fcidump.int2, modes.occupied)
+    diag_one_elec_int = one_electron_diagonal(h.fcidump.int1, modes.occupied)
+    diag_two_elec_int = two_electron_diagonal(h.fcidump.int2, modes.occupied)
     diag = h.fcidump.int0 + diag_one_elec_int + diag_two_elec_int
 
     return MolecularHamiltonianOperatorColumn{A,T,typeof(h),typeof(modes)}(
@@ -133,27 +145,20 @@ function random_offdiagonal(column::MolecularHamiltonianOperatorColumn)
 end
 
 """
-    one_electron_integral(
-        int1::Array{T,2},
-        occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}
+    one_electron_diagonal(
+        int1::Matrix{<:Number},
+        occ_modes::NTuple{2,AbstractVector{FermiFSIndex}},
     )::T where {T<:Number}
 
-Calculate the one body operator diagonal term ``\\langle U | \\hat{H}_1 | U \\rangle``.
-
+Calculate the one body operator diagonal term ``⟨U|Ĥ₁|U⟩`` for a two-component Fermi Fock address.
 ```math
-\\begin{aligned}
-    \\langle U | \\hat{H}_1| U \\rangle & =
-    \\sum_{i=1}^{N} h_{ii} \\langle \\psi_i | a^{\\dagger}_{i} a_{i} | \\psi_j \\rangle  \\\\
-    & = \\sum_{i=1}^{n_{\\alpha}} h_{ii}
-        \\langle \\varphi_i | a^{\\dagger}_{i} a_{i} | \\varphi_i \\rangle
-      + \\sum_{i=1}^{n_{\\beta}} h_{ii}
-        \\langle \\varphi_i | a^{\\dagger}_{i} a_{i} | \\varphi_i \\rangle.
-\\end{aligned}
+⟨U|Ĥ₁|U⟩ = ∑_{i,σ}^N ⟨U| h_{ii} a^†_{iσ} a_{iσ} |U⟩,
 ```
+where the mode map of the two-component Fock address ``|U⟩`` is passed as `occ_modes`.
 """
-function one_electron_integral(
-    int1::Array{T,2},
-    occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}},
+function one_electron_diagonal(
+    int1::Matrix{T},
+    occ_modes::NTuple{2,AbstractVector{FermiFSIndex}},
 )::T where {T<:Number}
     one_elec_int = zero(T)
     for occ_mode in occ_modes
@@ -165,26 +170,22 @@ function one_electron_integral(
 end
 
 """
-    two_electron_integral(
+    two_electron_diagonal(
         int2::Array{T,4},
-        occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}}
+        occ_modes::NTuple{2,AbstractVector{FermiFSIndex}},
     )::T where {T<:Number}
 
-Calculate the two body operator diagonal term ``\\langle U | \\hat{H}_2| U \\rangle``
-with Slater-Condon rules.
-
+Calculate the two body operator diagonal term ``⟨U|Ĥ₂|U⟩`` for a two-component Fermi Fock address.
 ```math
-\\begin{aligned}
-    \\langle U | \\hat{H}_2| U \\rangle
-        & = \\sum_{i<j}^{n_\\alpha} [\\langle ij|ij\\rangle - \\langle ij|ji\\rangle] \\\\
-        & + \\sum_{i<j}^{n_\\beta} [\\langle ij|ij\\rangle - \\langle ij|ji\\rangle] \\\\
-        & + \\sum_{i}^{n_\\alpha}\\sum_{j}^{n_\\beta} \\langle ij|ij\\rangle. \\\\
-\\end{aligned}
+⟨U|Ĥ₂|U⟩ 
+    = ∑_{i < j,σᵢ,σⱼ}^{N} (V_{ij,ij} a^†_{i,σᵢ} a^†_{j,σⱼ} a_{j,σⱼ} a_{i,σᵢ} 
+    - V_{ij,ji} a^†_{i,σᵢ} a^†_{j,σⱼ} a_{i,σᵢ} a_{j,σⱼ} δ_{σᵢ,σⱼ})
 ```
+where the mode map of the two-component Fock address ``|U⟩`` is passed as `occ_modes`.
 """
-function two_electron_integral(
+function two_electron_diagonal(
     int2::Array{T,4},
-    occ_modes::Tuple{AbstractVector{FermiFSIndex},AbstractVector{FermiFSIndex}},
+    occ_modes::NTuple{2,AbstractVector{FermiFSIndex}},
 )::T where {T<:Number}
     two_elec_int = zero(T)
 
@@ -293,23 +294,23 @@ This struct is used internally to represent the state during
 off-diagonal terms generation.
 
 * `excitations_per_channel`: Tuple contains 2 values represents the how many electrons
-are excited in alpha(1) and beta(2) channel.
+    are excited in alpha(1) and beta(2) channel.
 * `from_occupieds`: Records the indices of `FermiFS2CModes` arrays which modes electrons
-being excited from.
+    being excited from.
 * `to_unoccupieds`: Records the indices of `FermiFS2CModes` arrays which modes electrons
-being excited to.
+    being excited to.
 
 Both `from_occupieds == (0,0)` and `to_unoccupieds == (0,0)` represent a special "void"
 state when there is no more state in current `n_excited` situation, this is used to
-notify upper caller that it should move to next valiad `excitations_per_channel`.
+notify upper caller that it should move to next valid `excitations_per_channel`.
 This is checked by the function [`is_void_state`](@ref).
 
 When used to represents one-electron-excitation cases, only `from_occupieds[1]`
 and `to_unoccupieds[1]` are used.
 When used to represents two-electrons-excitation cases, `from_occupieds[1]`,
 `to_unoccupieds[1]`, `from_occupieds[2]` and `to_unoccupieds[2]` are all used.
-When used to represents one-one-electrons-excitation case, index `1` represention
-alpha spin channel and index `2` represention beta spin channel repectively.
+When used to represent the one-one-electron-excitation case, index `1` represents
+alpha electrons and index `2` represents beta electrons, respectively.
 
 See also [`FermiFS2CModes`](@ref BitStringAddresses.FermiFS2CModes).
 """
@@ -317,6 +318,18 @@ struct MolecularHamiltonianOffDiagonalsIteratorState
     excitations_per_channel::Tuple{Int,Int} # either 0, 1, 2
     from_occupieds::Tuple{Int,Int} # indices into FermiFS2CModes arrays
     to_unoccupieds::Tuple{Int,Int} # indices into FermiFS2CModes arrays
+end
+
+function MolecularHamiltonianOffDiagonalsIteratorState(
+    n_excited::Tuple{Int,Int}, ii::Int, ij::Int
+)
+    return MolecularHamiltonianOffDiagonalsIteratorState(n_excited, (ii, 0), (ij, 0))
+end
+
+function MolecularHamiltonianOffDiagonalsIteratorState(
+    n_excited::Tuple{Int,Int}, ii::Int, ij::Int, ik::Int, il::Int
+)
+    return MolecularHamiltonianOffDiagonalsIteratorState(n_excited, (ii, ij), (ik, il))
 end
 
 """
@@ -400,22 +413,6 @@ function is_invalid_state(
     else
         return true
     end
-end
-
-function MolecularHamiltonianOffDiagonalsIteratorState(
-    n_excited::Tuple{Int,Int}, ii::Int, ij::Int
-)
-    return MolecularHamiltonianOffDiagonalsIteratorState(n_excited, (ii, 0), (ij, 0))
-end
-
-function MolecularHamiltonianOffDiagonalsIteratorState(
-    n_excited::Tuple{Int,Int},
-    ii::Int,
-    ij::Int,
-    ik::Int,
-    il::Int,
-)
-    return MolecularHamiltonianOffDiagonalsIteratorState(n_excited, (ii, ij), (ik, il))
 end
 
 function Base.iterate(iter::MolecularHamiltonianOffDiagonals)
@@ -505,9 +502,9 @@ function two_electron_excitation_next(
         il = ik + 1
     end
     if ii > length(iter.modes.occupied[chan]) - 1
-        return MolecularHamiltonianOffDiagonalsIteratorState((na, nb), 0, 0, 0, 0)
+        return MolecularHamiltonianOffDiagonalsIteratorState((na, nb), (0, 0), (0, 0))
     end
-    return MolecularHamiltonianOffDiagonalsIteratorState((na, nb), ii, ij, ik, il)
+    return MolecularHamiltonianOffDiagonalsIteratorState((na, nb), (ii, ij), (ik, il))
 end
 
 function two_electron_excitation(
@@ -655,15 +652,14 @@ establishing a bijection between indices and states. Given an `iter_index`,
 the function generates the corresponding `state` by performing the following steps:
 
 1. Identify excitation type
-- As iter is traversed, it outputs states belonging to different excitation types
-  in a specific order.
-- Since the number of states for each excitation type is known in advance,
-  we can determine which excitation type corresponds to the given `iter_index`
-  by checking the index range it falls into.
-
+    - As iter is traversed, it outputs states belonging to different excitation types
+    in a specific order.
+    - Since the number of states for each excitation type is known in advance,
+    we can determine which excitation type corresponds to the given `iter_index`
+    by checking the index range it falls into.
 2. Locate the state within the excitation type
-- Once the excitation type is identified, compute the offset associated with that type.
-- Using this offset, determine the exact state corresponding to the provided `iter_index`.
+    - Once the excitation type is identified, compute the offset associated with that type.
+    - Using this offset, determine the exact state corresponding to the provided `iter_index`.
 """
 function linear_to_state(
     iter::MolecularHamiltonianOffDiagonals, iter_index::Int
@@ -731,32 +727,46 @@ end
 """
     unrank_combination(n::Int, i::Int)
 
-Return the 2-element combination (in lex order) of set {1,...,n} with index i.
-When generating the excitation state with 2 electrons excited in a single spin
-channel, we use the indice of array storing (un)occupied mode maps. For example,
-we select 2 non-repeating indices of array storing unoccupied mode maps to
-represent modes the electrons should go to as `to_unoccupieds` tuple in
+Return the 2-element combination (in lexicographical order) of the set ``\\{1, ..., n\\}``
+corresponding to the index ``i``.
+
+When generating excited states with two electrons excited within a single spin channel, 
+two indices are chosen from the array of (un)occupied mode maps. For example, selecting 
+two non-repeating indices from the array of unoccupied modes determines the target modes
+for the electrons, stored as the `to_unoccupieds` tuple in 
 [`MolecularHamiltonianOffDiagonalsIteratorState`](@ref).
-If there are 4 unoccupied modes, all the possible combination of chosen in
-lexicographic order should be:
+
+For instance, if there are 4 unoccupied modes, the possible 2-element combinations
+(in lexicographic order) are:
 
     index:       1      2      3      4      5      6
     combination: (1, 2) (1, 3) (1, 4) (2, 3) (2, 4) (3, 4)
 
-The length of all the combinations is ``4C2 = 6``.
-Given the index(`i`), to determin the value of 1st position(`x`) in the
-combination, we can first determine how many combinations when `x` is
-from 1 to `n`, the number is calculated by ``(n-x)C1 = (n-x)``.
+There are ``\\binom{4}{2} = 6`` such combinations in total.
 
-    x = 1, count = 3
-    x = 2, count = 2
-    x = 3, count = 1
-    x = 4, count = 0
+### Algorithm
 
-If `i` falls into the range ``[1, 3]``, it means `x=1`. If `i` is
-larger than `3`, it substract `3` from itself and check if it next falls
-into the range ``[1, 2]`` and so on.
-After `x` is determined, then `i` becomes the offset between `x` and `y`.
+1. To determine the first element ``x`` of the combination from ``i``:
+- For each candidate ``x``, compute the number of combinations possible with
+   ``y > x``. This count is ``\\binom{n-x}{1} = n - x``.
+- Subtract these counts from ``i`` until ``i`` falls within the current range.
+2. Once ``x`` is determined, the remaining offset ``i`` directly specifies the
+second element ``y`` of the combination.
+
+Example for ``i = 2, 4``:
+
+    x = 1 → count = 3
+    x = 2 → count = 2
+    x = 3 → count = 1
+    x = 4 → count = 0
+
+- For ``i = 2``: since ``i ∈ [1, 3]``, we set ``x = 1``.  
+  Then ``y = x + i = 3``, so the combination is ``(1, 3)``.
+
+- For ``i = 4``: since ``i > 3``, subtract 3 → ``i = 1``.  
+  Now test with ``x = 2``. Since ``i ∈ [1, 2]``, we set ``x = 2``.  
+  Then ``y = x + i = 3``, so the combination is ``(2, 3)``.
+
 """
 function unrank_combination(n::Int, i::Int)
     x = 0

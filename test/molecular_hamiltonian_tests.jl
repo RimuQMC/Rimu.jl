@@ -1,7 +1,6 @@
 using Rimu
 using Test
-using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
-    test_hamiltonian_interface, test_hamiltonian_structure
+using Rimu.InterfaceTests: test_hamiltonian_interface, test_hamiltonian_structure
 
 @testset "MolecularHamitonian: Package extention" begin
     ext = Base.get_extension(Rimu, :ElemCoExt)

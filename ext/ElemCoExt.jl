@@ -4,7 +4,9 @@ import Rimu: MolecularHamiltonian, FermiFS, FermiFS2C, near_uniform, num_modes
 import ElemCo.FciDumps: FDump, QFDump, read_fcidump, headvar, fd_exists
 
 function MolecularHamiltonian(
-    fd::QFDump, starting_address::Union{Nothing,FermiFS2C{}}=nothing, specifier::String=""
+    fd::QFDump;
+    starting_address::Union{Nothing,FermiFS2C}=nothing,
+    specifier::String="",
 )
     if !fd_exists(fd)
         throw(ArgumentError("invalid input FCIDUMP file"))
