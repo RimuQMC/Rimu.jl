@@ -22,17 +22,25 @@ using ElemCo
         test_hamiltonian_structure(h)
     end
 
-    @testset "User provided starting_address" begin
+    @testset "Constructor" begin
         fcidump = joinpath(@__DIR__, "examples/h2.FCIDUMP")
 
-        @testset "Ill FermiFC2C" begin
-            ill_addr = FermiFS2C(near_uniform(FermiFS{0,1}), near_uniform(FermiFS{0,1}))
-            @test_throws ArgumentError MolecularHamiltonian(fcidump, ill_addr)
+        @testset "Kwarg: starting_address" begin
+            @testset "Ill FermiFC2C" begin
+                ill_addr = FermiFS2C(near_uniform(FermiFS{0,1}), near_uniform(FermiFS{0,1}))
+                @test_throws ArgumentError MolecularHamiltonian(fcidump, starting_address=ill_addr)
+            end
+            @testset "Normal FermiFC2C" begin
+                normal_addr = FermiFS2C(near_uniform(FermiFS{1,2}), near_uniform(FermiFS{1,2}))
+                h = MolecularHamiltonian(fcidump, starting_address=normal_addr)
+                @test starting_address(h) == normal_addr
+            end
         end
-        @testset "Normal FermiFC2C" begin
-            normal_addr = FermiFS2C(near_uniform(FermiFS{1,2}), near_uniform(FermiFS{1,2}))
-            h = MolecularHamiltonian(fcidump, normal_addr)
-            @test starting_address(h) == normal_addr
+
+        @testset "Evaluation" begin
+            h = MolecularHamiltonian(fcidump)
+            he = eval(Meta.parse(repr(h)))
+            @test he == h skip = true
         end
     end
 

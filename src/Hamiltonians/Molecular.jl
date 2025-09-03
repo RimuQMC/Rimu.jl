@@ -76,7 +76,7 @@ function Base.show(io::IO, h::MolecularHamiltonian)
     else
         print(io, typeof(h.fcidump))
     end
-    print(io, ", starting_addresss=")
+    print(io, ", starting_address=")
     show(io, h.starting_address)
     if ispath(h.specifier)
         print(io, ")")
@@ -747,11 +747,11 @@ There are ``\\binom{4}{2} = 6`` such combinations in total.
 ### Algorithm
 
 1. To determine the first element ``x`` of the combination from ``i``:
-- For each candidate ``x``, compute the number of combinations possible with
-   ``y > x``. This count is ``\\binom{n-x}{1} = n - x``.
-- Subtract these counts from ``i`` until ``i`` falls within the current range.
-2. Once ``x`` is determined, the remaining offset ``i`` directly specifies the
-second element ``y`` of the combination.
+    - For each candidate ``x``, compute the number of combinations possible with
+    ``y > x``. This count is ``\\binom{n-x}{1} = n - x``.
+    - Subtract these counts from ``i`` until ``i`` falls within the current range.
+2. Once ``x`` is determined, the remaining offset ``i`` directly specifies the second
+    element ``y`` of the combination.
 
 Example for ``i = 2, 4``:
 
