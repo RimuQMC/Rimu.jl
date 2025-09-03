@@ -653,10 +653,10 @@ the function generates the corresponding `state` by performing the following ste
 
 1. Identify excitation type
     - As iter is traversed, it outputs states belonging to different excitation types
-    in a specific order.
+        in a specific order.
     - Since the number of states for each excitation type is known in advance,
-    we can determine which excitation type corresponds to the given `iter_index`
-    by checking the index range it falls into.
+        we can determine which excitation type corresponds to the given `iter_index`
+        by checking the index range it falls into.
 2. Locate the state within the excitation type
     - Once the excitation type is identified, compute the offset associated with that type.
     - Using this offset, determine the exact state corresponding to the provided `iter_index`.
@@ -748,7 +748,7 @@ There are ``\\binom{4}{2} = 6`` such combinations in total.
 
 1. To determine the first element ``x`` of the combination from ``i``:
     - For each candidate ``x``, compute the number of combinations possible with
-    ``y > x``. This count is ``\\binom{n-x}{1} = n - x``.
+        ``y > x``. This count is ``\\binom{n-x}{1} = n - x``.
     - Subtract these counts from ``i`` until ``i`` falls within the current range.
 2. Once ``x`` is determined, the remaining offset ``i`` directly specifies the second
     element ``y`` of the combination.
