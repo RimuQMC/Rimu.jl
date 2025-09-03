@@ -115,8 +115,8 @@ LadderBoundaries
 The following internal functions and types are documented here for completeness, 
 but are not part of the public API and may change any time. Use at your own risk.
 ```@docs
-Hamiltonians.one_electron_integral
-Hamiltonians.two_electron_integral
+Hamiltonians.one_electron_diagonal
+Hamiltonians.two_electron_diagonal
 Hamiltonians.MolecularHamiltonianOffDiagonals
 Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState
 Hamiltonians.flip_spin_components
