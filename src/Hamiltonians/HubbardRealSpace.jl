@@ -120,9 +120,10 @@ end
         a, bs::Tuple, us::Tuple, ws::Tuple, occ::ModeMap, occs::Tuple, geometry::CubicGrid
     )
 
-Sum the local interactions of the Fock state `a` with all states in `bs` using the onsite
-and nearest neighbour interaction constants in `us` and `ws`. This is used to compute
-all interactions in the column below the diagonal of the interaction matrix.
+Sum of the interactions between the occupied sites in the Fock state `a` with the occupied sites in all 
+states in `bs` using the onsite and nearest neighbour interaction parameters in `us` and `ws`. This is used 
+to compute all interactions in the respective column of the interaction matrices. Here, `occ` is the modemap of
+`a` and `occs` is a collection of modemaps of states in `bs`.
 """
 @inline function _interaction_col(
     a, ::Tuple{}, ::Tuple{}, ::Tuple{}, ::ModeMap, ::Tuple{}, ::CubicGrid
