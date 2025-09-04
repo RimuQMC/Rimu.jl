@@ -59,12 +59,13 @@ end
     return 0
 end
 """
-    nearest_neighbor_interaction(onr::SVector, w, geometry::CubicGrid, map::ModeMap)
-    nearest_neighbor_interaction(onr1::SVector, onr2::SVector, w, geometry::CubicGrid, map1::ModeMap)
+    nearest_neighbor_interaction(add::SingleComponentFockAddress, w, geometry::CubicGrid, map::ModeMap)
+    nearest_neighbor_interaction(add1::SingleComponentFockAddress, add2::SingleComponentFockAddress,
+        w, geometry::CubicGrid, map1::ModeMap)
 
-Calculate the nearest neighbour interaction ``w \\sum_{⟨i,j⟩} n_{↑, i} n_{↓, j}`` for an occupation
-number representation `onr` of a single-component Fock states or for `onr1` and `onr2` of the two
-single-component Fock states. For a multi-component Fock state, return the eigenvalue of
+Calculate the nearest neighbour interaction ``w \\sum_{⟨i,j⟩} n_{↑, i} n_{↓, j}`` within a same single-component
+Fock address `add` or between the single-component Fock states `add1` and `add2` of two distinct components in 
+multi-component Fock address,
 
 ```math
 \\frac{1}{2}\\sum_{⟨i,j⟩, σ, τ} w_{σ,τ} a^†_{σ,i}a^†_{τ,j}a_{τ,j}a_{σ,i} ,
@@ -76,8 +77,9 @@ and `σ`, `τ` are component indices.
 See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
 """
 @inline function nearest_neighbor_interaction(
-    onr::SVector, w, geometry::CubicGrid{D,S,B}, map::ModeMap
+    add::SingleComponentFockAddress, w, geometry::CubicGrid{D,S,B}, map::ModeMap
 ) where {D,S,B}
+    onr1 = onr(add)
     N = length(map)
     ext_result = 0
     for i in 1:N
@@ -85,17 +87,22 @@ See also [`BoseFS`](@ref), [`FermiFS`](@ref), [`CompositeFS`](@ref).
             occ_mode1 = map[i].mode
             neigh = neighbor_site(geometry, occ_mode1, j)
             if !iszero(neigh)
-                ext_result += onr[occ_mode1] * onr[neigh]
+                ext_result += onr1[occ_mode1] * onr1[neigh]
             end
         end
     end
     return w * ext_result
 end
-@inline nearest_neighbor_interaction(::SVector, ::Nothing, ::CubicGrid, ::ModeMap) = 0
+@inline function nearest_neighbor_interaction(
+    ::SingleComponentFockAddress, ::Nothing, ::CubicGrid, ::ModeMap)
+    return 0
+end
 
 @inline function nearest_neighbor_interaction(
-    onr1::SVector, onr2::SVector, w, geometry::CubicGrid{D,S,B}, map1::ModeMap
-) where {D,S,B}
+    add1::SingleComponentFockAddress, add2::SingleComponentFockAddress, w,
+    geometry::CubicGrid{D,S,B}, map1::ModeMap) where {D,S,B}
+    onr1 = onr(add1)
+    onr2 = onr(add2)
     N1 = length(map1)
     ext_result = 0
     for i in 1:N1
@@ -110,8 +117,8 @@ end
     return w * ext_result
 end
 @inline function nearest_neighbor_interaction(
-    ::SVector, ::SVector, ::Nothing, ::CubicGrid, ::ModeMap
-)
+    ::SingleComponentFockAddress, ::SingleComponentFockAddress, ::Nothing,
+    ::CubicGrid, ::ModeMap)
     return 0
 end
 
@@ -135,7 +142,7 @@ end
 )
     return local_interaction(a, b, u, occ_a, occ_b) +
            _interaction_col(a, bs, us, ws, occ_a, occs, g) +
-           nearest_neighbor_interaction(onr(a), onr(b), w, g, occ_a)
+           nearest_neighbor_interaction(a, b, w, g, occ_a)
 end
 @inline function _interaction_col(
     a, ::Tuple{}, ::Tuple{}, ::Nothing, ::ModeMap, ::Tuple{}, ::CubicGrid
@@ -157,7 +164,7 @@ end
     a, (b, bs...), u::Nothing, (w, ws...), occ_a, (occ_b, occs...), g::CubicGrid
 )
     return _interaction_col(a, bs, u, ws, occ_a, occs, g) +
-           nearest_neighbor_interaction(onr(a), onr(b), w, g, occ_a)
+           nearest_neighbor_interaction(a, b, w, g, occ_a)
 end
 """
     _interactions(addresses, onsite_int_matrix, nearest_neighbour_int_matrix, occs, geometry)
@@ -205,7 +212,7 @@ end
     u, u_column, u_rest = _dismantle_int_matrix(u_matrix)
     w, w_column, w_rest = _dismantle_int_matrix(w_matrix)
     # Get the self-interaction first.
-    self = local_interaction(a, u, occ) + nearest_neighbor_interaction(onr(a), w, g, occ)
+    self = local_interaction(a, u, occ) + nearest_neighbor_interaction(a, w, g, occ)
     # Get the interactions for the rest of the row.
     row = _interaction_col(a, as, u_column, w_column, occ, occs, g)
     # Get the interaction for the rest of the rows.
@@ -215,7 +222,7 @@ end
 @inline function _interactions(
     addr::SingleComponentFockAddress, ::Nothing, w, occs, geometry::CubicGrid
 )
-    return nearest_neighbor_interaction(onr(addr), w[1], geometry, occs[1])
+    return nearest_neighbor_interaction(addr, w[1], geometry, occs[1])
 end
 @inline function _interactions(
     addr::SingleComponentFockAddress, u, ::Nothing, occs, ::CubicGrid
@@ -226,7 +233,7 @@ end
     addr::SingleComponentFockAddress, u, w, occs, geometry::CubicGrid
 )
     return local_interaction(addr, u, occs) +
-           nearest_neighbor_interaction(onr(addr), w[1], geometry, occs[1])
+           nearest_neighbor_interaction(addr, w[1], geometry, occs[1])
 end
 
 
