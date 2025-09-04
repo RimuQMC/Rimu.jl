@@ -1,12 +1,21 @@
 # # Example 6: Molecular Hamiltonian Calculation
 
-# This is an example calculation of the water molecule (H₂O).
+# This is an example calculation of the water molecule (H₂O). It requires 
+# [`ElemCo.jl`](https://elem.co.il) to be installed. To install it, in Julia REPL 
+# type `]` to enter the Pkg REPL mode and run:
+# ```julia-repl
+# pkg> add ElemCo
+# ``` 
+# Or via the `Pkg` package
+# ```julia-repl
+# julia> import Pkg; Pkg.add("ElemCo")
+# ``` 
 
 # A runnable script for this example is located
 # [here](https://github.com/RimuQMC/Rimu.jl/blob/develop/scripts/Molecule-example.jl).
 # Run it with `julia Molecule-example.jl`.
 
-# First, we load the reqired packages. `Rimu` for the calculation and `ElemCo` for loading the FCIDUMP file.
+# First, we load the required packages. `Rimu` for the calculation and `ElemCo` for loading the FCIDUMP file.
 using Rimu
 using ElemCo
 
@@ -25,14 +34,15 @@ a = starting_address(h);
 # ### Exact Diagonalization calculation
 # We first define the problem via [`ExactDiagonalizationProblem`](@ref) interface.
 # Since H₂O has a rather large Hilbert space, a iterative solver is recomended. We
-# use [`KrylovKitSolver`](@ref). It requires [KrylovKit.jl](https://github.com/Jutho/KrylovKit.jl).
+# use [`KrylovKitSolver`](@ref) in this example. 
+# It requires [KrylovKit.jl](https://github.com/Jutho/KrylovKit.jl) to be installed.
 # To install it, in Julia REPL type ] to enter the Pkg REPL mode and run:
 # ```julia-repl
 # pkg> add KrylovKit
 # ``` 
 # Or via the `Pkg` package
 # ```julia-repl
-# julia> import Pkg; Pkg.add("KrylovKit.jl")
+# julia> import Pkg; Pkg.add("KrylovKit")
 # ``` 
 using KrylovKit
 

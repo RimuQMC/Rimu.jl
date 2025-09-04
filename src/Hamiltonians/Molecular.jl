@@ -18,11 +18,11 @@ The expression for the Hamiltonian is
 ```math
 \\begin{aligned}
     Ĥ  & = h₀ + Ĥ₁ + Ĥ₂, \\\\
-    Ĥ₁ & = \\sum_{i,j,σ} h_{ij}  a^†_{j,σ} a_{i,σ}, \\\\
-    Ĥ₂ & = ½ \\sum_{i,j,σ,τ} V_{ijkl} a^†_{i,σ} a^†_{j,τ} a_{l,τ} a_{k,σ}.
+    Ĥ₁ & = \\sum_{i,j,σ} h_{ji}  a^†_{j,σ} a_{i,σ}, \\\\
+    Ĥ₂ & = ½ \\sum_{k,l,i,j,σ,τ} V_{klij} a^†_{k,σ} a^†_{l,τ} a_{j,τ} a_{i,σ}.
 \\end{aligned}
 ```
-where the constants ``h₀``, ``h_{ij}``, and ``V_{ijkl}`` are provided by the FCIDUMP `fd`.
+where the constants ``h₀``, ``h_{ji}``, and ``V_{klji}`` are provided by the FCIDUMP `fd`.
 See the documentation of [ElemCo.jl](https://elem.co.il) for generating FCIDUMP information
 with a Hartree-Fock calculation, or parsing them from a file.
 
@@ -74,7 +74,7 @@ function Base.show(io::IO, h::MolecularHamiltonian)
     if ispath(h.specifier)
         print(io, "\"", h.specifier, "\"")
     else
-        print(io, typeof(h.fcidump))
+        print(io, "::", typeof(h.fcidump))
     end
     print(io, ", starting_address=")
     show(io, h.starting_address)
@@ -178,8 +178,8 @@ end
 Calculate the two body operator diagonal term ``⟨U|Ĥ₂|U⟩`` for a two-component Fermi Fock address.
 ```math
 ⟨U|Ĥ₂|U⟩ 
-    = ∑_{i < j,σᵢ,σⱼ}^{N} (V_{ij,ij} a^†_{i,σᵢ} a^†_{j,σⱼ} a_{j,σⱼ} a_{i,σᵢ} 
-    - V_{ij,ji} a^†_{i,σᵢ} a^†_{j,σⱼ} a_{i,σᵢ} a_{j,σⱼ} δ_{σᵢ,σⱼ})
+    = ∑_{i < j,σ,τ}^{M} (V_{ij,ij} ⟨U| a^†_{i,σ} a^†_{j,τ} a_{j,τ} a_{i,σ} |U⟩ 
+    - V_{ij,ji} ⟨U| a^†_{i,σ} a^†_{j,τ} a_{i,τ} a_{j,σ}|U⟩ δ_{σ,τ} )
 ```
 where the mode map of the two-component Fock address ``|U⟩`` is passed as `occ_modes`.
 """
