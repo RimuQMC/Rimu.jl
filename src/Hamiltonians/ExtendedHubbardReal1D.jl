@@ -36,7 +36,7 @@ end
 
 # addr for compatibility.
 function ExtendedHubbardReal1D(addr; u=1.0, v=1.0, t=1.0, boundary_condition=:periodic, power = nothing)
-    if power isa Number || power == nothing
+    if power isa Number || power === nothing
         if boundary_condition == :periodic || boundary_condition == :twisted || boundary_condition == :hard_wall
             U, V, T = promote(float(u), float(v), float(t))
             return ExtendedHubbardReal1D{typeof(U),typeof(addr),U,V,T,boundary_condition,power}(addr)
