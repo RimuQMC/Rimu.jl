@@ -197,9 +197,9 @@ excitation
 
 
 """
-    ModeMap <: AbstractVector
+    ModeMap{M} <: AbstractVector
 
-A unified storage structure for indices of `SingleComponentFockAddress`.
+A unified storage structure for indices of `SingleComponentFockAddress` with `M` modes.
 It stores the FSIndex of corresponding address as an `AbstractVector` compatible with
 [`excitation`](@ref) - [`BoseFSIndex`](@ref) or [`FermiFSIndex`](@ref).
 
@@ -208,12 +208,13 @@ This struct is not intended to be constructed directly. Use [`occupied_mode_map`
 
 See also [`SingleComponentFockAddress`](@ref).
 """
-struct ModeMap{N,T} <: AbstractVector{T}
-    indices::SVector{N,T} # N = min(N, M)
+struct ModeMap{M,T,L} <: AbstractVector{T}
+    indices::SVector{L,T} # L = min(N, M)
     length::Int
 end
 
-Base.eltype(::ModeMap{N,T}) where {N,T} = T
+Base.eltype(::ModeMap{<:Any,T}) where {T} = T
+Interfaces.num_modes(::ModeMap{M}) where {M} = M
 
 Base.@deprecate OccupiedModeMap(addr) occupied_mode_map(addr)
 
@@ -276,13 +277,23 @@ function occupied_mode_map(addr::SingleComponentFockAddress{N,M}) where {N,M}
         i += 1
         @inbounds indices[i] = index
     end
-    return ModeMap(SVector(indices), i)
+    return ModeMap{M,T,L}(SVector(indices), i)
 end
 
 Base.size(om::ModeMap) = (om.length,)
 function Base.getindex(om::ModeMap, i)
     @boundscheck 1 ≤ i ≤ om.length || throw(BoundsError(om, i))
     return om.indices[i]
+end
+
+# On benchmarking this method is allocation free but still slower than creating an onr
+# from the address itself. At least for small addresses.
+function onr(mm::ModeMap{M,T}) where {M,T}
+    result = zero(MVector{M,Int32})
+    @inbounds for index in mm
+        result[index.mode] = index.occnum
+    end
+    return SVector(result)
 end
 
 """

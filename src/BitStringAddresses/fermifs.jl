@@ -175,7 +175,7 @@ function unoccupied_mode_map(addr::FermiFS{N,M}) where {N,M}
         i += 1
         @inbounds indices[i] = index
     end
-    return ModeMap(SVector(indices), i)
+    return ModeMap{M,T,L}(SVector(indices), i)
 end
 
 function near_uniform(::Type{FermiFS{N,M}}) where {N,M}
