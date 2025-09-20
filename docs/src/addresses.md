@@ -53,6 +53,13 @@ Pages = ["bitstring.jl", "sortedparticlelist.jl"]
 Private = false
 ```
 
+The following APIs are used by [Module `Hamiltonians`](@ref).
+```@docs
+BitStringAddresses.ModeMap
+BitStringAddresses.FermiFS2CModes
+BitStringAddresses.full_mode_maps
+```
+
 ## Index
 ```@index
 Pages   = ["addresses.md"]

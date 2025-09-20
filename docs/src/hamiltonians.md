@@ -41,6 +41,7 @@ HOCartesianCentralImpurity
 MatrixHamiltonian
 Transcorrelated1D
 FroehlichPolaron
+MolecularHamiltonian
 ```
 
 ## Convenience functions
@@ -108,6 +109,21 @@ Hamiltonians.neighbor_site
 PeriodicBoundaries
 HardwallBoundaries
 LadderBoundaries
+```
+
+## Additional documentation of internal functions
+The following internal functions and types are documented here for completeness, 
+but are not part of the public API and may change any time. Use at your own risk.
+```@docs
+Hamiltonians.one_electron_diagonal
+Hamiltonians.two_electron_diagonal
+Hamiltonians.MolecularHamiltonianOffDiagonals
+Hamiltonians.MolecularHamiltonianOffDiagonalsIteratorState
+Hamiltonians.flip_spin_components
+Hamiltonians.is_void_state
+Hamiltonians.is_invalid_state
+Hamiltonians.linear_to_state
+Hamiltonians.unrank_combination
 ```
 
 ## Index

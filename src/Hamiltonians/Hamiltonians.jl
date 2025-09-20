@@ -23,6 +23,7 @@ Other
 - [`FroehlichPolaron`](@ref)
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
+- [`MolecularHamiltonian`](@ref)
 
 ## [Wrappers](#Hamiltonian-wrappers)
 - [`GutzwillerSampling`](@ref)
@@ -66,7 +67,7 @@ using TupleTools: TupleTools
 using VectorInterface: add, scale
 
 using ..BitStringAddresses
-import ..BitStringAddresses: ModeMap
+import ..BitStringAddresses: ModeMap, FermiFS2CModes, full_mode_maps
 using ..Interfaces
 using ..Interfaces: sum_mutating!
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
@@ -88,6 +89,8 @@ export Transcorrelated1D
 export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron
 export ParticleNumberOperator
+
+export MolecularHamiltonian
 
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
@@ -128,6 +131,8 @@ include("ExtendedHubbardReal1D.jl")
 include("FroehlichPolaron.jl")
 
 include("Transcorrelated1D.jl")
+
+include("Molecular.jl")
 
 include("ModifiedHamiltonian.jl")
 include("TransformUndoer.jl")
