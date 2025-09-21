@@ -40,6 +40,7 @@ end
         ExtendedHubbardMom1D(FermiFS(1,1,0,0); u=1.0, v=2.0, t=3.0),
         HubbardRealSpace(BoseFS((1, 2, 3)); u=[1], t=[3], w=[1]),
         HubbardRealSpace(FermiFS((1, 1, 1, 1, 1, 0, 0, 0)); u=[0], t=[3]),
+        HubbardRealSpace(FermiFS((1, 1, 1, 1, 1, 0, 0, 0)); u=[0], t=[exp(im*π/4)]),
         HubbardRealSpace(
             CompositeFS(
                 FermiFS((1, 1, 1, 1, 1, 0, 0, 0)),
