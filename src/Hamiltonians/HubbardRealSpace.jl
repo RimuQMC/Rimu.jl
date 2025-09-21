@@ -63,9 +63,9 @@ end
     nearest_neighbor_interaction(add1::SingleComponentFockAddress, add2::SingleComponentFockAddress,
         w, geometry::CubicGrid, map1::ModeMap)
 
-Calculate the nearest neighbour interaction ``w \\sum_{⟨i,j⟩} n_{↑, i} n_{↓, j}`` within a same single-component
-Fock address `add` or between the single-component Fock states `add1` and `add2` of two distinct components in 
-multi-component Fock address,
+Calculate the nearest neighbour interaction ``w \\sum_{⟨i,j⟩} n_{↑, i} n_{↓, j}`` within 
+the single-component Fock address `add`. When two single-component Fock states 
+`add1` and `add2` are passed, return the eigenvalue of
 
 ```math
 \\frac{1}{2}\\sum_{⟨i,j⟩, σ, τ} w_{σ,τ} a^†_{σ,i}a^†_{τ,j}a_{τ,j}a_{σ,i} ,
