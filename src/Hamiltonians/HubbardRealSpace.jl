@@ -490,7 +490,7 @@ LOStructure(::Type{<:HubbardRealSpace}) = IsHermitian()
 function Base.show(io::IO, h::HubbardRealSpace{TT,C}) where {TT,C}
     io = IOContext(io, :compact => true)
     println(io, "HubbardRealSpace(")
-    println(io, "  ", starting_address(h), ",")
+    println(io, "  ", starting_address(h), ";")
     println(io, "  geometry = ", h.geometry, ",")
     println(io, "  t = ", h.t, ",")
     if isnothing(h.u)
