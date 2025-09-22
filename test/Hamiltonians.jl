@@ -47,6 +47,15 @@ end
                 FermiFS((1, 1, 1, 1, 0, 0, 0, 0)),
             ); t=[1, 2], u=[0 3; 3 0], w=[1 0.5; 0.5 1]
         ),
+        HubbardMomSpace(BoseFS((1, 2, 3)); u=[1], t=[3], w=[1]),
+        HubbardMomSpace(FermiFS((1, 1, 1, 1, 1, 0, 0, 0)); u=[0], t=[3]),
+        HubbardMomSpace(FermiFS((1, 1, 1, 1, 1, 0, 0, 0)); u=[0], t=[3*im]),
+        HubbardMomSpace(
+            CompositeFS(
+                FermiFS((1, 1, 1, 1, 1, 0, 0, 0)),
+                FermiFS((1, 1, 1, 1, 0, 0, 0, 0)),
+            ); t=[1, 2], u=[0 3; 3 0], w=[1 0.5; 0.5 1]
+        ),
         GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6 + 2im); g=0.3),
         GutzwillerSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))); g=0.1),
 
@@ -550,6 +559,224 @@ end
         @test offdiags[BoseFS(0,0,1, 0,0,0, 0,0,0)] == -3
         @test offdiags[BoseFS(0,0,0, 1,0,0, 0,0,0)] == -4
         @test offdiags[BoseFS(0,0,0, 0,0,0, 1,0,0)] == -4
+    end
+end
+
+@testset "HubbardMomSpace" begin
+    @testset "Constructor" begin
+        bose = BoseFS((1, 2, 3, 4, 5, 6))
+        @test_throws MethodError HubbardMomSpace(BoseFS{10,10})
+        @test_throws ArgumentError HubbardMomSpace(bose; geometry=PeriodicBoundaries(3,3))
+        @test_throws ArgumentError HubbardMomSpace(
+            bose; geometry=PeriodicBoundaries(3,2), t=[1, 2],
+        )
+        @test_throws ArgumentError HubbardMomSpace(
+            bose; geometry=PeriodicBoundaries(3,2), u=[1 1; 1 1],
+        )
+        @test_throws InexactError HubbardMomSpace(
+            bose; geometry=PeriodicBoundaries(3,2), u=[1.0im], t=[1.0im]
+        )
+
+        comp = CompositeFS(bose, bose)
+        @test_throws ArgumentError HubbardMomSpace(
+            comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], u=[1 2; 3 4],
+        )
+        @test_throws ArgumentError HubbardMomSpace(
+            comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], w=[1 2; 3 4],
+        )
+        @test_throws ArgumentError HubbardMomSpace(
+            comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], u=[2 2; 2 2; 2 2],
+        )
+        @test_throws ArgumentError HubbardMomSpace(
+            comp; geometry=PeriodicBoundaries(3,2), v=[1 1; 1 1; 1 1],
+        )
+        @test_throws ArgumentError HubbardMomSpace(
+            comp; t=[1 2]
+        )
+
+        @test_logs (:warn,) HubbardMomSpace(FermiFS((1,0)), u=[2])
+        @test_logs (:warn,) HubbardMomSpace(
+            CompositeFS(BoseFS((1,1)), FermiFS((1,0))); u=[2 2; 2 2]
+        )
+
+        H = HubbardMomSpace(comp, t=[1,2], u=[1 2; 2 3])
+        @test eval(Meta.parse(repr(H))) == H
+    end
+    @testset "1D Bosons (single)" begin
+        H1 = HubbardMom1D(BoseFS((0, 0, 5, 0, 0, 0)); u=2, t=3)
+        H2 = HubbardMomSpace(BoseFS((0, 0, 5, 0, 0, 0)); u=[2], t=[3])
+
+        @test exact_energy(H1) == exact_energy(H2)
+    end
+    @testset "1D Bosons (2-component)" begin
+        add2 = CompositeFS(
+            BoseFS((0, 0, 3, 0, 0, 0)),
+            BoseFS((0, 0, 1, 0, 0, 0)),
+        )
+        H2 = HubbardMomSpace(add2, t=[1,4], u=[2 3; 3 0])
+
+        add3 = CompositeFS(
+            BoseFS((0, 0, 3, 0, 0, 0)),
+            FermiFS((0, 0, 1, 0, 0, 0)),
+        )
+        H3 = HubbardMomSpace(add3, t=[1,4], u=[2 3; 3 0])
+
+        add4 = CompositeFS(
+            BoseFS((0, 0, 1, 0, 0, 0)),
+            BoseFS((0, 0, 3, 0, 0, 0)),
+        )
+        H4 = HubbardMomSpace(add4, t=[4,1], u=[0 3; 3 2])
+
+        add5 = CompositeFS(
+            FermiFS((1, 0, 0, 0, 0, 0)),
+            BoseFS((1, 1, 1, 0, 0, 0)),
+        )
+        H5 = HubbardMomSpace(add5, t=[4,1], u=[0 3; 3 2])
+
+        E2 = exact_energy(H2)
+        E3 = exact_energy(H3)
+        E4 = exact_energy(H4)
+        E5 = exact_energy(H5)
+
+        @test E2 ≈ E3 rtol=0.0001
+        @test E3 ≈ E4 rtol=0.0001
+        @test E4 ≈ E5 rtol=0.0001
+    end
+    @testset "1D Fermions" begin
+        H1 = HubbardMomSpace(FermiFS((0, 1, 1, 1, 0, 0)), t=[3.5])
+
+        # Kinetic energies [+1, -1, -2, -1, +1, +2] can be multiplied by t to get the exact
+        # energy.
+        @test exact_energy(H1) ≈ -14 rtol=0.0001
+
+        # Not interacting, we can sum the parts together.
+        H2 = HubbardMomSpace(
+            CompositeFS(FermiFS((0, 1, 1, 1, 1, 0)), FermiFS((0, 0, 1, 1, 0, 0))),
+            t=[1, 2], u=[0 0; 0 0],
+        )
+
+        @test exact_energy(H2) ≈ -3 + -6 rtol=0.0001
+
+        # Repulsive interactions increase energy.
+        H3 = HubbardMomSpace(
+            CompositeFS(FermiFS((0, 1, 1, 1, 1, 0)), FermiFS((0, 0, 1, 1, 0, 0))),
+            t=[1, 2], u=[0 1; 1 0],
+        )
+        @test exact_energy(H3) > -9
+
+        # Attractive interactions reduce energy.
+        H4 = HubbardMomSpace(
+            CompositeFS(FermiFS((0, 1, 1, 1, 1, 0)), FermiFS((0, 0, 1, 1, 0, 0))),
+            t=[1, 2], u=[0 -1; -1 0],
+        )
+        @test exact_energy(H4) < -9
+    end
+    @testset "2D Fermions" begin
+        @testset "2 × 2" begin
+            p22 = PeriodicBoundaries(2, 2)
+            @test exact_energy(
+                HubbardMomSpace(FermiFS(1,0,0,0), geometry=p22, t=[2])
+            ) ≈ -8 rtol=0.001
+            @test exact_energy(
+                HubbardMomSpace(FermiFS(1,1,0,0), geometry=p22, t=[2])
+            ) ≈ -8 rtol=0.001
+            @test exact_energy(
+                HubbardMomSpace(FermiFS(1,1,1,0), geometry=p22, t=[2])
+            ) ≈ -8 rtol=0.001
+            @test exact_energy(
+                HubbardMomSpace(FermiFS(1,1,1,1), geometry=p22, t=[2])
+            ) ≈ 0 rtol=0.001
+        end
+        @testset "4 × 4" begin
+            p44 = PeriodicBoundaries(4, 4)
+            @test exact_energy(
+                HubbardMomSpace(FermiFS(0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0); geometry=p44)
+            ) ≈ -4 rtol=0.001
+            @test exact_energy(
+                HubbardMomSpace(FermiFS(0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0); geometry=p44)
+            ) ≈ -6 rtol=0.001
+            @test exact_energy(
+                HubbardMomSpace(FermiFS(0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0); geometry=p44)
+            ) ≈ -8 rtol=0.001
+        end
+        @testset "Two-component" begin
+            addr = CompositeFS(
+                FermiFS{3,9}(0,0,0,1,1,1,0,0,0),
+                FermiFS{2,9}(0,0,0,1,1,0,0,0,0),
+            )
+            H1 = HubbardMomSpace(
+                addr;
+                t=[1,2],
+                u=[0 0; 0 0],
+                geometry=PeriodicBoundaries(3, 3),
+            )
+            @test exact_energy(H1) ≈ -16 rtol=0.001
+
+            H2 = HubbardMomSpace(
+                addr;
+                t=[1,2],
+                u=[0 1; 1 0],
+                geometry=PeriodicBoundaries(3, 3),
+            )
+            @test exact_energy(H2) > -16
+
+            H3 = HubbardMomSpace(
+                addr;
+                t=[1,2],
+                u=[0 -1; -1 0],
+                geometry=PeriodicBoundaries(3, 3),
+            )
+            @test exact_energy(H3) < -16
+
+            H4 = HubbardRealSpace(
+                addr;
+                t=[1,2],
+                u=[0 1; 1 0],
+                w= [-1 0.5; 0.5 -2],
+                geometry=PeriodicBoundaries(3, 3),
+            )
+            
+            H5 = HubbardMomSpace(
+                addr;
+                t=[1,2],
+                u=[0 1; 1 0],
+                w= [-1 0.5; 0.5 -2],
+                geometry=PeriodicBoundaries(3, 3),
+            )
+
+            eig1 = eigsolve(BasisSetRep(H4; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
+            eig2 = eigsolve(BasisSetRep(H5; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
+            @test round(real(eig1); digits=10) == round(eig2; digits=10)
+        end
+    end
+    @testset "Complex hopping" begin
+        address = FermiFS(0, 1, 1, 0)
+        for H in (
+            HubbardMomSpace(address; t=[2.0 + 3im], geometry=CubicGrid(2, 2)),
+            HubbardMomSpace(address; w=[6], t=[2.0 + 3im], geometry=CubicGrid(4)),
+            HubbardMomSpace(address; t=[im 2im], geometry=CubicGrid(2, 2)),
+        )
+            @test eltype(H) ≡ Float64
+            @test LOStructure(H) ≡ IsHermitian()
+            test_hamiltonian_structure(H)
+        end
+    end
+    @testset "Nearest neighbour interaction" begin
+        addr = BoseFS(0,4,0,0)
+        H1 = HubbardMomSpace(addr; geometry=PeriodicBoundaries(4), w=[2.0])
+        H2 = ExtendedHubbardMom1D(addr; v=2.0)
+        @test Matrix(H1) == Matrix(H2)
+        addr = FermiFS{2,4}(0,1,1,0)
+        H1 = HubbardMomSpace(addr; geometry=PeriodicBoundaries(4), w=[-1.0])
+        H2 = ExtendedHubbardMom1D(addr; v=-1.0)
+        @test Matrix(H1) == Matrix(H2)
+
+        addr = BoseFS(0,0,0, 0,2,0, 0,0,0)
+        H1 = HubbardMomSpace(addr; geometry=PeriodicBoundaries(3, 3), w=[2])
+        H2 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(3, 3), w=[2])
+        eig1 = eigsolve(BasisSetRep(H1; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
+        eig2 = eigsolve(BasisSetRep(H2; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
+        @test round(real(eig1); digits=10) == round(eig2; digits=10)
     end
 end
 
