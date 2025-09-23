@@ -628,8 +628,8 @@ end
         H4 = HubbardMomSpace(add4, t=[4,1], u=[0 3; 3 2])
 
         add5 = CompositeFS(
-            FermiFS((1, 0, 0, 0, 0, 0)),
-            BoseFS((1, 1, 1, 0, 0, 0)),
+            FermiFS((0, 0, 1, 0, 0, 0)),
+            BoseFS((0, 0, 3, 0, 0, 0)),
         )
         H5 = HubbardMomSpace(add5, t=[4,1], u=[0 3; 3 2])
 
