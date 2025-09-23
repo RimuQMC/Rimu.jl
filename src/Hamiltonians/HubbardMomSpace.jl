@@ -152,7 +152,7 @@ between two different component occupied mode maps `map1` and `map2`. `g` is the
 
 """
 
-@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w::Float64) where {D,S}
+@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D,S}
     if iszero(u) && iszero(w)
         return 0
     end
@@ -522,10 +522,22 @@ end
 
 # Collect HubbardMomSpaceComponentData for each component of the address.
 @inline function _column_components(h::HubbardMomSpace{1,D}, address::SingleComponentFockAddress) where {D}
-    return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, address, h.u[1,1], h.w[1,1]),)
+    if isnothing(h.w) && isnothing(h.u)
+        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, address, nothing, nothing),)
+    elseif isnothing(h.w) && !isnothing(h.u)
+        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, address, h.u[1], nothing),)
+    elseif !isnothing(h.w) && isnothing(h.u)
+        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, address, nothing, h.w[1]),)
+    else
+        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, address, h.u[1], h.w[1]),)
+    end
 end
 @inline function _column_components(h::HubbardMomSpace{1,D}, address::FermiFS) where {D}
-    return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, address, h.u[1,1], h.w[1,1]),)
+    if !isnothing(h.w)
+        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, address, nothing, h.w[1,1]),)
+    else
+        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, address, nothing, nothing),)
+    end
 end
 @inline function _column_components(h::HubbardMomSpace, address::CompositeFS)
     return _column_components(h, address, address.components, h.u, h.w, Val(1))
