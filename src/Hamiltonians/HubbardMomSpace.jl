@@ -143,8 +143,8 @@ end
 end
 
 """
-    extended_mom_transfer_diagonal(map, g, u, w)
-    extended_mom_transfer_diagonal(map1, map2)
+    extended_mom_transfer_diag(map, g, u, w)
+    extended_mom_transfer_diag(map1, map2)
 
 Calculate the extended momentum transfer diagonal between a given same component occupied mode map `map` or
 between two different component occupied mode maps `map1` and `map2`. `g` is the geometry of the lattice.
@@ -152,7 +152,10 @@ between two different component occupied mode maps `map1` and `map2`. `g` is the
 
 """
 
-@inline function extended_mom_transfer_diag(map::ModeMap, g::CubicGrid{D,S}, u, w) where {D,S}
+@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w::Float64) where {D,S}
+    if iszero(u) && iszero(w)
+        return 0
+    end
     onproduct = 0
     for i in 1:length(map)
         occ_i = map[i].occnum
@@ -166,9 +169,9 @@ between two different component occupied mode maps `map1` and `map2`. `g` is the
     return onproduct
 end
 
-@inline function extended_mom_transfer_diag(map::ModeMap, g::CubicGrid{D,S}, ::Nothing, w) where {D,S}
+@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, ::Nothing, w) where {D,S}
     if iszero(w)
-        return 0.0
+        return 0
     end
     onproduct = 0
     for i in 1:length(map)
@@ -183,7 +186,7 @@ end
     return onproduct * w
 end
 
-@inline function extended_mom_transfer_diag(map::ModeMap, ::CubicGrid, u, ::Nothing)
+@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, ::CubicGrid, u, ::Nothing)
     if iszero(u)
         return 0
     end
@@ -255,18 +258,15 @@ where `V_{σσ}' is the interaction coefficent that depends on  `u_{σσ'}' and 
 """
 
 function _mom_interactions_dig(component::Tuple, g::CubicGrid{D,S}) where {D,S}
-    onproduct = 0.0
+    onproduct = 0
     for data in component
-        u = data.u
-        w = data.w
-        if !(isnothing(u) && isnothing(w)) 
-            Index = component_index(data)
-            if Index[1] == Index[2]
+        if !(isnothing(data.u) && isnothing(data.w)) 
+            if component_index(data)[3]
                 # If the occupied modes are the same, we can use the extended mom transfer.
-                onproduct += extended_mom_transfer_diag(data.occmap1, g, u, w)
+                onproduct += extended_mom_transfer_diag(data.occmap1, g, data.u, data.w)
             else
                 # Otherwise we need to calculate the interaction between two different occupied modes.
-                onproduct += extended_mom_transfer_diag(data.occmap1, data.occmap2) * _interaction_parameter_dig(u, w, D)
+                onproduct += extended_mom_transfer_diag(data.occmap1, data.occmap2) * _interaction_parameter_dig(data.u, data.w, D)
             end
         end
     end
@@ -348,7 +348,7 @@ function HubbardMomSpace(
     geometry::CubicGrid=PeriodicBoundaries((num_modes(address),)),
     t=ones(num_components(address), num_dimensions(geometry)),
     u=ones(num_components(address), num_components(address)),
-    w=ones(num_components(address), num_components(address)),
+    w=zeros(num_components(address), num_components(address)),
 )
     C = num_components(address)
     D = num_dimensions(geometry)
@@ -460,7 +460,7 @@ function Base.size(data::HubbardMomSpaceComponentData)
     return s1*s2*(M-1)
 end
 
-component_index(::HubbardMomSpaceComponentData{<:Any,I1,I2}) where {I1,I2} = (I1, I2)
+component_index(::HubbardMomSpaceComponentData{<:Any,I1,I2}) where {I1,I2} = (I1, I2, I1 == I2)
 
 function Base.getindex(data::HubbardMomSpaceComponentData{C,I,I,D}, chosen::Int) where {C,I,D}
     geometry = data.geometry
@@ -510,8 +510,7 @@ parent_operator(column::HubbardMomSpaceColumn) = column.hamiltonian
 starting_address(column::HubbardMomSpaceColumn) = column.address
 
 function diagonal_element(col::HubbardMomSpaceColumn)
-    M = num_modes(col.address)
-    return _mom_hopping(col.hamiltonian.kes, col.address) + _mom_interactions_dig(col.components, col.geometry)/M
+    return _mom_hopping(col.hamiltonian.kes, col.address) + _mom_interactions_dig(col.components, col.geometry)/num_modes(col.address)
 end
 
 function operator_column(h::HubbardMomSpace{<:Any,<:Any,A,G}, address) where {A,G}
