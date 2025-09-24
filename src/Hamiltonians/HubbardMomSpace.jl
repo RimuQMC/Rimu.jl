@@ -41,12 +41,12 @@ end
     comp = address.components
     onproduct = 0.0
     for i in 1:C
-        onproduct += dot(kes[i,:], OccupiedModeMap(comp[i]))
+        onproduct += dot(kes[i,:], occupied_mode_map(comp[i]))
     end
     return onproduct
 end
 
-@inline _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress) = dot(kes[1,:], OccupiedModeMap(address))
+@inline _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress) = dot(kes[1,:], occupied_mode_map(address))
 
 """
     mom_transfer_mom_space(add, chosen, map, g; fold=true)
@@ -153,7 +153,7 @@ between two different component occupied mode maps `map1` and `map2`. `g` is the
 
 """
 
-@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D,S}
+@inline function extended_mom_transfer_diag(map::Boseoccupied_mode_map, g::CubicGrid{D,S}, u, w) where {D,S}
     if iszero(u) && iszero(w)
         return 0
     end
@@ -170,7 +170,7 @@ between two different component occupied mode maps `map1` and `map2`. `g` is the
     return onproduct
 end
 
-@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, ::Nothing, w) where {D,S}
+@inline function extended_mom_transfer_diag(map::Boseoccupied_mode_map, g::CubicGrid{D,S}, ::Nothing, w) where {D,S}
     
     if iszero(w)
         return 0
@@ -188,7 +188,7 @@ end
     return onproduct * w
 end
 
-@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, ::CubicGrid, u, ::Nothing)
+@inline function extended_mom_transfer_diag(map::Boseoccupied_mode_map, ::CubicGrid, u, ::Nothing)
     if iszero(u)
         return 0
     end
@@ -204,7 +204,7 @@ end
     return onproduct * u
 end
 
-@inline function extended_mom_transfer_diag(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D,S}
+@inline function extended_mom_transfer_diag(map::Fermioccupied_mode_map, g::CubicGrid{D,S}, _, w) where {D,S}
     if iszero(w)
         return 0
     end
@@ -221,7 +221,7 @@ end
     return onproduct*w
 end
 
-@inline extended_mom_transfer_diag(::FermiOccupiedModeMap, ::CubicGrid, _, ::Nothing) = 0
+@inline extended_mom_transfer_diag(::Fermioccupied_mode_map, ::CubicGrid, _, ::Nothing) = 0
 
 @inline function extended_mom_transfer_diag(map1::ModeMap, map2::ModeMap, ::CubicGrid{D}, u, w) where D
     onproduct = 0
@@ -235,7 +235,7 @@ end
     return onproduct * _interaction_parameter_diag(u, w, D)
 end
 
-@inline function extended_mom_transfer_diag(map1::FermiOccupiedModeMap, map2::FermiOccupiedModeMap, 
+@inline function extended_mom_transfer_diag(map1::Fermioccupied_mode_map, map2::Fermioccupied_mode_map, 
     ::CubicGrid{D}, u, w) where D
     return length(map1) * length(map2) * _interaction_parameter_diag(u, w, D)
 end
@@ -698,10 +698,10 @@ end
 LOStructure(::Type{MomentumMomSpace{H,T}}) where {H,T <: Real} = IsDiagonal()
 num_offdiagonals(ham::MomentumMomSpace, _) = 0
 function diagonal_element(mom::MomentumMomSpace{<:Any,1,D}, address::SingleComponentFockAddress) where D
-    return [dot(mom.ham.ks[i,:], OccupiedModeMap(address)) for i in 1:D]
+    return [dot(mom.ham.ks[i,:], occupied_mode_map(address)) for i in 1:D]
 end
 function diagonal_element(mom::MomentumMomSpace{<:Any,C,D}, address::CompositeFS) where {C,D}
-    return [sum(dot(mom.ham.ks[i,:], OccupiedModeMap(c)) for c in address.components) for i in 1:D]
+    return [sum(dot(mom.ham.ks[i,:], occupied_mode_map(c)) for c in address.components) for i in 1:D]
 end
 # fold into (-π, π]
 starting_address(mom::MomentumMomSpace) = starting_address(mom.ham)
