@@ -113,6 +113,15 @@ function BasisSetRepresentation(
     return _bsr_ensure_symmetry(LOStructure(hamiltonian), hamiltonian, addr; kwargs...)
 end
 
+function BasisSetRepresentation(
+     hamiltonian::HubbardMomSpace{<:Any,<:Any,<:Any,<:Any,<:SMatrix}, addr=starting_address(hamiltonian);
+    kwargs...
+)
+    # For symmetry wrappers it is necessary to explicity symmetrise the matrix to
+    # avoid the loss of matrix symmetry due to floating point rounding errors
+    return _bsr_ensure_symmetry(LOStructure(hamiltonian), hamiltonian, addr; kwargs...)
+end
+
 # default, does not enforce symmetries
 function _bsr_ensure_symmetry(
     ::LOStructure, hamiltonian::AbstractOperator, addr_or_vec;
@@ -135,6 +144,7 @@ function _bsr_ensure_symmetry(
     fix_approx_hermitian!(sparse_matrix; test_approx_symmetry) # enforce hermitian symmetry after building
     return BasisSetRepresentation(sparse_matrix, basis, hamiltonian)
 end
+
 
 """
     fix_approx_hermitian!(A; test_approx_symmetry=true, kwargs...)
