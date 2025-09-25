@@ -26,11 +26,11 @@ using CommonSolve: CommonSolve, solve, init
 using VectorInterface: VectorInterface, add
 using OrderedCollections: freeze
 using NamedTupleTools: delete
-using StaticArrays: setindex
+using StaticArrays: setindex, SMatrix
 import Folds
 
 using Rimu: Rimu, DictVectors, Hamiltonians, Interfaces, BitStringAddresses, replace_keys,
-    clean_and_warn_if_others_present, split_keys
+    clean_and_warn_if_others_present, split_keys, HubbardMomSpace
 using ..Interfaces: AbstractDVec, AbstractHamiltonian, AbstractOperator, AdjointUnknown,
     diagonal_element, offdiagonals, starting_address, LOStructure, IsHermitian, operator_column
 using ..BitStringAddresses: AbstractFockAddress, BoseFS, FermiFS, CompositeFS,
