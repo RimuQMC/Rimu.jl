@@ -206,8 +206,21 @@ function Interfaces.dot_from_right(
         ReducedDensityMatrixCalculcator!{TT,P}(left, dim),
         pairs(right)
     )
-    return ρ
+    return _check_diagonal!(ρ)
 end
+
+#Check and remove the imaginary part of the diagonal element with a non-zero value
+# and smaller than `atol`.
+function _check_diagonal!(rho::Matrix{<:Complex}; atol = √eps(Float64))
+    for i in 1:size(rho, 1)
+        if abs(imag(rho[i, i])) < atol
+            rho[i, i] = real(rho[i, i])
+        end
+    end
+    return rho
+end
+_check_diagonal!(rho::Matrix{<:Real}) = rho
+
 # This struct is used to calculate matrix elements of `ReducedDensityMatrix`
 # It was introduced because passing a function to `sum` in `dot_from_right` was causing
 # type instabilites.
