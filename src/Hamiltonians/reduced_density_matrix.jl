@@ -206,7 +206,7 @@ function Interfaces.dot_from_right(
         ReducedDensityMatrixCalculcator!{TT,P}(left, dim),
         pairs(right)
     )
-    return ρ
+    return Hermitian(ρ)
 end
 # This struct is used to calculate matrix elements of `ReducedDensityMatrix`
 # It was introduced because passing a function to `sum` in `dot_from_right` was causing
