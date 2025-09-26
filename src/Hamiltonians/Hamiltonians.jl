@@ -24,6 +24,8 @@ Other
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
 - [`HamiltonianProduct`](@ref)
+- ['FroelichPolaron_nD'](@ref)
+
 
 ## [Wrappers](#Hamiltonian-wrappers)
 - [`GutzwillerSampling`](@ref)
@@ -84,7 +86,9 @@ export Stoquastic
 export Transcorrelated1D
 export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron
+export FroehlichPolaron_nD
 export ParticleNumberOperator
+
 
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
@@ -122,6 +126,8 @@ include("HubbardRealSpace.jl")
 include("ExtendedHubbardReal1D.jl")
 
 include("FroehlichPolaron.jl")
+include("FroelichPolaron_nD.jl")
+
 
 include("Transcorrelated1D.jl")
 
