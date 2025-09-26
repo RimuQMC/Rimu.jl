@@ -123,7 +123,7 @@ function get_offdiagonal(
 end
 
 """
-    ReducedDensityMatrix{T=Float64}(p) <: AbstractObservable{Hermitian{T, Matrix{T}}}
+    ReducedDensityMatrix{T=Float64}(p) <: AbstractObservable{Matrix{T}}
 
 A matrix-valued operator that can be used to calculate the `p`-particle reduced density
 matrix. The matrix elements are defined as:
@@ -159,7 +159,7 @@ julia> Op1 = ReducedDensityMatrix(1)
 ReducedDensityMatrix{Float64}(1)
 
 julia> dot(dvec_b, Op1, dvec_b)
-2×2 Hermitian{Float64, Matrix{Float64}}:
+2×2 Matrix{Float64}:
  0.75      0.353553
  0.353553  0.25
 
@@ -172,7 +172,7 @@ julia> dvec_f = PDVec(FermiFS(1,1,0,0) => 0.5, FermiFS(0,1,1,0) => 0.5)
   fs"|⋅↑↑⋅⟩" => 0.5
 
 julia> dot(dvec_f, Op2, dvec_f)
-6×6 Hermitian{Float32, Matrix{Float32}}:
+6×6 Matrix{Float32}:
  0.25  0.0  0.25  0.0  0.0  0.0
  0.0   0.0  0.0   0.0  0.0  0.0
  0.25  0.0  0.25  0.0  0.0  0.0
@@ -183,7 +183,7 @@ julia> dot(dvec_f, Op2, dvec_f)
 See also [`single_particle_density`](@ref), [`SingleParticleDensity`](@ref),
 [`SingleParticleExcitation`](@ref), [`TwoParticleExcitation`](@ref).
 """
-struct ReducedDensityMatrix{T, P} <: AbstractObservable{Hermitian{T, Matrix{T}}} end
+struct ReducedDensityMatrix{T, P} <: AbstractObservable{Matrix{T}} end
 
 ReducedDensityMatrix(p) = ReducedDensityMatrix{Float64}(p)
 ReducedDensityMatrix{T}(P::Int) where T = ReducedDensityMatrix{T, P}()
@@ -206,7 +206,7 @@ function Interfaces.dot_from_right(
         ReducedDensityMatrixCalculcator!{TT,P}(left, dim),
         pairs(right)
     )
-    return Hermitian(ρ)
+    return ρ
 end
 # This struct is used to calculate matrix elements of `ReducedDensityMatrix`
 # It was introduced because passing a function to `sum` in `dot_from_right` was causing
