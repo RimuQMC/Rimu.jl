@@ -1786,6 +1786,11 @@ end
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(r))) == r
     end
+    H = HubbardReal1D(BoseFS(0,1,2,0); t = 1+im)
+    res = solve(ExactDiagonalizationProblem(H));
+    gs = res.vectors[1];
+    rdm = ReducedDensityMatrix{ComplexF64}(1)
+    @test ishermitian(dot(gs, rdm, gs))
 end
 
 @testset "HamiltonianProduct" begin
