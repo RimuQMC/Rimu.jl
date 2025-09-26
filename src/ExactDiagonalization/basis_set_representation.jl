@@ -114,8 +114,8 @@ function BasisSetRepresentation(
 end
 
 function BasisSetRepresentation(
-     hamiltonian::HubbardMomSpace{<:Any,<:Any,<:Any,<:Any,<:SMatrix}, addr=starting_address(hamiltonian);
-    kwargs...
+     hamiltonian::Union{HubbardMomSpace{<:Any,<:Any,<:Any,<:Any,<:SMatrix}, ExtendedHubbardMom1D}, 
+     addr=starting_address(hamiltonian); kwargs...
 )
     # For symmetry wrappers it is necessary to explicity symmetrise the matrix to
     # avoid the loss of matrix symmetry due to floating point rounding errors
