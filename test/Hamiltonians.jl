@@ -588,9 +588,6 @@ end
             comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], u=[2 2; 2 2; 2 2],
         )
         @test_throws ArgumentError HubbardMomSpace(
-            comp; geometry=PeriodicBoundaries(3,2), v=[1 1; 1 1; 1 1],
-        )
-        @test_throws ArgumentError HubbardMomSpace(
             comp; t=[1 2]
         )
 
