@@ -206,7 +206,7 @@ function Interfaces.dot_from_right(
         ReducedDensityMatrixCalculcator!{TT,P}(left, dim),
         pairs(right)
     )
-    return _check_diagonal!(ρ)
+    return ρ
 end
 
 #Check and remove the imaginary part of the diagonal element with a non-zero value
