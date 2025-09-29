@@ -1786,11 +1786,24 @@ end
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(r))) == r
     end
+    # complex hermitian Hamiltonian still produces approx hermitian RDM
     H = HubbardReal1D(BoseFS(0,1,2,0); t = 1+im)
-    res = solve(ExactDiagonalizationProblem(H));
-    gs = res.vectors[1];
+    res = solve(ExactDiagonalizationProblem(H))
+    gs = res.vectors[1]
     rdm = ReducedDensityMatrix{ComplexF64}(1)
-    @test ishermitian(dot(gs, rdm, gs))
+    m = dot(gs, rdm, gs)
+    @test all(x -> abs(x) < √eps(Float64), m - m') # hermitian up to floating point noise
+    
+    # a global relative phase in the vectors results in a global phase in the RDM
+    m_phase = dot(im * gs, rdm, gs)
+    @test all(x -> abs(x) < √eps(Float64), m_phase - im * phase)
+    
+    # complex non-hermitian Hamiltonian still produces approx hermitian RDM
+    Hc = HubbardReal1D(BoseFS(0,1,2,0); u = 1+im)
+    resc = solve(ExactDiagonalizationProblem(Hc))
+    gsc = resc.vectors[1]
+    mc = dot(gsc, rdm, gsc)
+    @test all(x -> abs(x) < √eps(Float64), mc - mc') # hermitian up to floating point noise
 end
 
 @testset "HamiltonianProduct" begin
