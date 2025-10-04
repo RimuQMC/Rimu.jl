@@ -119,7 +119,7 @@ function BasisSetRepresentation(
 )
     # For symmetry wrappers it is necessary to explicity symmetrise the matrix to
     # avoid the loss of matrix symmetry due to floating point rounding errors
-    return _bsr_ensure_symmetry(LOStructure(hamiltonian), hamiltonian, addr; kwargs...)
+    return _bsr_ensure_symmetry(IsHermitian(), hamiltonian, addr; kwargs...)
 end
 
 # default, does not enforce symmetries
