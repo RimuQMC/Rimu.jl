@@ -63,7 +63,7 @@ end
 
 dimension(::ExtendedHubbardMom1D, address) = number_conserving_dimension(address)
 
-LOStructure(::Type{<:ExtendedHubbardMom1D{<:Real}}) = IsHermitian()
+LOStructure(::Type{<:ExtendedHubbardMom1D}) = IsHermitian()
 
 Base.getproperty(h::ExtendedHubbardMom1D, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::ExtendedHubbardMom1D, ::Val{:ks}) = getfield(h, :ks)
