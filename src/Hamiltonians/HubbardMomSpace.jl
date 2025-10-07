@@ -154,9 +154,7 @@ between two different component occupied mode maps `map1` and `map2`. `g` is the
 """
 
 @inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D,S}
-    if iszero(u) && iszero(w)
-        return 0
-    end
+
     onproduct = 0
     for i in 1:length(map)
         occ_i = map[i].occnum
@@ -172,9 +170,6 @@ end
 
 @inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, ::Nothing, w) where {D,S}
     
-    if iszero(w)
-        return 0
-    end
     onproduct = 0
     for i in 1:length(map)
         occ_i = map[i].occnum
@@ -189,9 +184,7 @@ end
 end
 
 @inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, ::CubicGrid, u, ::Nothing)
-    if iszero(u)
-        return 0
-    end
+
     onproduct = 0
     for i in 1:length(map)
         occ_i = map[i].occnum
@@ -205,9 +198,7 @@ end
 end
 
 @inline function extended_mom_transfer_diag(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D,S}
-    if iszero(w)
-        return 0
-    end
+
     onproduct = 0
     for i in 1:length(map)
         occ_i = map[i].occnum
