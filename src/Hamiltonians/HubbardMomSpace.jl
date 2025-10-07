@@ -195,10 +195,10 @@ end
     onproduct = 0
     for i in 1:length(map)
         occ_i = map[i].occnum
-        onproduct += occ_i * (occ_i - 1)
+        onproduct += occ_i * (occ_i - 1) / 2
         for j in 1:i-1
             occ_j = map[j].occnum
-            onproduct += 4 * occ_i * occ_j
+            onproduct += 2 * occ_i * occ_j
         end
     end
     return onproduct * u
