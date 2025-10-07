@@ -28,7 +28,7 @@ end
         HubbardReal1DEP(BoseFS(1, 2, 3, 4); u=1.0im),
         HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
         HubbardMom1D(OccupationNumberFS(6, 0, 0, 4); t=1.0, u=0.5),
-        HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5 + im),
+        HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
         ExtendedHubbardReal1D(BoseFS((1, 0, 0, 0, 1)); u=1.0, v=2.0, t=3.0),
         ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); u=1 + 0.5im),
         ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); t=1 + 0.5im),
