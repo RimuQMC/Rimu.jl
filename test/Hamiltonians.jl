@@ -72,7 +72,8 @@ end
         FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
-        HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0))
+        HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
+        FroehlichPolaronND(OccupationNumberFS(0,0,0,0))
     ]
         test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL. Does not work with
@@ -1155,6 +1156,7 @@ end
     # test offdiagonal element
     f2_offdiag = (OccupationNumberFS(1,3,3), -f2.v*sqrt(3))
     @test get_offdiagonal(f2, addr2, 2) == f2_offdiag
+   
 
     f3_offdiag = (OccupationNumberFS(1,2,3,3), -f3.v*sqrt(4))
     @test get_offdiagonal(f3, addr3, 8) == f3_offdiag
@@ -1176,13 +1178,88 @@ end
     f5 = FroehlichPolaron(addr5; l, mode_cutoff=1, momentum_cutoff)
     basis5 = build_basis(f5)
     mom_vec = map(o -> dot(o, f5.ks), onr.(basis5))
-    @test all(abs.(mom_vec) .≤ momentum_cutoff) == true
+    @test all(abs.(mom_vec) .≤ momentum_cutoff) ==  true
     @test length(basis5) == 20
 
     # with and without momentum cutoff
     f6 = FroehlichPolaron(addr5; v=10, mode_cutoff=1)
     f7 = FroehlichPolaron(addr5; v=10, mode_cutoff=1, momentum_cutoff=100)
     @test get_offdiagonal(f6, addr5, 1) == get_offdiagonal(f7, addr5, 1)
+end
+
+@testset "FroehlichPolaronND" begin
+    addr1 = OccupationNumberFS(1,1,1)
+
+    # test momentum_cutoff, mode_cutoff and dimention when initialising
+    addr2 = OccupationNumberFS(1,2,3)
+    @test_throws ArgumentError FroehlichPolaronND(addr2; mode_cutoff=1.0)
+    @test_throws ArgumentError FroehlichPolaronND(addr2; momentum_cutoff=10.0)
+    @test_throws ArgumentError FroehlichPolaronND(OccupationNumberFS(3,2,1); momentum_cutoff=10.0)
+    @test_throws ArgumentError FroehlichPolaronND(OccupationNumberFS(3,2,1); D=2)
+
+    addr3 = OccupationNumberFS(1,2,3,4)
+    f2 = FroehlichPolaronND(addr2)
+    f3 = FroehlichPolaronND(addr3; mode_cutoff=20.0)
+
+    @test starting_address(f2) == f2.address == addr2
+
+    # test ks vector
+
+    step = (2π/3)
+    ks2 = [(3/1) * [k] for k in range(-π*(1+1/3) + step; step=step, length=3)]
+    @test Vector(f2.ks) == ks2
+    step = (2π/4)
+    ks3 = [(4/1)* [k] for k in range(-π+step; step=step, length=4)]
+    @test Vector(f3.ks) == ks3
+
+    # test num_offdiagonals
+    @test num_offdiagonals(operator_column(f2, addr1)) == 2*3
+
+    # test diagonal_element
+    f2_diag = f2.omega*6 + (1/f2.mass) * (norm(f2.p) - dot(f2.ks, onr(addr2)))^2
+    @test diagonal_element(f2*addr2) == f2_diag
+
+    # test offdiagonal element
+    offd = offdiagonals(operator_column(f2,addr2))
+    @test (offd[2]) == (OccupationNumberFS(1,3,3) => -(2* f2.alpha /(f2.l[1]))^0.5 *sqrt(3))
+
+
+    f3_offdiag = (OccupationNumberFS(1,2,3,3) => -(2* f2.alpha /(f2.l[1]))^0.5*sqrt(4))
+    offdf3 = offdiagonals(operator_column(f3,addr3))
+    @test (offdf3[8]) == f3_offdiag
+
+    # test mode_cutoff
+    offd =offdiagonals(operator_column(f2,OccupationNumberFS(10,3,4)))
+    @test offd[1][2] ≠ 0.0
+    offdf3 =offdiagonals(operator_column(f3,OccupationNumberFS(1,3,20,10)))
+    @test offdf3[3][2] == 0.0
+
+    # test momentum_cutoff
+    # addr2 has momentum 12.56
+    addr4 = OccupationNumberFS(1,2,1)
+    f4 = FroehlichPolaronND(addr4; momentum_cutoff=10.0)
+    offdf4 = offdiagonals(operator_column(f4,addr2))
+    @test offdf4[3][2] == 0.0
+
+
+    m = 5; l = 6
+    addr5 = OccupationNumberFS{5}()
+    mom_unit = 2π/l
+    momentum_cutoff = 1.5 * mom_unit
+    f5 = FroehlichPolaronND(addr5; l, mode_cutoff=1, momentum_cutoff)
+    basis5 = build_basis(f5)
+    mom_vec = map(o -> dot(o, f5.ks), onr.(basis5))
+    @test all(abs.(mom_vec) .≤ momentum_cutoff) == true
+    @test length(basis5) == 20
+
+    # with and without momentum cutoff
+    f6 = FroehlichPolaronND(addr5;  mode_cutoff=1)
+    f7 = FroehlichPolaronND(addr5;  mode_cutoff=1, momentum_cutoff=100)
+    offdf6 = offdiagonals(operator_column(f6, addr5))
+    offdf7 = offdiagonals(operator_column(f7, addr5))
+    @test offdf6[1] == offdf7[1]
+
+
 end
 
 """

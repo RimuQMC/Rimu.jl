@@ -24,7 +24,7 @@ Other
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
 - [`HamiltonianProduct`](@ref)
-- ['FroelichPolaron_nD'](@ref)
+- ['FroelichPolaronND'](@ref)
 
 
 ## [Wrappers](#Hamiltonian-wrappers)
@@ -86,7 +86,7 @@ export Stoquastic
 export Transcorrelated1D
 export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron
-export FroehlichPolaron_nD
+export FroehlichPolaronND
 export ParticleNumberOperator
 
 
