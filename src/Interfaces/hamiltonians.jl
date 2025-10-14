@@ -554,7 +554,13 @@ operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a),
 
 @doc (@doc operator_column) Base.:*
 function Base.:*(o::AbstractObservable, a::A) where {A<:Union{AbstractFockAddress,Integer}}
-    return operator_column(o, a)
+    if allows_address_type(o, A)
+        return operator_column(o, a)
+    elseif A <: Number
+        throw(ArgumentError("`$A` is not a valid address type for `$o`. To scale the operator, use `$a * $o`."))
+    else
+        throw(ArgumentError("`$A` is not a valid address type for `$o`."))
+    end
 end
 
 starting_address(c::OffdiagonalsOperatorColumn) = c.address
