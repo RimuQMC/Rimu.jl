@@ -1,7 +1,5 @@
 using Documenter
 using Rimu
-using Rimu.BitStringAddresses
-using Rimu.StatsTools
 using Literate
 
 EXAMPLES_INPUT = joinpath(@__DIR__, "../scripts")

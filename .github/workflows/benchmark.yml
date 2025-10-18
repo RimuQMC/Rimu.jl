@@ -12,7 +12,8 @@ jobs:
       - uses: actions/checkout@v5
       - uses: julia-actions/setup-julia@v2
         with:
-          version: 1
+          version: 1.11
+          # fails with newer versions; probably related to BenchmarkCI not supporting them yet
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - name: Install dependencies
