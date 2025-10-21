@@ -1,4 +1,3 @@
-using SpecialFunctions
 
 
 struct FroehlichPolaronND{
@@ -20,11 +19,7 @@ struct FroehlichPolaronND{
     ks::SVector{M, SVector{D, T}}
     momentum_cutoff::Union{MC, Nothing}
     mode_cutoff::Union{Int, Nothing}
-end
-
-function operator_column(h::FroehlichPolaronND, address)
-    M = num_modes(address)
-    return FroehlichPolaronNDColumn(h, address, 2M)
+    vkc::T
 end
 
 
@@ -39,6 +34,7 @@ function FroehlichPolaronND(
     p = zeros(D),
     momentum_cutoff = nothing,
     mode_cutoff = nothing,
+    vk_constant = (-1) * sqrt((gamma(((D-1)/2)) * alpha * 2^(D-(3/2)) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega))),
 ) where {M, AT}
 
     
@@ -95,8 +91,11 @@ function FroehlichPolaronND(
     end
 
 
+    
+
+
     return FroehlichPolaronND{typeof(alpha), M, D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
-        address,D, geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff)
+        address,D, geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant)
 end
 
 
@@ -105,8 +104,8 @@ function Base.show(io::IO, h::FroehlichPolaronND)
     println(io, "FroehlichPolaronND(")
     println(io, "  ", starting_address(h), ",")
     println(io, "  geometry = ", h.geometry, ",")
-    println(io, "  alpha = ", h.alpha, ", mass = ", h.mass, ", omega = ", h.omega, ", Dimention = ", h.d,",")
-    println(io, "  l = ", Float64.(h.l), ", p = ", Float64.(h.p), ",")
+    println(io, "  alpha = ", h.alpha, ", mass = ", h.mass, ", omega = ", h.omega, ", Dimention = ", h.d, ",vk_constant = ",h.vkc,",")
+    println(io, "  l = ", Float64.(h.l), ", p = ", Float64.(h.p),  ",")
     !isnothing(h.momentum_cutoff) && println(io, "  momentum_cutoff = ", h.momentum_cutoff, ",")
     println(io, "  mode_cutoff = ", isnothing(h.mode_cutoff) ? "nothing" : string(h.mode_cutoff))
     print(io, ")")
@@ -129,6 +128,10 @@ struct FroehlichPolaronNDColumn{H,A} <: AbstractOperatorColumn{A,Float64,H}
     num_offdiagonals::Int
 end
 
+function operator_column(h::FroehlichPolaronND, address)
+    M = num_modes(address)
+    return FroehlichPolaronNDColumn(h, address, 2M)
+end
 
 
 function diagonal_element(col::FroehlichPolaronNDColumn)
@@ -168,7 +171,7 @@ Base.size(ods::FroehlichPolaronNDOffdiagonals) = (ods.num_offdiagonals,)
         if knorm == 0.0
             return 0.0
         else
-            return (-1) * sqrt((gamma(((h.d-1)/2)) * h.alpha * 2^(h.d-(3/2)) * pi^((h.d-1)/2) * h.omega^2) / (sqrt(h.mass * h.omega) * (knorm^(h.d-1) * vol)))
+            return h.vkc * sqrt(1/ (knorm^(h.d-1) * vol))
         end
     end
 end
@@ -192,7 +195,7 @@ end
     end
     
 
-    if h.momentum_cutoff != nothing
+    if !isnothing(h.momentum_cutoff)
         occ = onr(new_addr)
         phononmom = zeros(h.d)
         for m in 1:M
