@@ -348,13 +348,14 @@ described below.
   is not performed exactly. If the `strat` has a `threshold` different from zero, all spawns
   will be projected to that threshold.
 
-* `rel_threshold = 1.0`: When deciding on whether to perform an exact spawn, this value is
-  multiplied to the number of walkers. Should be set to 1 or more for best performance. This
-  threshold is affected by the `boost` argument to [`spawn!`](@ref).
+* `rel_threshold = 1.0`: If the walker number on a configuration (multiplied by the `boost`
+  argument to [`spawn!`](@ref)) is greater than or equal to the number of offdiagonals
+  times this threshold, spawning is done deterministically. Should be set to 1 or smaller
+  for best performance.
 
-* `abs_threshold = Inf`: When deciding on whether to perform an exact spawn,
-  `min(abs_threshold, num_offdiagonals)` is used. This threshold is not affected by
-  the `boost` argument to [`spawn!`](@ref).
+* `abs_threshold = Inf`: If the walker number on a configuration (multiplied by the `boost`
+  argument to [`spawn!`](@ref)) is greater than this value, spawning is done
+  deterministically.
 
 See e.g. [`WithoutReplacement`](@ref) for a description of the `strat.threshold` parameter.
 

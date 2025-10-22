@@ -155,13 +155,13 @@ or [`IsStochasticWithThreshold`](@ref)) by setting `late_compression=false`, or 
   `compression=`[`NoCompression`](@ref)`()` and
   `spawning=WithReplacement(threshold)`.
 
-* `rel_spawning_threshold = 1.0`: If the walker number on a configuration times this
-  threshold is greater than the number of offdiagonals, spawning is done
-  deterministically. Should be set to 1 or more for best performance.
+* `rel_spawning_threshold = 1.0`: If the walker number on a configuration is greater than
+  or equal to the number of offdiagonals times this threshold, spawning is done
+  deterministically. Should be set to 1 or smaller for best performance.
 
 * `abs_spawning_threshold = Inf`: If the walker number on a configuration is greater than
-  this value, spawning is done deterministically. Can be set to e.g.  `abs_spawning_threshold = 0.1 *
-  target_walkers`.
+  this value, spawning is done deterministically. Can be set to e.g.
+  `abs_spawning_threshold = 0.1 * target_walkers`.
 
 * `spawning = WithReplacement()`: [`SpawningStrategy`](@ref) to use for the non-exact
   spawns.

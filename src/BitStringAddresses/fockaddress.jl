@@ -38,7 +38,7 @@ onr
 
 Find the `i`-th mode in address. Returns [`BoseFSIndex`](@ref) for [`BoseFS`](@ref), and
 [`FermiFSIndex`](@ref) for [`FermiFS`](@ref). Can work on a tuple of modes. Does not check
-bounds. Setting, `occ` can to the result of [`occupied_mode_map`](@ref), which can increase
+bounds. Setting `occ` to the result of [`occupied_mode_map`](@ref) can increase the
 performance for [`BoseFS`](@ref).
 
 ```jldoctest

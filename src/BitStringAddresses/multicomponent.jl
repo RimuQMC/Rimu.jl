@@ -2,7 +2,7 @@
     CompositeFS(addresses::SingleComponentFockAddress...) <: AbstractFockAddress
 
 Used to encode addresses for multi-component models. All component addresses
-are expected have the same number of modes.
+are expected to have the same number of modes.
 
 See also: [`BoseFS`](@ref), [`FermiFS`](@ref), [`SingleComponentFockAddress`](@ref),
 [`num_modes`](@ref), [`FermiFS2C`](@ref), [`AbstractFockAddress`](@ref).
@@ -145,4 +145,39 @@ function print_address(io::IO, f::FermiFS2C; compact=false)
         # Show as normal CompositeFS
         invoke(print_address, Tuple{typeof(io),CompositeFS}, io, f)
     end
+end
+
+"""
+    FermiFS2CModes
+
+This struct stores the occupied and unoccupied mode maps associated with an 
+address of type [`FermiFS2C`](@ref). It should be constructed using the 
+[`full_mode_maps`](@ref) function.  
+
+The struct has two fields, `occupied` and `unoccupied`, each containing a 
+`ModeMap` represented as a two-element `Tuple`:  
+
+- Index `1` corresponds to the α spin channel
+- Index `2` corresponds to the β spin channel
+
+This convention follows the spin-channel indexing defined in [`FermiFS2C`](@ref).
+
+See also 
+[`FermiFS2C`](@ref), [`ModeMap`](@ref), [`occupied_mode_map`](@ref), 
+and [`unoccupied_mode_map`](@ref).
+"""
+struct FermiFS2CModes{TI<:FermiFSIndex,OA,OB,UA,UB}
+    occupied::Tuple{ModeMap{OA,TI},ModeMap{OB,TI}}
+    unoccupied::Tuple{ModeMap{UA,TI},ModeMap{UB,TI}}
+end
+
+"""
+    full_mode_maps(addr::FermiFS2C)
+
+The constructor function of [`FermiFS2CModes`](@ref).
+"""
+function full_mode_maps(addr::FermiFS2C)
+    occupied_modes = (occupied_mode_map(addr.components[1]), occupied_mode_map(addr.components[2]))
+    unoccupied_modes = (unoccupied_mode_map(addr.components[1]), unoccupied_mode_map(addr.components[2]))
+    FermiFS2CModes(occupied_modes, unoccupied_modes)
 end

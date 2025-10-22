@@ -92,6 +92,7 @@ end
 
 @testset "Hamiltonians" begin
     include("Hamiltonians.jl")
+    include("molecular_hamiltonian_tests.jl")
 end
 
 @safetestset "KrylovKit" begin
