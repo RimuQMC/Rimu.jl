@@ -18,9 +18,6 @@ macro mpi_root(expr)
     end
 end
 
-"""
-Load balancing functionality integrated into the communicator.
-"""
 struct LoadBalancer
     variance_threshold::Float64
     check_frequency::Int
@@ -28,11 +25,11 @@ end
 
 LoadBalancer(; variance_threshold=1.5, check_frequency=100) = LoadBalancer(variance_threshold, check_frequency)
 
-"""
+```@docs
 Major implementation of the custom communicator with integrated load balancing.
 This majorly deals with the implementation of the custom communicator
 For this LoadBalancing.
-"""
+```
 struct LoadBalancedCommunicator{K,V} <: Communicator
     mpi_comm::MPI.Comm
     mpi_rank::Int
@@ -52,7 +49,7 @@ mpi_rank(comm::LoadBalancedCommunicator) = comm.mpi_rank
 mpi_size(comm::LoadBalancedCommunicator) = comm.mpi_size
 mpi_comm(comm::LoadBalancedCommunicator) = comm.mpi_comm
 
-"""
+```@docs
     synchronize_remote!(comm::LoadBalancedCommunicator, w::PDWorkingMemory)
 
 Performs the primary synchronization step, exchanging walkers (key-value pairs)
@@ -80,7 +77,7 @@ This function is "bang" (`!`) because it modifies `w` in-place.
 
 # Returns
 - `(), ()`: Returns empty tuples, as the function's purpose is its side effects.
-"""
+```
 function synchronize_remote!(comm::LoadBalancedCommunicator{K,V}, w::PDWorkingMemory{K,V,W,S}) where {K,V,W,S}
     comm.step[] += 1
     step = comm.step[]
@@ -161,7 +158,7 @@ function synchronize_remote!(comm::LoadBalancedCommunicator{K,V}, w::PDWorkingMe
     return (), ()
 end
 
-"""
+```@docs
     copy_to_local!(
         comm::LoadBalancedCommunicator,
         w::PDWorkingMemory,
@@ -198,7 +195,7 @@ If `mpi_size(comm) == 1`, this function is a no-op and returns `pdvec`.
  The `first_column(w)` (the local part of the working memory), which is now
     populated with the redistributed local data.
 
-"""
+```
 function copy_to_local!(comm::LoadBalancedCommunicator{K,V}, w::PDWorkingMemory{K,V,W,S}, pdvec) where {K,V,W,S}
     mpi_size(comm) == 1 && return pdvec
 
@@ -254,7 +251,7 @@ function copy_to_local!(comm::LoadBalancedCommunicator{K,V}, w::PDWorkingMemory{
     return first_column(w)
 end
 
-"""
+```@docs
     perform_load_balancing!(
         comm::LoadBalancedCommunicator,
         w::PDWorkingMemory,
@@ -289,7 +286,7 @@ If `mpi_size(comm) == 1`, this function is a no-op.
     **This argument is mutated** if balancing is triggered.
 `step`: The current simulation step number, used for logging purposes.
 
-"""
+```
 function perform_load_balancing!(comm::LoadBalancedCommunicator, w::PDWorkingMemory, step::Int)
     # Skip if single rank
     mpi_size(comm) == 1 && return
@@ -323,7 +320,7 @@ function perform_load_balancing!(comm::LoadBalancedCommunicator, w::PDWorkingMem
     end
 end
 
-"""
+```@docs
     decide_migrations(comm::LoadBalancedCommunicator, all_walker_counts, variance_threshold=2.0)
 
 Calculates and distributes a migration plan to balance the walker load across MPI ranks.
@@ -354,6 +351,7 @@ using `distribute_migration_commands`.
 - The output of `distribute_migration_commands(comm, migration_plan)`, which is
   expected to be the set of migration commands (sends/receives) for the *local* rank.
 """
+```
 function decide_migrations(comm::LoadBalancedCommunicator, all_walker_counts, variance_threshold=2.0)
     migration_plan = Dict{Int, Vector{Tuple{Int, Int}}}()
 
@@ -397,7 +395,7 @@ function decide_migrations(comm::LoadBalancedCommunicator, all_walker_counts, va
 
     return distribute_migration_commands(comm, migration_plan)
 end
-"""
+```@docs
     distribute_migration_commands(comm::LoadBalancedCommunicator, migration_plan)
 
 Distributes a global migration plan from the root rank (0) to all other ranks.
@@ -430,7 +428,7 @@ without using MPI.
   specifying where the *current* rank should send walkers.
 - `my_receives::Vector{Tuple{Int, Int}}`: A list of `(from_rank, amount)` tuples
   specifying from where the *current* rank should expect to receive walkers.
-"""
+```
 function distribute_migration_commands(comm::LoadBalancedCommunicator, migration_plan)
     rank = mpi_rank(comm)
     comm_mpi = mpi_comm(comm)
@@ -495,7 +493,7 @@ function distribute_migration_commands(comm::LoadBalancedCommunicator, migration
     end  
     return my_sends, my_receives
 end
-"""
+```@docs
     perform_segment_migration!(comm::LoadBalancedCommunicator, w::PDWorkingMemory, my_sends, my_receives)
 
 Executes the migration plan by transferring `(Key, Weight)` pairs between ranks.
@@ -531,7 +529,7 @@ The migration follows a three-step process:
 
 # Returns
 - `nothing` (the function modifies `w` in-place).
-"""
+```
 function perform_segment_migration!(comm::LoadBalancedCommunicator, w::PDWorkingMemory{K,V,W,S}, my_sends, my_receives) where {K,V,W,S}
     rank = mpi_rank(comm)
     comm_mpi = mpi_comm(comm)
@@ -614,168 +612,4 @@ function perform_segment_migration!(comm::LoadBalancedCommunicator, w::PDWorking
             local_segs[seg_idx][k] = get(local_segs[seg_idx], k, W(0.0)) + v
         end
     end
-end
-
-"""
-    run_simulation(; comm=nothing, H, num_steps, initial_address, use_balancer=false)
-
-Runs a simulation applying operator `H` for `num_steps`, with optional MPI parallelism and integrated load balancing.
-"""
-function run_simulation(; comm=nothing, H, num_steps, initial_address, use_balancer=false)
-    if isnothing(comm)
-        pdvec = PDVec(initial_address => 1.0)
-    else
-        pdvec = PDVec(initial_address => 1.0; communicator=comm)
-
-        if mpi_size(comm) > 1
-            for step in 1:3
-                pdvec = H * pdvec
-                norm2_local = sum(v^2 for v in values(localpart(pdvec)); init=0.0)
-                norm2 = MPI.Allreduce(norm2_local, MPI.SUM, mpi_comm(comm))
-
-                if norm2 > 0
-                    norm = sqrt(norm2)
-                    for k in keys(localpart(pdvec))
-                        pdvec[k] /= norm
-                    end
-                end
-            end
-        end
-    end
-
-    results = Float64[]
-    start_time = time()
-
-    for step in 1:num_steps
-        pdvec = H * pdvec
-
-        norm2_local = sum(v^2 for v in values(localpart(pdvec)); init=0.0)
-        if isnothing(comm)
-            norm2 = norm2_local
-        else
-            norm2 = MPI.Allreduce(norm2_local, MPI.SUM, mpi_comm(comm))
-        end
-
-        if norm2 > 0
-            norm = sqrt(norm2)
-            for k in keys(localpart(pdvec))
-                pdvec[k] /= norm
-            end
-        else
-            if isnothing(comm) || mpi_rank(comm) == 0
-                println("Warning: Zero norm at step $step")
-            end
-            break
-        end
-
-        rq = rayleigh_quotient(H, pdvec)
-        push!(results, rq)
-
-        # Debug output
-        if step <= 2 || step % 100 == 0
-            local_walkers = length(localpart(pdvec))
-            if MPI.Comm_rank(MPI.COMM_WORLD) == 0
-                println("Step $step: RQ = $rq, Local walkers = $local_walkers")
-            end
-            if isnan(rq) || local_walkers == 0
-                if MPI.Comm_rank(MPI.COMM_WORLD) == 0
-                    println("ERROR: Invalid state at step $step!")
-                end
-                break
-            end
-        end
-    end
-
-    elapsed_time = time() - start_time
-    final_walkers_per_rank = MPI.Allgather(length(localpart(pdvec)), MPI.COMM_WORLD)
-    final_walker_norms_per_rank = MPI.Allgather(norm(localpart(pdvec), 1), MPI.COMM_WORLD)
-
-    return results, elapsed_time, final_walkers_per_rank, final_walker_norms_per_rank
-end
-
-# Benchmark function with detailed segment length reporting
-function benchmark_and_validate(; num_steps=200, warmup_steps=10)
-    initial_address = near_uniform(BoseFS{10,10})
-    println("DEBUG: Initial address = $initial_address")
-    H = HubbardReal1D(initial_address; u=6.0, t=1.0)
-    comm_custom = LoadBalancedCommunicator{typeof(initial_address), Float64}()
-
-    @mpi_root println("-"^50)
-    @mpi_root println("Performing warm-up runs...")
-
-    # Warm-up runs
-    @mpi_root println("Warm-up: Baseline...")
-    run_simulation(H=H, num_steps=warmup_steps, initial_address=initial_address, use_balancer=false)
-
-    @mpi_root println("Warm-up: With integrated balancer...")
-    run_simulation(comm=comm_custom, H=H, num_steps=warmup_steps, initial_address=initial_address, use_balancer=true)
-
-    MPI.Barrier(MPI.COMM_WORLD)
-
-    @mpi_root println("Warm-up complete. Starting benchmarks...")
-    @mpi_root println("-"^50)
-
-    # Actual benchmark runs
-    @mpi_root println("Running Baseline (Rimu Default Communicator)...")
-    results_baseline, time_baseline, walkers_baseline, norms_baseline = run_simulation(
-        H=H, num_steps=num_steps, initial_address=initial_address, use_balancer=false
-    )
-
-    @mpi_root println("Running With Integrated Load Balancer...")
-    results_balanced, time_balanced, walkers_balanced, norms_balanced = run_simulation(
-        comm=comm_custom, H=H, num_steps=num_steps, initial_address=initial_address, use_balancer=true
-    )
-
-    @mpi_root begin
-        println("\n" * "="^50)
-        println("Benchmark Results (num_steps=$num_steps, num_ranks=$(mpi_size(comm_custom)))")
-        println("-"^50)
-
-        if mpi_size(comm_custom) == 1
-            println("WARNING: Single rank - load balancer adds overhead only!")
-        end
-
-        println("Execution Time:")
-        println(" Baseline: $(round(time_baseline, digits=3))s")
-        println(" Integrated Balancer: $(round(time_balanced, digits=3))s")
-
-        if mpi_size(comm_custom) > 1
-            speedup = time_baseline / time_balanced
-            println(" Performance: $(speedup > 1.0 ? "$(round(speedup, digits=2))x faster" : "$(round(1/speedup, digits=2))x slower")")
-        else
-            overhead = time_balanced / time_baseline
-            println(" Balancer overhead: $(round(overhead, digits=2))x")
-        end
-
-        println("\nFinal Walker Distribution:")
-        println(" Baseline lengths: $walkers_baseline")
-        println(" Baseline L1 norms: $norms_baseline")
-        println(" Balanced lengths: $walkers_balanced") #not much of a difference, it would remain the same at the end.. i mean its length
-        println(" Balanced L1 norms: $norms_balanced")
-
-        # Calculate and display load balance improvement
-        if length(walkers_baseline) > 1 && length(walkers_balanced) > 1
-            baseline_std = std(norms_baseline)
-            balanced_std = std(norms_balanced)
-            println("\nLoad Balance Metrics:")
-            println(" Baseline std dev: $(round(baseline_std, digits=3))")
-            println(" Balanced std dev: $(round(balanced_std, digits=3))")
-            if baseline_std > 0
-                improvement = baseline_std / balanced_std
-                println(" Balance improvement: $(round(improvement, digits=2))x")
-            end
-        end
-
-        if !isempty(results_baseline) && !isempty(results_balanced)
-            println("\nFinal Rayleigh Quotient:")
-            println(" Baseline: $(round(results_baseline[end], digits=5))")
-            println(" Balanced: $(round(results_balanced[end], digits=5))")
-        end
-    end
-end
-
-# Main execution
-if !isinteractive()
-    #benchmark_and_validate(num_steps=200)
-    #MPI.Finalize()
 end

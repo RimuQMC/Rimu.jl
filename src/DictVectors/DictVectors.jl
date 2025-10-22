@@ -15,7 +15,7 @@ using Random: Random
 using StaticArrays: SVector
 using VectorInterface: VectorInterface, add, add!, inner, norm, scalartype,
     scale, scale!, zerovector, zerovector!, zerovector!!
-
+using Statistics: mean, std
 import MPI
 
 using ..Interfaces: Interfaces, AbstractDVec, AdjointUnknown,
