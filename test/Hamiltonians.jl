@@ -38,13 +38,14 @@ end
         ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); t=1 + 0.5im),
         ExtendedHubbardMom1D(OccupationNumberFS(1,2,0,0); u=1.0, v=2.0, t=3.0),
         ExtendedHubbardMom1D(FermiFS(1,1,0,0); u=1.0, v=2.0, t=3.0),
-        HubbardRealSpace(BoseFS((1, 2, 3)); u=[1], t=[3]),
+        HubbardRealSpace(BoseFS((1, 2, 3)); u=[1], t=[3], w=[1]),
         HubbardRealSpace(FermiFS((1, 1, 1, 1, 1, 0, 0, 0)); u=[0], t=[3]),
+        HubbardRealSpace(FermiFS((1, 1, 1, 1, 1, 0, 0, 0)); u=[0], t=[3*im]),
         HubbardRealSpace(
             CompositeFS(
                 FermiFS((1, 1, 1, 1, 1, 0, 0, 0)),
                 FermiFS((1, 1, 1, 1, 0, 0, 0, 0)),
-            ); t=[1, 2], u=[0 3; 3 0]
+            ); t=[1, 2], u=[0 3; 3 0], w=[1 0.5; 0.5 1]
         ),
         GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6 + 2im); g=0.3),
         GutzwillerSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))); g=0.1),
@@ -293,17 +294,25 @@ end
         @test_throws ArgumentError HubbardRealSpace(
             bose; geometry=PeriodicBoundaries(3,2), u=[1 1; 1 1],
         )
+        @test_throws InexactError HubbardRealSpace(
+            bose; geometry=PeriodicBoundaries(3,2), u=[1.0im], t=[1.0im]
+        )
 
         comp = CompositeFS(bose, bose)
         @test_throws ArgumentError HubbardRealSpace(
             comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], u=[1 2; 3 4],
         )
         @test_throws ArgumentError HubbardRealSpace(
+            comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], w=[1 2; 3 4],
+        )
+        @test_throws ArgumentError HubbardRealSpace(
             comp; geometry=PeriodicBoundaries(3,2), t=[1, 2], u=[2 2; 2 2; 2 2],
         )
-
         @test_throws ArgumentError HubbardRealSpace(
             comp; geometry=PeriodicBoundaries(3,2), v=[1 1; 1 1; 1 1],
+        )
+        @test_throws ArgumentError HubbardRealSpace(
+            comp; t=[1 2]
         )
 
         @test_logs (:warn,) HubbardRealSpace(FermiFS((1,0)), u=[2])
@@ -505,6 +514,47 @@ end
             H2 = HubbardRealSpace(fermi, geometry=geom2)
             @test exact_energy(H1) ≈ exact_energy(H2)
         end
+    end
+    @testset "Complex hopping" begin
+        address = FermiFS(1, 0, 1, 0)
+        for H in (
+            HubbardRealSpace(address; t=[2.0 + 3im], geometry=CubicGrid(2, 2)),
+            HubbardRealSpace(address; w=[6], t=[2.0 + 3im], geometry=CubicGrid(4)),
+            HubbardRealSpace(address; t=[im 2im], geometry=CubicGrid(2, 2)),
+        )
+            @test eltype(H) ≡ ComplexF64
+            @test LOStructure(H) ≡ IsHermitian()
+            test_hamiltonian_structure(H)
+        end
+    end
+    @testset "Nearest neighbour interaction" begin
+        addr = near_uniform(BoseFS{4,4})
+        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(4), w=[2.0])
+        H2 = ExtendedHubbardReal1D(addr; v=2.0)
+        @test Matrix(H1) == Matrix(H2)
+        addr = near_uniform(FermiFS{2,4})
+        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(4), w=[-1.0])
+        H2 = ExtendedHubbardReal1D(addr; v=-1.0)
+        @test Matrix(H1) == Matrix(H2)
+
+        addr = BoseFS(1,1,0, 0,0,0, 0,0,0)
+        H1 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(3, 3), w=[2])
+        H2 = HubbardRealSpace(addr; geometry=HardwallBoundaries(3, 3), w=[2])
+        @test diagonal_element(H1 * addr) == 2
+        @test diagonal_element(H2 * BoseFS(1,0,1, 0,0,0, 0,0,0)) == 0
+
+        @test diagonal_element(H1 * BoseFS(1,0,0, 0,0,0, 1,0,0)) == 2
+        @test diagonal_element(H2 * BoseFS(1,0,0, 0,0,0, 1,0,0)) == 0
+    end
+    @testset "Per-dimension hopping" begin
+        addr = BoseFS(1,0,0, 0,0,0, 0,0,0)
+        H = HubbardRealSpace(addr; geometry=PeriodicBoundaries(3, 3), t=[3 4])
+
+        offdiags = DVec(offdiagonals(H * addr))
+        @test offdiags[BoseFS(0,1,0, 0,0,0, 0,0,0)] == -3
+        @test offdiags[BoseFS(0,0,1, 0,0,0, 0,0,0)] == -3
+        @test offdiags[BoseFS(0,0,0, 1,0,0, 0,0,0)] == -4
+        @test offdiags[BoseFS(0,0,0, 0,0,0, 1,0,0)] == -4
     end
 end
 
@@ -1817,6 +1867,24 @@ end
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(r))) == r
     end
+    # complex hermitian Hamiltonian still produces approx hermitian RDM
+    H = HubbardReal1D(BoseFS(0,1,2,0); t = 1+im)
+    res = solve(ExactDiagonalizationProblem(H))
+    gs = res.vectors[1]
+    rdm = ReducedDensityMatrix{ComplexF64}(1)
+    m = dot(gs, rdm, gs)
+    @test all(x -> abs(x) < √eps(Float64), m - m') # hermitian up to floating point noise
+    
+    # a global relative phase in the vectors results in a global phase in the RDM
+    m_phase = dot(im * gs, rdm, gs)
+    @test all(x -> abs(x) < √eps(Float64), m_phase + im * m)
+    
+    # complex non-hermitian Hamiltonian still produces approx hermitian RDM
+    Hc = HubbardReal1D(BoseFS(0,1,2,0); u = 1+im)
+    resc = solve(ExactDiagonalizationProblem(Hc))
+    gsc = resc.vectors[1]
+    mc = dot(gsc, rdm, gsc)
+    @test all(x -> abs(x) < √eps(Float64), mc - mc') # hermitian up to floating point noise
 end
 
 @testset "HamiltonianProduct" begin
@@ -1872,9 +1940,70 @@ end
     P = H4*H4
     c = operator_column(P, addr)
     @test iszero(last.(collect(offdiagonals(c))))
+
+    @testset "ScaledHamiltonian" begin
+        addr = BoseFS(2,0,0)
+        basis = build_basis(addr)
+        H = HubbardReal1D(addr)
+
+        H1 = 2*H
+        @test Matrix(H1) == 2*Matrix(H)
+        @test LOStructure(H1) == LOStructure(H)
+        @test 2*H1 == 4*H
+        @test 1*H1 == H1
+
+        H2 = 3im*H
+        @test Matrix(H2) == 3im*Matrix(H)
+        @test eltype(H2) <: Complex
+        @test LOStructure(H2) == AdjointKnown()
+        @test H2' == -3im*H
+    end
 end
+
+@testset "HamiltonianSum" begin
+    addr = BoseFS(0,1,2,3,4)
+    H1 = HubbardReal1D(addr; u=2, t=2)
+    H2 = ExtendedHubbardReal1D(addr; v=3)
+    S1 = H1+H2
+    @test S1 == add(H1, H2; weight=0.5)
+    @test LOStructure(S1) == IsHermitian()
+
+    basis = build_basis(addr)
+    @test Matrix(H1, basis) + Matrix(H2, basis) ≈ Matrix(S1, basis)
+
+    result = solve(ExactDiagonalizationProblem(S1))
+    energy = result.values[1]
+    vec = result.vectors[1]
+    @test energy ≈ rayleigh_quotient(H1, vec) + rayleigh_quotient(H2, vec)
+
+    od1 = collect(offdiagonals(H1*addr))
+    od2 = collect(offdiagonals(H2*addr))
+    col = S1*addr
+    odsum = collect(offdiagonals(col))
+    @test DVec(od1) + DVec(od2) == DVec(odsum)
+
+    for _ in 1:20
+        a, p, v = random_offdiagonal(col)
+        @test (a => v) in odsum
+    end
+
+    S2 = 2im*H1 + 3*H2
+    @test S2 == add(H1, H2, 2im, 3)
+    @test LOStructure(S2) == AdjointKnown()
+    @test rayleigh_quotient(S2, vec) ≈ 2im*rayleigh_quotient(H1, vec) + 3*rayleigh_quotient(H2, vec)
+
+    H3 = HubbardReal1D(addr; t=0)
+    S3 = H3 + H1
+    @test DVec(offdiagonals(S3*addr)) == DVec(offdiagonals(H1*addr))
+
+    addr = FermiFS(1,0,0)
+    H4 = HubbardReal1D(addr)
+    @test_throws ArgumentError H1 + H4
+end
+
 @testset "Operator Traits" begin
     struct TestHamiltonian <: Rimu.AbstractHamiltonian{Float64} end
+    Rimu.allows_address_type(::TestHamiltonian, ::Type{<:Any}) = true
     struct TestColumn{A,O} <: Rimu.AbstractOperatorColumn{A,Float64,O}
         operator::O
         address::A
