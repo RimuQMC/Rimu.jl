@@ -9,15 +9,6 @@ using Statistics
 using Random
 import Rimu.DictVectors: mpi_rank, mpi_size, mpi_comm, synchronize_remote!, copy_to_local!, remote_segments,local_segments, first_column, dict_add!, fastrange_hash
 
-# Convenience macro for root-only printing
-macro mpi_root(expr)
-    return quote
-        if MPI.Comm_rank(MPI.COMM_WORLD) == 0
-            $(esc(expr))
-        end
-    end
-end
-
 struct LoadBalancer
     variance_threshold::Float64
     check_frequency::Int
