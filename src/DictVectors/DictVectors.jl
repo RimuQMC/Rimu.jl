@@ -34,6 +34,7 @@ export DVec, InitiatorDVec, PDVec, PDWorkingMemory
 export InitiatorRule, Initiator, SimpleInitiator, NonInitiator, CoherentInitiator
 
 export AbstractProjector, NormProjector, Norm2Projector, UniformProjector, Norm1ProjectorPPop
+export LoadBalancedCommunicator, LoadBalancer
 
 
 # The idea is to do linear algebra with data structures that are not
@@ -73,5 +74,6 @@ include("initiatordvec.jl")
 
 include("pdvec.jl")
 include("pdworkingmemory.jl")
+include("LoadBalancer.jl")
 
 end # module
