@@ -74,13 +74,10 @@ end
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
-<<<<<<< HEAD
-        FroehlichPolaronND(OccupationNumberFS(0,0,0,0)),
-=======
-        
+        FroehlichPolaronND(OccupationNumberFS(0,0,0,0)),        
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
         2*HubbardReal1D(BoseFS(2,0,0); u=1.0im)
->>>>>>> 92acdb95c3ca275d0f773a70cc11a1c305ef34d7
+
     ]
         test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL. Does not work with
