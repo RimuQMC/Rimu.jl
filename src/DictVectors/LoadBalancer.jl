@@ -16,11 +16,11 @@ end
 
 LoadBalancer(; variance_threshold=1.5, check_frequency=100) = LoadBalancer(variance_threshold, check_frequency)
 
-```@docs
+"""
 Major implementation of the custom communicator with integrated load balancing.
 This majorly deals with the implementation of the custom communicator
 For this LoadBalancing.
-```
+"""
 struct LoadBalancedCommunicator{K,V} <: Communicator
     mpi_comm::MPI.Comm
     mpi_rank::Int
@@ -40,7 +40,7 @@ mpi_rank(comm::LoadBalancedCommunicator) = comm.mpi_rank
 mpi_size(comm::LoadBalancedCommunicator) = comm.mpi_size
 mpi_comm(comm::LoadBalancedCommunicator) = comm.mpi_comm
 
-```@docs
+"""
     synchronize_remote!(comm::LoadBalancedCommunicator, w::PDWorkingMemory)
 
 Performs the primary synchronization step, exchanging walkers (key-value pairs)
@@ -68,7 +68,7 @@ This function is "bang" (`!`) because it modifies `w` in-place.
 
 # Returns
 - `(), ()`: Returns empty tuples, as the function's purpose is its side effects.
-```
+"""
 function synchronize_remote!(comm::LoadBalancedCommunicator{K,V}, w::PDWorkingMemory{K,V,W,S}) where {K,V,W,S}
     comm.step[] += 1
     step = comm.step[]
@@ -149,7 +149,7 @@ function synchronize_remote!(comm::LoadBalancedCommunicator{K,V}, w::PDWorkingMe
     return (), ()
 end
 
-```@docs
+"""
     copy_to_local!(
         comm::LoadBalancedCommunicator,
         w::PDWorkingMemory,
@@ -186,7 +186,7 @@ If `mpi_size(comm) == 1`, this function is a no-op and returns `pdvec`.
  The `first_column(w)` (the local part of the working memory), which is now
     populated with the redistributed local data.
 
-```
+"""
 function copy_to_local!(comm::LoadBalancedCommunicator{K,V}, w::PDWorkingMemory{K,V,W,S}, pdvec) where {K,V,W,S}
     mpi_size(comm) == 1 && return pdvec
 
@@ -242,7 +242,7 @@ function copy_to_local!(comm::LoadBalancedCommunicator{K,V}, w::PDWorkingMemory{
     return first_column(w)
 end
 
-```@docs
+"""
     perform_load_balancing!(
         comm::LoadBalancedCommunicator,
         w::PDWorkingMemory,
@@ -277,7 +277,7 @@ If `mpi_size(comm) == 1`, this function is a no-op.
     **This argument is mutated** if balancing is triggered.
 `step`: The current simulation step number, used for logging purposes.
 
-```
+"""
 function perform_load_balancing!(comm::LoadBalancedCommunicator, w::PDWorkingMemory, step::Int)
     # Skip if single rank
     mpi_size(comm) == 1 && return
@@ -311,7 +311,7 @@ function perform_load_balancing!(comm::LoadBalancedCommunicator, w::PDWorkingMem
     end
 end
 
-```@docs
+"""
     decide_migrations(comm::LoadBalancedCommunicator, all_walker_counts, variance_threshold=2.0)
 
 Calculates and distributes a migration plan to balance the walker load across MPI ranks.
@@ -342,7 +342,7 @@ using `distribute_migration_commands`.
 - The output of `distribute_migration_commands(comm, migration_plan)`, which is
   expected to be the set of migration commands (sends/receives) for the *local* rank.
 """
-```
+
 function decide_migrations(comm::LoadBalancedCommunicator, all_walker_counts, variance_threshold=2.0)
     migration_plan = Dict{Int, Vector{Tuple{Int, Int}}}()
 
@@ -386,7 +386,7 @@ function decide_migrations(comm::LoadBalancedCommunicator, all_walker_counts, va
 
     return distribute_migration_commands(comm, migration_plan)
 end
-```@docs
+"""
     distribute_migration_commands(comm::LoadBalancedCommunicator, migration_plan)
 
 Distributes a global migration plan from the root rank (0) to all other ranks.
@@ -419,7 +419,7 @@ without using MPI.
   specifying where the *current* rank should send walkers.
 - `my_receives::Vector{Tuple{Int, Int}}`: A list of `(from_rank, amount)` tuples
   specifying from where the *current* rank should expect to receive walkers.
-```
+"""
 function distribute_migration_commands(comm::LoadBalancedCommunicator, migration_plan)
     rank = mpi_rank(comm)
     comm_mpi = mpi_comm(comm)
@@ -484,7 +484,7 @@ function distribute_migration_commands(comm::LoadBalancedCommunicator, migration
     end  
     return my_sends, my_receives
 end
-```@docs
+"""
     perform_segment_migration!(comm::LoadBalancedCommunicator, w::PDWorkingMemory, my_sends, my_receives)
 
 Executes the migration plan by transferring `(Key, Weight)` pairs between ranks.
@@ -520,7 +520,7 @@ The migration follows a three-step process:
 
 # Returns
 - `nothing` (the function modifies `w` in-place).
-```
+"""
 function perform_segment_migration!(comm::LoadBalancedCommunicator, w::PDWorkingMemory{K,V,W,S}, my_sends, my_receives) where {K,V,W,S}
     rank = mpi_rank(comm)
     comm_mpi = mpi_comm(comm)

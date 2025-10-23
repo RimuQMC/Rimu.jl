@@ -8,14 +8,13 @@ Module that provides concrete implementations of the [`AbstractDVec`](@ref) inte
 See [`Interfaces`](@ref).
 """
 module DictVectors
-
 using Folds: Folds
 using LinearAlgebra: LinearAlgebra, I, dot, ⋅, mul!, normalize!, rank
 using Random: Random
 using StaticArrays: SVector
 using VectorInterface: VectorInterface, add, add!, inner, norm, scalartype,
     scale, scale!, zerovector, zerovector!, zerovector!!
-using Statistics: mean, std
+
 import MPI
 
 using ..Interfaces: Interfaces, AbstractDVec, AdjointUnknown,
@@ -24,7 +23,7 @@ using ..Interfaces: Interfaces, AbstractDVec, AdjointUnknown,
     diagonal_element, offdiagonals, step_stats, AbstractHamiltonian, AbstractOperator,
     AbstractObservable, dot_from_right, operator_column
 using ..StochasticStyles: StochasticStyles, IsDeterministic
-
+using Statistics: Statistics, mean, std
 import ..Interfaces: deposit!, storage, StochasticStyle, default_style, freeze, localpart,
     working_memory, sum_mutating!
 
