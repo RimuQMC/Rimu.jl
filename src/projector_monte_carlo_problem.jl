@@ -104,6 +104,11 @@ julia> size(DataFrame(simulation))
 - `minimum_size = 2*num_spectral_states(spectral_strategy)`: The minimum size of the basis
     used to construct starting vectors for simulations of spectral states, if `start_at`
     is not provided.
+- `global_step_actions = ()`: Warning: experimental feature - subject to change.
+    Tuple of actions to perform at each global step. Each action
+    should be a callable object that accepts a `Rimu.ReplicaState` and returns a
+    `NamedTuple` of results to be reported. Reporting of action results is handled
+    by the `reporting_strategy`.
 
 See also [`init`](@ref), [`solve`](@ref).
 """
@@ -125,6 +130,7 @@ struct ProjectorMonteCarloProblem{N,S} # is not type stable but does not matter
     metadata::LittleDict{String,String} # user-supplied metadata + display_name
     random_seed::Union{Nothing,UInt64}
     minimum_size::Int
+    global_step_actions::Tuple
 end
 
 function Base.show(io::IO, p::ProjectorMonteCarloProblem)
@@ -141,6 +147,7 @@ function Base.show(io::IO, p::ProjectorMonteCarloProblem)
     print(io, "  reporting_strategy = ", p.reporting_strategy)
     println(io, "  post_step_strategy = ", p.post_step_strategy)
     println(io, "  spectral_strategy = ", p.spectral_strategy)
+    println(io, "  global_step_actions = ", p.global_step_actions)
     println(io, "  max_length = ", p.max_length)
     println(io, "  metadata = ", p.metadata)
     print(io, "  random_seed = ", p.random_seed)
@@ -174,6 +181,7 @@ function ProjectorMonteCarloProblem(
     post_step_strategy = (),
     n_spectral = 1,
     spectral_strategy = GramSchmidt(n_spectral),
+    global_step_actions = (),
     minimum_size = 2*num_spectral_states(spectral_strategy),
     max_length = nothing,
     maxlength = nothing, # deprecated
@@ -288,7 +296,8 @@ function ProjectorMonteCarloProblem(
         max_length,
         metadata,
         random_seed,
-        minimum_size
+        minimum_size,
+        global_step_actions
     )
 end
 
