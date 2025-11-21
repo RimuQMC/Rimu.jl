@@ -14,7 +14,7 @@ of the algorithm. Can be advanced a step forward with [`Rimu.advance!`](@ref).
 - `id::String`: id is appended to column names
 
 See also [`SpectralStrategy`](@ref), [`ReplicaStrategy`](@ref),
-[`Rimu.SpectralState`](@ref), [`Rimu.ReplicaState`](@ref), [`Rimu.replica_stats`](@ref),
+[`Rimu.SpectralState`](@ref), [`Rimu.ReplicaState`](@ref), [`Rimu.replica_stats!`](@ref),
 [`Rimu.PMCSimulation`](@ref).
 """
 mutable struct SingleState{H,A,V,W,SP}
@@ -121,11 +121,16 @@ end
 num_replicas(::ReplicaState{N}) where {N} = N
 num_spectral_states(::ReplicaState{<:Any, S}) where {S} = S
 
+# replica_stats! is documented in replicastrategy.jl
+function replica_stats!(RS::ReplicaStrategy, state::ReplicaState)
+    replica_stats!(RS, state.spectral_states)
+end
+
 """
     num_overlaps(state_or_DataFrame)
 
-Return the number of overlaps between replicas that are being reported. Only counts 
-overlaps between replicas of the same spectral state, even if `AllOverlaps` is used with 
+Return the number of overlaps between replicas that are being reported. Only counts
+overlaps between replicas of the same spectral state, even if `AllOverlaps` is used with
 `mixed_spectral_overlaps=true`.
 
 The return value is `0` if no overlaps are being reported, and `N*(N-1)÷2` otherwise, where `N` is the value returned by [`num_replicas`](@ref).
