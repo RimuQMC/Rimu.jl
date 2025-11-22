@@ -3,6 +3,7 @@ using LinearAlgebra
 using Random
 using Rimu
 using Test
+using SafeTestsets
 using DataFrames
 using Suppressor
 using StaticArrays
