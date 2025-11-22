@@ -60,3 +60,94 @@ function Base.iterate(iter::StrictPairIter, state::Tuple{Int,Int})
     end
     return nothing
 end
+
+"""
+     TestOneParticleDensity(v; normalize=true) <: AbstractOperator{typeof(v)}
+A one particle operator constructed from a provided test vector `v`. An expectation value
+with this operator yields a lower bound on the largest eigenvalue (and an upper bound on the
+smallest eigenvalue) of the one-particle density matrix.
+If `normalize` is true (default), the vector is normalized before use.
+
+```math
+    ρ̂ = ∑_{ij} v_i^* v_j â^†_{i} â_{j}
+```
+"""
+struct TestOneParticleDensity{T,V<:SVector{<:Any,T},M} <: AbstractObservable{T}
+    test_vector::V
+end
+function TestOneParticleDensity(v; normalize=true)
+    if normalize
+        v = v / norm(v)
+    end
+    M = length(v)
+    T = float(eltype(v))
+    tv = SVector{M,T}(v)
+    return TestOneParticleDensity{T,typeof(tv),M}(tv)
+end
+
+function Interfaces.allows_address_type(
+    ::TestOneParticleDensity{T,A,M}, ::Type{B}
+) where {T,A,M,B}
+    B <: SingleComponentFockAddress && num_modes(B) == M
+end
+
+struct TestOneParticleDensityColumn{A,T,O,OMM} <: AbstractOperatorColumn{A,T,O}
+    operator::O
+    address::A
+    omm::OMM
+end
+function Interfaces.operator_column(o::TestOneParticleDensity, add::A) where {A}
+    allows_address_type(o, A) || throw(ArgumentError("Address type not allowed for this operator"))
+    omm = occupied_mode_map(add)
+    return TestOneParticleDensityColumn{A,eltype(o),typeof(o),typeof(omm)}(o, add, omm)
+end
+Interfaces.parent_operator(c::TestOneParticleDensityColumn) = c.operator
+Interfaces.starting_address(c::TestOneParticleDensityColumn) = c.address
+function Interfaces.diagonal_element(c::TestOneParticleDensityColumn{<:Any,T}) where {T}
+    val = zero(T)
+    @inbounds for idx in c.omm
+        val += abs2(c.operator.test_vector[idx.mode])*idx.occnum
+    end
+    return val
+end
+function Interfaces.num_offdiagonals(c::TestOneParticleDensityColumn)
+    return length(c.omm) * (num_modes(c.address) - 1)
+end
+function Interfaces.offdiagonals(c::TestOneParticleDensityColumn)
+    TestOneParticleDensityOffdiagonals(c)
+end
+struct TestOneParticleDensityOffdiagonals{C}
+    column::C
+end
+Base.IteratorSize(::TestOneParticleDensityOffdiagonals) = Base.SizeUnknown()
+# Base.length(od::TestOneParticleDensityOffdiagonals) = num_offdiagonals(od.column)
+function Base.iterate(od::TestOneParticleDensityOffdiagonals, state=(1, 1))
+    c = od.column
+    omm = c.omm
+    n_modes = num_modes(c.address)
+    i, j = state # i: mode number for creation, j: index in omm for annihilation
+    #  ∑_{ij} v_i^* v_j â^†_{i} â_{j} |address⟩
+    while j <= length(omm)
+        src = omm[j]
+        while i <= n_modes
+            if i != src.mode # omit same mode as they contribute to diagonal
+                # create new address with excitation
+                dst = find_mode(c.address, i)
+                address, value = excitation(c.address, (dst,), (src,))
+                if !iszero(value)
+                    value *= conj(c.operator.test_vector[i]) * c.operator.test_vector[src.mode]
+                    # choose next state
+                    if i + 1 <= n_modes
+                        return (address, value), (i + 1, j)
+                    else
+                        return (address, value), (1, j+1)
+                    end
+                end
+            end
+            i += 1
+        end
+        j += 1
+        i = 1
+    end
+    return nothing
+end
