@@ -129,8 +129,8 @@ function AllOverlaps(
     n_replicas=2;
     operator=nothing,
     transform=nothing,
-    vecnorm=true,
-    mixed_spectral_overlaps=false
+    vecnorm=true, # whether to include vector-vector overlaps
+    mixed_spectral_overlaps=false # whether to include overlaps between different spectral states
 )
     if transform ≠ nothing
         Base.depwarn("Passing `transform` to `AllOverlaps` is deprected. Transformation undoing is handled automatically.", :AllOverlaps)
@@ -189,9 +189,9 @@ function all_overlaps(
             v = DictVectors.copy_to_local!(wms[i,k], vecs[i,k])
         end
 
-        if S
+        if S # mixed spectral overlaps
             for j in 1:N, l in k+1:M
-                if B
+                if B # vector-vector overlaps
                     push!(names, "r$(i)s$(k)_dot_r$(j)s$(l)")
                     push!(values, dot(vecs[i, k], vecs[j, l]))
                 end
@@ -204,7 +204,7 @@ function all_overlaps(
             end
         end
         for j in i+1:N
-            if B
+            if B # vector-vector overlaps
                 push!(names, "r$(i)s$(k)_dot_r$(j)s$(k)")
                 push!(values, dot(vecs[i, k], vecs[j, k]))
             end
