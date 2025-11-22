@@ -7,6 +7,16 @@ See [`ProjectorMonteCarloProblem`](@ref), [`FCIQMC`](@ref).
 abstract type PMCAlgorithm end
 
 """
+    GlobalStepAction
+Abstract type for actions to perform at each global step in the simulation.
+Action objects should be callable, accepting a `Rimu.ReplicaState` and returning
+a `NamedTuple` of results to be reported. Reporting of action results is handled
+by the `reporting_strategy`.
+"""
+abstract type GlobalStepAction end
+
+
+"""
     SimulationPlan(; starting_step = 1, last_step = 100, wall_time = Inf)
 Defines the duration of the simulation. The simulation ends when the `last_step` is reached
 or the `wall_time` is exceeded.
@@ -124,13 +134,13 @@ struct ProjectorMonteCarloProblem{N,S} # is not type stable but does not matter
     replica_strategy::ReplicaStrategy{N}
     initial_shift_parameters
     reporting_strategy::ReportingStrategy
-    post_step_strategy::Tuple
+    post_step_strategy::NTuple{<:Any,PostStepStrategy}
     spectral_strategy::SpectralStrategy{S}
     max_length::Int
     metadata::LittleDict{String,String} # user-supplied metadata + display_name
     random_seed::Union{Nothing,UInt64}
     minimum_size::Int
-    global_step_actions::Tuple
+    global_step_actions::NTuple{<:Any,GlobalStepAction} # GlobalStepAction is a callable object
 end
 
 function Base.show(io::IO, p::ProjectorMonteCarloProblem)
