@@ -1,4 +1,60 @@
+"""
+    FroehlichPolaronND(address::OccupationNumberFS{M}; kwargs...) <: AbstractHamiltonian
 
+
+The Froehlich polaron Hamiltonian for an N dimentional lattice with `M` momentum modes is given by
+
+```math
+H = (\\hat{p}_f - p)^2/m + \\omega \\hat{N} +  \\sum_{k}(v_k^{\\ast} \\hat{a}_k^\\dagger + v_k \\hat{a}_{-k})
+```
+
+where ``p`` is the total momentum, ``p̂_f = Σ_k k âₖ^† âₖ`` is the momentum operator for the
+bosons, and ``k`` part of the momentum lattice with separation ``2π/l``. ``N̂`` is the number
+operator for the bosons.
+
+The LLP transformation on this hamiltonina has been slighly modified to avoid the i prefactor in ''V_k''
+We have in N dimentions,
+
+```math
+V_k = (-1)\\sqrt{(\\Gamma(\\frac{D-1}{2})  \\alpha  2^{D-\\frac{3}{2}}  \\pi^{\\frac{D-1}{2}}  \\omega^2) / (\\sqrt{m \\omega})(frac{1}{k^{D-1}V})
+```
+
+# Keyword Arguments
+
+* `p=[0.0,...]`: the total momentum vector ``p``.
+* 'D = 1': the dimension of the Hamiltonian
+* `alpha=1.0`: the dimensionless coupling strength ``\\alpha``.
+* `mass=1.0`: the particle mass ``m``.
+* `omega=1.0`: the oscillation frequency of the phonons ``ω``.
+* `l=[1.0,...]`: the N dimensional hypercube dimensions in real space ``l``. Provides scale parameter of the momentum
+    lattice.
+* `momentum_cutoff=nothing`: the maximum boson momentum allowed for an address.
+* `mode_cutoff`: the maximum number of bosons in each momentum mode. Defaults to the maximum
+    value supported by the address type [`OccupationNumberFS`](@ref).
+
+# Examples
+```jldoctest
+julia> fs = OccupationNumberFS(0,0,0,0)
+OccupationNumberFS{4, UInt8}(0, 0, 0,0)
+
+julia> ham = FroehlichPolaronND(fs; D = 2,alpha = 1)
+FroehlichPolaronND(
+  fs"|0 0 0 0⟩{8}",
+  geometry = CubicGrid((2, 2), (true, true)),
+  alpha = 1.0, mass = 1.0, omega = 1.0, D = 2,vkc = -2.10781,
+  l = [1.0, 1.0], p = [0.0, 0.0],
+  mode_cutoff = 255
+)
+
+julia> dimension(ham)
+4294967296
+
+julia> dimension(FroehlichPolaronND(fs; alpha = 1,D = 2, mode_cutoff=5))
+1296
+```
+
+See also [`OccupationNumberFS`](@ref), [`dimension`](@ref), [`AbstractHamiltonian`](@ref).
+"""
 
 struct FroehlichPolaronND{
     T,
@@ -34,12 +90,19 @@ function FroehlichPolaronND(
     p = zeros(D),
     momentum_cutoff = nothing,
     mode_cutoff = nothing,
-    vk_constant = (-1) * sqrt((gamma(((D-1)/2)) * alpha * 2^(D-(3/2)) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega))),
+    vkc = 1,
+
 ) where {M, AT}
+
+    if D != 1
+        vkc = (-1) * sqrt((gamma(((D-1)/2)) * alpha * 2^(D-(3/2)) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega)))
+    else 
+        vkc = 1
+    end
 
     
     if length(l) != D || any(x -> x <= 0, l)
-        throw(ArgumentError("`l` must be a positive vector of length $D"))
+        throw(ArgumentError("`l` must be a positive vector of size 1x$D"))
     end
 
     
@@ -95,7 +158,7 @@ function FroehlichPolaronND(
 
 
     return FroehlichPolaronND{typeof(alpha), M, D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
-        address,D, geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant)
+        address,D, geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vkc)
 end
 
 
@@ -104,7 +167,7 @@ function Base.show(io::IO, h::FroehlichPolaronND)
     println(io, "FroehlichPolaronND(")
     println(io, "  ", starting_address(h), ",")
     println(io, "  geometry = ", h.geometry, ",")
-    println(io, "  alpha = ", h.alpha, ", mass = ", h.mass, ", omega = ", h.omega, ", D = ", h.d, ",vk_constant = ",h.vkc,",")
+    println(io, "  alpha = ", h.alpha, ", mass = ", h.mass, ", omega = ", h.omega, ", D = ", h.d, ",vkc = ",h.vkc,",")
     println(io, "  l = ", Float64.(h.l), ", p = ", Float64.(h.p),  ",")
     !isnothing(h.momentum_cutoff) && println(io, "  momentum_cutoff = ", h.momentum_cutoff, ",")
     println(io, "  mode_cutoff = ", isnothing(h.mode_cutoff) ? "nothing" : string(h.mode_cutoff))
