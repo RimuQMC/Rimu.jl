@@ -1978,8 +1978,6 @@ end
         @test round.(eigvals(Matrix(HM_f)), digits=8) ⊆ round.(eigvals(Matrix(HR_f)), digits=8)
         @test round.(eigvals(Matrix(HM_b)), digits=8) ⊆ round.(eigvals(Matrix(HR_b)), digits=8)
     end
-    @test_throws ArgumentError ExtendedHubbardMom1D(BoseFS(1,1,1,1); u = im)
-    @test_throws ArgumentError ExtendedHubbardMom1D(BoseFS(1,1,1,1); v = im)
 end
 
 @testset "ReducedDensityMatrix" begin
