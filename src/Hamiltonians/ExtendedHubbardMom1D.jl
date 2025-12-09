@@ -39,9 +39,6 @@ function ExtendedHubbardMom1D(
     address::SingleComponentFockAddress;
     u=1.0, v=1.0, t=1.0, dispersion = hubbard_dispersion, boundary_condition = 0.0
 )
-    if u isa Complex || v isa Complex
-        throw(ArgumentError("u or v cannot be Complex"))
-    end
     M = num_modes(address)
     step = 2π/M
     if isodd(M)
