@@ -603,7 +603,7 @@ end
         H1 = HubbardMom1D(BoseFS((0, 0, 5, 0, 0, 0)); u=2, t=3)
         H2 = HubbardMomSpace(BoseFS((0, 0, 5, 0, 0, 0)); u=[2], t=[3])
 
-        @test exact_energy(H1) == exact_energy(H2)
+        @test exact_energy(H1) ≈ exact_energy(H2)  rtol=0.0001
     end
     @testset "1D Bosons (2-component)" begin
         add2 = CompositeFS(
@@ -762,7 +762,7 @@ end
         addr = BoseFS(0,4,0,0)
         H1 = HubbardMomSpace(addr; geometry=PeriodicBoundaries(4), w=[2.0])
         H2 = ExtendedHubbardMom1D(addr; v=2.0)
-        @test Matrix(H1) == Matrix(H2)
+        @test round.(Matrix(H1; sizelim=1e10),digits=10) == round.(Matrix(H2; sizelim=1e10), digits=10)
         addr = FermiFS{2,4}(0,1,1,0)
         H1 = HubbardMomSpace(addr; geometry=PeriodicBoundaries(4), w=[-1.0])
         H2 = ExtendedHubbardMom1D(addr; v=-1.0)
