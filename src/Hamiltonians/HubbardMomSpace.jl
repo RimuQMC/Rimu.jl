@@ -104,7 +104,7 @@ a geometry of the lattice.
             dst_loc = (src_loc[1]+Q, src_loc[2]-Q)
             dst_loc = (mod1.(dst_loc[1], S) , mod1.(dst_loc[2], S))
         end
-    elseif !(all(ones(Int, D) .≤ dst_loc[2]. ≤S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
+    elseif !(all(ones(Int, D) .≤ dst_loc[2] .≤ S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
         Q .-= S
         dst_loc .= [SRC[1]+Q, SRC[2]-Q]
         if !(all(ones(Int, D) .≤ dst_loc[2]. ≤S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
