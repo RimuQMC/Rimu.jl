@@ -5,7 +5,7 @@
         ``-2(\\sum_{\\bar{k}} \\Re(t_{\\bar{k}}) \\cos(k_{\\bar{k}}) + \\Im(t_{\\bar{k}}) \\sin(k_{\\bar{k}}))``
     where ``\\bar{k}`` runs over all dimensions of the lattice.
 """
-function dispersion_mom_space(ks::SVector{D}, geometry::CubicGrid{D, S}, t::SMatrix) where {D,S}
+function dispersion_mom_space(ks::SVector{D}, geometry::CubicGrid{D, S}, t::SMatrix) where {D, S}
     # Calculate the dispersion relation for a given set of k values and hopping strength t.
     C,_ = size(t)
     M = prod(S)
@@ -61,7 +61,7 @@ a geometry of the lattice.
 """
 @inline function mom_transfer_mom_space(
     add::SingleComponentFockAddress{<:Any, M}, chosen::Int, map::ModeMap,
-    g::CubicGrid{D,S}; fold=true) where {M,D,S}
+    g::CubicGrid{D,S}; fold=true) where {M, D, S}
     # Get the momentum transfer for a given excitation.
     singlies = length(map) # number of at least singly occupied modes
 
@@ -107,7 +107,7 @@ a geometry of the lattice.
     elseif !(all(ones(Int, D) .≤ dst_loc[2] .≤ S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
         Q .-= S
         dst_loc .= [SRC[1]+Q, SRC[2]-Q]
-        if !(all(ones(Int, D) .≤ dst_loc[2]. ≤S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
+        if !(all(ones(Int, D) .≤ dst_loc[2] .≤ S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
             return add, 0.0, src_modes..., -Q
         end
     end
@@ -117,7 +117,7 @@ end
 
 @inline function mom_transfer_mom_space(
     add1::SingleComponentFockAddress{<:Any, M}, add2::SingleComponentFockAddress{<:Any, M}, 
-    chosen::Int, map1::ModeMap, map2::ModeMap, g::CubicGrid{D,S}; fold=true) where {M,D,S}
+    chosen::Int, map1::ModeMap, map2::ModeMap, g::CubicGrid{D,S}; fold=true) where {M, D, S}
     # Get the momentum transfer for a given excitation.
     singlies = length(map2)
 
@@ -153,7 +153,7 @@ between two different component occupied mode maps `map1` and `map2`. `g` is the
 
 """
 
-@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D,S}
+@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D, S}
 
     onproduct = 0
     for i in 1:length(map)
@@ -168,7 +168,7 @@ between two different component occupied mode maps `map1` and `map2`. `g` is the
     return onproduct
 end
 
-@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, ::Nothing, w) where {D,S}
+@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, ::Nothing, w) where {D, S}
     
     onproduct = 0
     for i in 1:length(map)
@@ -197,7 +197,7 @@ end
     return onproduct * u
 end
 
-@inline function extended_mom_transfer_diag(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D,S}
+@inline function extended_mom_transfer_diag(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D, S}
 
     onproduct = 0
     for i in 1:length(map)
