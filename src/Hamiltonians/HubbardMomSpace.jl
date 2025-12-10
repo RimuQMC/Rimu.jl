@@ -672,7 +672,7 @@ end
 end
 
 Base.size(ods::HubbardMomSpaceColumnOffdiagonals) = (ods.num_offdiagonals,)
-Base.eltype(::HubbardMomSpaceColumnOffdiagonals{TT,A}) where {TT,A} = Pair{A,TT}
+Base.eltype(::HubbardMomSpaceColumnOffdiagonals{A}) where {A} = Pair{A,Float64}
 
 function Base.getindex(column::HubbardMomSpaceColumnOffdiagonals, index)
     component_index, inner_index = _split_component_from_index(column, index)
