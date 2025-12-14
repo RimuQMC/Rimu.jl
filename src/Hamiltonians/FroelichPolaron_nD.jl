@@ -55,7 +55,6 @@ julia> dimension(FroehlichPolaronND(fs; alpha = 1,D = 2, mode_cutoff=5))
 
 See also [`OccupationNumberFS`](@ref), [`dimension`](@ref), [`AbstractHamiltonian`](@ref).
 """
-
 struct FroehlichPolaronND{
     T,
     M,
@@ -95,7 +94,7 @@ function FroehlichPolaronND(
 ) where {M, AT}
 
     if D != 1
-        vkc = (-1) * sqrt((gamma(((D-1)/2)) * alpha * 2^(D-(3/2)) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega)))
+        vkc = sqrt((gamma(((D-1)/2)) * alpha * 2^(D-(3/2)) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega)))
     else 
         vkc = 1
     end
@@ -179,7 +178,7 @@ LOStructure(::Type{<:FroehlichPolaronND}) = IsHermitian()
 starting_address(h::FroehlichPolaronND) = h.address
 
 function dimension(h::FroehlichPolaronND, address)
-    # takes into account `mode_cutoff` but not `momentum_cutoff`
+    
     M = num_modes(address)
     n = h.mode_cutoff
     return BigInt(n + 1)^BigInt(M)
@@ -208,8 +207,8 @@ function diagonal_element(col::FroehlichPolaronNDColumn)
         Nphonon += nm
         Pphonon += h.ks[m] * nm
     end
-    ek = dot(h.p - Pphonon, h.p - Pphonon) / (h.mass)
-    return h.omega * Nphonon + ek
+    ek = dot(h.p - Pphonon, h.p - Pphonon) / (2*h.mass)
+    return (h.omega * Nphonon)+ ek
 end
 
 
