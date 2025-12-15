@@ -35,13 +35,13 @@ V_k = (-1)\\sqrt{(\\Gamma(\\frac{D-1}{2})  \\alpha  2^{D-\\frac{3}{2}}  \\pi^{\\
 # Examples
 ```jldoctest
 julia> fs = OccupationNumberFS(0,0,0,0)
-OccupationNumberFS{4, UInt8}(0, 0, 0,0)
+OccupationNumberFS{4, UInt8}(0,0,0,0)
 
 julia> ham = FroehlichPolaronND(fs; D = 2,alpha = 1)
 FroehlichPolaronND(
   fs"|0 0 0 0⟩{8}",
   geometry = CubicGrid((2, 2), (true, true)),
-  alpha = 1.0, mass = 1.0, omega = 1.0, D = 2,vkc = -2.10781,
+  alpha = 1.0, mass = 1.0, omega = 1.0, D = 2,vkc = 2.10781,
   l = [1.0, 1.0], p = [0.0, 0.0],
   mode_cutoff = 255
 )
