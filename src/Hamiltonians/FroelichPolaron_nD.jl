@@ -34,6 +34,8 @@ V_k = (-1)\\sqrt{(\\Gamma(\\frac{D-1}{2})  \\alpha  2^{D-\\frac{3}{2}}  \\pi^{\\
 
 # Examples
 ```jldoctest
+julia> fs = OccupationNumberFS(0,0,0,0)
+OccupationNumberFS{4, UInt8}(0, 0, 0, 0)
 
 julia> ham = FroehlichPolaronND(fs; D = 2,alpha = 1)
 FroehlichPolaronND(
