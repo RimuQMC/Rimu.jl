@@ -1,5 +1,6 @@
 using Rimu
 using Test, Suppressor
+using SafeTestsets
 import Random
 
 using Rimu: is_finalized
@@ -366,4 +367,8 @@ end
     @test p.algorithm.shift_strategy.target_walkers == 100
     @test p.max_length == 200
     @test p.simulation_plan.wall_time == 23
+end
+
+@safetestset "Global Step Action" begin
+    include("global_step_action_test.jl")
 end

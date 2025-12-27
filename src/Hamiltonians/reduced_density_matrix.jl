@@ -258,6 +258,7 @@ If `normalize` is true (default), the vector is normalized before use.
 struct TestOneParticleDensity{T,V<:SVector{<:Any,T},M} <: AbstractObservable{T}
     test_vector::V
 end
+# note that this is non-allocating if v is already an SVector and normalize = false
 function TestOneParticleDensity(v; normalize=true)
     if normalize
         v = v / norm(v)
@@ -311,7 +312,7 @@ end
 struct TestOneParticleDensityOffdiagonals{C}
     column::C
 end
-Base.IteratorSize(::TestOneParticleDensityOffdiagonals) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:TestOneParticleDensityOffdiagonals}) = Base.SizeUnknown()
 # Base.length(od::TestOneParticleDensityOffdiagonals) = num_offdiagonals(od.column)
 function Base.iterate(od::TestOneParticleDensityOffdiagonals, state=(1, 1))
     c = od.column
