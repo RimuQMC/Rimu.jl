@@ -121,6 +121,30 @@ function post_step_action(p::ProjectedEnergy, single_state, _)
 end
 
 """
+    local_energy_strategy(hamiltonian) -> ProjectedEnergy <: PostStepStrategy
+
+Construct a `PostStepStrategy` that computes the local energy.
+After each step, compute and report the un-normalized local energy as
+`local_energy = dot(UniformProjector(), hamiltonian, dv)` and the normalization as
+`local_energy_normalization = dot(UniformProjector(), dv)`, where `dv` is the instantaneous
+coefficient vector. This is a special case of [`ProjectedEnergy`](@ref) with a uniform
+projector.
+
+In order to compute the local energy estimate from the result of a
+`ProjectorMonteCarloProblem` simulation, use
+[`projected_energy`](@ref) with `h_proj = :local_energy` and
+`vproj = :local_energy_normalization`.
+
+See also [`ProjectedEnergy`](@ref), [`projected_energy`](@ref), [`PostStepStrategy`](@ref).
+"""
+function local_energy_strategy(hamiltonian)
+    return ProjectedEnergy(
+        hamiltonian, UniformProjector();
+        hproj=:local_energy, vproj=:local_energy_normalization
+    )
+end
+
+"""
     SignCoherence(reference[; name=:coherence]) <: PostStepStrategy
 
 After each step, compute the proportion of configurations that have the same sign as they do
