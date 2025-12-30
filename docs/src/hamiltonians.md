@@ -92,6 +92,10 @@ DensityMatrixDiagonal
 SingleParticleExcitation
 TwoParticleExcitation
 ReducedDensityMatrix
+TestOneParticleDensity
+GradOneParticleDensity
+TestTwoParticleDensity
+GradTwoParticleDensity
 Momentum
 AxialAngularMomentumHO
 ```
