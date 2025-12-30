@@ -387,7 +387,7 @@ function GradOneParticleDensity(vec; zeta = 0, normalize=true)
     if normalize
         vec = vec/norm(vec[:,1])
     end
-    tv = SMatrix{dim + 1,M,T}(vec)
+    tv = SMatrix{size(vec)...,T}(vec)
     return GradOneParticleDensity{T,M,dim,Float64(zeta),typeof(tv)}(tv)
 end
 
@@ -666,8 +666,8 @@ end
 function Interfaces.num_offdiagonals(c::GradTwoParticleDensityColumn)
     return binomial(length(c.omm),2) * (binomial(num_modes(c.address),2)) - 1
 end
-function Interfaces.offdiagonals(c::GradTwoParticleDensityColumn{<:Any,<:Any,T}) where {T}
-    GradTwoParticleDensityOffdiagonals{T,typeof(c)}(c)
+function Interfaces.offdiagonals(c::GradTwoParticleDensityColumn{<:Any,A,T}) where {A,T}
+    GradTwoParticleDensityOffdiagonals{A,T,typeof(c)}(c)
 end
 struct GradTwoParticleDensityOffdiagonals{A,T,C}
     column::C
