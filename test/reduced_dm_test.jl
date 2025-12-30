@@ -5,7 +5,8 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     AdjointUnknown
-using Rimu.Hamiltonians: TestOneParticleDensity
+using Rimu.Hamiltonians: TestOneParticleDensity, GradOneParticleDensity,
+    TestTwoParticleDensity, GradTwoParticleDensity, fulleigvectwoparticledensity
 
 @testset "ReducedDensityMatrix" begin
     dvec_f = PDVec(FermiFS{2,4}(1, 1, 0, 0) => 0.5, FermiFS{2,4}(0, 0, 1, 1) => 0.5)
@@ -81,5 +82,88 @@ end
 
     # Check that the result of show can be pasted into the REPL
     opd2 = TestOneParticleDensity(x; normalize=false)
+    @test eval(Meta.parse(repr(opd2))) == opd2
+end
+
+@testset "GradOneParticleDensity" begin
+    address = BoseFS(1, 1, 1, 0, 0, 0)
+
+    h = HubbardRealSpace(address; t=1, u=0.2)
+    ep = ExactDiagonalizationProblem(h)
+    epsol = solve(ep)
+    gs = epsol.vectors[1]
+    x = zeros(Float64, 3, num_modes(address))
+    para = [1.0, 0.0]
+    for i in 1:num_modes(address)
+        x[1, i] = para[1]*exp(-para[2]*(i-3)^2)
+        x[2, i] = exp(-para[2]*(i-3)^2)
+        x[3, i] = -para[1] * (i-3)^2 * exp(-para[2]*(i-3)^2)
+    end
+    opd = GradOneParticleDensity(x; zeta = dot(gs,TestOneParticleDensity(x[1,:]),gs))
+    @test LOStructure(opd) isa IsHermitian
+    test_operator_interface(opd, address)
+    @test sum(abs(gs, opd, gs)) ≈ 0.0
+
+    # Check that the result of show can be pasted into the REPL
+    opd2 = GradOneParticleDensity(x; normalize=false)
+    @test eval(Meta.parse(repr(opd2))) == opd2
+end
+
+@testset "TestTwoParticleDensity" begin
+    address = FermiFS(1, 1, 1, 1, 0, 0, 0, 0)
+
+    h = HubbardRealSpace(address; t=1, w=-1.0)
+    ep = ExactDiagonalizationProblem(h)
+    epsol = solve(ep)
+    gs = epsol.vectors[1]
+    onerdmop = ReducedDensityMatrix(2)
+    onerdm = dot(gs, onerdmop, gs)
+    evs, evc = eigen(Hermitian(onerdm))
+    x = fulleigvectwoparticledensity(evc[:,end], 8)
+    opd = TestTwoParticleDensity(x)
+    @test LOStructure(opd) isa IsHermitian
+    test_operator_interface(opd, address)
+    @test dot(gs, opd, gs) ≈ maximum(evs)
+
+    Random.seed!(1234)
+    opdrand = TestOneParticleDensity(rand(num_modes(address)))
+    @test minimum(evs) ≤ dot(gs, opdrand, gs) ≤ maximum(evs)
+
+    # Check that the result of show can be pasted into the REPL
+    opd2 = TestTwoParticleDensity(x; normalize=false)
+    @test eval(Meta.parse(repr(opd2))) == opd2
+end
+
+@testset "GradOneParticleDensity" begin
+    address = FermiFS(1, 1, 1, 1, 0, 0, 0, 0)
+
+    h = ExtendedHubbardReal1D(address; t=1, v=-2, boundary_condition=:twisted)
+    ep = ExactDiagonalizationProblem(h)
+    epsol = solve(ep)
+    gs = epsol.vectors[1]
+    M = num_modes(address)
+    x = zeros(Float64, 3, M, M);
+    onerdmop = ReducedDensityMatrix(2)
+    onerdm = dot(gs, onerdmop, gs)
+    evs, evc = eigen(Hermitian(onerdm))
+    x[1, :, :] = fulleigvectwoparticledensity(evc[:,end], 8)
+    #gradient of 2-pdm w.r.t. parameters assumming the functional form: p[1]*exp(-p[2]*(i-j))
+    x[2, :, :] = x[1, :, :]
+    for i in 1:M, j in 1:i-1
+        # gradient w.r.t. parameter
+        if (i-j) <= 4
+            x[3, i, j] = -(i-j) * x[1, i, j]
+        else
+            x[3, i, j] = -(8 - (i-j)) * x[1, i, j]
+        end
+        x[3, j, i] = -x[3, i, j]
+    end
+    opd = GradTwoParticleDensity(x; zeta = dot(gs,TestTwoParticleDensity(x[1,:, :]),gs))
+    @test LOStructure(opd) isa IsHermitian
+    test_operator_interface(opd, address)
+    @test sum(dot(gs, opd, gs)) ≈ 0.0
+
+    # Check that the result of show can be pasted into the REPL
+    opd2 = GradOneParticleDensity(x; normalize=false)
     @test eval(Meta.parse(repr(opd2))) == opd2
 end
