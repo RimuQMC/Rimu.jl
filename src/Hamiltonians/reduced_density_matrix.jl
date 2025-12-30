@@ -324,12 +324,13 @@ end
 function Interfaces.num_offdiagonals(c::TestOneParticleDensityColumn)
     return length(c.omm) * (num_modes(c.address) - 1)
 end
-function Interfaces.offdiagonals(c::TestOneParticleDensityColumn)
-    TestOneParticleDensityOffdiagonals(c)
+function Interfaces.offdiagonals(c::TestOneParticleDensityColumn{A,T}) where {A,T}
+    TestOneParticleDensityOffdiagonals{A,T,typeof(c)}(c)
 end
-struct TestOneParticleDensityOffdiagonals{C}
+struct TestOneParticleDensityOffdiagonals{A,T,C} 
     column::C
 end
+Base.eltype(::TestOneParticleDensityOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
 Base.IteratorSize(::TestOneParticleDensityOffdiagonals) = Base.SizeUnknown()
 # Base.length(od::TestOneParticleDensityOffdiagonals) = num_offdiagonals(od.column)
 function Base.iterate(od::TestOneParticleDensityOffdiagonals, state=(1, 1))
@@ -430,15 +431,16 @@ end
 function Interfaces.num_offdiagonals(c::GradOneParticleDensityColumn)
     return length(c.omm) * (num_modes(c.address) - 1)
 end
-function Interfaces.offdiagonals(c::GradOneParticleDensityColumn{<:Any,<:Any,T}) where {T}
-    GradOneParticleDensityOffdiagonals{T,typeof(c)}(c)
+function Interfaces.offdiagonals(c::GradOneParticleDensityColumn{<:Any,A,T}) where {A,T}
+    GradOneParticleDensityOffdiagonals{A,T,typeof(c)}(c)
 end
-struct GradOneParticleDensityOffdiagonals{T,C}
+struct GradOneParticleDensityOffdiagonals{A,T,C}
     column::C
 end
+Base.eltype(::GradOneParticleDensityOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
 Base.IteratorSize(::GradOneParticleDensityOffdiagonals) = Base.SizeUnknown()
 # Base.length(od::GradOneParticleDensityOffdiagonals) = num_offdiagonals(od.column)
-function Base.iterate(od::GradOneParticleDensityOffdiagonals{T}, state=(1, 1)) where {T}
+function Base.iterate(od::GradOneParticleDensityOffdiagonals{<:Any,T}, state=(1, 1)) where {T}
     c = od.column
     omm = c.omm
     n_modes = num_modes(c.address)
@@ -529,14 +531,15 @@ function Interfaces.diagonal_element(::TestTwoParticleDensityColumn{<:Any,T}) wh
 end
 
 function Interfaces.num_offdiagonals(c::TestTwoParticleDensityColumn)
-    return length(c.omm) * (length(c.omm)-1) * (num_modes(c.address) - 2)
+    return binomial(length(c.omm),2) * (binomial(num_modes(c.address),2)) - 1
 end
-function Interfaces.offdiagonals(c::TestTwoParticleDensityColumn)
-    TestTwoParticleDensityOffdiagonals(c)
+function Interfaces.offdiagonals(c::TestTwoParticleDensityColumn{A,T}) where {A,T}
+    TestTwoParticleDensityOffdiagonals{A,T,typeof(c)}(c)
 end
-struct TestTwoParticleDensityOffdiagonals{C}
+struct TestTwoParticleDensityOffdiagonals{A,T,C}
     column::C
 end
+Base.eltype(::TestTwoParticleDensityOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
 Base.IteratorSize(::TestTwoParticleDensityOffdiagonals) = Base.SizeUnknown()
 # Base.length(od::TestTwoParticleDensityOffdiagonals) = num_offdiagonals(od.column)
 function Base.iterate(od::TestTwoParticleDensityOffdiagonals, state=(1, 1, 1, 1))
@@ -661,17 +664,18 @@ function Interfaces.diagonal_element(c::GradTwoParticleDensityColumn{
     return val::T
 end
 function Interfaces.num_offdiagonals(c::GradTwoParticleDensityColumn)
-    return length(c.omm) * (num_modes(c.address) - 1)
+    return binomial(length(c.omm),2) * (binomial(num_modes(c.address),2)) - 1
 end
 function Interfaces.offdiagonals(c::GradTwoParticleDensityColumn{<:Any,<:Any,T}) where {T}
     GradTwoParticleDensityOffdiagonals{T,typeof(c)}(c)
 end
-struct GradTwoParticleDensityOffdiagonals{T,C}
+struct GradTwoParticleDensityOffdiagonals{A,T,C}
     column::C
 end
+Base.eltype(::GradTwoParticleDensityOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
 Base.IteratorSize(::GradTwoParticleDensityOffdiagonals) = Base.SizeUnknown()
 # Base.length(od::GradTwoParticleDensityOffdiagonals) = num_offdiagonals(od.column)
-function Base.iterate(od::GradTwoParticleDensityOffdiagonals{T}, state=(1, 1, 1, 1)) where {T}
+function Base.iterate(od::GradTwoParticleDensityOffdiagonals{<:Any,T}, state=(1, 1, 1, 1)) where {T}
     c = od.column
     omm = c.omm
     n_modes = num_modes(c.address)
@@ -679,44 +683,40 @@ function Base.iterate(od::GradTwoParticleDensityOffdiagonals{T}, state=(1, 1, 1,
     #  ∑_{ij.kl} v_{ij}^* v_{kl} â^†_{i} â^†_{j} â_{l} â_{k} |address⟩
     while l <= length(omm)
         src2 = omm[l]
-        if !iszero(src2.occnum)
-            while k <= length(omm)
-                src1 = omm[k]
-                if !iszero(src2.occnum)
-                    if !(k == l && omm isa FermiOccupiedModeMap)
-                        while j<= n_modes
-                            while i <= n_modes
-                                if !(i == j && omm isa FermiOccupiedModeMap)
-                                    if !(i == src1.mode && j == src2.mode) || 
-                                        !(i == src2.mode && j == src1.mode)# omit same mode as they contribute to diagonal
-                                        # create new address with excitation
-                                        dst = find_mode(c.address, (i, j,))
-                                        address, val = excitation(c.address, dst, (src2, src1,))
-                                        if !iszero(val)
-                                            value = T((conj(c.operator.test_vector[2:end,i,j]) .* 
-                                                c.operator.test_vector[1,src1.mode, src2.mode] .+ 
-                                                c.operator.test_vector[2:end,src1.mode, src2.mode] .* 
-                                                conj(c.operator.test_vector[1,i,j])) .* 4 .* val)
-                                            # choose next state
-                                            if i + 1 <= n_modes
-                                                return (address, value), (i + 1, j, k, l)
-                                            else
-                                                return (address, value), (j + 1, j + 1, k, l)
-                                            end
-                                        end
+        while k <= length(omm)
+            src1 = omm[k]
+            if !(k == l && omm isa FermiOccupiedModeMap)
+                while j<= n_modes
+                    while i <= n_modes
+                        if !(i == j && omm isa FermiOccupiedModeMap)
+                            if !(i == src1.mode && j == src2.mode) || 
+                                !(i == src2.mode && j == src1.mode)# omit same mode as they contribute to diagonal
+                                # create new address with excitation
+                                dst = find_mode(c.address, (i, j,))
+                                address, val = excitation(c.address, dst, (src2, src1,))
+                                if !iszero(val)
+                                    value = T((conj(c.operator.test_vector[2:end,i,j]) .* 
+                                        c.operator.test_vector[1,src1.mode, src2.mode] .+ 
+                                        c.operator.test_vector[2:end,src1.mode, src2.mode] .* 
+                                        conj(c.operator.test_vector[1,i,j])) .* 4 .* val)
+                                    # choose next state
+                                    if i + 1 <= n_modes
+                                        return (address, value), (i + 1, j, k, l)
+                                    else
+                                        return (address, value), (j + 1, j + 1, k, l)
                                     end
                                 end
-                                i += 1
                             end
-                            j += 1
-                            i = j 
                         end
+                        i += 1
                     end
+                    j += 1
+                    i = j 
                 end
-                k += 1
-                j = 1
-                i = 1
             end
+            k += 1
+            j = 1
+            i = 1
         end
         l += 1
         k = l 
