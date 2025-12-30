@@ -123,6 +123,25 @@ function get_offdiagonal(
 end
 
 """
+    fulleigvectwoparticledensity(evc, M)
+
+Function to extract the full matrix for `f[i, j]` of the eigenvector `evc[k<l, l]` of
+``ReducedDensityMatrix``. Here, i & j run from 1 to M (total number of modes)
+"""
+function fulleigvectwoparticledensity(evc::Vector, M)
+    evc_0 = zeros(eltype(evc),M,M)
+    t = 1
+    for i in 1:M
+        for j in 1:i-1
+        evc_0[j,i] = evc[t]
+        evc_0[i,j] = -evc_0[j,i]
+        t += 1
+        end
+    end
+    return evc_0
+end
+
+"""
     ReducedDensityMatrix{T=Float64}(p) <: AbstractObservable{Matrix{T}}
 
 A matrix-valued operator that can be used to calculate the `p`-particle reduced density
@@ -245,7 +264,7 @@ function (calc!::ReducedDensityMatrixCalculcator!{TT, P})(result, pair) where {T
 end
 
 """
-     TestOneParticleDensity(v; normalize=true) <: AbstractOperator{typeof(v)}
+    TestOneParticleDensity(v; normalize=true) <: AbstractOperator{eltype(v)}
 A one particle operator constructed from a provided test vector `v`. An expectation value
 with this operator yields a lower bound on the largest eigenvalue (and an upper bound on the
 smallest eigenvalue) of the one-particle density matrix.
@@ -255,10 +274,9 @@ If `normalize` is true (default), the vector is normalized before use.
     ρ̂ = ∑_{ij} v_i^* v_j â^†_{i} â_{j}
 ```
 """
-struct TestOneParticleDensity{T,V<:SVector{<:Any,T},M} <: AbstractObservable{T}
+struct TestOneParticleDensity{T,V<:SVector{<:Any,T},M} <: AbstractOperator{T}
     test_vector::V
 end
-# note that this is non-allocating if v is already an SVector and normalize = false
 function TestOneParticleDensity(v; normalize=true)
     if normalize
         v = v / norm(v)
@@ -312,7 +330,7 @@ end
 struct TestOneParticleDensityOffdiagonals{C}
     column::C
 end
-Base.IteratorSize(::Type{<:TestOneParticleDensityOffdiagonals}) = Base.SizeUnknown()
+Base.IteratorSize(::TestOneParticleDensityOffdiagonals) = Base.SizeUnknown()
 # Base.length(od::TestOneParticleDensityOffdiagonals) = num_offdiagonals(od.column)
 function Base.iterate(od::TestOneParticleDensityOffdiagonals, state=(1, 1))
     c = od.column
@@ -340,6 +358,369 @@ function Base.iterate(od::TestOneParticleDensityOffdiagonals, state=(1, 1))
             i += 1
         end
         j += 1
+        i = 1
+    end
+    return nothing
+end
+
+"""
+     GradOneParticleDensity(v; normalize=true) <: AbstractOperator{SVector{m,T}}
+A one particle operator constructed from a provided test vector `v[1,:]` and 
+its gradient `v[2:m+1,:]` with respect to parameters `α₁,α₂,...,αₘ`. 
+An expectation value with this operator yields a gradient of the largest 
+eigenvalue of the one-particle density matrix. `T` is the eltype of `v`.
+If `normalize` is true (default), the vector is normalized before use.
+
+```math
+    \\partial_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* \\partial_{\\bar(α)} v_{j} + 
+        \\partial_{\\bar(α)} v_{i}^* v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
+```
+"""
+struct GradOneParticleDensity{T,M,D,Zeta,V<:SMatrix{<:Any,<:Any,T}} <: AbstractOperator{SVector{D,T}}
+    test_vector::V
+end
+function GradOneParticleDensity(vec; zeta = 0, normalize=true)
+    T = float(eltype(vec))
+    M = size(vec)[end]
+    dim = size(vec)[1] - 1
+    if normalize
+        vec = vec/norm(vec[:,1])
+    end
+    tv = SMatrix{dim + 1,M,T}(vec)
+    return GradOneParticleDensity{T,M,dim,Float64(zeta),typeof(tv)}(tv)
+end
+
+function Base.show(io::IO, topd::GradOneParticleDensity{<:Any,M}) where M
+    print(io, "GradOneParticleDensity(", topd.test_vector,)
+    if !(norm(topd.test_vector[:,1]) ≈ 1.0)
+        print(io, "; normalize=false")
+    end
+    print(io, ")")
+end
+
+Interfaces.LOStructure(::Type{<:GradOneParticleDensity}) = IsHermitian()
+function Interfaces.allows_address_type(
+    ::GradOneParticleDensity{T,M}, ::Type{B}
+) where {T,M,B}
+    B <: SingleComponentFockAddress && num_modes(B) == M
+end
+
+struct GradOneParticleDensityColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
+    operator::O
+    address::A
+    omm::OMM
+end
+function Interfaces.operator_column(o::GradOneParticleDensity, add::A) where {A}
+    allows_address_type(o, A) || throw(ArgumentError("Address type not allowed for this operator"))
+    omm = occupied_mode_map(add)
+    return GradOneParticleDensityColumn{typeof(o),A,eltype(o),typeof(omm)}(o, add, omm)
+end
+Interfaces.parent_operator(c::GradOneParticleDensityColumn) = c.operator
+Interfaces.starting_address(c::GradOneParticleDensityColumn) = c.address
+function Interfaces.diagonal_element(c::GradOneParticleDensityColumn{
+    <:GradOneParticleDensity{<:Any,M,<:Any,zeta},<:Any,T}) where {M,zeta,T}
+    val = zero(T)
+    Onr = onr(c.address)
+    @inbounds for i in 1:M
+        val += (conj(c.operator.test_vector[2:end,i]) * c.operator.test_vector[1,i] .+ 
+            conj.(c.operator.test_vector[1,i]) * c.operator.test_vector[2:end,i]) * (Onr[i] - zeta)
+    end
+    return val
+end
+function Interfaces.num_offdiagonals(c::GradOneParticleDensityColumn)
+    return length(c.omm) * (num_modes(c.address) - 1)
+end
+function Interfaces.offdiagonals(c::GradOneParticleDensityColumn{<:Any,<:Any,T}) where {T}
+    GradOneParticleDensityOffdiagonals{T,typeof(c)}(c)
+end
+struct GradOneParticleDensityOffdiagonals{T,C}
+    column::C
+end
+Base.IteratorSize(::GradOneParticleDensityOffdiagonals) = Base.SizeUnknown()
+# Base.length(od::GradOneParticleDensityOffdiagonals) = num_offdiagonals(od.column)
+function Base.iterate(od::GradOneParticleDensityOffdiagonals{T}, state=(1, 1)) where {T}
+    c = od.column
+    omm = c.omm
+    n_modes = num_modes(c.address)
+    i, j = state # i: mode number for creation, j: index in omm for annihilation
+    #  ∑_{ij} v_i^* v_j â^†_{i} â_{j} |address⟩
+    while j <= length(omm)
+        src = omm[j]
+        while i <= n_modes
+            if i != src.mode # omit same mode as they contribute to diagonal
+                # create new address with excitation
+                dst = find_mode(c.address, i)
+                address, value = excitation(c.address, (dst,), (src,))
+                if !iszero(value)
+                    val = T((conj(c.operator.test_vector[1,i]) * 
+                        c.operator.test_vector[2:end,src.mode] .+ 
+                        conj.(c.operator.test_vector[2:end,i]) * 
+                        c.operator.test_vector[1,src.mode]) * value)
+                    # choose next state
+                    if i + 1 <= n_modes
+                        return (address, val), (i + 1, j)
+                    else
+                        return (address, val), (1, j + 1)
+                    end
+                end
+            end
+            i += 1
+        end
+        j += 1
+        i = 1
+    end
+    return nothing
+end
+
+
+"""
+     TestTwoParticleDensity(v; normalize=true) <: AbstractOperator{eltype(v)}
+A two particle operator constructed from a provided test vector `v`. An expectation value
+with this operator yields a lower bound on the largest eigenvalue (and an upper bound on the
+smallest eigenvalue) of the two-particle density matrix.
+If `normalize` is true (default), the vector is normalized before use.
+
+```math
+    ρ̂ {(2)}= ∑_{ij,kl} v_{ij}^* v_{kl} â^†_{i} â^†_{j} â_{l} â_{k}
+```
+"""
+struct TestTwoParticleDensity{T,V<:SMatrix{<:Any,<:Any,T},M} <: AbstractOperator{T}
+    test_vector::V
+end
+function TestTwoParticleDensity(v; normalize=true)
+    if normalize
+        v = v / norm(v)
+    end
+    M = length(v[:,1])
+    T = float(eltype(v))
+    tv = SMatrix{M,M,T}(v)
+    return TestTwoParticleDensity{T,typeof(tv),M}(tv)
+end
+
+function Base.show(io::IO, topd::TestTwoParticleDensity)
+    print(io, "TestTwoParticleDensity(", topd.test_vector)
+    if !(norm(topd.test_vector) ≈ 1.0)
+        print(io, "; normalize=false")
+    end
+    print(io, ")")
+end
+
+Interfaces.LOStructure(::Type{<:TestTwoParticleDensity}) = IsHermitian()
+function Interfaces.allows_address_type(
+    ::TestTwoParticleDensity{T,A,M}, ::Type{B}
+) where {T,A,M,B}
+    B <: SingleComponentFockAddress && num_modes(B) == M
+end
+
+struct TestTwoParticleDensityColumn{A,T,O,OMM} <: AbstractOperatorColumn{A,T,O}
+    operator::O
+    address::A
+    omm::OMM
+end
+function Interfaces.operator_column(o::TestTwoParticleDensity, add::A) where {A}
+    allows_address_type(o, A) || throw(ArgumentError("Address type not allowed for this operator"))
+    omm = occupied_mode_map(add)
+    return TestTwoParticleDensityColumn{A,eltype(o),typeof(o),typeof(omm)}(o, add, omm)
+end
+Interfaces.parent_operator(c::TestTwoParticleDensityColumn) = c.operator
+Interfaces.starting_address(c::TestTwoParticleDensityColumn) = c.address
+function Interfaces.diagonal_element(::TestTwoParticleDensityColumn{<:Any,T}) where {T}
+    return zero(T)
+end
+
+function Interfaces.num_offdiagonals(c::TestTwoParticleDensityColumn)
+    return length(c.omm) * (length(c.omm)-1) * (num_modes(c.address) - 2)
+end
+function Interfaces.offdiagonals(c::TestTwoParticleDensityColumn)
+    TestTwoParticleDensityOffdiagonals(c)
+end
+struct TestTwoParticleDensityOffdiagonals{C}
+    column::C
+end
+Base.IteratorSize(::TestTwoParticleDensityOffdiagonals) = Base.SizeUnknown()
+# Base.length(od::TestTwoParticleDensityOffdiagonals) = num_offdiagonals(od.column)
+function Base.iterate(od::TestTwoParticleDensityOffdiagonals, state=(1, 1, 1, 1))
+    c = od.column
+    omm = c.omm
+    n_modes = num_modes(c.address)
+    i, j, k, l = state # i,j: mode number for creation, k,l: indices in omm for annihilation
+    #  ∑_{ij.kl} v_{ij}^* v_{kl} â^†_{i} â^†_{j} â_{l} â_{k} |address⟩
+    while l <= length(omm)
+        src2 = omm[l]
+        if !iszero(src2.occnum)
+            while k <= length(omm)
+                src1 = omm[k]
+                if !iszero(src1.occnum)
+                    if !(k == l && omm isa FermiOccupiedModeMap)
+                        while j<= n_modes
+                            while i <= n_modes
+                                if !(i == j && omm isa FermiOccupiedModeMap)
+                                    if !(i == src1.mode && j == src2.mode) || 
+                                        !(i == src2.mode && j == src1.mode)# omit same mode as they contribute to diagonal
+                                        # create new address with excitation
+                                        dst = find_mode(c.address, (i, j,))
+                                        address, value = excitation(c.address, dst, (src2, src1,))
+                                        if !iszero(value)
+                                            value *= 4*conj(c.operator.test_vector[i,j]) * 
+                                                c.operator.test_vector[src1.mode, src2.mode]
+                                            # choose next state
+                                            if i + 1 <= n_modes
+                                                return (address, value), (i + 1, j, k, l)
+                                            else
+                                                return (address, value), (j + 1, j + 1, k, l)
+                                            end
+                                        end
+                                    end
+                                end
+                                i += 1
+                            end
+                            j += 1
+                            i = j + 1
+                        end
+                    end
+                end
+                k += 1
+                j = 1
+                i = 1
+            end
+        end
+        l += 1
+        k = l + 1
+        j = 1
+        i = 1
+    end
+    return nothing
+end
+
+"""
+     GradTwoParticleDensity(v; normalize=true) <: AbstractOperator{SVector{m,T}}
+A two particle operator constructed from a provided test vector `v[1,:,:]` and 
+its gradient `v[2:m+1,:,:]` with respect to parameters `α₁,α₂,...,αₘ`. 
+An expectation value with this operator yields a gradient of the largest 
+eigenvalue of the two-particle density matrix. `T` is the eltype of `v`.
+If `normalize` is true (default), the vector is normalized before use.
+
+```math
+    \\partial_α ρ̂ {(2)}= ∑_{ij} (v_{i}^* \\partial_{\\bar(α)} v_{j} + 
+        \\partial_{\\bar(α)} v_{ij}^* v_{kl}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
+        ζ (δ_{ik}δ_{jl} + δ_{il}δ_{jk}))
+```
+"""
+struct GradTwoParticleDensity{T,M,D,Zeta,V<:SArray{<:Any,T}} <: AbstractOperator{SVector{D,T}}
+    test_vector::V
+end
+function GradTwoParticleDensity(vec; zeta = 0, normalize=true)
+    T = float(eltype(vec))
+    M = size(vec)[end]
+    dim = size(vec)[1] - 1
+    if normalize
+        vec = vec/norm(vec[1,:,:])
+    end
+    tv = SArray{Tuple{size(vec)...},T}(vec)
+    return GradTwoParticleDensity{T,M,dim,Float64(zeta),typeof(tv)}(tv)
+end
+
+function Base.show(io::IO, topd::GradTwoParticleDensity{<:Any,M}) where M
+    print(io, "GradTwoParticleDensity(", topd.test_vector,)
+    if !(norm(topd.test_vector[1,:,:]) ≈ 1.0)
+        print(io, "; normalize=false")
+    end
+    print(io, ")")
+end
+
+Interfaces.LOStructure(::Type{<:GradTwoParticleDensity}) = IsHermitian()
+function Interfaces.allows_address_type(
+    ::GradTwoParticleDensity{T,M}, ::Type{B}
+) where {T,M,B}
+    B <: SingleComponentFockAddress && num_modes(B) == M
+end
+
+struct GradTwoParticleDensityColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
+    operator::O
+    address::A
+    omm::OMM
+end
+function Interfaces.operator_column(o::GradTwoParticleDensity, add::A) where {A}
+    allows_address_type(o, A) || throw(ArgumentError("Address type not allowed for this operator"))
+    omm = occupied_mode_map(add)
+    return GradTwoParticleDensityColumn{typeof(o),A,eltype(o),typeof(omm)}(o, add, omm)
+end
+Interfaces.parent_operator(c::GradTwoParticleDensityColumn) = c.operator
+Interfaces.starting_address(c::GradTwoParticleDensityColumn) = c.address
+function Interfaces.diagonal_element(c::GradTwoParticleDensityColumn{
+    <:GradTwoParticleDensity{<:Any,M,<:Any,zeta},<:Any,T}) where {M,zeta,T}
+    val = zero(T)
+    for i in 1:M
+        for j in 1:M
+            val -= ((conj(c.operator.test_vector[2:end, i, j]) .* 
+                c.operator.test_vector[1, i, j]) .+ 
+                (c.operator.test_vector[2:end, i, j] .* 
+                conj(c.operator.test_vector[1, i, j]))) .* zeta
+        end
+    end
+    return val::T
+end
+function Interfaces.num_offdiagonals(c::GradTwoParticleDensityColumn)
+    return length(c.omm) * (num_modes(c.address) - 1)
+end
+function Interfaces.offdiagonals(c::GradTwoParticleDensityColumn{<:Any,<:Any,T}) where {T}
+    GradTwoParticleDensityOffdiagonals{T,typeof(c)}(c)
+end
+struct GradTwoParticleDensityOffdiagonals{T,C}
+    column::C
+end
+Base.IteratorSize(::GradTwoParticleDensityOffdiagonals) = Base.SizeUnknown()
+# Base.length(od::GradTwoParticleDensityOffdiagonals) = num_offdiagonals(od.column)
+function Base.iterate(od::GradTwoParticleDensityOffdiagonals{T}, state=(1, 1, 1, 1)) where {T}
+    c = od.column
+    omm = c.omm
+    n_modes = num_modes(c.address)
+    i, j, k, l = state # i,j: mode number for creation, k,l: indices in omm for annihilation
+    #  ∑_{ij.kl} v_{ij}^* v_{kl} â^†_{i} â^†_{j} â_{l} â_{k} |address⟩
+    while l <= length(omm)
+        src2 = omm[l]
+        if !iszero(src2.occnum)
+            while k <= length(omm)
+                src1 = omm[k]
+                if !iszero(src2.occnum)
+                    if !(k == l && omm isa FermiOccupiedModeMap)
+                        while j<= n_modes
+                            while i <= n_modes
+                                if !(i == j && omm isa FermiOccupiedModeMap)
+                                    if !(i == src1.mode && j == src2.mode) || 
+                                        !(i == src2.mode && j == src1.mode)# omit same mode as they contribute to diagonal
+                                        # create new address with excitation
+                                        dst = find_mode(c.address, (i, j,))
+                                        address, val = excitation(c.address, dst, (src2, src1,))
+                                        if !iszero(val)
+                                            value = T((conj(c.operator.test_vector[2:end,i,j]) .* 
+                                                c.operator.test_vector[1,src1.mode, src2.mode] .+ 
+                                                c.operator.test_vector[2:end,src1.mode, src2.mode] .* 
+                                                conj(c.operator.test_vector[1,i,j])) .* 4 .* val)
+                                            # choose next state
+                                            if i + 1 <= n_modes
+                                                return (address, value), (i + 1, j, k, l)
+                                            else
+                                                return (address, value), (j + 1, j + 1, k, l)
+                                            end
+                                        end
+                                    end
+                                end
+                                i += 1
+                            end
+                            j += 1
+                            i = j 
+                        end
+                    end
+                end
+                k += 1
+                j = 1
+                i = 1
+            end
+        end
+        l += 1
+        k = l 
+        j = 1
         i = 1
     end
     return nothing
