@@ -1,11 +1,10 @@
 """
     Report()
-    Report(df::DataFrame)
 
 Internal structure that holds the temporary reported values as well as metadata.
 It can be converted to a `DataFrame` with [`DataFrame(report::Report)`](@ref).
 
-See [`report!`](@ref), [`report_metadata!`](@ref), [`get_metadata`](@ref).
+See [`report!`](@ref), [`report_metadata!`](@ref), [`metadata`](@ref).
 """
 struct Report
     data::LittleDict{Symbol,Vector}
@@ -60,7 +59,7 @@ Convert the [`Report`](@ref) to a `DataFrame`. Metadata is added as metadata to 
 """
 function DataFrames.DataFrame(report::Report)
     df = DataFrame(report.data; copycols=false)
-    for (key, val) in get_metadata(report) # add metadata
+    for (key, val) in DataAPI.metadata(report) # add metadata
         DataFrames.metadata!(df, key, val)
     end
     return df
@@ -73,7 +72,7 @@ end
 Set metadata `key` to `value` in `report`. `key` and `value` are converted to `String`s.
 Alternatively, an iterable of key-value pairs or a `NamedTuple` can be passed.
 
-See also [`get_metadata`](@ref), [`report!`](@ref), [`Report`](@ref).
+See also [`metadata`](@ref), [`report!`](@ref), [`Report`](@ref).
 """
 function report_metadata!(report::Report, key, value)
     key = string(key)
@@ -90,18 +89,47 @@ function report_metadata!(report::Report, kvpairs::NamedTuple)
     return report_metadata!(report, pairs(kvpairs))
 end
 
-"""
-    get_metadata(report::Report, key)
+# """
+#     get_metadata(report::Report, key)
 
-Get metadata `key` from `report`. `key` is converted to a `String`.
+# Get metadata `key` from `report`. `key` is converted to a `String`.
+
+# See also [`report_metadata!`](@ref), [`Report`](@ref), [`report!`](@ref).
+# """
+# function get_metadata(report::Report, key)
+#     return report.meta[string(key)]
+# end
+# function get_metadata(report::Report)
+#     return report.meta
+# end
+
+DataAPI.metadatasupport(::Type{Report}) = (read=true, write=false)
+DataAPI.metadatakeys(report::Report) = collect(keys(report.meta))
+
+"""
+    metadata(report::Rimu.Report)
+    metadata(report::Rimu.PMCSimulation)
+Return metadata as a dictionary.
 
 See also [`report_metadata!`](@ref), [`Report`](@ref), [`report!`](@ref).
 """
-function get_metadata(report::Report, key)
-    return report.meta[string(key)]
-end
-function get_metadata(report::Report)
-    return report.meta
+DataAPI.metadata(report::Report) = report.meta
+"""
+    metadata(report::Rimu.Report, key, [default])
+    metadata(report::Rimu.PMCSimulation, key, [default])
+
+Get metadata `key` from `report`. `key` is converted to a `String`. Returns `default` if
+`key` is not found.
+
+See also [`report_metadata!`](@ref), [`Report`](@ref), [`report!`](@ref).
+"""
+DataAPI.metadata(report::Report, key, default) = get(report.meta, string(key), default)
+function DataAPI.metadata(report::Report, key; style::Bool=false)
+    if style
+        return (report.meta[string(key)], :default)
+    else
+        return report.meta[string(key)]
+    end
 end
 
 const SymbolOrString = Union{Symbol,AbstractString}

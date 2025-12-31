@@ -401,7 +401,7 @@ Random.seed!(1234)
             Rimu.report!(rp, :b, 4)
             Rimu.report!(rp, :b, 6)
             Rimu.report_metadata!(rp, :a, 1)
-            @test Rimu.get_metadata(rp, "a") == "1"
+            @test metadata(rp, "a") == "1"
             @test sprint(show, rp) == "Report:\n  b => [4, 6]\n metadata:\n  a => 1"
 
             # Tables integration

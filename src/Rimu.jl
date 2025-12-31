@@ -1,7 +1,9 @@
 module Rimu
 
 using Arrow: Arrow
-using DataFrames: DataFrames, DataFrame, metadata
+using DataAPI: DataAPI, metadata
+import DataAPI: metadata, metadatasupport, metadatakeys
+using DataFrames: DataFrames, DataFrame
 using DataStructures: DataStructures
 using LinearAlgebra: LinearAlgebra, dot, isdiag, eigvecs, norm, ⋅
 using OrderedCollections: OrderedCollections, LittleDict, freeze
@@ -73,6 +75,7 @@ export localpart, walkernumber
 export smart_logger, default_logger
 export ProjectorMonteCarloProblem, SimulationPlan, state_vectors
 export FCIQMC, num_replicas, num_spectral_states, num_overlaps, GramSchmidt
+export metadata, metadatasupport, metadatakeys
 
 function __init__()
     # Turn on smart logging once at runtime. Turn off with `default_logger()`.

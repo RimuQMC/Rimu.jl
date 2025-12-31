@@ -228,7 +228,7 @@ using Rimu: num_replicas, num_spectral_states
     @test sm.state.step[] == 100
     solve!(sm; last_step=200)
     @test sm.state.step[] == 200
-    @test sm.success == true == parse(Bool, (Rimu.get_metadata(sm.report, "success")))
+    @test sm.success == true == parse(Bool, (metadata(sm.report, "success")))
 
     # time out
     p = ProjectorMonteCarloProblem(h; last_step=500, wall_time=1e-3)
@@ -253,8 +253,8 @@ using Rimu: num_replicas, num_spectral_states
     @test sm.success == true
     @test sm.state.step[] == 600
     @test size(sm.df)[1] == 100 # the report was emptied
-    @test parse(Int, Rimu.get_metadata(sm.report, "test")) == 1
-    @test Rimu.get_metadata(sm.report, "post_step_strategy") == "(Rimu.Timer(),)"
+    @test parse(Int, metadata(sm.report, "test")) == 1
+    @test metadata(sm.report, "post_step_strategy") == "(Rimu.Timer(),)"
 
     # continue simulation and change replica strategy
     @test_throws ArgumentError solve!(sm; replica_strategy = NoStats(3))

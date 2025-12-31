@@ -430,7 +430,7 @@ function CommonSolve.solve!(sm::PMCSimulation;
 
     starting_time = time() + sm.elapsed_time # simulation time accumulates
     update_steps = max((last_step - initial_step) ÷ 200, 100) # log often but not too often
-    name = get_metadata(sm.report, "display_name")
+    name = DataAPI.metadata(sm.report, "display_name")
 
     @withprogress name = while !sm.aborted && !sm.success
         if time() - starting_time > simulation_plan.wall_time
@@ -450,3 +450,7 @@ function CommonSolve.solve!(sm::PMCSimulation;
     finalize_report!(reporting_strategy, report)
     return sm
 end
+
+DataAPI.metadata(sm::PMCSimulation, args...) = DataAPI.metadata(sm.report, args...)
+DataAPI.metadatasupport(::Type{PMCSimulation}) = DataAPI.metadatasupport(Report)
+DataAPI.metadatakeys(sm::PMCSimulation) = DataAPI.metadatakeys(sm.report)
