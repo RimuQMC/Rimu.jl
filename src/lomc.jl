@@ -226,7 +226,7 @@ function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", me
     )
     report = Report()
     report_default_metadata!(report, state)
-    report_metadata!(report, problem.metadata) # add user metadata
+    metadata!(report, problem.metadata) # add user metadata
 
     simulation = PMCSimulation(
         problem, state, report, false, false, false, "", 0.0

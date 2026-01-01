@@ -101,6 +101,16 @@ end
         )
         @test startswith(sprint(show, state_vectors(sm)), "2×1 Rimu.StateVectors")
         @test num_overlaps(sm) == num_overlaps(p) == num_overlaps(sm.state)
+        @test metadatasupport(typeof(sm)) == (read=true, write=true)
+        @test metadata(sm, "Rimu.PACKAGE_VERSION") == string(Rimu.PACKAGE_VERSION)
+        @test metadata(sm) === metadata(sm.report)
+        @test metadatakeys(sm) == keys(sm.report.meta)
+        @test metadata!(sm, "test_key", 123) === sm
+        @test metadata(sm, "test_key") == "123"
+        @test deletemetadata!(sm, "test_key") === sm
+        @test isnothing(metadata(sm, "test_key", nothing))
+        @test emptymetadata!(sm) === sm
+        @test isempty(keys(sm.report.meta))
     end
 
     @testset "Default DVec" begin

@@ -159,7 +159,7 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     )
     report = Report()
     report_default_metadata!(report, state)
-    report_metadata!(report, metadata) # add user metadata
+    metadata!(report, metadata) # add user metadata
 
     # Sanity checks.
     @assert allequal(i->state[i].algorithm, n_replicas * n_spectral) &&
@@ -191,11 +191,11 @@ num_overlaps(sm::PMCSimulation) = num_overlaps(sm.state)
 function report_simulation_status_metadata!(report::Report, sm::PMCSimulation)
     @unpack modified, aborted, success, message, elapsed_time = sm
 
-    report_metadata!(report, "modified", modified)
-    report_metadata!(report, "aborted", aborted)
-    report_metadata!(report, "success", success)
-    report_metadata!(report, "message", message)
-    report_metadata!(report, "elapsed_time", elapsed_time)
+    metadata!(report, "modified", modified)
+    metadata!(report, "aborted", aborted)
+    metadata!(report, "success", success)
+    metadata!(report, "message", message)
+    metadata!(report, "elapsed_time", elapsed_time)
     return report
 end
 
@@ -362,7 +362,7 @@ function CommonSolve.solve!(sm::PMCSimulation;
     if !isnothing(last_step)
         state = sm.state
         sm.state = @set state.simulation_plan.last_step = last_step
-        report_metadata!(sm.report, "laststep", last_step)
+        metadata!(sm.report, "laststep", last_step)
         reset_flags = true
     end
     if !isnothing(wall_time)
@@ -400,8 +400,8 @@ function CommonSolve.solve!(sm::PMCSimulation;
         empty!(report)
         report_default_metadata!(report, sm.state)
     end
-    isnothing(metadata) || report_metadata!(report, metadata) # add user metadata
-    isnothing(display_name) || report_metadata!(report, "display_name", display_name)
+    isnothing(metadata) || metadata!(report, metadata) # add user metadata
+    isnothing(display_name) || metadata!(report, "display_name", display_name)
 
     @unpack simulation_plan, step, reporting_strategy = sm.state
 
@@ -451,6 +451,19 @@ function CommonSolve.solve!(sm::PMCSimulation;
     return sm
 end
 
-DataAPI.metadata(sm::PMCSimulation, args...) = DataAPI.metadata(sm.report, args...)
+# Metadata support for DataAPI
 DataAPI.metadatasupport(::Type{PMCSimulation}) = DataAPI.metadatasupport(Report)
+DataAPI.metadata(sm::PMCSimulation, args...) = DataAPI.metadata(sm.report, args...)
 DataAPI.metadatakeys(sm::PMCSimulation) = DataAPI.metadatakeys(sm.report)
+function DataAPI.metadata!(sm::PMCSimulation, args...; kwargs...)
+    DataAPI.metadata!(sm.report, args...; kwargs...)
+    return sm
+end
+function DataAPI.deletemetadata!(sm::PMCSimulation, key)
+    DataAPI.deletemetadata!(sm.report, key)
+    return sm
+end
+function DataAPI.emptymetadata!(sm::PMCSimulation)
+    DataAPI.emptymetadata!(sm.report)
+    return sm
+end
