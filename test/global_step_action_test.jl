@@ -1,6 +1,6 @@
 using Test
 using Rimu
-using Rimu: GlobalStepAction, OperatorOverlaps, StrictPairIter
+using Rimu: GlobalStepAction, OperatorOverlaps, StrictPairIter, SingleState
 
 @testset "StrictPairIter" begin
     spi = StrictPairIter(4)
