@@ -24,7 +24,7 @@ Other
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
 - [`HamiltonianProduct`](@ref)
-- ['FroelichPolaronND'](@ref)
+- ['FroehlichPolaronND'](@ref)
 
 - [`MolecularHamiltonian`](@ref)
 

@@ -207,7 +207,7 @@ function diagonal_element(col::FroehlichPolaronNDColumn)
         Nphonon += nm
         Pphonon += h.ks[m] * nm
     end
-    ek = dot(h.p - Pphonon, h.p - Pphonon) / (2*h.mass)
+    ek = dot(h.p - Pphonon, h.p - Pphonon) / (h.mass)
     return (h.omega * Nphonon)+ ek
 end
 
