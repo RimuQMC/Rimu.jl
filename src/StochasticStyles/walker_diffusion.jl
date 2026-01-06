@@ -3,7 +3,7 @@
     ColumnStats{T,A,TT}()
 Create an empty struct to hold the data and stats of `AbstractOperatorColumn`.
 
-See also [`update_column_stats`](@ref).
+See also [`update_column_stats!`](@ref).
 """
 struct ColumnStats{T,A,TT<:AbstractFloat}
     addresses::Vector{A}
@@ -137,6 +137,15 @@ function hash(iwd::IsWalkerDiffusion{T,A,TT}, h::UInt64) where {T,A,TT}
     return res
 end
 
+"""
+    update_column_stats!(stats::ColumnStats, oc::AbstractOperatorColumn) -> stats
+    update_column_stats!(s::IsWalkerDiffusion, oc::AbstractOperatorColumn) -> s
+
+Update the [`ColumnStats`](@ref) `stats` with data from the operator column `oc`.
+Instantiates the column and computes statistics needed for the walker diffusion algorithm.
+
+See also [`IsWalkerDiffusion`](@ref).
+"""
 function update_column_stats!(stats::ColumnStats, oc::AbstractOperatorColumn)
     @unpack addresses, values, mod_cumsum = stats
 
