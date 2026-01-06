@@ -177,23 +177,6 @@ function update_column_stats!(s::IsWalkerDiffusion, column)
     return s
 end
 
-# """
-#     pick_random_from_cumsum(cumsum)
-
-# Pick a random index from `cumsum`, which should contain a cumulative sum (see `Base.cumsum`)
-# of values proportional to the probabilities with which the index should be picked.
-# """
-# @inline function pick_random_from_cumsum(cumsum)
-#     chosen = rand() * last(cumsum)
-#     i = 1
-#     @inbounds while true
-#         if chosen < cumsum[i]
-#             return i
-#         end
-#         i += 1
-#     end
-# end
-
 """
     RandomFromCumsumIterator(n, cumsum)
 Create an iterator that yields `n` random indices sampled from the cumulative sum `cumsum`.

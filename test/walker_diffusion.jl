@@ -3,8 +3,7 @@ using Test
 using Rimu.StochasticStyles
 using Random: seed!
 
-using Rimu.StochasticStyles: RandomFromCumsumIterator, ColumnStats, update_column_stats!,
-    pick_random_from_cumsum
+using Rimu.StochasticStyles: RandomFromCumsumIterator, ColumnStats, update_column_stats!
 
 @testset "ColumnStats" begin
     address = BoseFS(1,2,3)
