@@ -59,9 +59,8 @@ walker diffusion algorithm. An instance can be used with the `style` keyword arg
 * `splitting_threshold = 1.0`: Values above twice this number are split into multiple
   walkers.
 * `projection_threshold = 0.9 * splitting_threshold`: Values below this number are
-    stochastically projected to this value or zero.
-* `target_threshold = 1.1 * splitting_threshold`: Values above this number are
-    reduced to this value by merging walkers.
+    stochastically projected to the`target_threshold` or to zero.
+* `target_threshold = 1.1 * splitting_threshold`: Target value for stochastic projection.
 * `rel_spawning_threshold = 1.0`: If the walker number on a configuration is greater than
   or equal to the number of offdiagonals times this threshold, spawning is done
   deterministically. Should be set to 1 or smaller for best performance.
