@@ -23,6 +23,7 @@ module StochasticStyles
 
 using StaticArrays: StaticArrays
 using StatsBase: StatsBase, sample
+using Parameters: @unpack
 
 using ..Rimu: MultiScalar
 
@@ -33,10 +34,11 @@ import ..Interfaces:
 export
     StochasticStyle, IsStochasticInteger, IsDeterministic, IsStochasticWithThreshold,
     IsDynamicSemistochastic, StyleUnknown, Exact, WithReplacement, DynamicSemistochastic,
-    WithoutReplacement, Bernoulli
+    WithoutReplacement, Bernoulli, IsWalkerDiffusion
 
 include("spawning.jl")
 include("compression.jl")
 include("styles.jl")
+include("walker_diffusion.jl")
 
 end
