@@ -10,7 +10,7 @@ using Rimu.StochasticStyles:
     DynamicSemistochastic, IsStochastic2Pop
 
 @safetestset "Walker diffusion stochastic style tests" begin
-    include("walker_diffusion_tests.jl")
+    include("walker_diffusion.jl")
 end
 
 @testset "default_style" begin
