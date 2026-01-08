@@ -63,7 +63,6 @@ struct FroehlichPolaronND{
         G<:CubicGrid
     } <: AbstractHamiltonian{T}
     address::A
-    D::Int64
     geometry::G
     alpha::T
     mass::T
@@ -92,9 +91,9 @@ function FroehlichPolaronND(
 ) where {M, AT}
 
     if D != 1
-        vk_constant = sqrt((gamma(((D-1)/2)) * alpha * 2^(D-1) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega)))
+        vk_constant = sqrt((gamma(((D-1)/2)) * alpha * 2^(D-1) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega)*prod(l)))
     else 
-        vk_constant = 1
+        vk_constant = (2 * alpha /(l[1]))^0.5
     end
 
     
@@ -155,16 +154,16 @@ function FroehlichPolaronND(
 
 
     return FroehlichPolaronND{typeof(alpha), M,D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
-        address, D,geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant)
+        address ,geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant)
 end
 
 
-function Base.show(io::IO, h::FroehlichPolaronND)
+function Base.show(io::IO, h::FroehlichPolaronND{T,M,D}) where {T,M,D}  #put D is the show function
     io = IOContext(io, :compact => true)
     println(io, "FroehlichPolaronND(")
     println(io, "  ", starting_address(h), ",")
     println(io, "  geometry = ", h.geometry, ",")
-    println(io, "  alpha = ", h.alpha,", D = ", h.D,  ", mass = ", h.mass, ", omega = ", h.omega,",")
+    println(io, "  alpha = ", h.alpha,", D = ", D,  ", mass = ", h.mass, ", omega = ", h.omega,",")
     println(io, "  l = ", Float64.(h.l), ", p = ", Float64.(h.p),  ",")
     !isnothing(h.momentum_cutoff) && println(io, "  momentum_cutoff = ", h.momentum_cutoff, ",")
     println(io, "  mode_cutoff = ", isnothing(h.mode_cutoff) ? "nothing" : string(h.mode_cutoff))
@@ -224,14 +223,14 @@ Base.size(ods::FroehlichPolaronNDOffdiagonals) = (ods.num_offdiagonals,)
 
 @inline function calc_vk(h::FroehlichPolaronND{T,M,D}, kidx::Int) where {T,M,D}
     knorm = sqrt(dot(h.ks[kidx], h.ks[kidx]))
-    vol = prod(h.l)
+
     if D == 1
-        return (2 * h.alpha /(h.l[1]))^0.5
+        return h.vk_constant
     else
         if knorm == 0.0
             return 0.0
         else
-            return h.vk_constant * sqrt(1/ (knorm^(D-1) * vol))
+            return h.vk_constant * sqrt(1/ (knorm^(D-1)))
         end
     end
 end
@@ -240,8 +239,7 @@ end
 The phonon_op function applies the creation and annihalation operators on a chosen address and returns the new offdiagonal element.
 """
 
-@inline function phonon_op(h::FroehlichPolaronND, addr, chosen)
-    M = num_modes(addr)
+@inline function phonon_op(h::FroehlichPolaronND{T,M,D}, addr, chosen) where {T,M,D}
     if chosen ≤ M
         if !isnothing(h.mode_cutoff) && onr(addr)[chosen] ≥ h.mode_cutoff
             return addr => 0.0
@@ -263,7 +261,7 @@ The phonon_op function applies the creation and annihalation operators on a chos
 
     if !isnothing(h.momentum_cutoff)
         occ = onr(new_addr)
-        phononmom = zeros(length(h.ks[1]))
+        phononmom = zeros(D)
         for m in 1:M
             
             phononmom += h.ks[m] * occ[m]
