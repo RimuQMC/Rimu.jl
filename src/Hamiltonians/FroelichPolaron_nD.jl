@@ -40,7 +40,7 @@ julia> ham = FroehlichPolaronND(fs; D = 2,alpha = 1)
 FroehlichPolaronND(
   fs"|0 0 0 0⟩{8}",
   geometry = CubicGrid((2, 2), (true, true)),
-  alpha = 1.0, mass = 1.0, omega = 1.0,vk_constant = 2.50663,
+  alpha = 1.0, D = 2, mass = 1.0, omega = 1.0,
   l = [1.0, 1.0], p = [0.0, 0.0],
   mode_cutoff = 255
 )
@@ -63,6 +63,7 @@ struct FroehlichPolaronND{
         G<:CubicGrid
     } <: AbstractHamiltonian{T}
     address::A
+    D::Int64
     geometry::G
     alpha::T
     mass::T
@@ -154,7 +155,7 @@ function FroehlichPolaronND(
 
 
     return FroehlichPolaronND{typeof(alpha), M,D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
-        address, geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant)
+        address, D,geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant)
 end
 
 
@@ -163,7 +164,7 @@ function Base.show(io::IO, h::FroehlichPolaronND)
     println(io, "FroehlichPolaronND(")
     println(io, "  ", starting_address(h), ",")
     println(io, "  geometry = ", h.geometry, ",")
-    println(io, "  alpha = ", h.alpha, ", mass = ", h.mass, ", omega = ", h.omega, ",vk_constant = ",h.vk_constant,",")
+    println(io, "  alpha = ", h.alpha,", D = ", h.D,  ", mass = ", h.mass, ", omega = ", h.omega,",")
     println(io, "  l = ", Float64.(h.l), ", p = ", Float64.(h.p),  ",")
     !isnothing(h.momentum_cutoff) && println(io, "  momentum_cutoff = ", h.momentum_cutoff, ",")
     println(io, "  mode_cutoff = ", isnothing(h.mode_cutoff) ? "nothing" : string(h.mode_cutoff))
@@ -262,7 +263,7 @@ The phonon_op function applies the creation and annihalation operators on a chos
 
     if !isnothing(h.momentum_cutoff)
         occ = onr(new_addr)
-        phononmom = zeros(h.ks[1])
+        phononmom = zeros(length(h.ks[1]))
         for m in 1:M
             
             phononmom += h.ks[m] * occ[m]
