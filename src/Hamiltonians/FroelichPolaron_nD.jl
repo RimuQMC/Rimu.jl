@@ -40,7 +40,7 @@ julia> ham = FroehlichPolaronND(fs; D = 2,alpha = 1)
 FroehlichPolaronND(
   fs"|0 0 0 0⟩{8}",
   geometry = CubicGrid((2, 2), (true, true)),
-  alpha = 1.0, mass = 1.0, omega = 1.0,vk_constant = 2.10781,
+  alpha = 1.0, mass = 1.0, omega = 1.0,vk_constant = 2.50663,
   l = [1.0, 1.0], p = [0.0, 0.0],
   mode_cutoff = 255
 )
