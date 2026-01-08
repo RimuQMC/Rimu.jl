@@ -2,29 +2,28 @@
     FroehlichPolaronND(address::OccupationNumberFS{M}; kwargs...) <: AbstractHamiltonian
 
 
-The Froehlich polaron Hamiltonian for an N dimentional lattice with `M` momentum modes is given by
+The Froehlich polaron Hamiltonian for a `D` dimensional lattice with `M ` momentum modes is given by
 
 ```math
-H = (\\hat{p}_f - p)^2/m + \\omega \\hat{N} +  \\sum_{k}(v_k^{\\ast} \\hat{a}_k^\\dagger + v_k \\hat{a}_{-k})
+H = \\frac{(\\hat{p}_f - \\mathbf{p})^2}{m} + \\omega \\hat{N} +  \\sum_{\\mathbf{k}}(v_{\\mathbf{k}}^{\\ast} \\hat{a}_{\\mathbf{k}}^\\dagger + v_{\\mathbf{k}} \\hat{a}_{\\mathbf{k}})
 ```
 
 where ``p`` is the total momentum, ``p̂_f = Σ_k k âₖ^† âₖ`` is the momentum operator for the
 bosons, and ``k`` part of the momentum lattice with separation ``2π/l``. ``N̂`` is the number
 operator for the bosons.
 
-The LLP transformation on this hamiltonina has been slighly modified to avoid the i prefactor in ''V_k''
-We have in N dimentions,
+We have in N dimensions,
 
 ```math
-V_k = (-1)\\sqrt{(\\Gamma(\\frac{D-1}{2})  \\alpha  2^{D-\\frac{3}{2}}  \\pi^{\\frac{D-1}{2}}  \\omega^2) / (\\sqrt{m \\omega})(frac{1}{k^{D-1}V})
+V_k = (-1)\\sqrt{\\frac{(\\Gamma(\\frac{D-1}{2})  \\alpha  2^{D-1}  \\pi^{\\frac{D-1}{2}}  \\omega^2)} { (\\sqrt{m \\omega})}(\\frac{1}{k^{D-1}V})}
 ```
-
+All of the components of ``V_k`` that are not dependent on ``\\mathbf{k}`` are stored as a field in the Hamiltonian ``vk_constant``
 # Keyword Arguments
 
 * `p=[0.0,...]`: the total momentum vector ``p``.
-* 'D = 1': the dimension of the Hamiltonian
+* `D = 1`: the dimension of the Hamiltonian
 * `alpha=1.0`: the dimensionless coupling strength ``\\alpha``.
-* `mass=1.0`: the particle mass ``m``.
+* `mass=1.0`: the particle mass ``2m``.
 * `omega=1.0`: the oscillation frequency of the phonons ``ω``.
 * `l=[1.0,...]`: the N dimensional hypercube dimensions in real space ``l``. Provides scale parameter of the momentum
     lattice.
@@ -41,7 +40,7 @@ julia> ham = FroehlichPolaronND(fs; D = 2,alpha = 1)
 FroehlichPolaronND(
   fs"|0 0 0 0⟩{8}",
   geometry = CubicGrid((2, 2), (true, true)),
-  alpha = 1.0, mass = 1.0, omega = 1.0, D = 2,vkc = 2.10781,
+  alpha = 1.0, mass = 1.0, omega = 1.0,vk_constant = 2.10781,
   l = [1.0, 1.0], p = [0.0, 0.0],
   mode_cutoff = 255
 )
@@ -56,15 +55,14 @@ julia> dimension(FroehlichPolaronND(fs; alpha = 1,D = 2, mode_cutoff=5))
 See also [`OccupationNumberFS`](@ref), [`dimension`](@ref), [`AbstractHamiltonian`](@ref).
 """
 struct FroehlichPolaronND{
-    T,
-    M,
-    D,
-    A<:OccupationNumberFS{M}, 
-    MC,
-    G<:CubicGrid
+        T,
+        M, #num_modes
+        D, #dimension
+        A<:OccupationNumberFS{M}, 
+        MC,
+        G<:CubicGrid
     } <: AbstractHamiltonian{T}
     address::A
-    d:: Int64
     geometry::G
     alpha::T
     mass::T
@@ -74,7 +72,7 @@ struct FroehlichPolaronND{
     ks::SVector{M, SVector{D, T}}
     momentum_cutoff::Union{MC, Nothing}
     mode_cutoff::Union{Int, Nothing}
-    vkc::T
+    vk_constant::T
 end
 
 
@@ -89,24 +87,23 @@ function FroehlichPolaronND(
     p = zeros(D),
     momentum_cutoff = nothing,
     mode_cutoff = nothing,
-    vkc = 1,
-
+    
 ) where {M, AT}
 
     if D != 1
-        vkc = sqrt((gamma(((D-1)/2)) * alpha * 2^(D-(3/2)) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega)))
+        vk_constant = sqrt((gamma(((D-1)/2)) * alpha * 2^(D-1) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega)))
     else 
-        vkc = 1
+        vk_constant = 1
     end
 
     
     if length(l) != D || any(x -> x <= 0, l)
-        throw(ArgumentError("`l` must be a positive vector of size 1x$D"))
+        throw(ArgumentError("`l` must be a positive-valued vector of length $D"))
     end
 
     
     if abs(M^(1/D) - round(M^(1/D))) > 0.01 
-        throw(ArgumentError("M = $M is not a perfect $D th power"))
+        throw(ArgumentError("num_modes(address)==$M is not an integer power with exponent $D"))
     end
 
     alpha, mass, omega = promote(float(alpha), float(mass), float(omega))
@@ -156,8 +153,8 @@ function FroehlichPolaronND(
     
 
 
-    return FroehlichPolaronND{typeof(alpha), M, D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
-        address,D, geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vkc)
+    return FroehlichPolaronND{typeof(alpha), M,D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
+        address, geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant)
 end
 
 
@@ -166,7 +163,7 @@ function Base.show(io::IO, h::FroehlichPolaronND)
     println(io, "FroehlichPolaronND(")
     println(io, "  ", starting_address(h), ",")
     println(io, "  geometry = ", h.geometry, ",")
-    println(io, "  alpha = ", h.alpha, ", mass = ", h.mass, ", omega = ", h.omega, ", D = ", h.d, ",vkc = ",h.vkc,",")
+    println(io, "  alpha = ", h.alpha, ", mass = ", h.mass, ", omega = ", h.omega, ",vk_constant = ",h.vk_constant,",")
     println(io, "  l = ", Float64.(h.l), ", p = ", Float64.(h.p),  ",")
     !isnothing(h.momentum_cutoff) && println(io, "  momentum_cutoff = ", h.momentum_cutoff, ",")
     println(io, "  mode_cutoff = ", isnothing(h.mode_cutoff) ? "nothing" : string(h.mode_cutoff))
@@ -224,19 +221,23 @@ offdiagonals(col::FroehlichPolaronNDColumn) = FroehlichPolaronNDOffdiagonals(col
 Base.size(ods::FroehlichPolaronNDOffdiagonals) = (ods.num_offdiagonals,)
 
 
-@inline function calc_vk(h::FroehlichPolaronND, kidx::Int)
+@inline function calc_vk(h::FroehlichPolaronND{T,M,D}, kidx::Int) where {T,M,D}
     knorm = sqrt(dot(h.ks[kidx], h.ks[kidx]))
     vol = prod(h.l)
-    if h.d == 1
+    if D == 1
         return (2 * h.alpha /(h.l[1]))^0.5
     else
         if knorm == 0.0
             return 0.0
         else
-            return h.vkc * sqrt(1/ (knorm^(h.d-1) * vol))
+            return h.vk_constant * sqrt(1/ (knorm^(D-1) * vol))
         end
     end
 end
+
+"""
+The phonon_op function applies the creation and annihalation operators on a chosen address and returns the new offdiagonal element.
+"""
 
 @inline function phonon_op(h::FroehlichPolaronND, addr, chosen)
     M = num_modes(addr)
@@ -255,11 +256,13 @@ end
         amp = -vk * val
         
     end
+
+
     
 
     if !isnothing(h.momentum_cutoff)
         occ = onr(new_addr)
-        phononmom = zeros(h.d)
+        phononmom = zeros(h.ks[1])
         for m in 1:M
             
             phononmom += h.ks[m] * occ[m]
@@ -281,11 +284,6 @@ function Base.getindex(ods::FroehlichPolaronNDOffdiagonals, i::Int)
     return phonon_op(ods.h, ods.address, i)
 end
 
-
-function Base.iterate(ods::FroehlichPolaronNDOffdiagonals, state::Int=1)
-    state > ods.num_offdiagonals && return nothing
-    return ods[state], state + 1
-end
 
 function random_offdiagonal(col::FroehlichPolaronNDColumn)
     M2 = col.num_offdiagonals
