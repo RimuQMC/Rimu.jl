@@ -9,6 +9,14 @@ abstract type PMCAlgorithm end
 """
     GlobalStepAction
 Abstract type for actions to perform at each global step in the simulation.
+
+# Usage
+Pass an instance of a subtype of `GlobalStepAction` to the `global_step_actions` keyword
+argument of [`ProjectorMonteCarloProblem`](@ref). The action may report results at each step
+that are collected in the final report.
+
+# Extended Help
+## Implementing a new global step action
 Action objects should be callable, accepting a `Rimu.ReplicaState` and returning
 a `NamedTuple` of results to be reported. Reporting of action results is handled
 by the `reporting_strategy`.
@@ -199,6 +207,10 @@ function ProjectorMonteCarloProblem(
     display_name = "PMCSimulation",
     random_seed = true
 )
+    if global_step_actions isa GlobalStepAction
+        global_step_actions = (global_step_actions,)
+    end
+
     if !isnothing(walltime)
         @warn "The keyword argument `walltime` is deprecated. Use `wall_time` instead."
         wall_time = walltime

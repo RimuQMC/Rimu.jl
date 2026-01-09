@@ -4,24 +4,26 @@
 """
     OperatorOverlaps(operator; name=:operator_overlaps) <: GlobalStepAction
 Compute and report the overlaps ⟨ψ_i|O|ψ_j⟩ between all pairs of replica states
-for a given operator `O`. The results are returned in a `NamedTuple` with a single field
-with key `name` (default `:operator_overlaps`) and value array of overlaps.
+for a given operator `O` and for each spectral state as a matrix. The results are reported
+with the name given by the `name` keyword argument.
+
+See also [`GlobalStepAction`](@ref) and [`CoefficientVectorOverlaps`](@ref).
 """
 @kwdef struct OperatorOverlaps{OpType} <: GlobalStepAction
     operator::OpType
     name::Symbol = :operator_overlaps
 end
+OperatorOverlaps(op; name::Symbol=:operator_overlaps) = OperatorOverlaps(op,name)
+
 function (ooa::OperatorOverlaps)(state::ReplicaState)
     n_specs = num_spectral_states(state)
     n_reps = num_replicas(state)
     vectors = state_vectors(state) # 2D array: (replica, spectral state)
-    @assert n_specs == 1 "OperatorOverlaps currently only supports single spectral state simulations."
-    expvals = map(StrictPairIter(n_reps)) do (i, j)
-        bra = vectors[i,1]
-        ket = vectors[j,1]
-        dot(bra, ooa.operator, ket)
-    end
-    return NamedTuple((ooa.name => expvals,))
+    overlaps = [dot(vectors[i, s], ooa.operator, vectors[j, s]) for
+                (i, j) in StrictPairIter(n_reps),
+                s in 1:n_specs
+    ]
+    return NamedTuple((ooa.name => overlaps,))
 end
 
 # StrictPairIter yields tuples (a,b) with 1 <= a < b <= n for n items
@@ -59,4 +61,27 @@ function Base.iterate(iter::StrictPairIter, state::Tuple{Int,Int})
         end
     end
     return nothing
+end
+
+"""
+    CoefficientVectorOverlaps(; name=:coefficient_vector_overlaps) <: GlobalStepAction
+
+Compute and report the overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica states for each
+spectral state as a matrix. The results are reported with the name given by the `name`
+keyword argument.
+
+See also [`GlobalStepAction`](@ref) and [`OperatorOverlaps`](@ref).
+"""
+@kwdef struct CoefficientVectorOverlaps <: GlobalStepAction
+    name::Symbol = :coefficient_vector_overlaps
+end
+function (cvo::CoefficientVectorOverlaps)(state::ReplicaState)
+    n_specs = num_spectral_states(state)
+    n_reps = num_replicas(state)
+    vectors = state_vectors(state) # 2D array: (replica, spectral state)
+    overlaps = [dot(vectors[i,s], vectors[j,s]) for
+        (i,j) in StrictPairIter(n_reps),
+        s in 1:n_specs
+    ]
+    return NamedTuple((cvo.name => overlaps,))
 end
