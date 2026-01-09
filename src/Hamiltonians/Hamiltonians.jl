@@ -93,7 +93,7 @@ export ParticleNumberOperator
 export MolecularHamiltonian
 
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
-export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix, fulleigvectwoparticledensity
+export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
 export TestOneParticleDensity, GradOneParticleDensity, TestTwoParticleDensity, GradTwoParticleDensity
 export StringCorrelator, G2MomCorrelator
 
