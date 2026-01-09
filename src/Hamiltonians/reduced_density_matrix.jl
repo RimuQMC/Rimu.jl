@@ -356,7 +356,7 @@ and the operator is defined as below. A one particle operator constructed
 from a provided test vector `vec`.
 
 ```math
-    \\partial_{v_{j}} ρ̂ {(1)}= ∑_{i} (v_{i}^* â^†_{i} â_{j} - ζ δ_{i,j}) v_{i}^*)
+    ∂ρ̂ {(1)}/∂v_j = ∑_{i} (v_{i}^* â^†_{i} â_{j} - ζ δ_{i,j}) v_{i}^*)
 ```
 
 whereas, if `full_vector` is false, the input `v` must be a Tuple of 
@@ -367,8 +367,8 @@ parameters `α₁,α₂,...,αₘ`. `ζ` is a scalar (default 0). Vector `vⱼ(�
 has a fix functional form with parameters `̄α`.
 
 ```math
-    \\partial_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* \\partial_{\\bar(α)} v_{j} + 
-        \\partial_{\\bar(α)} v_{i}^* v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
+    \\partial_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* ∂v_j(̄α)/∂̄α + 
+        ∂v_i^*(̄α)/∂̄α v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
 ```
 """
 struct GradOneParticleDensity{T,Dim,Zeta,V<:SArray{<:Any,T}} <: AbstractOperator{SVector{Dim,T}}
@@ -667,7 +667,7 @@ and the operator is defined as below. A two particle operator constructed from
 a provided test vector `vec[1]`.
 
 ```math
-    \\partial_{} ρ̂ {(2)}= ∑_{ij} (v_{ij}^* (â^†_{i} â^†_{j} â_{l} â_{k} - 
+    ∂ρ̂ {(2)}/∂v_{kl} = ∑_{ij} (v_{ij}^* (â^†_{i} â^†_{j} â_{l} â_{k} - 
         ζ (δ_{ik}δ_{jl} + δ_{il}δ_{jk}) v_{ij}^*)
 ```
 
@@ -679,8 +679,8 @@ parameters `α₁,α₂,...,αₘ`. `ζ` is a scalar (default 0). Vector `vᵢ�
 has a fix functional form with parameters `̄α`.
 
 ```math
-    \\partial_α ρ̂ {(2)}= ∑_{ij, kl} (v_{ij}^* \\partial_{\\bar(α)} v_{kl} + 
-        \\partial_{\\bar(α)} v_{ij}^* v_{kl}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
+    ∂_α ρ̂ {(2)}= ∑_{ij, kl} (v_{ij}^* ∂v_{kl}(̄α)/∂̄α + 
+        ∂v_{ij}^*(̄α)/∂̄α v_{kl}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
         ζ (δ_{ik}δ_{jl} + δ_{il}δ_{jk}))
 ```
 Also, in `vᵢⱼ`, i and j are site indices (with i < j). 
