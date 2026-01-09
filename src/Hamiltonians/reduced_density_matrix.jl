@@ -455,8 +455,8 @@ Base.eltype(::GradOneParticleDensityOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
 Base.IteratorSize(::GradOneParticleDensityOffdiagonals) = Base.SizeUnknown()
 # Base.length(od::GradOneParticleDensityOffdiagonals) = num_offdiagonals(od.column)
 function Base.iterate(od::GradOneParticleDensityOffdiagonals{A,T}, state=(1, 1)) where {A,T}
-    n_modes = num_modes(A)
-    if T isa SVector{n_modes,<:Any}
+    dim = size(od.column.operator.test_vector)[end]
+    if length(T) == dim
         return fullvectorGradOneParticleDensity(od, state)
     else
         return fixfunctionGradOneParticleDensity(od, state)
@@ -657,7 +657,7 @@ function Base.iterate(od::TestTwoParticleDensityOffdiagonals, state=(2, 1, 2, 1)
 end
 
 """
-     GradTwoParticleDensity(vec; normalize=true) <: AbstractOperator{SVector{m,T}}
+     GradTwoParticleDensity(vec; normalize=true, full_vector=false) <: AbstractOperator{SVector{m,T}}
  
 An expectation value with this operator yields a gradient of the largest 
 eigenvalue of the two-particle density matrix. `T` is the eltype of `vec[1]`.
@@ -778,8 +778,8 @@ Base.eltype(::GradTwoParticleDensityOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
 Base.IteratorSize(::GradTwoParticleDensityOffdiagonals) = Base.SizeUnknown()
 # Base.length(od::GradTwoParticleDensityOffdiagonals) = num_offdiagonals(od.column)
 function Base.iterate(od::GradTwoParticleDensityOffdiagonals{A,T}, state=(2, 1, 2, 1)) where {A,T}
-    n_modes = num_modes(A)
-    if T isa SVector{Int(n_modes*(n_modes-1)/2),<:Any}
+    dim = size(od.column.operator.test_vector)[end]
+    if length(T) == dim
         return fullvectorGradTwoParticleDensity(od, state)
     else
         return fixfunctionGradTwoParticleDensity(od, state)
