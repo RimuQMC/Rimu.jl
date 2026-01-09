@@ -123,25 +123,6 @@ function get_offdiagonal(
 end
 
 """
-    fulleigvectwoparticledensity(evc, M)
-
-Function to extract the full matrix for `f[i, j]` of the eigenvector `evc[k<l, l]` of
-``ReducedDensityMatrix``. Here, i & j run from 1 to M (total number of modes)
-"""
-function fulleigvectwoparticledensity(evc::Vector, M)
-    evc_0 = zeros(eltype(evc),M,M)
-    t = 1
-    for i in 1:M
-        for j in 1:i-1
-        evc_0[j,i] = evc[t]
-        evc_0[i,j] = -evc_0[j,i]
-        t += 1
-        end
-    end
-    return evc_0
-end
-
-"""
     ReducedDensityMatrix{T=Float64}(p) <: AbstractObservable{Matrix{T}}
 
 A matrix-valued operator that can be used to calculate the `p`-particle reduced density
