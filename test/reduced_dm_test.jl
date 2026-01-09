@@ -6,7 +6,7 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     AdjointUnknown
 using Rimu.Hamiltonians: TestOneParticleDensity, GradOneParticleDensity,
-    TestTwoParticleDensity, GradTwoParticleDensity, fulleigvectwoparticledensity, index
+    TestTwoParticleDensity, GradTwoParticleDensity, index
 
 @testset "ReducedDensityMatrix" begin
     dvec_f = PDVec(FermiFS{2,4}(1, 1, 0, 0) => 0.5, FermiFS{2,4}(0, 0, 1, 1) => 0.5)
