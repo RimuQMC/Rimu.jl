@@ -429,9 +429,10 @@ end
 Interfaces.parent_operator(c::GradOneParticleDensityColumn) = c.operator
 Interfaces.starting_address(c::GradOneParticleDensityColumn) = c.address
 function Interfaces.diagonal_element(c::GradOneParticleDensityColumn{
-    <:GradOneParticleDensity{<:Any,<:Any,zeta},<:Any,T}) where {zeta,T}
+    <:GradOneParticleDensity{<:Any,Dim,zeta},<:Any,T}) where {Dim,zeta,T}
     Onr = onr(c.address)
-    if T isa SVector{num_modes(c.address),<:Any}
+    M = num_modes(c.address)
+    if Dim == M
         val = T(conj(c.operator.test_vector) .* (Onr .- zeta))
     else
         val = zero(T)
@@ -572,7 +573,7 @@ function Interfaces.allows_address_type(
     ::TestTwoParticleDensity{T,A,Dim}, ::Type{B}
 ) where {T,A,Dim,B}
     M = num_modes(B)
-    return B <: SingleComponentFockAddress && Int(M*(M-1)/2) == Dim
+    return B <: SingleComponentFockAddress && binomial(M,2) == Dim
 end
 
 struct TestTwoParticleDensityColumn{A,T,O,OMM} <: AbstractOperatorColumn{A,T,O}
