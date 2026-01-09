@@ -221,7 +221,7 @@ end
 function step_stats(::IsWalkerDiffusion{T}) where {T}
     z = zero(T) # the local energy carries full signs and can be complex
     rz = real(zero(T)) # the stoquastic energy is non-negative and real
-    names = (:local_energy, :coefficient_sum, :stoquastic_energy, :deaths, :walkers,
+    names = (:proto_local_energy, :coefficient_sum, :stoquastic_energy, :deaths, :walkers,
         :single_walkers, :exact_steps, :inexact_steps)
     values = MultiScalar(z, z, rz, 0, 0, 0, 0, 0)
     return names, values
