@@ -346,7 +346,7 @@ function Base.iterate(od::TestOneParticleDensityOffdiagonals, state=(1, 1))
 end
 
 """
-     GradOneParticleDensity(vec; normalize=true) <: AbstractOperator{SVector{m,T}}
+     GradOneParticleDensity(vec; normalize=true, full_vector=false) <: AbstractOperator{SVector{m,T}}
  
 An expectation value with this operator yields a gradient of the largest 
 eigenvalue of the one-particle density matrix. `T` is the eltype of `v`.
@@ -384,16 +384,24 @@ function GradOneParticleDensity(vec; zeta = 0, normalize=true, full_vector=false
         dim = M
         tv = SVector{M,T}(vec)
     else
-        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix})
-            error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix).")
+        println(typeof(vec))
+        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa <:AbstractMatrix) 
+            error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix) or a matrix.")
         end
         T = float(eltype(vec[1]))
-        M = length(vec[1])
-        dim = length(vec[2][:,1])
-        v = zeros(T, dim + 1, M)
+        if vec isa Tuple{<:AbstractVector,<:AbstractMatrix}
+            M = length(vec[1])
+            dim = length(vec[2][:,1])
+            v = zeros(T, dim + 1, M)
+            v[1,:] = vec[1]
+            v[2:end,:] = vec[2]
+        else
+            M = length(vec[:,2])
+            dim = length(vec[:,1])
+            v = vec
+        end
         if normalize
-            v[1,:] = vec[1]/norm(vec[1])
-            v[2:end,:] = vec[2]/norm(vec[1])
+            v = v/norm(v[1, :])
         end
         tv = SMatrix{size(v)...,T}(v)
     end
@@ -413,7 +421,7 @@ function Interfaces.allows_address_type(
     od::GradOneParticleDensity{T}, ::Type{B}
 ) where {T,B}
     M = num_modes(B)
-    B <: SingleComponentFockAddress && size(od.test_vector)[end] == M
+    B <: SingleComponentFockAddress && size(od.test_vector)[2] == M
 end
 
 struct GradOneParticleDensityColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
@@ -573,7 +581,7 @@ function Interfaces.allows_address_type(
     ::TestTwoParticleDensity{T,A,Dim}, ::Type{B}
 ) where {T,A,Dim,B}
     M = num_modes(B)
-    return B <: SingleComponentFockAddress && binomial(M,2) == Dim
+    return B <: SingleComponentFockAddress && Dim == binomial(M,2)
 end
 
 struct TestTwoParticleDensityColumn{A,T,O,OMM} <: AbstractOperatorColumn{A,T,O}
@@ -698,19 +706,23 @@ function GradTwoParticleDensity(vec; zeta = 0, normalize=true, full_vector=false
         end
         tv = SVector{dim,T}(vec)
     else
-        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix})
-            error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix).")
+        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa <:AbstractMatrix)
+            error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix) or a matrix.")
         end
         T = float(eltype(vec[1]))
-        S = length(vec[1])
-        dim = length(vec[2][:,1])
-        v = zeros(T, dim + 1, S)
-        v[1, :] = vec[1]
-        v[2:end, :] = vec[2]
-        if normalize
-            v = v/norm(vec[1])
+        if vec isa Tuple{<:AbstractVector,<:AbstractMatrix}
+            S = length(vec[1])
+            dim = length(vec[2][:,1])
+            v = zeros(T, dim + 1, S)
+            v[1, :] = vec[1]
+            v[2:end, :] = vec[2]
         else
-            
+            S = length(vec[:,2])
+            dim = length(vec[:,1])
+            v = vec
+        end
+        if normalize
+            v = v/norm(v[1, :])
         end
         tv = SMatrix{dim+1,S,T}(v)
     end
