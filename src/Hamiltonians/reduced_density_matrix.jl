@@ -385,7 +385,7 @@ function GradOneParticleDensity(vec; zeta = 0, normalize=true, full_vector=false
         tv = SVector{M,T}(vec)
     else
         println(typeof(vec))
-        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa <:AbstractMatrix) 
+        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa AbstractMatrix) 
             error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix) or a matrix.")
         end
         T = float(eltype(vec[1]))
@@ -706,7 +706,7 @@ function GradTwoParticleDensity(vec; zeta = 0, normalize=true, full_vector=false
         end
         tv = SVector{dim,T}(vec)
     else
-        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa <:AbstractMatrix)
+        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa AbstractMatrix)
             error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix) or a matrix.")
         end
         T = float(eltype(vec[1]))
