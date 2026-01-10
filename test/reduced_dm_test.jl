@@ -121,14 +121,14 @@ end
     onerdmop = ReducedDensityMatrix(2)
     onerdm = dot(gs, onerdmop, gs)
     evs, evc = eigen(Hermitian(onerdm))
-    x = evc[:, end];
+    x = round.(evc[:, end], digits=12);
     opd = TestTwoParticleDensity(x)
     @test LOStructure(opd) isa IsHermitian
     test_operator_interface(opd, address)
     @test dot(gs, opd, gs) ≈ 2 * maximum(evs)
 
     Random.seed!(1234)
-    opdrand = TestTwoParticleDensity(rand(10,10))
+    opdrand = TestTwoParticleDensity(rand(45))
     @test minimum(evs) ≤ dot(gs, opdrand, gs) ≤ 2 * maximum(evs)
 
     # Check that the result of show can be pasted into the REPL
@@ -149,16 +149,17 @@ end
     onerdm = dot(gs, onerdmop, gs)
     evs, evc = eigen(Hermitian(onerdm))
     #gradient of 2-pdm w.r.t. parameters assumming the functional form: p[1]*exp(-p[2]*(i-j))
-    y[1, :] = x[1, :]
+    y = zeros(eltype(evc[:,end]), 2, length(evc[:,end]))
+    y[1, :] = evc[:,end]
     for i in 1:M, j in 1:i-1
         # gradient w.r.t. parameter
         if (i-j) <= M/2
-            y[2, index((i, j))] = -(i-j) * x[1, index((i, j))]
+            y[2, index((i, j))] = -(i-j) * y[1, index((i, j))]
         else
-            y[2, index((i, j))] = -(8 - (i-j)) * x[1, index((i, j))]
+            y[2, index((i, j))] = -(8 - (i-j)) * y[1, index((i, j))]
         end
     end
-    x = (evc[:, end], y,)
+    x = (round.(evc[:, end], digits=12), round.(y, digits=12),)
     opd = GradTwoParticleDensity(x; 
         zeta = dot(gs,TestTwoParticleDensity(evc[:, end]),gs))
     @test LOStructure(opd) isa IsHermitian
