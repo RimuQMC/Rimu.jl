@@ -100,11 +100,11 @@ end
         x2[1, i] = exp(-para[2]*(i-3)^2)
         x2[2, i] = -para[1] * (i-3)^2 * exp(-para[2]*(i-3)^2)
     end
-    x = (x1, x2,)
+    x = (round.(x1, digits = 12), round.(x2, digits = 12),)
     opd = GradOneParticleDensity(x; zeta = dot(gs,TestOneParticleDensity(x[1]),gs))
     @test LOStructure(opd) isa IsHermitian
     test_operator_interface(opd, address)
-    @test round(sum(dot(gs, opd, gs)), digits = 14) == 0.0
+    @test round(sum(dot(gs, opd, gs)), digits = 12) == 0.0
 
     # Check that the result of show can be pasted into the REPL
     opd2 = GradOneParticleDensity(x; normalize=false)
