@@ -718,7 +718,7 @@ function GradTwoParticleDensity(vec; zeta = 0, normalize=true, full_vector=false
             v[2:end, :] = vec[2]
         else
             S = length(vec[:,2])
-            dim = length(vec[:,1])
+            dim = length(vec[:,1]) - 1
             v = vec
         end
         if normalize
