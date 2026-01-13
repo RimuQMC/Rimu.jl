@@ -730,7 +730,7 @@ end
 
 function Base.show(io::IO, topd::GradTwoParticleDensity{<:Any,M}) where M
     print(io, "GradTwoParticleDensity(", topd.test_vector,)
-    if !(norm(topd.test_vector[1,:,:]) ≈ 1.0)
+    if !(norm(topd.test_vector[1,:]) ≈ 1.0)
         print(io, "; normalize=false")
     end
     print(io, ")")
