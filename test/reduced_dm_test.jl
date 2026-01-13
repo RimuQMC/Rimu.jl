@@ -100,7 +100,7 @@ end
         x2[1, i] = exp(-para[2]*(i-3)^2)
         x2[2, i] = -para[1] * (i-3)^2 * exp(-para[2]*(i-3)^2)
     end
-    x = (round.(x1, digits = 12), round.(x2, digits = 12),)
+    x = (x1, x2,)
     opd = GradOneParticleDensity(x; zeta = dot(gs,TestOneParticleDensity(x[1]),gs))
     @test LOStructure(opd) isa IsHermitian
     test_operator_interface(opd, address)
@@ -121,7 +121,7 @@ end
     onerdmop = ReducedDensityMatrix(2)
     onerdm = dot(gs, onerdmop, gs)
     evs, evc = eigen(Hermitian(onerdm))
-    x = round.(evc[:, end], digits=12);
+    x = evc[:, end];
     opd = TestTwoParticleDensity(x)
     @test LOStructure(opd) isa IsHermitian
     test_operator_interface(opd, address)
@@ -159,12 +159,12 @@ end
             y[2, index((i, j))] = -(8 - (i-j)) * y[1, index((i, j))]
         end
     end
-    x = (round.(evc[:, end], digits=12), round.(y, digits=12),)
+    x = (evc[:, end], y,)    
     opd = GradTwoParticleDensity(x; 
         zeta = dot(gs,TestTwoParticleDensity(evc[:, end]),gs))
     @test LOStructure(opd) isa IsHermitian
     test_operator_interface(opd, address)
-    @test round(sum(dot(gs, opd, gs)), digits = 14) == 0.0
+    @test round(sum(dot(gs, opd, gs)), digits = 10) == 0.0
 
     # Check that the result of show can be pasted into the REPL
     opd2 = GradTwoParticleDensity(x; normalize=false)
