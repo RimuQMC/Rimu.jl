@@ -132,7 +132,7 @@ end
     @test minimum(evs) ≤ dot(gs, opdrand, gs) ≤ 2 * maximum(evs)
 
     # Check that the result of show can be pasted into the REPL
-    opd2 = TestTwoParticleDensity(x; normalize=false)
+    opd2 = TestTwoParticleDensity(zero(x).+1.0 ; normalize=false)
     @test eval(Meta.parse(repr(opd2))) == opd2
 end
 
@@ -167,6 +167,6 @@ end
     @test round(sum(dot(gs, opd, gs)), digits = 10) == 0.0
 
     # Check that the result of show can be pasted into the REPL
-    opd2 = GradTwoParticleDensity(x; normalize=false)
+    opd2 = GradTwoParticleDensity((zero(x[1]).+1.0, zero(x[2]).+1,); normalize=false)
     @test eval(Meta.parse(repr(opd2))) == opd2
 end
