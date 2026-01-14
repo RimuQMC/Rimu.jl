@@ -346,7 +346,7 @@ function Base.iterate(od::TestOneParticleDensityOffdiagonals, state=(1, 1))
 end
 
 """
-     GradOneParticleDensity(vec; normalize=true, full_vector=false) <: AbstractOperator{SVector{m,T}}
+    OneParticleDensityGradient(vec; normalize=true, full_vector=false) <: AbstractOperator{SVector{m,T}}
  
 An expectation value with this operator yields a gradient of the largest 
 eigenvalue of the one-particle density matrix. `T` is the eltype of `v`.
@@ -371,18 +371,17 @@ has a fix functional form with parameters `̄α`.
         ∂v_i^*(̄α)/∂̄α v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
 ```
 """
-struct GradOneParticleDensity{T,Dim,Zeta,V<:SArray{<:Any,T}} <: AbstractOperator{SVector{Dim,T}}
+struct OneParticleDensityGradient{T,Dim,Zeta,V<:SArray{<:Any,T}} <: AbstractOperator{SVector{Dim,T}}
     test_vector::V
 end
-function GradOneParticleDensity(vec; zeta = 0, normalize=true, full_vector=false)
+function OneParticleDensityGradient(vec; zeta = 0, normalize=true, full_vector=false)
     if full_vector
-        T = float(eltype(vec))
-        M = length(vec)
+        T = float(eltype(ve[1]))
+        dim = length(vec[1])
         if normalize
-            vec = vec/norm(vec)
+            vec[1] .= vec[1]/norm(vec[1])
         end
-        dim = M
-        tv = SVector{M,T}(vec)
+        tv = SVector{dim,T}(vec[1])
     else
         if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa AbstractMatrix) 
             error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix) or a matrix.")
@@ -404,39 +403,39 @@ function GradOneParticleDensity(vec; zeta = 0, normalize=true, full_vector=false
         end
         tv = SMatrix{size(v)...,T}(v)
     end
-    return GradOneParticleDensity{T,dim,Float64(zeta),typeof(tv)}(tv)
+    return OneParticleDensityGradient{T,dim,Float64(zeta),typeof(tv)}(tv)
 end
 
-function Base.show(io::IO, topd::GradOneParticleDensity{<:Any,M}) where M
-    print(io, "GradOneParticleDensity(", topd.test_vector,)
+function Base.show(io::IO, topd::OneParticleDensityGradient{<:Any,M}) where M
+    print(io, "OneParticleDensityGradient(", topd.test_vector,)
     if !(norm(topd.test_vector[:,1]) ≈ 1.0)
         print(io, "; normalize=false")
     end
     print(io, ")")
 end
 
-Interfaces.LOStructure(::Type{<:GradOneParticleDensity}) = IsHermitian()
+Interfaces.LOStructure(::Type{<:OneParticleDensityGradient}) = IsHermitian()
 function Interfaces.allows_address_type(
-    od::GradOneParticleDensity{T}, ::Type{B}
+    od::OneParticleDensityGradient{T}, ::Type{B}
 ) where {T,B}
     M = num_modes(B)
     B <: SingleComponentFockAddress && size(od.test_vector)[2] == M
 end
 
-struct GradOneParticleDensityColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
+struct OneParticleDensityGradientColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
     operator::O
     address::A
     omm::OMM
 end
-function Interfaces.operator_column(o::GradOneParticleDensity, add::A) where {A}
+function Interfaces.operator_column(o::OneParticleDensityGradient, add::A) where {A}
     allows_address_type(o, A) || throw(ArgumentError("Address type not allowed for this operator"))
     omm = occupied_mode_map(add)
-    return GradOneParticleDensityColumn{typeof(o),A,eltype(o),typeof(omm)}(o, add, omm)
+    return OneParticleDensityGradientColumn{typeof(o),A,eltype(o),typeof(omm)}(o, add, omm)
 end
-Interfaces.parent_operator(c::GradOneParticleDensityColumn) = c.operator
-Interfaces.starting_address(c::GradOneParticleDensityColumn) = c.address
-function Interfaces.diagonal_element(c::GradOneParticleDensityColumn{
-    <:GradOneParticleDensity{<:Any,Dim,zeta},<:Any,T}) where {Dim,zeta,T}
+Interfaces.parent_operator(c::OneParticleDensityGradientColumn) = c.operator
+Interfaces.starting_address(c::OneParticleDensityGradientColumn) = c.address
+function Interfaces.diagonal_element(c::OneParticleDensityGradientColumn{
+    <:OneParticleDensityGradient{<:Any,Dim,zeta},<:Any,T}) where {Dim,zeta,T}
     Onr = onr(c.address)
     M = num_modes(c.address)
     if Dim == M
@@ -450,29 +449,29 @@ function Interfaces.diagonal_element(c::GradOneParticleDensityColumn{
     end
     return val
 end
-function Interfaces.num_offdiagonals(c::GradOneParticleDensityColumn)
+function Interfaces.num_offdiagonals(c::OneParticleDensityGradientColumn)
     return length(c.omm) * (num_modes(c.address) - 1)
 end
-function Interfaces.offdiagonals(c::GradOneParticleDensityColumn{<:Any,A,T}) where {A,T}
-    GradOneParticleDensityOffdiagonals{A,T,typeof(c)}(c)
+function Interfaces.offdiagonals(c::OneParticleDensityGradientColumn{<:Any,A,T}) where {A,T}
+    OneParticleDensityGradientOffdiagonals{A,T,typeof(c)}(c)
 end
-struct GradOneParticleDensityOffdiagonals{A,T,C}
+struct OneParticleDensityGradientOffdiagonals{A,T,C}
     column::C
 end
-Base.eltype(::GradOneParticleDensityOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
-Base.IteratorSize(::GradOneParticleDensityOffdiagonals) = Base.SizeUnknown()
-# Base.length(od::GradOneParticleDensityOffdiagonals) = num_offdiagonals(od.column)
-function Base.iterate(od::GradOneParticleDensityOffdiagonals{A,T}, state=(1, 1)) where {A,T}
+Base.eltype(::OneParticleDensityGradientOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
+Base.IteratorSize(::OneParticleDensityGradientOffdiagonals) = Base.SizeUnknown()
+# Base.length(od::OneParticleDensityGradientOffdiagonals) = num_offdiagonals(od.column)
+function Base.iterate(od::OneParticleDensityGradientOffdiagonals{A,T}, state=(1, 1)) where {A,T}
     dim = size(od.column.operator.test_vector)[end]
     if length(T) == dim
-        return fullvectorGradOneParticleDensity(od, state)
+        return fullvectorOneParticleDensityGradient(od, state)
     else
-        return fixfunctionGradOneParticleDensity(od, state)
+        return fixfunctionOneParticleDensityGradient(od, state)
     end
 end
 
-@inline function fixfunctionGradOneParticleDensity(
-    od::GradOneParticleDensityOffdiagonals{<:Any,T}, state
+@inline function fixfunctionOneParticleDensityGradient(
+    od::OneParticleDensityGradientOffdiagonals{<:Any,T}, state
     ) where {T}
     c = od.column
     omm = c.omm
@@ -507,8 +506,8 @@ end
     return nothing
 end
 
-@inline function fullvectorGradOneParticleDensity(
-    od::GradOneParticleDensityOffdiagonals{<:Any,T}, state
+@inline function fullvectorOneParticleDensityGradient(
+    od::OneParticleDensityGradientOffdiagonals{<:Any,T}, state
     ) where {T}
     c = od.column
     omm = c.omm
@@ -665,7 +664,7 @@ function Base.iterate(od::TestTwoParticleDensityOffdiagonals, state=(2, 1, 2, 1)
 end
 
 """
-     GradTwoParticleDensity(vec; normalize=true, full_vector=false) <: AbstractOperator{SVector{m,T}}
+    TwoParticleDensityGradient(vec; normalize=true, full_vector=false) <: AbstractOperator{SVector{m,T}}
  
 An expectation value with this operator yields a gradient of the largest 
 eigenvalue of the two-particle density matrix. `T` is the eltype of `vec[1]`.
@@ -693,17 +692,17 @@ has a fix functional form with parameters `̄α`.
 ```
 Also, in `vᵢⱼ`, i and j are site indices (with i < j). 
 """
-struct GradTwoParticleDensity{T,Dim,Zeta,V<:SArray{<:Any,T}} <: AbstractOperator{SVector{Dim,T}}
+struct TwoParticleDensityGradient{T,Dim,Zeta,V<:SArray{<:Any,T}} <: AbstractOperator{SVector{Dim,T}}
     test_vector::V
 end
-function GradTwoParticleDensity(vec; zeta = 0, normalize=true, full_vector=false)
+function TwoParticleDensityGradient(vec; zeta = 0, normalize=true, full_vector=false)
     if full_vector
-        T = float(eltype(vec))
-        dim = length(vec)
+        T = float(eltype(vec[1]))
+        dim = length(vec[1])
         if normalize
-            vec = vec / norm(vec)
+            vec[1] .= vec[1] / norm(vec[1])
         end
-        tv = SVector{dim,T}(vec)
+        tv = SVector{dim,T}(vec[1])
     else
         if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa AbstractMatrix)
             error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix) or a matrix.")
@@ -725,39 +724,39 @@ function GradTwoParticleDensity(vec; zeta = 0, normalize=true, full_vector=false
         end
         tv = SMatrix{dim+1,S,T}(v)
     end
-    return GradTwoParticleDensity{T,dim,Float64(zeta),typeof(tv)}(tv)
+    return TwoParticleDensityGradient{T,dim,Float64(zeta),typeof(tv)}(tv)
 end
 
-function Base.show(io::IO, topd::GradTwoParticleDensity{<:Any,M}) where M
-    print(io, "GradTwoParticleDensity(", topd.test_vector,)
+function Base.show(io::IO, topd::TwoParticleDensityGradient{<:Any,M}) where M
+    print(io, "TwoParticleDensityGradient(", topd.test_vector,)
     if !(norm(topd.test_vector[1,:]) ≈ 1.0)
         print(io, "; normalize=false")
     end
     print(io, ")")
 end
 
-Interfaces.LOStructure(::Type{<:GradTwoParticleDensity}) = IsHermitian()
+Interfaces.LOStructure(::Type{<:TwoParticleDensityGradient}) = IsHermitian()
 function Interfaces.allows_address_type(
-    od::GradTwoParticleDensity{T,Dim}, ::Type{B}
+    od::TwoParticleDensityGradient{T,Dim}, ::Type{B}
 ) where {T,Dim,B}
     M = num_modes(B)
     return B <: SingleComponentFockAddress && (size(od.test_vector)[end] == binomial(M,2))
 end
 
-struct GradTwoParticleDensityColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
+struct TwoParticleDensityGradientColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
     operator::O
     address::A
     omm::OMM
 end
-function Interfaces.operator_column(o::GradTwoParticleDensity, add::A) where {A}
+function Interfaces.operator_column(o::TwoParticleDensityGradient, add::A) where {A}
     allows_address_type(o, A) || throw(ArgumentError("Address type not allowed for this operator"))
     omm = occupied_mode_map(add)
-    return GradTwoParticleDensityColumn{typeof(o),A,eltype(o),typeof(omm)}(o, add, omm)
+    return TwoParticleDensityGradientColumn{typeof(o),A,eltype(o),typeof(omm)}(o, add, omm)
 end
-Interfaces.parent_operator(c::GradTwoParticleDensityColumn) = c.operator
-Interfaces.starting_address(c::GradTwoParticleDensityColumn) = c.address
-function Interfaces.diagonal_element(c::GradTwoParticleDensityColumn{
-    <:GradTwoParticleDensity{<:Any,dim,zeta},<:Any,T}) where {dim,zeta,T}
+Interfaces.parent_operator(c::TwoParticleDensityGradientColumn) = c.operator
+Interfaces.starting_address(c::TwoParticleDensityGradientColumn) = c.address
+function Interfaces.diagonal_element(c::TwoParticleDensityGradientColumn{
+    <:TwoParticleDensityGradient{<:Any,dim,zeta},<:Any,T}) where {dim,zeta,T}
     if iszero(zeta)
         return zero(T)
     end
@@ -777,28 +776,28 @@ function Interfaces.diagonal_element(c::GradTwoParticleDensityColumn{
     end
     return val::T
 end
-function Interfaces.num_offdiagonals(c::GradTwoParticleDensityColumn)
+function Interfaces.num_offdiagonals(c::TwoParticleDensityGradientColumn)
     return binomial(length(c.omm),2) * (binomial(num_modes(c.address),2)) - 1
 end
-function Interfaces.offdiagonals(c::GradTwoParticleDensityColumn{<:Any,A,T}) where {A,T}
-    GradTwoParticleDensityOffdiagonals{A,T,typeof(c)}(c)
+function Interfaces.offdiagonals(c::TwoParticleDensityGradientColumn{<:Any,A,T}) where {A,T}
+    TwoParticleDensityGradientOffdiagonals{A,T,typeof(c)}(c)
 end
-struct GradTwoParticleDensityOffdiagonals{A,T,C}
+struct TwoParticleDensityGradientOffdiagonals{A,T,C}
     column::C
 end
-Base.eltype(::GradTwoParticleDensityOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
-Base.IteratorSize(::GradTwoParticleDensityOffdiagonals) = Base.SizeUnknown()
-# Base.length(od::GradTwoParticleDensityOffdiagonals) = num_offdiagonals(od.column)
-function Base.iterate(od::GradTwoParticleDensityOffdiagonals{A,T}, state=(2, 1, 2, 1)) where {A,T}
+Base.eltype(::TwoParticleDensityGradientOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
+Base.IteratorSize(::TwoParticleDensityGradientOffdiagonals) = Base.SizeUnknown()
+# Base.length(od::TwoParticleDensityGradientOffdiagonals) = num_offdiagonals(od.column)
+function Base.iterate(od::TwoParticleDensityGradientOffdiagonals{A,T}, state=(2, 1, 2, 1)) where {A,T}
     dim = size(od.column.operator.test_vector)[end]
     if length(T) == dim
-        return fullvectorGradTwoParticleDensity(od, state)
+        return fullvectorTwoParticleDensityGradient(od, state)
     else
-        return fixfunctionGradTwoParticleDensity(od, state)
+        return fixfunctionTwoParticleDensityGradient(od, state)
     end
 end
 
-@inline function fixfunctionGradTwoParticleDensity(od::GradTwoParticleDensityOffdiagonals{<:Any,T}, state
+@inline function fixfunctionTwoParticleDensityGradient(od::TwoParticleDensityGradientOffdiagonals{<:Any,T}, state
     ) where {T}
     c = od.column
     omm = c.omm
@@ -850,8 +849,8 @@ end
     return nothing
 end
 
-@inline function fullvectorGradTwoParticleDensity(
-    od::GradTwoParticleDensityOffdiagonals{<:Any,T}, state
+@inline function fullvectorTwoParticleDensityGradient(
+    od::TwoParticleDensityGradientOffdiagonals{<:Any,T}, state
     ) where {T}
     c = od.column
     omm = c.omm
