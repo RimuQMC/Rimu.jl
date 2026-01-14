@@ -5,8 +5,8 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     AdjointUnknown
-using Rimu.Hamiltonians: TestOneParticleDensity, GradOneParticleDensity,
-    TestTwoParticleDensity, GradTwoParticleDensity, index
+using Rimu.Hamiltonians: TestOneParticleDensity, OneParticleDensityGradient,
+    TestTwoParticleDensity, TwoParticleDensityGradient, index
 
 @testset "ReducedDensityMatrix" begin
     dvec_f = PDVec(FermiFS{2,4}(1, 1, 0, 0) => 0.5, FermiFS{2,4}(0, 0, 1, 1) => 0.5)
@@ -85,7 +85,7 @@ end
     @test eval(Meta.parse(repr(opd2))) == opd2
 end
 
-@testset "GradOneParticleDensity" begin
+@testset "OneParticleDensityGradient" begin
     address = BoseFS(1, 1, 1, 0, 0, 0)
 
     h = HubbardRealSpace(address; t=1, u=0.2)
@@ -101,13 +101,13 @@ end
         x2[2, i] = -para[1] * (i-3)^2 * exp(-para[2]*(i-3)^2)
     end
     x = (x1, x2,)
-    opd = GradOneParticleDensity(x; zeta = dot(gs,TestOneParticleDensity(x[1]),gs))
+    opd = OneParticleDensityGradient(x; zeta = dot(gs,TestOneParticleDensity(x[1]),gs))
     @test LOStructure(opd) isa IsHermitian
     test_operator_interface(opd, address)
     @test round(sum(dot(gs, opd, gs)), digits = 12) == 0.0
 
     # Check that the result of show can be pasted into the REPL
-    opd2 = GradOneParticleDensity(x; normalize=false)
+    opd2 = OneParticleDensityGradient(x; normalize=false)
     @test eval(Meta.parse(repr(opd2))) == opd2
 end
 
@@ -136,7 +136,7 @@ end
     @test eval(Meta.parse(repr(opd2))) == opd2
 end
 
-@testset "GradTwoParticleDensity" begin
+@testset "TwoParticleDensityGradient" begin
     address = FermiFS(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
 
     h = HubbardRealSpace(address; t=1, w=-1.0)
@@ -160,13 +160,13 @@ end
         end
     end
     x = (evc[:, end], y,)    
-    opd = GradTwoParticleDensity(x; 
+    opd = TwoParticleDensityGradient(x; 
         zeta = dot(gs,TestTwoParticleDensity(evc[:, end]),gs))
     @test LOStructure(opd) isa IsHermitian
     test_operator_interface(opd, address)
     @test round(sum(dot(gs, opd, gs)), digits = 10) == 0.0
 
     # Check that the result of show can be pasted into the REPL
-    opd2 = GradTwoParticleDensity((zero(x[1]).+1.0, zero(x[2]).+1,); normalize=false)
+    opd2 = TwoParticleDensityGradient((zero(x[1]).+1.0, zero(x[2]).+1,); normalize=false)
     @test eval(Meta.parse(repr(opd2))) == opd2
 end
