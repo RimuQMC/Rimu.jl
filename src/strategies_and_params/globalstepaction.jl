@@ -151,13 +151,13 @@ end
 
 Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩ and 
 optimize the parameters of `gradientoverlap`(<:GlobalStepAction) after every 
-`step` collected gradient data in the FCIQMC simulation between all pairs of
-replica states for a given operator `O`. The results are returned in a 
-`NamedTuple` with a field provided from gradientoverlap and a single field with
+`step` number of collected gradient data in the FCIQMC simulation between all 
+pairs of replica states for a given operator `O`. The results are returned in a 
+`NamedTuple` with a field provided from gradientoverlap and single field with
 key `name` (default `:parameters`) and value array of overlaps. The optimization 
-is carried out using the optimization `method` (default to RAdam(0.1)), which 
-is downloaded from `Optimisers.jl`. FCIQMC simulation is set up to terminate 
-when the sum of the absolute value of the gradient becomes smaller than `threshold`. 
+is carried out using the optimization `method` (default to RAdam(0.1)) which 
+is downloaded from `Optimisers.jl`. FCIQMC simulation is setup to be turminate 
+when the sum of the absolute value of gradient become smaller then `threshold`. 
 """
 mutable struct OverlapwithOptimization{threshold,T} <: GlobalStepAction
     gradientoverlap::GlobalStepAction
