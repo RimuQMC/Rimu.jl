@@ -157,7 +157,8 @@ pairs of replica states for a given operator `O`. The results are returned in a
 key `name` (default `:parameters`) and value array of overlaps. The optimization 
 is carried out using the optimization `method` (default to RAdam(0.1)) which 
 is downloaded from `Optimisers.jl`. FCIQMC simulation is setup to be turminate 
-when the sum of the absolute value of gradient become smaller then `threshold`. 
+when the sum of the absolute value of gradient become smaller then `threshold`
+(default to 1e-3).
 """
 mutable struct OverlapwithOptimization{threshold,T} <: GlobalStepAction
     gradientoverlap::GlobalStepAction
