@@ -292,17 +292,26 @@ function CommonSolve.step!(sm::PMCSimulation)
     end
     sm.modified = true
 
-    for action! in state.global_step_actions
-        action_results = action!(state)
-        if step[] % reporting_interval(reporting_strategy) == 0
-            report!(reporting_strategy, step[], report, action_results)
-        end
-    end
-
     # report replica stats
     if step[] % reporting_interval(reporting_strategy) == 0
         replica_names, replica_values = replica_stats!(replica_strategy, spectral_states)
         report!(reporting_strategy, step[], report, replica_names, replica_values)
+        for action! in state.global_step_actions
+            action_results = action!(state)
+            report!(reporting_strategy, step[], report, action_results)
+            if action! isa OverlapwithOptimization
+                if step[] % (reporting_interval(reporting_strategy) * action!.Step) == 0
+                    df = sm.df
+                    l = length(df[:,1])
+                    optimized = action!(df[l-action!.Step+1:l,:])
+                    if optimized
+                        sm.aborted = true
+                        sm.message = "Aborted in step $(step[])."
+                        return sm
+                    end
+                end
+            end
+        end
         report_after_step!(reporting_strategy, step[], report, state)
         ensure_correct_lengths(report)
     end
