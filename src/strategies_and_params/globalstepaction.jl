@@ -91,10 +91,11 @@ end
 
 Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩  and 
 coefficient vector overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica states for 
-a given operator `O` and its parameters `α`. `parameter' is of type 
+a given operator `O` and its parameters `α`. `parameter` is of type 
 `Vector{SVector}` where each index refers to perticular spectral state.
-`test_vector_function` is a nothing or a function of `(α, M)` depending on whether
-the optimization is applied to entire Vector or it with the fixed functional form.
+`test_vector_function` is a nothing or a function with parameter (̄α, # of sites) 
+depending on whether the optimization is applied to entire Vector or it 
+with the fixed functional form.
 The results are returned in a `NamedTuple` with a single field with key `name` 
 (default `(:gradient_vector_overlaps, :coefficient_vector_overlaps`) and 
 value array of overlaps.
