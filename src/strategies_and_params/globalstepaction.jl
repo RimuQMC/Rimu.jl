@@ -123,7 +123,7 @@ function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
     n_reps = num_replicas(state)
     vectors = state_vectors(state) # 2D array: (replica, spectral state)
     M = num_modes(keytype(vectors[1,1]))
-    full_vector = isnothing(ooa.test_vector_function) ? true : false
+    full_vector = isnothing(ooa.testfunction) ? true : false
     gradient = zeros(eltype(ooa.parameter), binomial(n_reps, 2) , n_specs)
     coeff = zeros(eltype(ooa.parameter[1]), binomial(n_reps,2), n_specs)
 
