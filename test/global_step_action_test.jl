@@ -4,7 +4,6 @@ using Rimu: GlobalStepAction, OperatorOverlaps, StrictPairIter, SingleState,
     SpectralState, CoefficientVectorOverlaps, ParticleDensityGradientOverlap,
     OverlapwithOptimization
 using StaticArrays: SVector
-using Optimisers: Adam
 
 @testset "StrictPairIter" begin
     spi = StrictPairIter(4)
@@ -77,7 +76,7 @@ end
             TwoParticleDensityGradient); name=(:gradient_test_overlaps,
             :coefficient_vector_overlaps), test_vector_function = nothing, parameter)
         oops = OverlapwithOptimization(gop; name = :parameter, step = 5, 
-            threshold = 1e-2, method = Adam(0.1))
+            threshold = 1e-2)
 
         p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,))
         res = solve(p)
