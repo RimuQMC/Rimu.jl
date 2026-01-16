@@ -16,7 +16,7 @@ using Logging: ConsoleLogger
 using OrderedCollections: freeze
 using Random: Random, RandomDevice, seed!
 using NamedTupleTools: NamedTupleTools, namedtuple, delete
-using Optimisers: Adam, RAdam, destructure, Restructure
+using Optimisers: Adam, RAdam, destructure, Restructure,
     setup, update
 import Tables
 import ConsoleProgressMonitor
