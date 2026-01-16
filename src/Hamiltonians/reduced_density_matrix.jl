@@ -699,10 +699,14 @@ function TwoParticleDensityGradient(vec; zeta = 0, normalize=true, full_vector=f
     if full_vector
         T = float(eltype(vec[1]))
         dim = length(vec[1])
-        if normalize
-            vec[1] .= vec[1] / norm(vec[1])
+        if vec[1] isa SVector
+            tv = vec[1]
+        else
+            tv = SVector{dim,T}(vec[1])
         end
-        tv = SVector{dim,T}(vec[1])
+        if normalize
+            tv = tv / norm(tv)
+        end
     else
         if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa AbstractMatrix)
             error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix) or a matrix.")
