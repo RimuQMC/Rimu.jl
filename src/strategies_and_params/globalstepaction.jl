@@ -199,25 +199,7 @@ OverlapwithOptimization{0.01,
 julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,))
 ProjectorMonteCarloProblem with 3 replica(s) and 1 spectral state(s):
     algorithm = FCIQMC(DoubleLogUpdate{Int64}(1000, 0.08, 0.0016), ConstantTimeStep())
-    hamiltonian = HubbardRealSpace(
-    fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩",
-    geometry = CubicGrid((10,), (true,)),
-    t = [1.0;;],
-    u = [1.0;;],
-    w = [-1.0;;],
-    )
-    style = IsDynamicSemistochastic{Float64,ThresholdCompression,DynamicSemistochastic}()
-    initiator = NonInitiator()
-    threading = false
-    simulation_plan = SimulationPlan(starting_step=0, last_step=100, wall_time=Inf)
-    replica_strategy = NoStats{3}()
-    reporting_strategy = ReportDFAndInfo
-    reporting_interval: Int64 1
-    info_interval: Int64 100
-    io: Base.TTY
-    writeinfo: Bool false
-    post_step_strategy = ()
-    spectral_strategy = GramSchmidt(1; orthogonalization_interval=1)
+    ...
     global_step_actions = (OverlapwithOptimization{0.01, ...}(
         ParticleDensityGradientOverlap...),)
     metadata = OrderedCollections.LittleDict("display_name" => "PMCSimulation")
