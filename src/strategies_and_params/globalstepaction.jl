@@ -85,7 +85,7 @@ end
 
 """
     ParticleDensityGradientOverlap(op; name = (:gradient_vector_overlaps, 
-        :coefficient_vector_overlaps), test_vector_function,
+        :coefficient_vector_overlaps), testfunction,
         parameter=[SVector{1,Float64}(ones(Float64, 1))], 
         normalise::Bool=true) <: GlobalStepAction
 
@@ -93,7 +93,7 @@ Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_
 coefficient vector overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica states for 
 a given operator `O` and its parameters `α`. `parameter` is of type 
 `Vector{SVector}` where each index refers to perticular spectral state.
-`test_vector_function` is a nothing or a function with parameter (̄α, # of sites) 
+`testfunction` is a nothing or a function with parameter (̄α, # of sites) 
 depending on whether the optimization is applied to entire Vector or it 
 with the fixed functional form.
 The results are returned in a `NamedTuple` with a single field with key `name` 
@@ -104,16 +104,16 @@ value array of overlaps.
 mutable struct ParticleDensityGradientOverlap{OpType, normalize, P} <: GlobalStepAction
     operators::OpType
     name::Tuple{Symbol, Symbol}
-    test_vector_function::Union{Function, Nothing}
+    testfunction::Union{Function, Nothing}
     parameter::P
 end
 
 function ParticleDensityGradientOverlap(op; name = (:gradient_vector_overlaps, 
-        :coefficient_vector_overlaps), test_vector_function=nothing, 
+        :coefficient_vector_overlaps), testfunction=nothing, 
         parameter::Vector=[SVector{1,Float64}(ones(Float64, 1))],
         normalize::Bool=true)
     return ParticleDensityGradientOverlap{typeof(op), normalize, typeof(parameter)}(op, name, 
-        test_vector_function, parameter)
+        testfunction, parameter)
 end
 
 function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
@@ -128,8 +128,8 @@ function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
     coeff = zeros(eltype(ooa.parameter[1]), binomial(n_reps,2), n_specs)
 
     for s in 1:n_specs
-        gev = isnothing(ooa.test_vector_function) ? (ooa.parameter[s],) : 
-            ooa.test_vector_function(ooa.parameter[s], M)
+        gev = isnothing(ooa.testfunction) ? (ooa.parameter[s],) : 
+            ooa.testfunction(ooa.parameter[s], M)
 
         coeff[:, s] = [dot(vectors[i, s], vectors[j, s]) for (i, j) in StrictPairIter(n_reps)]
         
@@ -182,7 +182,7 @@ julia> parameter = [SVector{45,Float64}([1/45 for _ in 1:45])];
 julia> gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
                    TwoParticleDensityGradient); name=(:gradient_test_overlaps,
                    :coefficient_vector_overlaps), 
-                   test_vector_function = nothing, parameter);
+                   testfunction = nothing, parameter);
 
 julia> oops = OverlapwithOptimization(gop; name = :parameter, step = 5, 
                    threshold = 1e-2, method = Adam(0.1));
