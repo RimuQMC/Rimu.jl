@@ -117,6 +117,7 @@ end
 
 function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
         state::ReplicaState) where {normalize}
+
     n_specs = num_spectral_states(state)
     n_reps = num_replicas(state)
     vectors = state_vectors(state) # 2D array: (replica, spectral state)
@@ -132,7 +133,7 @@ function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
         coeff[:, s] = [dot(vectors[i, s], vectors[j, s]) for (i, j) in StrictPairIter(n_reps)]
         
         if iszero(sum(coeff[:,s]))
-            gradient[:,s] = [zero(ooa.parameter) for _ in 1:binomial(n_reps,2)]
+            gradient[:,s] = [zero(ooa.parameter[s]) for _ in 1:binomial(n_reps,2)]
         else
             zeta = sum([dot(vectors[i, s], ooa.operators[1](gev[1];normalize), 
                 vectors[j, s]) for (i, j) in StrictPairIter(n_reps)])/sum(coeff[:,s])
@@ -168,9 +169,9 @@ end
 
 function OverlapwithOptimization(gradientoverlap; name = :parameter, 
         method = RAdam(0.1), step=100, threshold = 1e-3)
-    setup = setup(method, (x = destructure(gradientoverlap.parameter)[1],))
-    return OverlapwithOptimization{threshold, typeof(setup)}(gradientoverlap, name, 
-        setup, step)
+    _setup = setup(method, (x = destructure(gradientoverlap.parameter)[1],))
+    return OverlapwithOptimization{threshold, typeof(_setup)}(gradientoverlap, name, 
+        _setup, step)
 end
 
 function (ooa::OverlapwithOptimization)(state::ReplicaState) 
@@ -183,11 +184,11 @@ function (ooa::OverlapwithOptimization{threshold})(df::DataFrame) where threshol
     para = (x = destructure(ooa.gradientoverlap.parameter)[1],)
     v, re = destructure(grad_rrs(ooa, df))
     g = (x = -v,)
-    setup, para = update(ooa.Setup, para, g);
+    _setup, para = update(ooa.Setup, para, g);
     
     # restructure (re) the parameters of each spectrual state to a seperate SVector. 
     ooa.gradientoverlap.parameter = re(para.x)
-    ooa.Setup = setup
+    ooa.Setup = _setup
     return sum(abs.(g.x)) < threshold
 end
 
