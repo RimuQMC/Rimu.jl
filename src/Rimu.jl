@@ -16,7 +16,7 @@ using Logging: ConsoleLogger
 using OrderedCollections: freeze
 using Random: Random, RandomDevice, seed!
 using NamedTupleTools: NamedTupleTools, namedtuple, delete
-using Optimisers
+using Optimisers: Adam, RAdam
 import Tables
 import ConsoleProgressMonitor
 import TOML
