@@ -4,6 +4,7 @@ using Rimu: GlobalStepAction, OperatorOverlaps, StrictPairIter, SingleState,
     SpectralState, CoefficientVectorOverlaps, ParticleDensityGradientOverlap,
     OverlapwithOptimization
 using StaticArrays: SVector
+using Optimisers: Adam
 
 @testset "StrictPairIter" begin
     spi = StrictPairIter(4)
@@ -38,7 +39,7 @@ end
 @testset "ParticleDensityGradientOverlaps" begin
     address = FermiFS(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
 
-    h = HubbardRealSpace(address; t=1, w=-1.0)
+    h = HubbardRealSpace(address; w=-1.0)
     ep = ExactDiagonalizationProblem(h)
     epsol = solve(ep)
     gs = epsol.vectors[1]
