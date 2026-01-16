@@ -165,7 +165,7 @@ value of gradient become smaller then `threshold` (default to 1e-3).
 # Examples
 
 ```jldoctest
-julia> using StaticArrays, Optimisers
+julia> using StaticArrays
 
 julia> address = FermiFS(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
 FermiFS{5,10}(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
@@ -187,7 +187,7 @@ julia> gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
                    testfunction = nothing, parameter);
 
 julia> oops = oops = OverlapwithOptimization(gop; name = :parameter, step = 5, 
-                   threshold = 1e-2, method = Adam(0.1));
+                   threshold = 1e-2);
 
 julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,));
 
