@@ -6,7 +6,6 @@
 Compute and report the overlaps ⟨ψ_i|O|ψ_j⟩ between all pairs of replica states
 for a given operator `O` and for each spectral state as a matrix. The results are reported
 with the name given by the `name` keyword argument.
-
 See also [`GlobalStepAction`](@ref) and [`CoefficientVectorOverlaps`](@ref).
 """
 @kwdef struct OperatorOverlaps{OpType} <: GlobalStepAction
@@ -65,11 +64,9 @@ end
 
 """
     CoefficientVectorOverlaps(; name=:coefficient_vector_overlaps) <: GlobalStepAction
-
 Compute and report the overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica states for each
 spectral state as a matrix. The results are reported with the name given by the `name`
 keyword argument.
-
 See also [`GlobalStepAction`](@ref) and [`OperatorOverlaps`](@ref).
 """
 @kwdef struct CoefficientVectorOverlaps <: GlobalStepAction
@@ -95,7 +92,9 @@ end
 Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩  and 
 coefficient vector overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica states for 
 a given operator `O` and its parameters `α`. `parameter' is of type 
-`Vector{SVector}` where each index refers to perticular spectral state. 
+`Vector{SVector}` where each index refers to perticular spectral state.
+`test_vector_function` is a nothing or a function of `(α, M)` depending on whether
+the optimization is applied to entire Vector or it with the fixed functional form.
 The results are returned in a `NamedTuple` with a single field with key `name` 
 (default `(:gradient_vector_overlaps, :coefficient_vector_overlaps`) and 
 value array of overlaps.
@@ -104,12 +103,12 @@ value array of overlaps.
 mutable struct ParticleDensityGradientOverlap{OpType, normalize, P} <: GlobalStepAction
     operators::OpType
     name::Tuple{Symbol, Symbol}
-    test_vector_function::Function
+    test_vector_function::Union{Function, Nothing}
     parameter::P
 end
 
 function ParticleDensityGradientOverlap(op; name = (:gradient_vector_overlaps, 
-        :coefficient_vector_overlaps), test_vector_function, 
+        :coefficient_vector_overlaps), test_vector_function=nothing, 
         parameter::Vector=[SVector{1,Float64}(ones(Float64, 1))],
         normalize::Bool=true)
     return ParticleDensityGradientOverlap{typeof(op), normalize, typeof(parameter)}(op, name, 
@@ -158,7 +157,7 @@ key `name` (default `:parameters`) and value array of overlaps. The optimization
 is carried out using the optimization `method` (default to RAdam(0.1)) which 
 is downloaded from `Optimisers.jl`. FCIQMC simulation is setup to be turminate 
 when the sum of the absolute value of gradient become smaller then `threshold`
-(default to 1e-3).
+(default to 1e-3). 
 """
 mutable struct OverlapwithOptimization{threshold,T} <: GlobalStepAction
     gradientoverlap::GlobalStepAction
