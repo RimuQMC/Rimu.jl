@@ -16,6 +16,7 @@ using Logging: ConsoleLogger
 using OrderedCollections: freeze
 using Random: Random, RandomDevice, seed!
 using NamedTupleTools: NamedTupleTools, namedtuple, delete
+using Optimisers
 import Tables
 import ConsoleProgressMonitor
 import TOML
@@ -72,7 +73,8 @@ export ShiftStrategy, LogUpdate, LogUpdateAfterTargetWalkers
 export DontUpdate, DoubleLogUpdate, DoubleLogUpdateAfterTargetWalkers
 export ReportingStrategy, ReportDFAndInfo, ReportToFile
 export ReplicaStrategy, NoStats, AllOverlaps
-export ParticleDensityGradientOverlap, OperatorOverlaps, OverlapwithOptimization
+export ParticleDensityGradientOverlap, OperatorOverlaps, 
+    OverlapwithOptimization, CoefficientVectorOverlaps
 export PostStepStrategy, Projector, ProjectedEnergy, SignCoherence, WalkerLoneliness, Timer,
     SingleParticleDensity, single_particle_density
 export TimeStepStrategy, ConstantTimeStep, OvershootControl
