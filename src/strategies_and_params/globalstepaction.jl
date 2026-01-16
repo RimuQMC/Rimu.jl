@@ -154,11 +154,89 @@ optimize the parameters of `gradientoverlap`(<:GlobalStepAction) after every
 `step` number of collected gradient data in the FCIQMC simulation between all 
 pairs of replica states for a given operator `O`. The results are returned in a 
 `NamedTuple` with a field provided from gradientoverlap and single field with
-key `name` (default `:parameters`) and value array of overlaps. The optimization 
-is carried out using the optimization `method` (default to RAdam(0.1)) which 
-is downloaded from `Optimisers.jl`. FCIQMC simulation is setup to be turminate 
-when the sum of the absolute value of gradient become smaller then `threshold`
-(default to 1e-3). 
+key `name` (default `:parameters`) and value array of overlaps. 
+    The optimization is carried out using the optimization `method` 
+(default to RAdam(0.1)) which is downloaded from `Optimisers.jl`. There are 
+other methods that can be usedsuch as Adam and Momentum.
+    FCIQMC simulation is setup to be turminate when the sum of the absolute 
+value of gradient become smaller then `threshold` (default to 1e-3). 
+
+# Examples
+
+```jldoctest
+julia> address = FermiFS(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
+FermiFS{5,10}(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
+
+julia> h = HubbardRealSpace(address; w=-1.0)
+HubbardRealSpace(
+  fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩",
+  geometry = CubicGrid((10,), (true,)),
+  t = [1.0;;],
+  u = [1.0;;],
+  w = [-1.0;;],
+)
+
+julia> parameter = [SVector{45,Float64}([1/45 for _ in 1:45])];
+
+julia> gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
+                   TwoParticleDensityGradient); name=(:gradient_test_overlaps,
+                   :coefficient_vector_overlaps), 
+                   test_vector_function = nothing, parameter);
+
+julia> oops = OverlapwithOptimization(gop; name = :parameter, step = 5, 
+                   threshold = 1e-2, method = Adam(0.1))
+OverlapwithOptimization{0.01, 
+    @NamedTuple{x::Optimisers.Leaf{Adam{Float64, Tuple{Float64, Float64}, Float64},
+     Tuple{Vector{Float64}, Vector{Float64}, Tuple{Float64, Float64}}}}}(
+        ParticleDensityGradientOverlap{Tuple{UnionAll, UnionAll}, true, 
+        Vector{SVector{45, Float64}}}((TestTwoParticleDensity, 
+        TwoParticleDensityGradient), (:gradient_test_overlaps, 
+        :coefficient_vector_overlaps), nothing, 
+        SVector{45, Float64}[[0.022222222222222223, ...0.022222222222222223]]), 
+        :parameter, (x = Leaf(Adam(eta=0.1, beta=(0.9, 0.999), epsilon=1.0e-8), 
+        ([0.0,...,0.0], [0.0, ... 0.0], (0.9, 0.999))),), 5)
+
+julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,))
+ProjectorMonteCarloProblem with 3 replica(s) and 1 spectral state(s):
+    algorithm = FCIQMC(DoubleLogUpdate{Int64}(1000, 0.08, 0.0016), ConstantTimeStep())
+    hamiltonian = HubbardRealSpace(
+    fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩",
+    geometry = CubicGrid((10,), (true,)),
+    t = [1.0;;],
+    u = [1.0;;],
+    w = [-1.0;;],
+    )
+    style = IsDynamicSemistochastic{Float64,ThresholdCompression,DynamicSemistochastic}()
+    initiator = NonInitiator()
+    threading = false
+    simulation_plan = SimulationPlan(starting_step=0, last_step=100, wall_time=Inf)
+    replica_strategy = NoStats{3}()
+    reporting_strategy = ReportDFAndInfo
+    reporting_interval: Int64 1
+    info_interval: Int64 100
+    io: Base.TTY
+    writeinfo: Bool false
+    post_step_strategy = ()
+    spectral_strategy = GramSchmidt(1; orthogonalization_interval=1)
+    global_step_actions = (OverlapwithOptimization{0.01, ...}(
+        ParticleDensityGradientOverlap...),)
+    metadata = OrderedCollections.LittleDict("display_name" => "PMCSimulation")
+    random_seed = 2730854655602855441
+
+julia> solve(p)
+Progress: 100%|█████████████████████████████████████████████████| Time: 0:00:22
+PMCSimulation with 3 replica(s) and 1 spectral state(s).
+  Algorithm:   FCIQMC(DoubleLogUpdate{Int64}(1000, 0.08, 0.0016), ConstantTimeStep())
+  Hamiltonian: HubbardRealSpace(
+  fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩",
+  geometry = CubicGrid((10,), (true,)),
+  t = [1.0;;],
+  u = [1.0;;],
+  w = [-1.0;;],
+)
+  Step:        100 / 100
+  modified = true, aborted = false, success = true
+```
 """
 mutable struct OverlapwithOptimization{threshold,T} <: GlobalStepAction
     gradientoverlap::GlobalStepAction
