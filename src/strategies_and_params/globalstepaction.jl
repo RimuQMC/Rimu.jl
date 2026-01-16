@@ -168,7 +168,7 @@ end
 
 function OverlapwithOptimization(gradientoverlap; name = :parameter, 
         method = RAdam(0.1), step=100, threshold = 1e-3)
-    setup = Optimisers.setup(method, (x = destructure(gradientoverlap.parameter)[1],))
+    setup = setup(method, (x = destructure(gradientoverlap.parameter)[1],))
     return OverlapwithOptimization{threshold, typeof(setup)}(gradientoverlap, name, 
         setup, step)
 end
@@ -179,10 +179,13 @@ function (ooa::OverlapwithOptimization)(state::ReplicaState)
 end
 
 function (ooa::OverlapwithOptimization{threshold})(df::DataFrame) where threshold
+    # destructure the parameters of each spectrual state to a single Vector.
     para = (x = destructure(ooa.gradientoverlap.parameter)[1],)
     v, re = destructure(grad_rrs(ooa, df))
     g = (x = -v,)
-    setup, para = Optimisers.update(ooa.Setup, para, g); 
+    setup, para = update(ooa.Setup, para, g);
+    
+    # restructure (re) the parameters of each spectrual state to a seperate SVector. 
     ooa.gradientoverlap.parameter = re(para.x)
     ooa.Setup = setup
     return sum(abs.(g.x)) < threshold
