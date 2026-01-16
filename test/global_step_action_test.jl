@@ -3,7 +3,7 @@ using Rimu
 using Rimu: GlobalStepAction, OperatorOverlaps, StrictPairIter, SingleState,
     SpectralState, CoefficientVectorOverlaps, ParticleDensityGradientOverlap,
     OverlapwithOptimization
-using StaticArrays : SVector
+using StaticArrays: SVector
 
 @testset "StrictPairIter" begin
     spi = StrictPairIter(4)
