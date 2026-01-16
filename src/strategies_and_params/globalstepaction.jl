@@ -184,26 +184,9 @@ julia> gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
                    test_vector_function = nothing, parameter);
 
 julia> oops = OverlapwithOptimization(gop; name = :parameter, step = 5, 
-                   threshold = 1e-2, method = Adam(0.1))
-OverlapwithOptimization{0.01, 
-    @NamedTuple{x::Optimisers.Leaf{Adam{Float64, Tuple{Float64, Float64}, Float64},
-     Tuple{Vector{Float64}, Vector{Float64}, Tuple{Float64, Float64}}}}}(
-        ParticleDensityGradientOverlap{Tuple{UnionAll, UnionAll}, true, 
-        Vector{SVector{45, Float64}}}((TestTwoParticleDensity, 
-        TwoParticleDensityGradient), (:gradient_test_overlaps, 
-        :coefficient_vector_overlaps), nothing, 
-        SVector{45, Float64}[[0.022222222222222223, ...0.022222222222222223]]), 
-        :parameter, (x = Leaf(Adam(eta=0.1, beta=(0.9, 0.999), epsilon=1.0e-8), 
-        ([0.0,...,0.0], [0.0, ... 0.0], (0.9, 0.999))),), 5)
+                   threshold = 1e-2, method = Adam(0.1));
 
-julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,))
-ProjectorMonteCarloProblem with 3 replica(s) and 1 spectral state(s):
-    algorithm = FCIQMC(DoubleLogUpdate{Int64}(1000, 0.08, 0.0016), ConstantTimeStep())
-    ...
-    global_step_actions = (OverlapwithOptimization{0.01, ...}(
-        ParticleDensityGradientOverlap...),)
-    metadata = OrderedCollections.LittleDict("display_name" => "PMCSimulation")
-    random_seed = 2730854655602855441
+julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,));
 
 julia> solve(p)
 Progress: 100%|█████████████████████████████████████████████████| Time: 0:00:22
