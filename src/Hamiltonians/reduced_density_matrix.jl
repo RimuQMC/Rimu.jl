@@ -346,33 +346,45 @@ function Base.iterate(od::TestOneParticleDensityOffdiagonals, state=(1, 1))
 end
 
 """
-    OneParticleDensityGradient(vec; normalize=true, full_vector=false) <: AbstractOperator{SVector{m,T}}
+    OneParticleDensityGradient(vec; normalize=true, full_vector=false,
+        zeta = 0) <: AbstractOperator{SVector{m,T}}
  
-An expectation value with this operator yields a gradient of the largest 
-eigenvalue of the one-particle density matrix. `T` is the eltype of `v`.
-If `normalize` is true (default), the vector is normalized before use. 
-If `full_vector` is true, gradient is calculated for each element of `v`, 
-and the operator is defined as below. A one particle operator constructed 
-from a provided test vector `vec`.
+An expectation value with this operator yields a gradient `TestOneParticleDensity` 
+for a given test vector. Here, `vec` is a Tuple where `vec[1]` is the test 
+vector and `T` is the eltype of `vec[1]`. If `normalize` is true (default), the 
+vector is normalized before use. `zeta` is the expectation value of 
+`TestOneParticleDensity` for a given `vec[1]`.
 
 ```math
-    ∂ρ̂ {(1)}/∂v_j = ∑_{i} (v_{i}^* â^†_{i} â_{j} - ζ δ_{i,j}) v_{i}^*)
+    ζ = \langle ∑_{ij} ρ̂ {(1)}_{ij} v_{i}^* v_{j} \rangle
 ```
 
-whereas, if `full_vector` is false, the input `v` must be a Tuple of 
-`(vector `vⱼ(̄α)`, matrix gradient `∂vⱼ(̄α)/∂̄α` )`, and the operator is 
-defined as below. A one particle operator constructed from a provided 
-test vector `vec[1]` and its gradient `vec[2][1:m,:]` with respect to 
-parameters `α₁,α₂,...,αₘ`. `ζ` is a scalar (default 0). Vector `vⱼ(̄α)`
-has a fix functional form with parameters `̄α`.
+There are two cases involved:
+
+- `full_vector` = true: gradient is calculated for each element of `vec[1]`, 
+and the operator is defined as below. Here `vec` is a <:Tuple{AbstractVector,}
+with only one element, i.e., test vector. A one-particle operator constructed 
+from a provided test vector `vec[1]`. Also, `m` = # of sites.
 
 ```math
-    \\partial_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* ∂v_j(̄α)/∂̄α + 
-        ∂v_i^*(̄α)/∂̄α v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
+    ∂ρ̂ {(1)}/∂v_j = ∑_{i} v_{i}^* â^†_{i} â_{j} - ζ v_{j}^*
+```
+
+-`full_vector` = false: gradient is calculated with respect to the parameters 
+of the given test_vector, which has a fixed functional form. Here, the input 
+`vec` must be a <:Tuple{AbstractVector, AbstractMatrix,} i.e. `(test vector, 
+vector gradient, )` where `vector_gradient` is a matrix `vec[2][1:m,:]` 
+representing the transpose of the Jacobian of test_vector with respect to
+its parameters `α₁,α₂,...,αₘ`. 
+
+```math
+    ∂_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* ∂v_j(α)/∂α + 
+        ∂v_i^*(α)/∂α v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
 ```
 """
-struct OneParticleDensityGradient{T,Dim,Zeta,V<:SArray{<:Any,T}} <: AbstractOperator{SVector{Dim,T}}
+struct OneParticleDensityGradient{T,Dim,Zeta,V<:SArray{<:Any,T},G} <: AbstractOperator{SVector{Dim,T}}
     test_vector::V
+    vector_gradient::G
 end
 function OneParticleDensityGradient(vec; zeta = 0, normalize=true, full_vector=false)
     if full_vector
@@ -382,33 +394,32 @@ function OneParticleDensityGradient(vec; zeta = 0, normalize=true, full_vector=f
             vec[1] .= vec[1]/norm(vec[1])
         end
         tv = SVector{dim,T}(vec[1])
+        gv = nothing
     else
-        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa AbstractMatrix) 
-            error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix) or a matrix.")
+        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix})
+            error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix)")
         end
         T = float(eltype(vec[1]))
-        if vec isa Tuple{<:AbstractVector,<:AbstractMatrix}
-            M = length(vec[1])
-            dim = length(vec[2][:,1])
-            v = zeros(T, dim + 1, M)
-            v[1,:] = vec[1]
-            v[2:end,:] = vec[2]
+        S = length(vec[1])
+        dim = length(vec[2][:,1])
+        if vec isa Tuple{<:SVector,<:SMatrix}
+            tv = vec[1]
+            gv = vec[2]
         else
-            M = length(vec[:,2])
-            dim = length(vec[:,1])-1
-            v = vec
+            tv = SVector{S,T}(vec[1])
+            gv = SMatrix{dim,S,T}(vec[2])
         end
         if normalize
-            v = v/norm(v[1, :])
+            tv = tv/norm(tv)
+            gv = gv/norm(tv)
         end
-        tv = SMatrix{size(v)...,T}(v)
     end
-    return OneParticleDensityGradient{T,dim,Float64(zeta),typeof(tv)}(tv)
+    return OneParticleDensityGradient{T,dim,Float64(zeta),typeof(tv),typeof(gv)}(tv,gv)
 end
 
 function Base.show(io::IO, topd::OneParticleDensityGradient{<:Any,M}) where M
-    print(io, "OneParticleDensityGradient(", topd.test_vector,)
-    if !(norm(topd.test_vector[:,1]) ≈ 1.0)
+    print(io, "OneParticleDensityGradient(", (topd.test_vector, topd.vector_gradient),)
+    if !(norm(topd.test_vector) ≈ 1.0)
         print(io, "; normalize=false")
     end
     print(io, ")")
@@ -443,8 +454,8 @@ function Interfaces.diagonal_element(c::OneParticleDensityGradientColumn{
     else
         val = zero(T)
         @inbounds for i in 1:M
-            val += (conj(c.operator.test_vector[2:end,i]) * c.operator.test_vector[1,i] .+ 
-                conj.(c.operator.test_vector[1,i]) * c.operator.test_vector[2:end,i]) * (Onr[i] - zeta)
+            val += (conj(c.operator.vector_gradient[:,i]) * c.operator.test_vector[i] .+ 
+                conj.(c.operator.test_vector[i]) * c.operator.vector_gradient[:,i]) * (Onr[i] - zeta)
         end
     end
     return val
@@ -486,9 +497,9 @@ end
                 dst = find_mode(c.address, i)
                 address, value = excitation(c.address, (dst,), (src,))
                 if !iszero(value)
-                    val = T((conj(c.operator.test_vector[1,i]) * 
-                        c.operator.test_vector[2:end,src.mode] .+ 
-                        conj.(c.operator.test_vector[2:end,i]) * 
+                    val = T((conj(c.operator.test_vector[i]) * 
+                        c.operator.vector_gradient[:,src.mode] .+ 
+                        conj.(c.operator.vector_gradient[:,i]) * 
                         c.operator.test_vector[1,src.mode]) * value)
                     # choose next state
                     if i + 1 <= n_modes
@@ -664,36 +675,49 @@ function Base.iterate(od::TestTwoParticleDensityOffdiagonals, state=(2, 1, 2, 1)
 end
 
 """
-    TwoParticleDensityGradient(vec; normalize=true, full_vector=false) <: AbstractOperator{SVector{m,T}}
+    TwoParticleDensityGradient(vec; normalize=true, full_vector=false,
+        zeta=0) <: AbstractOperator{SVector{m,T}}
  
-An expectation value with this operator yields a gradient of the largest 
-eigenvalue of the two-particle density matrix. `T` is the eltype of `vec[1]`.
-If `normalize` is true (default), the vector is normalized before use.
-If `full_vector` is true, gradient is calculated for each element of `v_{ij}`, 
-and the operator is defined as below. A two particle operator constructed from 
-a provided test vector `vec[1]`.
+An expectation value with this operator yields a gradient `TestTwoParticleDensity` 
+for a given test vector. Here, `vec` is a Tuple where `vec[1]` is the test 
+vector and `T` is the eltype of `vec[1]`. If `normalize` is true (default), the 
+vector is normalized before use. `zeta` is the expectation value of 
+`TestTwoParticleDensity` for a given `vec[1]`.
+
+```math
+    ζ = \langle ∑_{ij,kl} ρ̂ {(2)}_{ij,kl} v_{ij}^* v_{kl} \rangle
+```
+
+There are two cases involved:
+
+- `full_vector` = true: gradient is calculated for each element of `vec[1]`, 
+and the operator is defined as below. Here `vec` is a <:Tuple{AbstractVector,}
+with only one element, i.e., test vector. A one-particle operator constructed 
+from a provided test vector `vec[1]`. Also, `m` = binomial(# of sites, 2).
+
 
 ```math
     ∂ρ̂ {(2)}/∂v_{kl} = ∑_{ij} (v_{ij}^* (â^†_{i} â^†_{j} â_{l} â_{k} - 
         ζ (δ_{ik}δ_{jl} + δ_{il}δ_{jk}) v_{ij}^*)
 ```
 
-whereas, if `full_vector` is false, the input `v` must be a Tuple of 
-`(vector `vᵢⱼ(̄α)`, matrix gradient `∂vᵢⱼ(̄α)/∂̄α` )`, and the operator is 
-defined as below. A two particle operator constructed from a provided 
-test vector `vec[1]` and its gradient `vec[2][1:m,:]` with respect to 
-parameters `α₁,α₂,...,αₘ`. `ζ` is a scalar (default 0). Vector `vᵢⱼ(̄α)` 
-has a fix functional form with parameters `̄α`.
+-`full_vector` = false: gradient is calculated with respect to the parameters 
+of the given test_vector, which has a fixed functional form. Here, the input 
+`vec` must be a <:Tuple{AbstractVector, AbstractMatrix,} i.e. `(test vector, 
+vector gradient, )` where `vector_gradient` is a matrix `vec[2][1:m,:]` 
+representing the transpose of the Jacobian of test_vector with respect to
+its parameters `α₁,α₂,...,αₘ`. 
 
 ```math
-    ∂_α ρ̂ {(2)}= ∑_{ij, kl} (v_{ij}^* ∂v_{kl}(̄α)/∂̄α + 
-        ∂v_{ij}^*(̄α)/∂̄α v_{kl}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
+    ∂_α ρ̂ {(2)}= ∑_{ij, kl} (v_{ij}^* ∂v_{kl}(α)/∂α + 
+        ∂v_{ij}^*(α)/∂α v_{kl}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
         ζ (δ_{ik}δ_{jl} + δ_{il}δ_{jk}))
 ```
 Also, in `vᵢⱼ`, i and j are site indices (with i < j). 
 """
-struct TwoParticleDensityGradient{T,Dim,Zeta,V<:SArray{<:Any,T}} <: AbstractOperator{SVector{Dim,T}}
+struct TwoParticleDensityGradient{T,Dim,Zeta,V<:SVector{<:Any,T},G} <: AbstractOperator{SVector{Dim,T}}
     test_vector::V
+    vector_gradient::G
 end
 function TwoParticleDensityGradient(vec; zeta = 0, normalize=true, full_vector=false)
     if full_vector
@@ -707,33 +731,32 @@ function TwoParticleDensityGradient(vec; zeta = 0, normalize=true, full_vector=f
         if normalize
             tv = tv / norm(tv)
         end
+        gv = nothing
     else
-        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix} || vec isa AbstractMatrix)
-            error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix) or a matrix.")
+        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix})
+            error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix)")
         end
         T = float(eltype(vec[1]))
-        if vec isa Tuple{<:AbstractVector,<:AbstractMatrix}
-            S = length(vec[1])
-            dim = length(vec[2][:,1])
-            v = zeros(T, dim + 1, S)
-            v[1, :] = vec[1]
-            v[2:end, :] = vec[2]
+        S = length(vec[1])
+        dim = length(vec[2][:,1])
+        if vec isa Tuple{<:SVector,<:SMatrix}
+            tv = vec[1]
+            gv = vec[2]
         else
-            S = length(vec[1,:])
-            dim = length(vec[:,1]) - 1
-            v = vec
+            tv = SVector{S,T}(vec[1])
+            gv = SMatrix{dim,S,T}(vec[2])
         end
         if normalize
-            v = v/norm(v[1, :])
+            tv = tv/norm(tv)
+            gv = gv/norm(tv)
         end
-        tv = SMatrix{dim+1,S,T}(v)
     end
-    return TwoParticleDensityGradient{T,dim,Float64(zeta),typeof(tv)}(tv)
+    return TwoParticleDensityGradient{T,dim,Float64(zeta),typeof(tv),typeof(gv)}(tv,gv)
 end
 
 function Base.show(io::IO, topd::TwoParticleDensityGradient{<:Any,M}) where M
-    print(io, "TwoParticleDensityGradient(", topd.test_vector,)
-    if !(norm(topd.test_vector[1,:]) ≈ 1.0)
+    print(io, "TwoParticleDensityGradient(", (topd.test_vector, topd.vector_gradient),)
+    if !(norm(topd.test_vector) ≈ 1.0)
         print(io, "; normalize=false")
     end
     print(io, ")")
@@ -766,15 +789,15 @@ function Interfaces.diagonal_element(c::TwoParticleDensityGradientColumn{
     end
     M = num_modes(c.address)
     if dim == binomial(M,2)
-        val = T(-conj(c.operator.test_vector) * zeta)
+        val = -conj(c.operator.test_vector) * zeta
     else
         val = zero(T)
         for i in 1:M
             for j in 1:i-1
-                val -= T(((conj(c.operator.test_vector[2:end, index((i, j))]) .* 
-                    c.operator.test_vector[1, index((i, j))]) .+ 
-                    (c.operator.test_vector[2:end, index((i, j))] .* 
-                    conj(c.operator.test_vector[1, index((i, j))]))) .* 2 * zeta)
+                val -= ((conj(c.operator.vector_gradient[:, index((i, j))]) * 
+                    c.operator.test_vector[index((i, j))]) + 
+                    (c.operator.vector_gradient[:, index((i, j))] * 
+                    conj(c.operator.test_vector[index((i, j))]))) * 2 * zeta
             end
         end
     end
@@ -822,15 +845,15 @@ end
                                 dst = find_mode(c.address, (i, j,))
                                 address, val = excitation(c.address, dst, (src2, src1,))
                                 if !iszero(val)
-                                    value = T((conj(c.operator.test_vector[2:end,index((i,j))]) .* 
-                                        c.operator.test_vector[1,index((src1.mode,src2.mode))] .+ 
-                                        c.operator.test_vector[2:end,index((src1.mode,src2.mode))] .* 
-                                        conj(c.operator.test_vector[1,index((i,j))])) .* 4 .* val)
+                                    value = (conj(c.operator.vector_gradient[:,index((i,j))]) * 
+                                        c.operator.test_vector[index((src1.mode,src2.mode))] + 
+                                        c.operator.vector_gradient[:,index((src1.mode,src2.mode))] * 
+                                        conj(c.operator.test_vector[index((i,j))])) * 4 * val
                                     # choose next state
                                     if i + 1 <= n_modes
-                                        return (address, value), (i + 1, j, k, l)
+                                        return (address, value::T), (i + 1, j, k, l)
                                     else
-                                        return (address, value), (j + 2, j + 1, k, l)
+                                        return (address, value::T), (j + 2, j + 1, k, l)
                                     end
                                 end
                             end
@@ -875,13 +898,13 @@ end
                                 dst = find_mode(c.address, (i, j,))
                                 address, val = excitation(c.address, dst, (src2, src1,))
                                 if !iszero(val)
-                                    value = zeros(eltype(T),Int(n_modes*(n_modes-1)/2))
+                                    value = zero(T)
                                     value[index((src1.mode,src2.mode))] += 2 * conj(c.operator.test_vector[index((i,j))] ) .* val
                                     # choose next state
                                     if i + 1 <= n_modes
-                                        return (address, T(value)), (i + 1, j, k, l)
+                                        return (address, value::T), (i + 1, j, k, l)
                                     else
-                                        return (address, T(value)), (j + 2, j + 1, k, l)
+                                        return (address, value::T), (j + 2, j + 1, k, l)
                                     end
                                 end
                             end
