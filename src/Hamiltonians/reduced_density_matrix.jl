@@ -376,7 +376,7 @@ struct OneParticleDensityGradient{T,Dim,Zeta,V<:SArray{<:Any,T}} <: AbstractOper
 end
 function OneParticleDensityGradient(vec; zeta = 0, normalize=true, full_vector=false)
     if full_vector
-        T = float(eltype(ve[1]))
+        T = float(eltype(vec[1]))
         dim = length(vec[1])
         if normalize
             vec[1] .= vec[1]/norm(vec[1])
