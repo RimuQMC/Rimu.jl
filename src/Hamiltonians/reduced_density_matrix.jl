@@ -350,20 +350,20 @@ end
         zeta = 0) <: AbstractOperator{SVector{m,T}}
  
 An expectation value with this operator yields a gradient `TestOneParticleDensity` 
-for a given test vector. Here, `vec` is a Tuple where `vec[1]` is the test 
+for a given test vector. Here `vec` is a Tuple where `vec[1]` is the test 
 vector and `T` is the eltype of `vec[1]`. If `normalize` is true (default), the 
-vector is normalized before use. `zeta` is the expectation value of 
+vector is normalized before use. `zeta` is a expectation value of 
 `TestOneParticleDensity` for a given `vec[1]`.
 
 ```math
     ζ = \\langle ∑_{ij} ρ̂ {(1)}_{ij} v_{i}^* v_{j} \\rangle
 ```
 
-There are two cases involved:
+There are two cases involves:
 
 - `full_vector` = true: gradient is calculated for each element of `vec[1]`, 
 and the operator is defined as below. Here `vec` is a <:Tuple{AbstractVector,}
-with only one element, i.e., test vector. A one-particle operator constructed 
+with only one element i.e. test vector. A one particle operator constructed 
 from a provided test vector `vec[1]`. Also, `m` = # of sites.
 
 ```math
@@ -371,11 +371,11 @@ from a provided test vector `vec[1]`. Also, `m` = # of sites.
 ```
 
 -`full_vector` = false: gradient is calculated with respect to the parameters 
-of the given test_vector, which has a fixed functional form. Here, the input 
-`vec` must be a <:Tuple{AbstractVector, AbstractMatrix,} i.e. `(test vector, 
+of the given test_vector which has a fix functional form. Here, the input `
+vec` must be a <:Tuple{AbstractVector, AbstractMatrix,} i.e. `(test vector, 
 vector gradient, )` where `vector_gradient` is a matrix `vec[2][1:m,:]` 
-representing the transpose of the Jacobian of test_vector with respect to
-its parameters `α₁,α₂,...,αₘ`. 
+representing transpose jacobian of test_vector with respect 
+to its parameters `α₁,α₂,...,αₘ`. 
 
 ```math
     ∂_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* ∂v_j(α)/∂α + 
@@ -679,20 +679,20 @@ end
         zeta=0) <: AbstractOperator{SVector{m,T}}
  
 An expectation value with this operator yields a gradient `TestTwoParticleDensity` 
-for a given test vector. Here, `vec` is a Tuple where `vec[1]` is the test 
+for a given test vector. Here `vec` is a Tuple where `vec[1]` is the test 
 vector and `T` is the eltype of `vec[1]`. If `normalize` is true (default), the 
-vector is normalized before use. `zeta` is the expectation value of 
+vector is normalized before use. `zeta` is a expectation value of 
 `TestTwoParticleDensity` for a given `vec[1]`.
 
 ```math
     ζ = \\langle ∑_{ij,kl} ρ̂ {(2)}_{ij,kl} v_{ij}^* v_{kl} \\rangle
 ```
 
-There are two cases involved:
+There are two cases involves:
 
 - `full_vector` = true: gradient is calculated for each element of `vec[1]`, 
 and the operator is defined as below. Here `vec` is a <:Tuple{AbstractVector,}
-with only one element, i.e., test vector. A one-particle operator constructed 
+with only one element i.e. test vector. A one particle operator constructed 
 from a provided test vector `vec[1]`. Also, `m` = binomial(# of sites, 2).
 
 
@@ -702,11 +702,11 @@ from a provided test vector `vec[1]`. Also, `m` = binomial(# of sites, 2).
 ```
 
 -`full_vector` = false: gradient is calculated with respect to the parameters 
-of the given test_vector, which has a fixed functional form. Here, the input 
-`vec` must be a <:Tuple{AbstractVector, AbstractMatrix,} i.e. `(test vector, 
+of the given test_vector which has a fix functional form. Here, the input `
+vec` must be a <:Tuple{AbstractVector, AbstractMatrix,} i.e. `(test vector, 
 vector gradient, )` where `vector_gradient` is a matrix `vec[2][1:m,:]` 
-representing the transpose of the Jacobian of test_vector with respect to
-its parameters `α₁,α₂,...,αₘ`. 
+representing transpose jacobian of test_vector with respect 
+to its parameters `α₁,α₂,...,αₘ`. 
 
 ```math
     ∂_α ρ̂ {(2)}= ∑_{ij, kl} (v_{ij}^* ∂v_{kl}(α)/∂α + 
@@ -898,13 +898,13 @@ end
                                 dst = find_mode(c.address, (i, j,))
                                 address, val = excitation(c.address, dst, (src2, src1,))
                                 if !iszero(val)
-                                    value = zero(T)
+                                    value = zeros(eltype(T), length(T))
                                     value[index((src1.mode,src2.mode))] += 2 * conj(c.operator.test_vector[index((i,j))] ) .* val
                                     # choose next state
                                     if i + 1 <= n_modes
-                                        return (address, value::T), (i + 1, j, k, l)
+                                        return (address, T(value)), (i + 1, j, k, l)
                                     else
-                                        return (address, value::T), (j + 2, j + 1, k, l)
+                                        return (address, T(value)), (j + 2, j + 1, k, l)
                                     end
                                 end
                             end
