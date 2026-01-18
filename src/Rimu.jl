@@ -18,7 +18,6 @@ using Random: Random, RandomDevice, seed!
 using NamedTupleTools: NamedTupleTools, namedtuple, delete
 using Optimisers: Adam, RAdam, destructure, Restructure,
     setup, update
-import Optimisers: Momentum
 import Tables
 import ConsoleProgressMonitor
 import TOML
