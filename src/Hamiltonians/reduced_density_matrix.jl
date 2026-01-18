@@ -356,7 +356,7 @@ vector is normalized before use. `zeta` is the expectation value of
 `TestOneParticleDensity` for a given `vec[1]`.
 
 ```math
-    ζ = \langle ∑_{ij} ρ̂ {(1)}_{ij} v_{i}^* v_{j} \rangle
+    ζ = \\langle ∑_{ij} ρ̂ {(1)}_{ij} v_{i}^* v_{j} \\rangle
 ```
 
 There are two cases involved:
@@ -685,7 +685,7 @@ vector is normalized before use. `zeta` is the expectation value of
 `TestTwoParticleDensity` for a given `vec[1]`.
 
 ```math
-    ζ = \langle ∑_{ij,kl} ρ̂ {(2)}_{ij,kl} v_{ij}^* v_{kl} \rangle
+    ζ = \\langle ∑_{ij,kl} ρ̂ {(2)}_{ij,kl} v_{ij}^* v_{kl} \\rangle
 ```
 
 There are two cases involved:
