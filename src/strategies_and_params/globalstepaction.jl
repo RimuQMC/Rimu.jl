@@ -172,7 +172,7 @@ FermiFS{5,10}(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
 
 julia> h = HubbardRealSpace(address; w=-1.0)
 HubbardRealSpace(
-  fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩",
+  fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩";
   geometry = CubicGrid((10,), (true,)),
   t = [1.0;;],
   u = [1.0;;],
@@ -196,7 +196,7 @@ Progress: 100%|█████████████████████�
 PMCSimulation with 3 replica(s) and 1 spectral state(s).
   Algorithm:   FCIQMC(DoubleLogUpdate{Int64}(1000, 0.08, 0.0016), ConstantTimeStep())
   Hamiltonian: HubbardRealSpace(
-  fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩",
+  fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩";
   geometry = CubicGrid((10,), (true,)),
   t = [1.0;;],
   u = [1.0;;],
