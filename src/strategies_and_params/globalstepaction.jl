@@ -165,6 +165,8 @@ value of gradient becomes smaller than `threshold` (default to 1e-3).
 # Examples
 
 ```jldoctest
+julia> using StaticArrays
+
 julia> address = FermiFS(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
 FermiFS{5,10}(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
 
