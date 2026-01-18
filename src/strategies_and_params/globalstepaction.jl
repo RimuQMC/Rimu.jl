@@ -94,9 +94,9 @@ coefficient vector overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica states 
 a given operator `O` and its parameters `α`. `parameter` is of type 
 `Vector{SVector}` where each index refers to perticular spectral state.
 `testfunction` is a nothing or a function with parameter (̄α, # of sites) 
-depending on whether the optimization is applied to entire Vector or it 
-with the fixed functional form.
-The results are returned in a `NamedTuple` with a single field with key `name` 
+Depending on whether the optimization is applied to the entire Vector or  
+to a set of parameters of a vector with a fixed functional form.
+The results are returned in a `NamedTuple` with a single field with key `name.` 
 (default `(:gradient_vector_overlaps, :coefficient_vector_overlaps`) and 
 value array of overlaps.
 
@@ -128,7 +128,7 @@ function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
     coeff = zeros(eltype(ooa.parameter[1]), binomial(n_reps,2), n_specs)
 
     for s in 1:n_specs
-        gev = isnothing(ooa.testfunction) ? (ooa.parameter[s],) : 
+        gev = full_vector ? (ooa.parameter[s],) : 
             ooa.testfunction(ooa.parameter[s], M)
 
         coeff[:, s] = [dot(vectors[i, s], vectors[j, s]) for (i, j) in StrictPairIter(n_reps)]
@@ -154,25 +154,23 @@ Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_
 optimize the parameters of `gradientoverlap`(<:GlobalStepAction) after every 
 `step` number of collected gradient data in the FCIQMC simulation between all 
 pairs of replica states for a given operator `O`. The results are returned in a 
-`NamedTuple` with a field provided from gradientoverlap and single field with
+`NamedTuple` with a field provided from gradientoverlap and a single field with
 key `name` (default `:parameters`) and value array of overlaps. 
     The optimization is carried out using the optimization `method` 
 (default to RAdam(0.1)) which is downloaded from `Optimisers.jl`. There are 
 other methods that can be usedsuch as Adam and Momentum.
-    FCIQMC simulation is setup to be turminate when the sum of the absolute 
-value of gradient become smaller then `threshold` (default to 1e-3). 
+    FCIQMC simulation is set up to terminate when the sum of the absolute 
+value of gradient becomes smaller than `threshold` (default to 1e-3). 
 
 # Examples
 
 ```jldoctest
-julia> using StaticArrays
-
 julia> address = FermiFS(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
 FermiFS{5,10}(1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
 
 julia> h = HubbardRealSpace(address; w=-1.0)
 HubbardRealSpace(
-  fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩";
+  fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩",
   geometry = CubicGrid((10,), (true,)),
   t = [1.0;;],
   u = [1.0;;],
@@ -186,17 +184,17 @@ julia> gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
                    :coefficient_vector_overlaps), 
                    testfunction = nothing, parameter);
 
-julia> oops = oops = OverlapwithOptimization(gop; name = :parameter, step = 5, 
-                   threshold = 1e-2);
+julia> oops = OverlapwithOptimization(gop; name = :parameter, step = 5, 
+                   threshold = 1e-2, method = Adam(0.1));
 
 julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,));
 
 julia> solve(p)
-Progress: 100%|█████████████████████████████████████████████████| Time: 0:00:22
+Progress: 100%|████████████████████████████████████████████████████| Time: 0:00:22
 PMCSimulation with 3 replica(s) and 1 spectral state(s).
   Algorithm:   FCIQMC(DoubleLogUpdate{Int64}(1000, 0.08, 0.0016), ConstantTimeStep())
   Hamiltonian: HubbardRealSpace(
-  fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩";
+  fs"|↑↑↑↑↑⋅⋅⋅⋅⋅⟩",
   geometry = CubicGrid((10,), (true,)),
   t = [1.0;;],
   u = [1.0;;],
@@ -221,6 +219,7 @@ function OverlapwithOptimization(gradientoverlap; name = :parameter,
 end
 
 function (ooa::OverlapwithOptimization)(state::ReplicaState) 
+    #println(ooa.gradientoverlap.parameter)
     return NamedTuple(((ooa.gradientoverlap)(state)...,
                 ooa.name=>ooa.gradientoverlap.parameter,))
 end
@@ -233,6 +232,7 @@ function (ooa::OverlapwithOptimization{threshold})(df::DataFrame) where threshol
     _setup, para = update(ooa.Setup, para, g);
     
     # restructure (re) the parameters of each spectrual state to a seperate SVector. 
+    typeof(re(para.x))
     ooa.gradientoverlap.parameter = re(para.x)
     ooa.Setup = _setup
     return sum(abs.(g.x)) < threshold
