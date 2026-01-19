@@ -347,12 +347,12 @@ end
 
 """
     TestOneParticleDensityGradient(test_vector, jacobian=nothing; normalize=true,
-        zeta=0) <: AbstractOperator{SVector{m,T}}
+        zeta=0) <: AbstractOperator{TT}
  
 An expectation value with this operator yields a gradient `TestOneParticleDensity` 
-for a given test vector. Here `test_vector` is the test vector and `T` is the eltype of 
-`test_vector`. If `normalize` is true (default), the vector is normalized before use. 
-`zeta` is a expectation value of `TestOneParticleDensity` for a given `test_vector`.
+for a given test vector. Here `test_vector` is the test vector. If `normalize` is 
+true (default), the vector is normalized before use. `zeta` is a expectation 
+value of `TestOneParticleDensity` for a given `test_vector`.
 
 ```math
     ζ = \\langle ∑_{i,j} ρ̂ {(1)}_{i,j} v_{i}^* v_{j} \\rangle
@@ -360,9 +360,9 @@ for a given test vector. Here `test_vector` is the test vector and `T` is the el
 
 There are two cases involves:
 
-- `jacobian <:Nothing`: gradient is calculated for each element of `vec`, 
+- `jacobian <:Nothing`: gradient is calculated for each element of `test_vector`, 
 and the operator is defined as below. A one particle operator constructed 
-from a provided test vector. Also, `m` = # of sites.
+from a provided test vector. Also, `TT` = MVector{# of sites, T}. 
 
 ```math
     ∂ρ̂ {(1)}/∂v_j = ∑_{i} v_{i}^* â^†_{i} â_{j} - ζ v_{j}^*
@@ -372,14 +372,15 @@ from a provided test vector. Also, `m` = # of sites.
 to the parameters of the given test_vector which has a fix functional form. 
 Here, `jacobian` is a matrix of dimension (m × # of sites) representing 
 transpose of the jacobian of test_vector with respect to its parameters 
-`α₁,α₂,...,αₘ`.
+`α₁,α₂,...,αₘ`. Also, `TT` = SVector{m, T}.
 
 ```math
     ∂_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* ∂v_j(α)/∂α + 
         ∂v_i^*(α)/∂α v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
 ```
+`T` is the eltype of `test_vector`.
 """
-struct TestOneParticleDensityGradient{T,Dim,Zeta,V<:SArray{<:Any,T},J} <: AbstractOperator{SVector{Dim,T}}
+struct TestOneParticleDensityGradient{TT,Zeta,V<:SArray{<:Any,T},J} <: AbstractOperator{TT}
     test_vector::V
     jacobian::J
 end
@@ -395,6 +396,7 @@ function TestOneParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
         if normalize
             test_vector = test_vector / norm(test_vector)
         end
+        TT = MVector{dim,T}
     else
         if !(test_vector isa AbstractVector && jacobian isa AbstractMatrix)
             error("(test_vector, jacobian) must be (vector, matrix)")
@@ -410,12 +412,13 @@ function TestOneParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
             test_vector = test_vector/norm(test_vector)
             jacobian = jacobian/norm(test_vector)
         end
+        TT = SVector{dim,T}
     end
-    return TestOneParticleDensityGradient{T,dim,Float64(zeta),typeof(test_vector),typeof(jacobian)}(
+    return TestOneParticleDensityGradient{TT,T(zeta),typeof(test_vector),typeof(jacobian)}(
             test_vector,jacobian)
 end
 
-function Base.show(io::IO, topd::TestOneParticleDensityGradient{<:Any,M}) where M
+function Base.show(io::IO, topd::TestOneParticleDensityGradient)
     print(io, "TestOneParticleDensityGradient(", topd.test_vector, topd.jacobian,)
     if !(norm(topd.test_vector) ≈ 1.0)
         print(io, "; normalize=false")
@@ -425,8 +428,8 @@ end
 
 Interfaces.LOStructure(::Type{<:TestOneParticleDensityGradient}) = IsHermitian()
 function Interfaces.allows_address_type(
-    od::TestOneParticleDensityGradient{T}, ::Type{B}
-) where {T,B}
+    od::TestOneParticleDensityGradient, ::Type{B}
+) where {B}
     M = num_modes(B)
     B <: SingleComponentFockAddress && length(od.test_vector) == M
 end
@@ -444,10 +447,11 @@ end
 Interfaces.parent_operator(c::TestOneParticleDensityGradientColumn) = c.operator
 Interfaces.starting_address(c::TestOneParticleDensityGradientColumn) = c.address
 function Interfaces.diagonal_element(c::TestOneParticleDensityGradientColumn{
-    <:TestOneParticleDensityGradient{<:Any,Dim,zeta},<:Any,T}) where {Dim,zeta,T}
+    <:TestOneParticleDensityGradient{<:Any,zeta},<:Any,T}) where {zeta,T}
     Onr = onr(c.address)
     M = num_modes(c.address)
-    if Dim == M
+    if c.operator.jacobian isa Nothing
+        @inbounds val = zero(T)
         val = T(conj(c.operator.test_vector) .* (Onr .- zeta))
     else
         val = zero(T)
@@ -531,7 +535,7 @@ end
                 dst = find_mode(c.address, i)
                 address, value = excitation(c.address, (dst,), (src,))
                 if !iszero(value)
-                    val = zeros(eltype(T),n_modes)
+                    @inbounds val = zero(T)
                     val[src.mode] += conj(c.operator.test_vector[i]) * value
                     # choose next state
                     if i + 1 <= n_modes
@@ -677,9 +681,9 @@ end
         zeta=0) <: AbstractOperator{SVector{m,T}}
  
 An expectation value with this operator yields a gradient `TestTwoParticleDensity` 
-for a given test vector. Here `test_vector` is the test vector and `T` is the eltype of 
-`test_vector`. If `normalize` is true (default), the vector is normalized before use. 
-`zeta` is a expectation value of `TestTwoParticleDensity` for a given `test_vector`.
+for a given test vector. Here `test_vector` is the test vector. If `normalize` is 
+true (default), the vector is normalized before use. `zeta` is a expectation 
+value of `TestTwoParticleDensity` for a given `test_vector`.
 
 ```math
     ζ = \\langle ∑_{ij,kl} ρ̂ {(2)}_{ij,kl} v_{ij}^* v_{kl} \\rangle
@@ -687,10 +691,9 @@ for a given test vector. Here `test_vector` is the test vector and `T` is the el
 
 There are two cases involves:
 
-- `jacobian <:Nothing`: gradient is calculated for each element of `vec`, 
+- `jacobian <:Nothing`: gradient is calculated for each element of `test_vector`, 
 and the operator is defined as below. A one particle operator constructed 
-from a provided test vector. Also, `m` = binomial(# of sites, 2).
-
+from a provided test vector. Also, `TT` = MVector{binomial(# of sites, 2),T}.
 
 ```math
     ∂ρ̂ {(2)}/∂v_{kl} = ∑_{ij} (v_{ij}^* (â^†_{i} â^†_{j} â_{l} â_{k} - 
@@ -700,16 +703,18 @@ from a provided test vector. Also, `m` = binomial(# of sites, 2).
 -`jacobian <:AbstractMatrix`: gradient is calculated with respect 
 to the parameters of the given test_vector which has a fix functional form. Here, 
 `jacobian` is a matrix of dimension (m × binomial(# of sites, 2)) representing 
-transpose of the jacobian of test_vector with respect to its parameters `α₁,α₂,...,αₘ`. 
+transpose of the jacobian of test_vector with respect to its parameters 
+`α₁,α₂,...,αₘ`. Also, `TT` = SVector{m,T}.
 
 ```math
     ∂_α ρ̂ {(2)}= ∑_{ij, kl} (v_{ij}^* ∂v_{kl}(α)/∂α + 
         ∂v_{ij}^*(α)/∂α v_{kl}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
         ζ (δ_{ik}δ_{jl} + δ_{il}δ_{jk}))
 ```
-Also, in `vᵢⱼ`, i and j are site indices (with i < j). 
+Also, in `vᵢⱼ`, i and j are site indices (with i < j) and `T` is the eltype of 
+`test_vector`
 """
-struct TestTwoParticleDensityGradient{T,Dim,Zeta,V<:SVector{<:Any,T},J} <: AbstractOperator{SVector{Dim,T}}
+struct TestTwoParticleDensityGradient{TT,Zeta,V<:SVector{<:Any,T},J} <: AbstractOperator{TT}
     test_vector::V
     jacobian::J
 end
@@ -725,6 +730,7 @@ function TestTwoParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
         if normalize
             test_vector = test_vector / norm(test_vector)
         end
+        TT = MVector{dim,T}
     else
         if !(test_vector isa AbstractVector && jacobian isa AbstractMatrix)
             error("(test_vector, jacobian) must be (vector, matrix)")
@@ -740,12 +746,13 @@ function TestTwoParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
             test_vector = test_vector/norm(test_vector)
             jacobian = jacobian/norm(test_vector)
         end
+        TT = SVector{dim,T}
     end
-    return TestTwoParticleDensityGradient{T,dim,Float64(zeta),typeof(test_vector),typeof(jacobian)}(
+    return TestTwoParticleDensityGradient{TT,T(zeta),typeof(test_vector),typeof(jacobian)}(
         test_vector,jacobian)
 end
 
-function Base.show(io::IO, topd::TestTwoParticleDensityGradient{<:Any,M}) where M
+function Base.show(io::IO, topd::TestTwoParticleDensityGradient)
     print(io, "TestTwoParticleDensityGradient(", topd.test_vector, topd.jacobian,)
     if !(norm(topd.test_vector) ≈ 1.0)
         print(io, "; normalize=false")
@@ -755,8 +762,8 @@ end
 
 Interfaces.LOStructure(::Type{<:TestTwoParticleDensityGradient}) = IsHermitian()
 function Interfaces.allows_address_type(
-    od::TestTwoParticleDensityGradient{T,Dim}, ::Type{B}
-) where {T,Dim,B}
+    od::TestTwoParticleDensityGradient, ::Type{B}
+) where {B}
     M = num_modes(B)
     return B <: SingleComponentFockAddress && length(od.test_vector) == binomial(M,2)
 end
@@ -774,11 +781,12 @@ end
 Interfaces.parent_operator(c::TestTwoParticleDensityGradientColumn) = c.operator
 Interfaces.starting_address(c::TestTwoParticleDensityGradientColumn) = c.address
 function Interfaces.diagonal_element(c::TestTwoParticleDensityGradientColumn{
-    <:TestTwoParticleDensityGradient{<:Any,dim,zeta},<:Any,T}) where {dim,zeta,T}
+    <:TestTwoParticleDensityGradient{<:Any,zeta},<:Any,T}) where {zeta,T}
     M = num_modes(c.address)
     Onr = onr(c.address)
-    if dim == binomial(M,2)
-        @inbounds val = -conj(c.operator.test_vector) * zeta
+    if c.operator.jacobian isa Nothing
+        val = zero(T)
+        @inbounds val .-= conj(c.operator.test_vector) * zeta
     else
         val = zero(T)
         @inbounds for i in 1:M
@@ -881,14 +889,14 @@ end
                     dst = find_mode(c.address, (i,j,))
                     address, val = excitation(c.address, dst, (src2, src1,))
                     if !iszero(val)
-                        value = zeros(eltype(T), length(T))
-                        @inbounds value[index((src1.mode,src2.mode))] += 2 * 
+                        @inbounds value = zero(T)
+                        value[index((src1.mode,src2.mode))] += 2 * 
                                     conj(c.operator.test_vector[index((i,j))] ) .* val
                         # choose next state
                         if i + 1 <= n_modes
-                            return (address, T(value)), (i + 1, j, k, l)
+                            return (address, value::T), (i + 1, j, k, l)
                         else
-                            return (address, T(value)), (j + 2, j + 1, k, l)
+                            return (address, value::T), (j + 2, j + 1, k, l)
                         end
                     end
                     i += 1
