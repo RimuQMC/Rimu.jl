@@ -239,11 +239,18 @@ function ratio_estimators(
 )
     n = length(x)
     @assert n == length(y)
-    μ_x = mean(x)
-    var_x = var(x; corrected) / n # variance of mean
-    μ_y = mean(y)
-    var_y = var(y; corrected) / n # variance of mean
-    ρ = cov(x, y; corrected) / n # estimated correlation of sample means μ_x and μ_y
+    @show μ_x = mean(x)
+    @show var_x = var(x; corrected) / n # variance of mean
+    @show μ_y = mean(y)
+    @show var_y = var(y; corrected) / n # variance of mean
+    @show ρ = cov(x, y; corrected) / n # estimated correlation of sample means μ_x and μ_y
+    if ρ < 0
+        corr = ρ / sqrt(var_x * var_y)
+        ρ = zero(ρ)
+        if abs(corr) > sqrt(eps(eltype(x)))
+            @warn "Negative correlation coefficient corr = $corr encountered in `ratio_estimators`. Ignoring correlation!"
+        end
+    end
 
     # Monte Carlo sampling of correlated normal distribution of sample means for x and y
     # x_y_ps = particles(mc_samples, (μ_x, μ_y, var_x, var_y, ρ))
