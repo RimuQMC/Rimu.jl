@@ -165,8 +165,8 @@ See [wikipedia](https://en.wikipedia.org/wiki/Propagation_of_uncertainty) and
 """
 function x_by_y_linear(μ_x, μ_y, σ_x, σ_y, ρ)
     f = μ_x / μ_y
-    # σ_f = abs(f)*sqrt((σ_x/μ_x)^2 + (σ_y/μ_y)^2 - 2*ρ/(μ_x*μ_y))
-    σ_f = sqrt((σ_x / μ_y)^2 + (μ_x * σ_y / μ_y^2)^2 - 2 * ρ * μ_x / μ_y^3)
+    σ_f = abs(f)*sqrt((σ_x/μ_x)^2 + (σ_y/μ_y)^2 - 2*ρ/(μ_x*μ_y))
+    # σ_f = sqrt((σ_x / μ_y)^2 + (μ_x * σ_y / μ_y^2)^2 - 2 * ρ * μ_x / μ_y^3)
     return f, σ_f
 end
 
