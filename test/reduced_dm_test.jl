@@ -48,7 +48,7 @@ using Rimu.Hamiltonians: TestOneParticleDensity, OneParticleDensityGradient,
     m = dot(gs, rdm, gs)
     @test all(x -> abs(x) < √eps(Float64), m - m') # hermitian up to floating point noise
 
-    # a global relative phase in the vectors results in a global phase in the RDM
+    # A global relative phase in the vectors results in a global phase in the RDM
     m_phase = dot(im * gs, rdm, gs)
     @test all(x -> abs(x) < √eps(Float64), m_phase + im * m)
 
