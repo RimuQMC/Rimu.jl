@@ -428,7 +428,7 @@ function Interfaces.allows_address_type(
     od::TestOneParticleDensityGradient{T}, ::Type{B}
 ) where {T,B}
     M = num_modes(B)
-    B <: SingleComponentFockAddress && size(od.test_vector)[2] == M
+    B <: SingleComponentFockAddress && size(od.test_vector) == M
 end
 
 struct TestOneParticleDensityGradientColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
@@ -758,7 +758,7 @@ function Interfaces.allows_address_type(
     od::TestTwoParticleDensityGradient{T,Dim}, ::Type{B}
 ) where {T,Dim,B}
     M = num_modes(B)
-    return B <: SingleComponentFockAddress && (size(od.test_vector)[end] == binomial(M,2))
+    return B <: SingleComponentFockAddress && size(od.test_vector) == binomial(M,2)
 end
 
 struct TestTwoParticleDensityGradientColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
