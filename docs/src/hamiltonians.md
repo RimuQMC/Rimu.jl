@@ -93,9 +93,9 @@ SingleParticleExcitation
 TwoParticleExcitation
 ReducedDensityMatrix
 TestOneParticleDensity
-OneParticleDensityGradient
+TestOneParticleDensityGradient
 TestTwoParticleDensity
-TwoParticleDensityGradient
+TestTwoParticleDensityGradient
 Momentum
 AxialAngularMomentumHO
 ```
