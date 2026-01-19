@@ -216,13 +216,15 @@ function (ooa::OverlapwithOptimization{threshold})(df::DataFrame) where threshol
     # destructure the parameters of each spectrual state to a single Vector.
     para = (x = destructure(ooa.gradientoverlap.parameter)[1],)
     v, re = destructure(grad_rrs(ooa, df))
-    g = (x = -v,)
-    _setup, para = update(ooa.Setup, para, g);
+    if isnan(sum(abs.(v))) # to ignore NaN as parameter
+        return false
+    end
+    _setup, para = update(ooa.Setup, para, (x = -v,));
     
     # restructure (re) the parameters of each spectrual state to a seperate SVector. 
     ooa.gradientoverlap.parameter = re(para.x)
     ooa.Setup = _setup
-    return sum(abs.(g.x)) < threshold
+    return sum(abs.(v)) < threshold
 end
 
 function grad_rrs(ooa::OverlapwithOptimization, df)
