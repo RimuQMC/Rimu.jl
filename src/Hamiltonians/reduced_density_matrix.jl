@@ -419,7 +419,7 @@ function TestOneParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
 end
 
 function Base.show(io::IO, topd::TestOneParticleDensityGradient)
-    print(io, "TestOneParticleDensityGradient(", topd.test_vector, topd.jacobian,)
+    print(io, "TestOneParticleDensityGradient(", topd.test_vector,",", topd.jacobian,)
     if !(norm(topd.test_vector) ≈ 1.0)
         print(io, "; normalize=false")
     end
@@ -753,7 +753,7 @@ function TestTwoParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
 end
 
 function Base.show(io::IO, topd::TestTwoParticleDensityGradient)
-    print(io, "TestTwoParticleDensityGradient(", topd.test_vector, topd.jacobian,)
+    print(io, "TestTwoParticleDensityGradient(", topd.test_vector,",", topd.jacobian,)
     if !(norm(topd.test_vector) ≈ 1.0)
         print(io, "; normalize=false")
     end
