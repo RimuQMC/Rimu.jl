@@ -151,9 +151,14 @@ end
         end
     end
     nt = blocks_with_m(v; corrected)
-    k = mtest(nt.mj; α)
-    if warn && k < 0
-        @warn "Hypothesis testing failed during `blocking_analysis`. Try using more time steps!" k
+    if nt.std_err[1] < sqrt(eps(real(T)))
+        k = 1 # near constant data, skip M test
+        warn && @warn "Near constant vector in `blocking_analysis`." nt.std_err[1]
+    else
+        k = mtest(nt.mj; α)
+        if warn && k < 0
+            @warn "Hypothesis testing failed during `blocking_analysis`. Try using more time steps!" k
+        end
     end
     return BlockingResult(nt, k), nt
 end

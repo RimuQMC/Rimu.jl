@@ -43,9 +43,9 @@ using Rimu.StatsTools: blocker
     @test mean(v) ≈ br.mean ≈ brs.mean
     @test 0.01 < brs.err < 0.04
     @test 5 < brs.k ≤ 7 # should be 5+1
-    bor = @test_logs (:warn,) blocking_analysis(ones(2000)) # blocking fails
-    @test bor.k == -1
-    @test isnan(bor.err)
+    bor = @test_logs (:warn,) blocking_analysis(ones(2000)) # constant data
+    @test bor.k == 1
+    @test bor.err ≈ 0.0
 
     # complex
     w = randn(ComplexF64, 2^10)
