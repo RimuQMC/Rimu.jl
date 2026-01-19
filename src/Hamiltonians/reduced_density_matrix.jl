@@ -498,7 +498,7 @@ end
                     val = T((conj(c.operator.test_vector[i]) * 
                         c.operator.jacobian[:,src.mode] .+ 
                         conj.(c.operator.jacobian[:,i]) * 
-                        c.operator.test_vector[1,src.mode]) * value)
+                        c.operator.test_vector[src.mode]) * value)
                     # choose next state
                     if i + 1 <= n_modes
                         return (address, val), (i + 1, j)
