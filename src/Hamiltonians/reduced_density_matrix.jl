@@ -346,107 +346,105 @@ function Base.iterate(od::TestOneParticleDensityOffdiagonals, state=(1, 1))
 end
 
 """
-    OneParticleDensityGradient(vec; normalize=true, full_vector=false,
-        zeta = 0) <: AbstractOperator{SVector{m,T}}
+    TestOneParticleDensityGradient(test_vector, jacobian=nothing; normalize=true,
+        zeta=0) <: AbstractOperator{SVector{m,T}}
  
 An expectation value with this operator yields a gradient `TestOneParticleDensity` 
-for a given test vector. Here `vec` is a Tuple where `vec[1]` is the test 
-vector and `T` is the eltype of `vec[1]`. If `normalize` is true (default), the 
-vector is normalized before use. `zeta` is a expectation value of 
-`TestOneParticleDensity` for a given `vec[1]`.
+for a given test vector. Here `test_vector` is the test vector and `T` is the eltype of 
+`test_vector`. If `normalize` is true (default), the vector is normalized before use. 
+`zeta` is a expectation value of `TestOneParticleDensity` for a given `test_vector`.
 
 ```math
-    ζ = \\langle ∑_{ij} ρ̂ {(1)}_{ij} v_{i}^* v_{j} \\rangle
+    ζ = \\langle ∑_{i,j} ρ̂ {(1)}_{i,j} v_{i}^* v_{j} \\rangle
 ```
 
 There are two cases involves:
 
-- `full_vector` = true: gradient is calculated for each element of `vec[1]`, 
-and the operator is defined as below. Here `vec` is a <:Tuple{AbstractVector,}
-with only one element i.e. test vector. A one particle operator constructed 
-from a provided test vector `vec[1]`. Also, `m` = # of sites.
+- `jacobian <:Nothing`: gradient is calculated for each element of `vec`, 
+and the operator is defined as below. A one particle operator constructed 
+from a provided test vector. Also, `m` = # of sites.
 
 ```math
     ∂ρ̂ {(1)}/∂v_j = ∑_{i} v_{i}^* â^†_{i} â_{j} - ζ v_{j}^*
 ```
 
--`full_vector` = false: gradient is calculated with respect to the parameters 
-of the given test_vector which has a fix functional form. Here, the input `
-vec` must be a <:Tuple{AbstractVector, AbstractMatrix,} i.e. `(test vector, 
-vector gradient, )` where `vector_gradient` is a matrix `vec[2][1:m,:]` 
-representing transpose jacobian of test_vector with respect 
-to its parameters `α₁,α₂,...,αₘ`. 
+-`jacobian <:AbstractMatrix`: gradient is calculated with respect 
+to the parameters of the given test_vector which has a fix functional form. 
+Here, `jacobian` is a matrix of dimension (m × # of sites) representing 
+transpose of the jacobian of test_vector with respect to its parameters 
+`α₁,α₂,...,αₘ`.
 
 ```math
     ∂_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* ∂v_j(α)/∂α + 
         ∂v_i^*(α)/∂α v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
 ```
 """
-struct OneParticleDensityGradient{T,Dim,Zeta,V<:SArray{<:Any,T},G} <: AbstractOperator{SVector{Dim,T}}
+struct TestOneParticleDensityGradient{T,Dim,Zeta,V<:SArray{<:Any,T},J} <: AbstractOperator{SVector{Dim,T}}
     test_vector::V
-    vector_gradient::G
+    jacobian::J
 end
-function OneParticleDensityGradient(vec; zeta = 0, normalize=true, full_vector=false)
-    if full_vector
-        T = float(eltype(vec[1]))
-        dim = length(vec[1])
-        if normalize
-            vec[1] .= vec[1]/norm(vec[1])
+function TestOneParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0, 
+    normalize=true)
+
+    if jacobian isa Nothing
+        T = float(eltype(test_vector))
+        dim = length(test_vector)
+        if !(test_vector isa SVector)
+            test_vector = SVector{dim,T}(test_vector)
         end
-        tv = SVector{dim,T}(vec[1])
-        gv = nothing
+        if normalize
+            test_vector = test_vector / norm(test_vector)
+        end
     else
-        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix})
-            error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix)")
+        if !(test_vector isa AbstractVector && jacobian isa AbstractMatrix)
+            error("(test_vector, jacobian) must be (vector, matrix)")
         end
-        T = float(eltype(vec[1]))
-        S = length(vec[1])
-        dim = length(vec[2][:,1])
-        if vec isa Tuple{<:SVector,<:SMatrix}
-            tv = vec[1]
-            gv = vec[2]
-        else
-            tv = SVector{S,T}(vec[1])
-            gv = SMatrix{dim,S,T}(vec[2])
+        T = float(eltype(test_vector))
+        S = length(test_vector)
+        dim = length(jacobian[:,1])
+        if !(test_vector isa SVector && jacobian isa SMatrix)
+            test_vector = SVector{S,T}(test_vector)
+            jacobian = SMatrix{dim,S,T}(jacobian)
         end
         if normalize
-            tv = tv/norm(tv)
-            gv = gv/norm(tv)
+            test_vector = test_vector/norm(test_vector)
+            jacobian = jacobian/norm(test_vector)
         end
     end
-    return OneParticleDensityGradient{T,dim,Float64(zeta),typeof(tv),typeof(gv)}(tv,gv)
+    return TestOneParticleDensityGradient{T,dim,Float64(zeta),typeof(test_vector),typeof(jacobian)}(
+            test_vector,jacobian)
 end
 
-function Base.show(io::IO, topd::OneParticleDensityGradient{<:Any,M}) where M
-    print(io, "OneParticleDensityGradient(", (topd.test_vector, topd.vector_gradient),)
+function Base.show(io::IO, topd::TestOneParticleDensityGradient{<:Any,M}) where M
+    print(io, "TestOneParticleDensityGradient(", topd.test_vector, topd.jacobian,)
     if !(norm(topd.test_vector) ≈ 1.0)
         print(io, "; normalize=false")
     end
     print(io, ")")
 end
 
-Interfaces.LOStructure(::Type{<:OneParticleDensityGradient}) = IsHermitian()
+Interfaces.LOStructure(::Type{<:TestOneParticleDensityGradient}) = IsHermitian()
 function Interfaces.allows_address_type(
-    od::OneParticleDensityGradient{T}, ::Type{B}
+    od::TestOneParticleDensityGradient{T}, ::Type{B}
 ) where {T,B}
     M = num_modes(B)
     B <: SingleComponentFockAddress && size(od.test_vector)[2] == M
 end
 
-struct OneParticleDensityGradientColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
+struct TestOneParticleDensityGradientColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
     operator::O
     address::A
     omm::OMM
 end
-function Interfaces.operator_column(o::OneParticleDensityGradient, add::A) where {A}
+function Interfaces.operator_column(o::TestOneParticleDensityGradient, add::A) where {A}
     allows_address_type(o, A) || throw(ArgumentError("Address type not allowed for this operator"))
     omm = occupied_mode_map(add)
-    return OneParticleDensityGradientColumn{typeof(o),A,eltype(o),typeof(omm)}(o, add, omm)
+    return TestOneParticleDensityGradientColumn{typeof(o),A,eltype(o),typeof(omm)}(o, add, omm)
 end
-Interfaces.parent_operator(c::OneParticleDensityGradientColumn) = c.operator
-Interfaces.starting_address(c::OneParticleDensityGradientColumn) = c.address
-function Interfaces.diagonal_element(c::OneParticleDensityGradientColumn{
-    <:OneParticleDensityGradient{<:Any,Dim,zeta},<:Any,T}) where {Dim,zeta,T}
+Interfaces.parent_operator(c::TestOneParticleDensityGradientColumn) = c.operator
+Interfaces.starting_address(c::TestOneParticleDensityGradientColumn) = c.address
+function Interfaces.diagonal_element(c::TestOneParticleDensityGradientColumn{
+    <:TestOneParticleDensityGradient{<:Any,Dim,zeta},<:Any,T}) where {Dim,zeta,T}
     Onr = onr(c.address)
     M = num_modes(c.address)
     if Dim == M
@@ -454,35 +452,35 @@ function Interfaces.diagonal_element(c::OneParticleDensityGradientColumn{
     else
         val = zero(T)
         @inbounds for i in 1:M
-            val += (conj(c.operator.vector_gradient[:,i]) * c.operator.test_vector[i] .+ 
-                conj.(c.operator.test_vector[i]) * c.operator.vector_gradient[:,i]) * (Onr[i] - zeta)
+            val += (conj(c.operator.jacobian[:,i]) * c.operator.test_vector[i] .+ 
+                conj.(c.operator.test_vector[i]) * c.operator.jacobian[:,i]) * (Onr[i] - zeta)
         end
     end
     return val
 end
-function Interfaces.num_offdiagonals(c::OneParticleDensityGradientColumn)
+function Interfaces.num_offdiagonals(c::TestOneParticleDensityGradientColumn)
     return length(c.omm) * (num_modes(c.address) - 1)
 end
-function Interfaces.offdiagonals(c::OneParticleDensityGradientColumn{<:Any,A,T}) where {A,T}
-    OneParticleDensityGradientOffdiagonals{A,T,typeof(c)}(c)
+function Interfaces.offdiagonals(c::TestOneParticleDensityGradientColumn{<:Any,A,T}) where {A,T}
+    TestOneParticleDensityGradientOffdiagonals{A,T,typeof(c)}(c)
 end
-struct OneParticleDensityGradientOffdiagonals{A,T,C}
+struct TestOneParticleDensityGradientOffdiagonals{A,T,C}
     column::C
 end
-Base.eltype(::OneParticleDensityGradientOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
-Base.IteratorSize(::OneParticleDensityGradientOffdiagonals) = Base.SizeUnknown()
-# Base.length(od::OneParticleDensityGradientOffdiagonals) = num_offdiagonals(od.column)
-function Base.iterate(od::OneParticleDensityGradientOffdiagonals{A,T}, state=(1, 1)) where {A,T}
+Base.eltype(::TestOneParticleDensityGradientOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
+Base.IteratorSize(::TestOneParticleDensityGradientOffdiagonals) = Base.SizeUnknown()
+# Base.length(od::TestOneParticleDensityGradientOffdiagonals) = num_offdiagonals(od.column)
+function Base.iterate(od::TestOneParticleDensityGradientOffdiagonals{A,T}, state=(1, 1)) where {A,T}
     dim = size(od.column.operator.test_vector)[end]
     if length(T) == dim
-        return fullvectorOneParticleDensityGradient(od, state)
+        return fullvectorTestOneParticleDensityGradient(od, state)
     else
-        return fixfunctionOneParticleDensityGradient(od, state)
+        return fixfunctionTestOneParticleDensityGradient(od, state)
     end
 end
 
-@inline function fixfunctionOneParticleDensityGradient(
-    od::OneParticleDensityGradientOffdiagonals{<:Any,T}, state
+@inline function fixfunctionTestOneParticleDensityGradient(
+    od::TestOneParticleDensityGradientOffdiagonals{<:Any,T}, state
     ) where {T}
     c = od.column
     omm = c.omm
@@ -498,8 +496,8 @@ end
                 address, value = excitation(c.address, (dst,), (src,))
                 if !iszero(value)
                     val = T((conj(c.operator.test_vector[i]) * 
-                        c.operator.vector_gradient[:,src.mode] .+ 
-                        conj.(c.operator.vector_gradient[:,i]) * 
+                        c.operator.jacobian[:,src.mode] .+ 
+                        conj.(c.operator.jacobian[:,i]) * 
                         c.operator.test_vector[1,src.mode]) * value)
                     # choose next state
                     if i + 1 <= n_modes
@@ -517,8 +515,8 @@ end
     return nothing
 end
 
-@inline function fullvectorOneParticleDensityGradient(
-    od::OneParticleDensityGradientOffdiagonals{<:Any,T}, state
+@inline function fullvectorTestOneParticleDensityGradient(
+    od::TestOneParticleDensityGradientOffdiagonals{<:Any,T}, state
     ) where {T}
     c = od.column
     omm = c.omm
@@ -605,12 +603,17 @@ function Interfaces.operator_column(o::TestTwoParticleDensity, add::A) where {A}
 end
 Interfaces.parent_operator(c::TestTwoParticleDensityColumn) = c.operator
 Interfaces.starting_address(c::TestTwoParticleDensityColumn) = c.address
-function Interfaces.diagonal_element(::TestTwoParticleDensityColumn{<:Any,T}) where {T}
-    return zero(T)
+function Interfaces.diagonal_element(c::TestTwoParticleDensityColumn{<:Any,T}) where {T}
+    val = zero(T)
+    omm = c.omm
+    @inbounds for i in 1:length(omm), j in 1:i-1
+        val +=  2*abs2(c.operator.test_vector[index((omm[i].mode,omm[j].mode))])
+    end
+    return val
 end
 
 function Interfaces.num_offdiagonals(c::TestTwoParticleDensityColumn)
-    return binomial(length(c.omm),2) * (binomial(num_modes(c.address),2)) - 1
+    return binomial(length(c.omm),2) * (binomial(num_modes(c.address),2) - 1)
 end
 function Interfaces.offdiagonals(c::TestTwoParticleDensityColumn{A,T}) where {A,T}
     TestTwoParticleDensityOffdiagonals{A,T,typeof(c)}(c)
@@ -620,69 +623,63 @@ struct TestTwoParticleDensityOffdiagonals{A,T,C}
 end
 Base.eltype(::TestTwoParticleDensityOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
 Base.IteratorSize(::TestTwoParticleDensityOffdiagonals) = Base.SizeUnknown()
-# Base.length(od::TestTwoParticleDensityOffdiagonals) = num_offdiagonals(od.column)
+Base.length(od::TestTwoParticleDensityOffdiagonals) = num_offdiagonals(od.column)
 function Base.iterate(od::TestTwoParticleDensityOffdiagonals, state=(2, 1, 2, 1))
     c = od.column
     omm = c.omm
     n_modes = num_modes(c.address)
     i, j, k, l = state # i,j: mode number for creation, k,l: indices in omm for annihilation
     #  ∑_{ij.kl} v_{ij}^* v_{kl} â^†_{i} â^†_{j} â_{l} â_{k} |address⟩
-    while l <= length(omm)
+    while l <= length(omm) - 1
         src2 = omm[l]
-        if !iszero(src2.occnum)
-            while k <= length(omm)
-                src1 = omm[k]
-                if !iszero(src1.occnum)
-                    if !(k == l && omm isa FermiOccupiedModeMap)
-                        while j<= n_modes - 1
-                            while i <= n_modes
-                                if !(i == j && omm isa FermiOccupiedModeMap)
-                                    if !(i == src1.mode && j == src2.mode) || 
-                                        !(i == src2.mode && j == src1.mode)# omit same mode as they contribute to diagonal
-                                        # create new address with excitation
-                                        dst = find_mode(c.address, (i, j,))
-                                        address, value = excitation(c.address, dst, (src2, src1,))
-                                        if !iszero(value)
-                                            value *= 2*conj(c.operator.test_vector[index((i,j))]) * 
-                                                c.operator.test_vector[index((src1.mode,src2.mode))]
-                                            # choose next state
-                                            if i + 1 <= n_modes
-                                                return (address, value), (i + 1, j, k, l)
-                                            else
-                                                return (address, value), (j + 2, j + 1, k, l)
-                                            end
-                                        end
+        while k <= length(omm)
+            src1 = omm[k]
+            while j<= n_modes - 1
+                dst2 = find_mode(c.address, j)
+                if (dst2.occnum == 0 || j == src2.mode || j == src1.mode)
+                    while i <= n_modes
+                        dst1 = find_mode(c.address, i)
+                        if (dst1.occnum == 0 || i == src2.mode || i == src1.mode)
+                            if !(i == src1.mode && j == src2.mode)# omit same mode as they contribute to diagonal
+                                address, val = excitation(c.address, (dst1, dst2,), (src2, src1,))
+                                if !iszero(val)
+                                    val *= 2*conj(c.operator.test_vector[index((i,j))]) * 
+                                        c.operator.test_vector[index((src1.mode,src2.mode))]
+                                    # choose next state
+                                    if i + 1 <= n_modes
+                                        return (address, val), (i + 1, j, k, l)
+                                    else
+                                        return (address, val), (j + 2, j + 1, k, l)
                                     end
                                 end
-                                i += 1
                             end
-                            j += 1
-                            i = j + 1
                         end
+                        i += 1
                     end
                 end
-                k += 1
-                j = 1
-                i = 1
+                j += 1
+                i = j + 1
             end
+            k += 1
+            j = 1
+            i = 2
         end
         l += 1
         k = l + 1
         j = 1
-        i = 1
+        i = 2
     end
     return nothing
 end
 
 """
-    TwoParticleDensityGradient(vec; normalize=true, full_vector=false,
+    TestTwoParticleDensityGradient(test_vector, jacobian=nothing; normalize=true,
         zeta=0) <: AbstractOperator{SVector{m,T}}
  
 An expectation value with this operator yields a gradient `TestTwoParticleDensity` 
-for a given test vector. Here `vec` is a Tuple where `vec[1]` is the test 
-vector and `T` is the eltype of `vec[1]`. If `normalize` is true (default), the 
-vector is normalized before use. `zeta` is a expectation value of 
-`TestTwoParticleDensity` for a given `vec[1]`.
+for a given test vector. Here `test_vector` is the test vector and `T` is the eltype of 
+`test_vector`. If `normalize` is true (default), the vector is normalized before use. 
+`zeta` is a expectation value of `TestTwoParticleDensity` for a given `test_vector`.
 
 ```math
     ζ = \\langle ∑_{ij,kl} ρ̂ {(2)}_{ij,kl} v_{ij}^* v_{kl} \\rangle
@@ -690,10 +687,9 @@ vector is normalized before use. `zeta` is a expectation value of
 
 There are two cases involves:
 
-- `full_vector` = true: gradient is calculated for each element of `vec[1]`, 
-and the operator is defined as below. Here `vec` is a <:Tuple{AbstractVector,}
-with only one element i.e. test vector. A one particle operator constructed 
-from a provided test vector `vec[1]`. Also, `m` = binomial(# of sites, 2).
+- `jacobian <:Nothing`: gradient is calculated for each element of `vec`, 
+and the operator is defined as below. A one particle operator constructed 
+from a provided test vector. Also, `m` = binomial(# of sites, 2).
 
 
 ```math
@@ -701,12 +697,10 @@ from a provided test vector `vec[1]`. Also, `m` = binomial(# of sites, 2).
         ζ (δ_{ik}δ_{jl} + δ_{il}δ_{jk}) v_{ij}^*)
 ```
 
--`full_vector` = false: gradient is calculated with respect to the parameters 
-of the given test_vector which has a fix functional form. Here, the input `
-vec` must be a <:Tuple{AbstractVector, AbstractMatrix,} i.e. `(test vector, 
-vector gradient, )` where `vector_gradient` is a matrix `vec[2][1:m,:]` 
-representing transpose jacobian of test_vector with respect 
-to its parameters `α₁,α₂,...,αₘ`. 
+-`jacobian <:AbstractMatrix`: gradient is calculated with respect 
+to the parameters of the given test_vector which has a fix functional form. Here, 
+`jacobian` is a matrix of dimension (m × binomial(# of sites, 2)) representing 
+transpose of the jacobian of test_vector with respect to its parameters `α₁,α₂,...,αₘ`. 
 
 ```math
     ∂_α ρ̂ {(2)}= ∑_{ij, kl} (v_{ij}^* ∂v_{kl}(α)/∂α + 
@@ -715,139 +709,133 @@ to its parameters `α₁,α₂,...,αₘ`.
 ```
 Also, in `vᵢⱼ`, i and j are site indices (with i < j). 
 """
-struct TwoParticleDensityGradient{T,Dim,Zeta,V<:SVector{<:Any,T},G} <: AbstractOperator{SVector{Dim,T}}
+struct TestTwoParticleDensityGradient{T,Dim,Zeta,V<:SVector{<:Any,T},J} <: AbstractOperator{SVector{Dim,T}}
     test_vector::V
-    vector_gradient::G
+    jacobian::J
 end
-function TwoParticleDensityGradient(vec; zeta = 0, normalize=true, full_vector=false)
-    if full_vector
-        T = float(eltype(vec[1]))
-        dim = length(vec[1])
-        if vec[1] isa SVector
-            tv = vec[1]
-        else
-            tv = SVector{dim,T}(vec[1])
+function TestTwoParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0, 
+    normalize=true)
+    
+    if jacobian isa Nothing
+        T = float(eltype(test_vector))
+        dim = length(test_vector)
+        if !(test_vector isa SVector)
+            test_vector = SVector{dim,T}(test_vector)
         end
         if normalize
-            tv = tv / norm(tv)
+            test_vector = test_vector / norm(test_vector)
         end
-        gv = nothing
     else
-        if !(vec isa Tuple{<:AbstractVector,<:AbstractMatrix})
-            error("For non-full vector input, vec must be a Tuple of (vector, gradient matrix)")
+        if !(test_vector isa AbstractVector && jacobian isa AbstractMatrix)
+            error("(test_vector, jacobian) must be (vector, matrix)")
         end
-        T = float(eltype(vec[1]))
-        S = length(vec[1])
-        dim = length(vec[2][:,1])
-        if vec isa Tuple{<:SVector,<:SMatrix}
-            tv = vec[1]
-            gv = vec[2]
-        else
-            tv = SVector{S,T}(vec[1])
-            gv = SMatrix{dim,S,T}(vec[2])
+        T = float(eltype(test_vector))
+        S = length(test_vector)
+        dim = length(jacobian[:,1])
+        if !(test_vector isa SVector && jacobian isa SMatrix)
+            test_vector = SVector{S,T}(test_vector)
+            jacobian = SMatrix{dim,S,T}(jacobian)
         end
         if normalize
-            tv = tv/norm(tv)
-            gv = gv/norm(tv)
+            test_vector = test_vector/norm(test_vector)
+            jacobian = jacobian/norm(test_vector)
         end
     end
-    return TwoParticleDensityGradient{T,dim,Float64(zeta),typeof(tv),typeof(gv)}(tv,gv)
+    return TestTwoParticleDensityGradient{T,dim,Float64(zeta),typeof(test_vector),typeof(jacobian)}(
+        test_vector,jacobian)
 end
 
-function Base.show(io::IO, topd::TwoParticleDensityGradient{<:Any,M}) where M
-    print(io, "TwoParticleDensityGradient(", (topd.test_vector, topd.vector_gradient),)
+function Base.show(io::IO, topd::TestTwoParticleDensityGradient{<:Any,M}) where M
+    print(io, "TestTwoParticleDensityGradient(", topd.test_vector, topd.jacobian,)
     if !(norm(topd.test_vector) ≈ 1.0)
         print(io, "; normalize=false")
     end
     print(io, ")")
 end
 
-Interfaces.LOStructure(::Type{<:TwoParticleDensityGradient}) = IsHermitian()
+Interfaces.LOStructure(::Type{<:TestTwoParticleDensityGradient}) = IsHermitian()
 function Interfaces.allows_address_type(
-    od::TwoParticleDensityGradient{T,Dim}, ::Type{B}
+    od::TestTwoParticleDensityGradient{T,Dim}, ::Type{B}
 ) where {T,Dim,B}
     M = num_modes(B)
     return B <: SingleComponentFockAddress && (size(od.test_vector)[end] == binomial(M,2))
 end
 
-struct TwoParticleDensityGradientColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
+struct TestTwoParticleDensityGradientColumn{O,A,T,OMM} <: AbstractOperatorColumn{A,T,O}
     operator::O
     address::A
     omm::OMM
 end
-function Interfaces.operator_column(o::TwoParticleDensityGradient, add::A) where {A}
+function Interfaces.operator_column(o::TestTwoParticleDensityGradient, add::A) where {A}
     allows_address_type(o, A) || throw(ArgumentError("Address type not allowed for this operator"))
     omm = occupied_mode_map(add)
-    return TwoParticleDensityGradientColumn{typeof(o),A,eltype(o),typeof(omm)}(o, add, omm)
+    return TestTwoParticleDensityGradientColumn{typeof(o),A,eltype(o),typeof(omm)}(o, add, omm)
 end
-Interfaces.parent_operator(c::TwoParticleDensityGradientColumn) = c.operator
-Interfaces.starting_address(c::TwoParticleDensityGradientColumn) = c.address
-function Interfaces.diagonal_element(c::TwoParticleDensityGradientColumn{
-    <:TwoParticleDensityGradient{<:Any,dim,zeta},<:Any,T}) where {dim,zeta,T}
-    if iszero(zeta)
-        return zero(T)
-    end
+Interfaces.parent_operator(c::TestTwoParticleDensityGradientColumn) = c.operator
+Interfaces.starting_address(c::TestTwoParticleDensityGradientColumn) = c.address
+function Interfaces.diagonal_element(c::TestTwoParticleDensityGradientColumn{
+    <:TestTwoParticleDensityGradient{<:Any,dim,zeta},<:Any,T}) where {dim,zeta,T}
     M = num_modes(c.address)
+    Onr = onr(c.address)
     if dim == binomial(M,2)
-        val = -conj(c.operator.test_vector) * zeta
+        @inbounds val = -conj(c.operator.test_vector) * zeta
     else
         val = zero(T)
-        for i in 1:M
+        @inbounds for i in 1:M
             for j in 1:i-1
-                val -= ((conj(c.operator.vector_gradient[:, index((i, j))]) * 
+                val += ((conj(c.operator.jacobian[:, index((i, j))]) * 
                     c.operator.test_vector[index((i, j))]) + 
-                    (c.operator.vector_gradient[:, index((i, j))] * 
-                    conj(c.operator.test_vector[index((i, j))]))) * 2 * zeta
+                    (c.operator.jacobian[:, index((i, j))] * 
+                    conj(c.operator.test_vector[index((i, j))]))) * 2 * 
+                    (2*Onr[i]*Onr[j] - zeta)
             end
         end
     end
     return val::T
 end
-function Interfaces.num_offdiagonals(c::TwoParticleDensityGradientColumn)
+function Interfaces.num_offdiagonals(c::TestTwoParticleDensityGradientColumn)
     return binomial(length(c.omm),2) * (binomial(num_modes(c.address),2)) - 1
 end
-function Interfaces.offdiagonals(c::TwoParticleDensityGradientColumn{<:Any,A,T}) where {A,T}
-    TwoParticleDensityGradientOffdiagonals{A,T,typeof(c)}(c)
+function Interfaces.offdiagonals(c::TestTwoParticleDensityGradientColumn{<:Any,A,T}) where {A,T}
+    TestTwoParticleDensityGradientOffdiagonals{A,T,typeof(c)}(c)
 end
-struct TwoParticleDensityGradientOffdiagonals{A,T,C}
+struct TestTwoParticleDensityGradientOffdiagonals{A,T,C}
     column::C
 end
-Base.eltype(::TwoParticleDensityGradientOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
-Base.IteratorSize(::TwoParticleDensityGradientOffdiagonals) = Base.SizeUnknown()
-# Base.length(od::TwoParticleDensityGradientOffdiagonals) = num_offdiagonals(od.column)
-function Base.iterate(od::TwoParticleDensityGradientOffdiagonals{A,T}, state=(2, 1, 2, 1)) where {A,T}
-    dim = size(od.column.operator.test_vector)[end]
-    if length(T) == dim
-        return fullvectorTwoParticleDensityGradient(od, state)
+Base.eltype(::TestTwoParticleDensityGradientOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
+Base.IteratorSize(::TestTwoParticleDensityGradientOffdiagonals) = Base.SizeUnknown()
+# Base.length(od::TestTwoParticleDensityGradientOffdiagonals) = num_offdiagonals(od.column)
+function Base.iterate(od::TestTwoParticleDensityGradientOffdiagonals{A,T}, state=(2, 1, 2, 1)) where {A,T}
+    if od.column.operator.jacobian isa Nothing
+        return fullvectorTestTwoParticleDensityGradient(od, state)
     else
-        return fixfunctionTwoParticleDensityGradient(od, state)
+        return fixfunctionTestTwoParticleDensityGradient(od, state)
     end
 end
 
-@inline function fixfunctionTwoParticleDensityGradient(od::TwoParticleDensityGradientOffdiagonals{<:Any,T}, state
+@inline function fixfunctionTestTwoParticleDensityGradient(od::TestTwoParticleDensityGradientOffdiagonals{<:Any,T}, state
     ) where {T}
     c = od.column
     omm = c.omm
     n_modes = num_modes(c.address)
     i, j, k, l = state # i,j: mode number for creation, k,l: indices in omm for annihilation
     #  ∑_{ij.kl} v_{ij}^* v_{kl} â^†_{i} â^†_{j} â_{l} â_{k} |address⟩
-    while l <= length(omm)
+    while l <= length(omm) - 1
         src2 = omm[l]
         while k <= length(omm)
             src1 = omm[k]
-            if !(k == l && omm isa FermiOccupiedModeMap)
-                while j<= n_modes
+            while j<= n_modes - 1
+                dst2 = find_mode(c.address, j)
+                if (dst2.occnum == 0 || j == src2.mode || j == src1.mode)
                     while i <= n_modes
-                        if !(i == j && omm isa FermiOccupiedModeMap)
-                            if !(i == src1.mode && j == src2.mode) || 
-                                !(i == src2.mode && j == src1.mode)# omit same mode as they contribute to diagonal
-                                # create new address with excitation
-                                dst = find_mode(c.address, (i, j,))
-                                address, val = excitation(c.address, dst, (src2, src1,))
+                        dst1 = find_mode(c.address, i)
+                        if (dst1.occnum == 0 || i == src2.mode || i == src1.mode)
+                            if !(i == src1.mode && j == src2.mode)# omit same mode as they contribute to diagonal
+                                address, val = excitation(c.address, (dst1, dst2,), (src2, src1,))
                                 if !iszero(val)
-                                    value = (conj(c.operator.vector_gradient[:,index((i,j))]) * 
+                                    value = (conj(c.operator.jacobian[:,index((i,j))]) * 
                                         c.operator.test_vector[index((src1.mode,src2.mode))] + 
-                                        c.operator.vector_gradient[:,index((src1.mode,src2.mode))] * 
+                                        c.operator.jacobian[:,index((src1.mode,src2.mode))] * 
                                         conj(c.operator.test_vector[index((i,j))])) * 4 * val
                                     # choose next state
                                     if i + 1 <= n_modes
@@ -860,9 +848,9 @@ end
                         end
                         i += 1
                     end
-                    j += 1
-                    i = j + 1
                 end
+                j += 1
+                i = j + 1
             end
             k += 1
             j = 1
@@ -876,44 +864,37 @@ end
     return nothing
 end
 
-@inline function fullvectorTwoParticleDensityGradient(
-    od::TwoParticleDensityGradientOffdiagonals{<:Any,T}, state
+@inline function fullvectorTestTwoParticleDensityGradient(
+    od::TestTwoParticleDensityGradientOffdiagonals{<:Any,T}, state
     ) where {T}
     c = od.column
     omm = c.omm
     n_modes = num_modes(c.address)
     i, j, k, l = state # i,j: mode number for creation, k,l: indices in omm for annihilation
     #  ∑_{ij.kl} v_{ij}^* v_{kl} â^†_{i} â^†_{j} â_{l} â_{k} |address⟩
-    while l <= length(omm) - 1
+     while l <= length(omm) - 1
         src2 = omm[l]
         while k <= length(omm)
             src1 = omm[k]
-            if !(k == l && omm isa FermiOccupiedModeMap)
-                while j<= n_modes - 1
-                    while i <= n_modes
-                        if !(i == j && omm isa FermiOccupiedModeMap)
-                            if !(i == src1.mode && j == src2.mode) || 
-                                !(i == src2.mode && j == src1.mode)# omit same mode as they contribute to diagonal
-                                # create new address with excitation
-                                dst = find_mode(c.address, (i, j,))
-                                address, val = excitation(c.address, dst, (src2, src1,))
-                                if !iszero(val)
-                                    value = zeros(eltype(T), length(T))
-                                    value[index((src1.mode,src2.mode))] += 2 * conj(c.operator.test_vector[index((i,j))] ) .* val
-                                    # choose next state
-                                    if i + 1 <= n_modes
-                                        return (address, T(value)), (i + 1, j, k, l)
-                                    else
-                                        return (address, T(value)), (j + 2, j + 1, k, l)
-                                    end
-                                end
-                            end
+            while j<= n_modes - 1
+                while i <= n_modes
+                    dst = find_mode(c.address, (i,j,))
+                    address, val = excitation(c.address, dst, (src2, src1,))
+                    if !iszero(val)
+                        value = zeros(eltype(T), length(T))
+                        @inbounds value[index((src1.mode,src2.mode))] += 2 * 
+                                    conj(c.operator.test_vector[index((i,j))] ) .* val
+                        # choose next state
+                        if i + 1 <= n_modes
+                            return (address, T(value)), (i + 1, j, k, l)
+                        else
+                            return (address, T(value)), (j + 2, j + 1, k, l)
                         end
-                        i += 1
                     end
-                    j += 1
-                    i = j + 1
+                    i += 1
                 end
+                j += 1
+                i = j + 1
             end
             k += 1
             j = 1
