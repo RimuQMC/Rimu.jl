@@ -181,7 +181,7 @@ HubbardRealSpace(
 julia> parameter = [SVector{45,Float64}([1/45 for _ in 1:45])];
 
 julia> gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
-                   TwoParticleDensityGradient); name=(:gradient_test_overlaps,
+                   TestTwoParticleDensityGradient); name=(:gradient_test_overlaps,
                    :coefficient_vector_overlaps), 
                    testfunction = nothing, parameter);
 
