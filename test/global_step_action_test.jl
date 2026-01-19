@@ -51,7 +51,7 @@ end
 
     @testset "ParticleDensityGradientOverlaps" begin
         oops = ParticleDensityGradientOverlap((TestTwoParticleDensity,
-            TwoParticleDensityGradient); name=(:gradient_test_overlaps,
+            TestTwoParticleDensityGradient); name=(:gradient_test_overlaps,
             :coefficient_vector_overlaps), testfunction = nothing, parameter)
 
         p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,))
@@ -73,7 +73,7 @@ end
 
     @testset "OverlapwithOptimization " begin
         gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
-            TwoParticleDensityGradient); name=(:gradient_test_overlaps,
+            TestTwoParticleDensityGradient); name=(:gradient_test_overlaps,
             :coefficient_vector_overlaps), testfunction = nothing, parameter)
         oops = OverlapwithOptimization(gop; name = :parameter, step = 5, 
             threshold = 1e-2)
