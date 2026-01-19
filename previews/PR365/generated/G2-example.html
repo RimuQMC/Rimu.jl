@@ -25,54 +25,19 @@ for d in dvals
     r = rayleigh_replica_estimator(df; op_name = &quot;Op$(d+1)&quot;, skip=steps_equilibrate)
     println(&quot;   G2($d) = $(r.f) ± $(r.σ_f)&quot;)
 end</code></pre><pre><code class="nohighlight hljs">Two-body correlator from 3 replicas:
-μ_x = mean(x) = 106.15951903885073
-var_x = var(x; corrected) / n = 0.6364789506680426
-μ_y = mean(y) = 497.5164497977021
-var_y = var(y; corrected) / n = 37.797308322883204
-ρ = cov(x, y; corrected) / n = 4.205269314691454
-   G2(0) = 0.21340120353022907 ± 0.0015078629812057404
-μ_x = mean(x) = 455.69926565859527
-var_x = var(x; corrected) / n = 33.840129779076165
-μ_y = mean(y) = 497.5164497977021
-var_y = var(y; corrected) / n = 37.797308322883204
-ρ = cov(x, y; corrected) / n = 35.70866555297118
-   G2(1) = 0.9159286630810461 ± 0.00074131515559913
-μ_x = mean(x) = 488.70445187218445
-var_x = var(x; corrected) / n = 37.61598773604977
-μ_y = mean(y) = 497.5164497977021
-var_y = var(y; corrected) / n = 37.797308322883204
-ρ = cov(x, y; corrected) / n = 37.66249907576171
-   G2(2) = 0.9822970482500923 ± 0.0006207563347534291
-μ_x = mean(x) = 492.61529488809964
-var_x = var(x; corrected) / n = 38.513594188538654
-μ_y = mean(y) = 497.5164497977021
-var_y = var(y; corrected) / n = 37.797308322883204
-ρ = cov(x, y; corrected) / n = 38.03894304225886
-   G2(3) = 0.9901473738074937 ± 0.0009876475114803903
-μ_x = mean(x) = 488.70445187218445
-var_x = var(x; corrected) / n = 37.61598773604977
-μ_y = mean(y) = 497.5164497977021
-var_y = var(y; corrected) / n = 37.797308322883204
-ρ = cov(x, y; corrected) / n = 37.66249907576171
-   G2(4) = 0.9822970482500923 ± 0.0006207563347534291
-μ_x = mean(x) = 455.69926565859527
-var_x = var(x; corrected) / n = 33.840129779076165
-μ_y = mean(y) = 497.5164497977021
-var_y = var(y; corrected) / n = 37.797308322883204
-ρ = cov(x, y; corrected) / n = 35.70866555297118
-   G2(5) = 0.9159286630810461 ± 0.00074131515559913
+   G2(0) = 0.21507739661405562 ± 0.0024893180256887926
+   G2(1) = 0.9166432209358732 ± 0.0009919763632137047
+   G2(2) = 0.9810963919019463 ± 0.0007591965114442093
+   G2(3) = 0.9894433777103054 ± 0.0011260807990791882
+   G2(4) = 0.9810963919019463 ± 0.0007591965114442093
+   G2(5) = 0.9166432209358732 ± 0.0009919763632137047
 </code></pre><p>As expected, the onsite correlation at <span>$d=0$</span> is low since this is a Mott insulating state with unit filling fraction, and is close to <span>$1.0$</span> for all other values of the displacement <span>$d$</span>.</p><p>Since we ran multiple independent replicas, we also have multiple estimates of the shift energy.</p><pre><code class="language-julia hljs">println(&quot;Shift energy from $n_replicas replicas:&quot;)
 for i in 1:n_replicas
     se = shift_estimator(df; shift=&quot;shift_r$(i)s1&quot;, skip=steps_equilibrate)
     println(&quot;   Replica $i: $(se.mean) ± $(se.err)&quot;)
 end
 </code></pre><pre><code class="nohighlight hljs">Shift energy from 3 replicas:
-   Replica 1: -3.955517616377509 ± 0.1387183629208337
-   Replica 2: -4.008853594529468 ± 0.13949245750488204
-   Replica 3: -4.029708963344219 ± 0.13053100843923282
-μ_x = mean(x) = 106.15951903885073
-var_x = var(x; corrected) / n = 0.6364789506680426
-μ_y = mean(y) = 497.5164497977021
-var_y = var(y; corrected) / n = 37.797308322883204
-ρ = cov(x, y; corrected) / n = 4.205269314691454
-</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="BHM-example-mpi.html">« Rimu with MPI</a><a class="docs-footer-nextpage" href="exact-example.html">Exact diagonalization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Monday 19 January 2026 17:13">Monday 19 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+   Replica 1: -4.042196190050251 ± 0.13539230892807413
+   Replica 2: -3.9962007988472132 ± 0.12797307886959675
+   Replica 3: -3.951089460605859 ± 0.12235002806866398
+</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="BHM-example-mpi.html">« Rimu with MPI</a><a class="docs-footer-nextpage" href="exact-example.html">Exact diagonalization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Monday 19 January 2026 18:07">Monday 19 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
