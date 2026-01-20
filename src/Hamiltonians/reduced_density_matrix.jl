@@ -380,7 +380,7 @@ transpose of the jacobian of test_vector with respect to its parameters
 ```
 `T` is the eltype of `test_vector`.
 """
-struct TestOneParticleDensityGradient{TT,Zeta,V<:SArray{<:Any,T},J} <: AbstractOperator{TT}
+struct TestOneParticleDensityGradient{TT,Zeta,V<:SVector,J} <: AbstractOperator{TT}
     test_vector::V
     jacobian::J
 end
@@ -714,7 +714,7 @@ transpose of the jacobian of test_vector with respect to its parameters
 Also, in `vᵢⱼ`, i and j are site indices (with i < j) and `T` is the eltype of 
 `test_vector`
 """
-struct TestTwoParticleDensityGradient{TT,Zeta,V<:SVector{<:Any,T},J} <: AbstractOperator{TT}
+struct TestTwoParticleDensityGradient{TT,Zeta,V<:SVector,J} <: AbstractOperator{TT}
     test_vector::V
     jacobian::J
 end
