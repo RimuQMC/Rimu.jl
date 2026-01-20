@@ -143,7 +143,7 @@ function ratio_of_means(
     k = max(ks...)
 
     # MC and linear error propagation
-    r, f, σ_f, δ_y, blocks = ratio_estimators(num, denom, k; corrected, mc_samples)
+    r, f, σ_f, δ_y, blocks = ratio_estimators(num, denom, k; corrected, mc_samples, warn)
     if warn && abs(δ_y) ≥ 0.1
         @warn "Large coefficient of variation in `ratio_of_means`. |δ_y| ≥ 0.1. Don't trust linear error propagation!" δ_y
     end
@@ -235,50 +235,54 @@ account.
 """
 function ratio_estimators(
     x::AbstractVector{<:Real}, y::AbstractVector{<:Real};
-    corrected=true, mc_samples=nothing
+    corrected=true, mc_samples=nothing, warn=true
 )
     n = length(x)
     @assert n == length(y)
     μ_x = mean(x)
-    var_x = var(x; corrected) / n # variance of mean
     μ_y = mean(y)
-    var_y = var(y; corrected) / n # variance of mean
-    ρ = cov(x, y; corrected) / n # estimated correlation of sample means μ_x and μ_y
-    # ensure correlation matrix is positive semidefinite
-    non_physical_corr = ρ^2 - var_x * var_y
-    if non_physical_corr > 0 # indicates covariance matrix not positive semidefinite
-        ρ = sign(ρ) * (sqrt(var_x * var_y) - sqrt(eps(eltype(x))))
-        # clip correlation to physical values and warn if significant
-        if non_physical_corr / (var_x * var_y) > sqrt(eps(eltype(x)))
-            @warn "Non-physical correlations of relative size = " *
-                "$(non_physical_corr / (var_x * var_y)) encountered in `ratio_estimators`."
-        end
+
+    Σ = Hermitian(cov(hcat(x, y); corrected) / n)
+    # covariance matrix of sample means with entries:
+    # Σ = [var_x  ρ;
+    #       ρ      var_y]
+    if !isposdef(Σ)
+        # adjust covariance matrix to be positive semidefinite
+        evals, evecs = eigen(Σ)
+        evals = map(e -> e < sqrt(eps(eltype(e))) ? sqrt(eps(eltype(e))) : e, evals)
+        Σ = Hermitian(evecs' * Diagonal(evals) * evecs)
+        warn && @warn "Non-physical covariance matrix encountered in `ratio_estimators`. Adjusted to be positive semidefinite."
+        warn && !isposdef(Σ) && error("Failed to adjust covariance matrix to be positive semidefinite.")
     end
 
     # Monte Carlo sampling of correlated normal distribution of sample means for x and y
-    x_y_ps = particles(mc_samples, [μ_x, μ_y], [var_x ρ; ρ var_y])
+    # x_y_ps = particles(mc_samples, [μ_x, μ_y], [var_x ρ; ρ var_y])
+    x_y_ps = particles(mc_samples, [μ_x, μ_y], Σ)
+
     # Note: type instability creeps in here through `Particles`
     r = x_y_ps[1] / x_y_ps[2] # MC sampled ratio of means
 
     # linear error propagation
-    f, σ_f = x_by_y_linear(μ_x, μ_y, √var_x, √var_y, ρ)
+    # f, σ_f = x_by_y_linear(μ_x, μ_y, √var_x, √var_y, ρ)
+    f, σ_f = x_by_y_linear(μ_x, μ_y, √Σ[1,1], √Σ[2,2], Σ[1,2])
 
     # coefficient of variation, should be <0.1 for normal approximation
     # [Kuethe(2000), Diaz-Frances & Rubio (2013)]
-    δ_y = √var_y / μ_y
+    # δ_y = √var_y / μ_y
+    δ_y = √Σ[2,2] / μ_y
     return (; r, f, σ_f, δ_y, n)
 end
 
-function ratio_estimators(num, denom, k; corrected=true, mc_samples=nothing)
+function ratio_estimators(num, denom, k; corrected=true, mc_samples=nothing, warn=true)
     for i in 1:(k-1) # decorrelate time series by `k-1` blocking steps
         num = blocker(num)
         denom = blocker(denom)
     end
-    return ratio_estimators(num, denom; corrected, mc_samples)
+    return ratio_estimators(num, denom; corrected, mc_samples, warn)
 end
 
 # x or y could be complex
-function ratio_estimators(x, y; corrected=true, mc_samples=nothing)
+function ratio_estimators(x, y; corrected=true, mc_samples=nothing, warn=true)
     n = length(x)
     @assert n == length(y)
     μ_x = mean(x)
@@ -287,12 +291,16 @@ function ratio_estimators(x, y; corrected=true, mc_samples=nothing)
     var_y = var(y; corrected) / n # variance of mean
     ρ = cov(x, y; corrected) / n # estimated correlation of sample means μ_x and μ_y
 
-    Σ = [
-        var(real(x); corrected) cov(real(x), imag(x); corrected) cov(real(x), real(y); corrected) cov(real(x), imag(y); corrected)
-        cov(imag(x), real(x); corrected) var(imag(x); corrected) cov(imag(x), real(y); corrected) cov(imag(x), imag(y); corrected)
-        cov(real(y), real(x); corrected) cov(real(y), imag(x); corrected) var(real(y); corrected) cov(real(y), imag(y); corrected)
-        cov(imag(y), real(x); corrected) cov(imag(y), imag(x); corrected) cov(imag(y), real(y); corrected) var(imag(y); corrected)
-    ] / n
+    Σ = Hermitian(cov(hcat(real(x), imag(x), real(y), imag(y)); corrected) / n)
+    if !isposdef(Σ)
+        # adjust covariance matrix to be positive semidefinite
+        evals, evecs = eigen(Σ)
+        evals = map(e -> e < sqrt(eps(eltype(e))) ? sqrt(eps(eltype(e))) : e, evals)
+        Σ = Hermitian(evecs' * Diagonal(evals) * evecs)
+        warn && @warn "Non-physical covariance matrix encountered in `ratio_estimators`. Adjusted to be positive semidefinite."
+        warn && !isposdef(Σ) && error("Failed to adjust covariance matrix to be positive semidefinite.")
+    end
+
     # Monte Carlo sampling of correlated normal distribution of sample means for x and y
     x_y_ps = particles(mc_samples, [real(μ_x), imag(μ_x), real(μ_y), imag(μ_y)], Σ)
     # MC sampled ratio of means

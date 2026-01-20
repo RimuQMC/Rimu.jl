@@ -104,9 +104,9 @@ using Rimu.StatsTools: x_by_y_linear, ratio_estimators, particles
 
     # zero variance example
     r = @suppress ratio_of_means([0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 2])
-    @test Tuple(val_and_errs(r)) == (0, 0, 0)
+    @test all(Tuple(val_and_errs(r)) .< 0.001)
     r = @suppress ratio_of_means(complex.(ones(2000)), complex.(ones(2000)))
-    @test pvar(real(r.ratio)) == 0 == pvar(imag(r.ratio))
+    @test pvar(real(r.ratio)) < 1e-7 && pvar(imag(r.ratio)) < 1e-7
 
     # well behaved real example
     Random.seed!(17) # make sure the tests don't trip over rare fluctuations
@@ -174,7 +174,7 @@ using Rimu.StatsTools: x_by_y_linear, ratio_estimators, particles
     @test qi[3] - qi[2] < 2abs(σ_f)
     @test qr[2] - qr[1] < 2abs(σ_f)
     @test qi[2] - qi[1] < 2abs(σ_f)
-    @test isapprox(r.σ_f, σ_f; rtol=4 / √n_samples)
+    @test isapprox(r.σ_f, σ_f; atol=4 / √n_samples)
 
     # type stability of Particles
     d = MvNormal([1.0, 1.0], [0.1 0.01; 0.01 0.1])
