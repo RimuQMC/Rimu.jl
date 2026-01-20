@@ -349,7 +349,7 @@ end
     TestOneParticleDensityGradient(test_vector, jacobian=nothing; normalize=true,
         zeta=0) <: AbstractOperator{TT}
  
-An expectation value with this operator yields a gradient `TestOneParticleDensity.` 
+An expectation value with this operator yields a gradient `TestOneParticleDensity` 
 for a given test vector. Here, `test_vector` is the test vector. If `normalize` is 
 true (default), the vector is normalized before use. `zeta` is the expectation 
 value of `TestOneParticleDensity` for a given `test_vector`.
@@ -375,10 +375,10 @@ the transpose of the Jacobian of test_vector with respect to its parameters
 `α₁,α₂,...,αₘ`. Also, `TT` = SVector{m, T}.
 
 ```math
-    ∂_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* ∂v_j(α)/∂α + 
-        ∂v_i^*(α)/∂α v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
+    ∂_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* \\frac{∂v_j(α)}{∂α} + 
+        \\frac{∂v_i^*(α)}{∂α} v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
 ```
-Lastly, `T` is the eltype of `test_vector`.
+`T` is the eltype of `test_vector`.
 """
 struct TestOneParticleDensityGradient{TT,Zeta,V<:SVector,J} <: AbstractOperator{TT}
     test_vector::V
@@ -693,8 +693,8 @@ and the operator is defined as below. A two-particle operator constructed
 from a provided test vector. Also, `TT` = SVector{binomial(# of sites, 2),T}.
 
 ```math
-    ∂ρ̂ {(2)}/∂v_{kl} = ∑_{ij} (v_{ij}^* (â^†_{i} â^†_{j} â_{l} â_{k} - 
-        ζ (δ_{ik}δ_{jl} + δ_{il}δ_{jk}) v_{ij}^*)
+    ∂ρ̂ {(2)}/∂v_{kl} = ∑_{ij} v_{ij}^* â^†_{i} â^†_{j} â_{l} â_{k} - 
+        ζ v_{kl}^*)
 ```
 
 -`jacobian <:AbstractMatrix`: gradient is calculated with respect 
@@ -704,9 +704,9 @@ the transpose of the Jacobian of test_vector with respect to its parameters
 `α₁,α₂,...,αₘ`. Also, `TT` = SVector{m, T}.
 
 ```math
-    ∂_α ρ̂ {(2)}= ∑_{ij, kl} (v_{ij}^* ∂v_{kl}(α)/∂α + 
-        ∂v_{ij}^*(α)/∂α v_{kl}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
-        ζ (δ_{ik}δ_{jl} + δ_{il}δ_{jk}))
+    ∂_α ρ̂ {(2)}= ∑_{ij, kl} (v_{ij}^* \\frac{∂v_{kl}(α)}{∂α} + 
+        \\frac{∂v_{ij}^*(α)}{∂α} v_{kl}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
+        ζ δ_{ik}δ_{jl} )
 ```
 Also, in `vᵢⱼ`, i and j are site indices (with i < j), and `T` is the eltype of 
 `test_vector`
