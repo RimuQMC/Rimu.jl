@@ -137,8 +137,8 @@ function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
                 ooa.testfunction(ooa.parameter[s], M)
 
             op = ooa.operators[1](test_vector; normalize)
-            zeta = sum([dot_from_right(vectors[i, s], op, vectors[j, s]) 
-                /sum(coeff[:,s]) for (i, j) in StrictPairIter(n_reps)])
+            zeta = sum([dot_from_right(vectors[i, s], op, vectors[j, s]) / 
+                sum(coeff[:,s]) for (i, j) in StrictPairIter(n_reps)])
                  
             if !iszero(zeta)
                 G = ooa.operators[2](test_vector, jacobian; normalize, zeta)
