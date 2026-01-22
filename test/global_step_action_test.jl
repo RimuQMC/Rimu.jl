@@ -52,10 +52,11 @@ end
     @testset "ParticleDensityGradientOverlaps" begin
         oops = ParticleDensityGradientOverlap((TestTwoParticleDensity,
             TestTwoParticleDensityGradient); name=(:gradient_test_overlaps,
-            :coefficient_vector_overlaps), testfunction = nothing, parameter)
+            :coefficient_vector_overlaps,:parameters), testfunction = nothing, parameter)
 
         p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,))
         res = solve(p)
+        @test res.df.parameter isa Vector{typeof(parameter)
         @test res.df.gradient_test_overlaps isa Vector{Matrix{eltype(parameter)}}
         @test res.df.coefficient_vector_overlaps isa Vector{Matrix{Float64}}
         # Coefficient vector overlaps test
@@ -74,16 +75,15 @@ end
     @testset "OverlapwithOptimization " begin
         gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
             TestTwoParticleDensityGradient); name=(:gradient_test_overlaps,
-            :coefficient_vector_overlaps), testfunction = nothing, parameter)
-        oops = OverlapwithOptimization(gop; name = :parameter, step = 5, 
-            threshold = 1e-2)
+            :coefficient_vector_overlaps,:parameters), testfunction = nothing, parameter)
+        oops = OverlapwithOptimization(gop; step = 5, threshold = 1e-2)
 
         p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,))
         res = solve(p)
         df = res.df
-        @test (length(unique(df.parameter[1:5])),
-                length(unique(df.parameter[1:10]))) == (1,2)
-        @test res.df.parameter isa Vector{typeof(parameter)}
+        @test (length(unique(df.parameters[1:5])),
+                length(unique(df.parameters[1:10]))) == (1,2)
+        @test res.df.parameters isa Vector{typeof(parameter)}
         @test res.df.gradient_test_overlaps isa Vector{Matrix{eltype(parameter)}}
         @test res.df.coefficient_vector_overlaps isa Vector{Matrix{Float64}}
         # Coefficient vector overlaps test
