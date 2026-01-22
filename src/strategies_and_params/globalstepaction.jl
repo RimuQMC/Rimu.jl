@@ -85,35 +85,35 @@ end
 
 """
     ParticleDensityGradientOverlap(op; name = (:gradient_vector_overlaps, 
-        :coefficient_vector_overlaps), testfunction,
+        :coefficient_vector_overlaps, :parameters), testfunction,
         parameter=[SVector{1,Float64}(ones(Float64, 1))], 
         normalise::Bool=true) <: GlobalStepAction
 
-Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩  and 
-coefficient vector overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica states for 
-a given operator `O` and its parameters `α`. `parameter` is of type 
-`Vector{SVector}` where each index refers to perticular spectral state.
-`testfunction` is a nothing or a function with parameter (̄α, # of sites) 
+Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩  
+and coefficient vector overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica 
+states for a given operator `O` and its parameters `α`. `parameter` is of 
+type `Vector{SVector}` where each index refers to perticular spectral state.
+`testfunction` is a nothing or a function with parameters (̄α, # of sites) 
 depending on whether the optimization is applied to entire Vector or it 
 with the fixed functional form.
-The results are returned in a `NamedTuple` with a single field with key `name` 
-(default `(:gradient_vector_overlaps, :coefficient_vector_overlaps`) and 
-value array of overlaps.
+The results and `parameter` are returned in a `NamedTuple` with a single 
+field with key `name` (default `(:gradient_vector_overlaps, 
+:coefficient_vector_overlaps, :parameters)`) and value array of overlaps.
 
 """
 mutable struct ParticleDensityGradientOverlap{OpType, normalize, P} <: GlobalStepAction
     operators::OpType
-    name::Tuple{Symbol, Symbol}
+    name::Tuple{Symbol, Symbol, Symbol}
     testfunction::Union{Function, Nothing}
     parameter::P
 end
 
 function ParticleDensityGradientOverlap(op; name = (:gradient_vector_overlaps, 
-        :coefficient_vector_overlaps), testfunction=nothing, 
+        :coefficient_vector_overlaps, :parameters), testfunction=nothing, 
         parameter::Vector=[SVector{1,Float64}(ones(Float64, 1))],
         normalize::Bool=true)
-    return ParticleDensityGradientOverlap{typeof(op), normalize, typeof(parameter)}(op, name, 
-        testfunction, parameter)
+    return ParticleDensityGradientOverlap{typeof(op), normalize, typeof(parameter)}(
+        op, name, testfunction, parameter)
 end
 
 function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
@@ -127,34 +127,40 @@ function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
     coeff = zeros(eltype(ooa.parameter[1]), binomial(n_reps,2), n_specs)
 
     for s in 1:n_specs
-        test_vector, jacobian = isnothing(ooa.testfunction) ? (ooa.parameter[s],nothing) : 
-            ooa.testfunction(ooa.parameter[s], M)
 
-        coeff[:, s] = [dot(vectors[i, s], vectors[j, s]) for (i, j) in StrictPairIter(n_reps)]
+        coeff[:, s] .= [dot(vectors[i, s], vectors[j, s]) for (i, j) 
+                                    in StrictPairIter(n_reps)]
         
-        if iszero(sum(coeff[:,s]))
-            gradient[:,s] = [zero(ooa.parameter[s]) for _ in 1:binomial(n_reps,2)]
-        else
-            zeta = sum([dot(vectors[i, s], ooa.operators[1](test_vector;normalize), 
-                vectors[j, s]) for (i, j) in StrictPairIter(n_reps)])/sum(coeff[:,s])
+        if !iszero(sum(coeff[:,s]))
+            test_vector, jacobian = isnothing(ooa.testfunction) ? 
+                (ooa.parameter[s],nothing) : 
+                ooa.testfunction(ooa.parameter[s], M)
 
-            gradient[:,s] += [dot(vectors[i, s], ooa.operators[2](test_vector, jacobian; 
-                normalize, zeta), vectors[j, s]) for (i, j) in StrictPairIter(n_reps)]
+            op = ooa.operators[1](test_vector; normalize)
+            zeta = sum([dot_from_right(vectors[i, s], op, vectors[j, s]) 
+                /sum(coeff[:,s]) for (i, j) in StrictPairIter(n_reps)])
+                 
+            if !iszero(zeta)
+                G = ooa.operators[2](test_vector, jacobian; normalize, zeta)
+                
+                gradient[:,s] .= [dot_from_right(vectors[i, s], G, 
+                    vectors[j, s]) for (i, j) in StrictPairIter(n_reps)]
+            end
         end
     end
-    return (ooa.name[1] => gradient, ooa.name[2] => coeff,)
+    return NamedTuple((ooa.name[1] => gradient, ooa.name[2] => coeff, 
+            ooa.name[3] => ooa.parameter))
 end
 
 """
-    OverlapwithOptimization(gradientoverlap; name = :parameter, 
+    OverlapwithOptimization(gradientoverlap; 
         method = RAdam(0.1), step=100, threshold = 1e-3)) <: GlobalStepAction
 
 Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩ and 
 optimize the parameters of `gradientoverlap`(<:GlobalStepAction) after every 
 `step` number of collected gradient data in the FCIQMC simulation between all 
-pairs of replica states for a given operator `O`. The results are returned in a 
-`NamedTuple` with a field provided from gradientoverlap and single field with
-key `name` (default `:parameters`) and value array of overlaps. 
+pairs of replica states for a given operator `O`. The results are returned 
+what provided from gradientoverlap. 
     The optimization is carried out using the optimization `method` 
 (default to RAdam(0.1)) which is downloaded from `Optimisers.jl`. There are 
 other methods that can be usedsuch as Adam and Momentum.
@@ -182,11 +188,10 @@ julia> parameter = [SVector{45,Float64}([1/45 for _ in 1:45])];
 
 julia> gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
                    TestTwoParticleDensityGradient); name=(:gradient_test_overlaps,
-                   :coefficient_vector_overlaps), 
+                   :coefficient_vector_overlaps, :parameter), 
                    testfunction = nothing, parameter);
 
-julia> oops = OverlapwithOptimization(gop; name = :parameter, step = 5, 
-                   threshold = 1e-2);
+julia> oops = OverlapwithOptimization(gop; step = 5, threshold = 1e-2);
 
 julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,));
 
@@ -195,25 +200,23 @@ julia> solve(p);
 """
 mutable struct OverlapwithOptimization{threshold,T} <: GlobalStepAction
     gradientoverlap::GlobalStepAction
-    name::Symbol
     Setup::T
     Step::Int
 end
 
-function OverlapwithOptimization(gradientoverlap; name = :parameter, 
+function OverlapwithOptimization(gradientoverlap; 
         method = RAdam(0.1), step=100, threshold = 1e-3)
     _setup = setup(method, (x = destructure(gradientoverlap.parameter)[1],))
-    return OverlapwithOptimization{threshold, typeof(_setup)}(gradientoverlap, name, 
+    return OverlapwithOptimization{threshold, typeof(_setup)}(gradientoverlap,
         _setup, step)
 end
 
 function (ooa::OverlapwithOptimization)(state::ReplicaState) 
-    return NamedTuple(((ooa.gradientoverlap)(state)...,
-                ooa.name=>ooa.gradientoverlap.parameter,))
+    return (ooa.gradientoverlap)(state)
 end
 
 function (ooa::OverlapwithOptimization{threshold})(df::DataFrame) where threshold
-    # destructure the parameters of each spectrual state to a single Vector.
+    # destructure the parameters of each spectral state to a single Vector.
     para = (x = destructure(ooa.gradientoverlap.parameter)[1],)
     v, re = destructure(grad_rrs(ooa, df))
     if isnan(sum(abs.(v))) # to ignore NaN as parameter
@@ -221,13 +224,13 @@ function (ooa::OverlapwithOptimization{threshold})(df::DataFrame) where threshol
     end
     _setup, para = update(ooa.Setup, para, (x = -v,));
     
-    # restructure (re) the parameters of each spectrual state to a seperate SVector. 
+    # restructure (re) the parameters of each spectral state to a separate SVector. 
     ooa.gradientoverlap.parameter = re(para.x)
     ooa.Setup = _setup
     return sum(abs.(v)) < threshold
 end
 
-function grad_rrs(ooa::OverlapwithOptimization, df)
+@inline function grad_rrs(ooa::OverlapwithOptimization, df)
     A = sum(df[!,ooa.gradientoverlap.name[1]])
     A_d = sum(df[!,ooa.gradientoverlap.name[2]])
     return [sum(A[:,s])./sum(A_d[:,s]) for s in 1:length(A[1,:])]
