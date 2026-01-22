@@ -56,7 +56,7 @@ end
 
         p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,))
         res = solve(p)
-        @test res.df.parameter isa Vector{typeof(parameter)}
+        @test res.df.parameters isa Vector{typeof(parameter)}
         @test res.df.gradient_test_overlaps isa Vector{Matrix{eltype(parameter)}}
         @test res.df.coefficient_vector_overlaps isa Vector{Matrix{Float64}}
         # Coefficient vector overlaps test
