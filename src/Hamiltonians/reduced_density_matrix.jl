@@ -450,7 +450,7 @@ function Interfaces.diagonal_element(c::TestOneParticleDensityGradientColumn{
     <:TestOneParticleDensityGradient,<:Any,T}) where {T}
     Onr = onr(c.address)
     if c.operator.jacobian isa Nothing
-        val = T(conj(c.operator.test_vector) .* (Onr .- c.operator.zeta))
+        val = conj(c.operator.test_vector) .* (Onr .- c.operator.zeta)
     else
         val = zero(T)
         M = num_modes(c.address)
@@ -783,19 +783,27 @@ Interfaces.starting_address(c::TestTwoParticleDensityGradientColumn) = c.address
 function Interfaces.diagonal_element(c::TestTwoParticleDensityGradientColumn{
     <:TestTwoParticleDensityGradient,<:Any,T}) where {T}
     M = num_modes(c.address)
+    Onr = onr(c.address)
     if c.operator.jacobian isa Nothing
-        val = T(-conj(c.operator.test_vector) * c.operator.zeta)
+        val = conj(c.operator.test_vector) .* (2*twobody_onr(zero(T),Onr) .- c.operator.zeta)
     else
         val = zero(T)
-        Onr = onr(c.address)
         @inbounds for i in 1:M
             for j in 1:i-1
-                val += 2 * (2*Onr[i]*Onr[j] - c.operator.zeta)*
+                val += 2 * (2*Onr[i]*Onr[j] - c.operator.zeta) *
                     ((conj(c.operator.jacobian[:, index((i, j))]) * 
                     c.operator.test_vector[index((i, j))]) + 
                     (c.operator.jacobian[:, index((i, j))] * 
                     conj(c.operator.test_vector[index((i, j))])))  
             end
+        end
+    end
+    return val::T
+end
+@inline function twobody_onr(val::T, Onr::SVector{M}) where {T<:SVector,M}
+    for i in 1:M
+        for j in 1:i-1
+            val += setindex(zeros(T), Onr[i]*Onr[j], index((i,j)))
         end
     end
     return val::T
@@ -890,16 +898,18 @@ function fullvectorTestTwoParticleDensityGradient(
                     while i <= n_modes
                         dst1 = find_mode(c.address, i)
                         if (dst1.occnum == 0 || i == src2.mode || i == src1.mode)
-                            address, value = excitation(c.address, (dst1, dst2,), (src2, src1,))
-                            if !iszero(value)
-                                value =  setindex(zeros(T), 2 * 
-                                    conj(c.operator.test_vector[index((i,j))] ) * value, 
-                                    index((src1.mode,src2.mode)))
-                                # choose next state
-                                if i + 1 <= n_modes
-                                    return (address, value::T), (i + 1, j, k, l)
-                                else
-                                    return (address, value::T), (j + 2, j + 1, k, l)
+                            if !(i == src1.mode && j == src2.mode)# omit same mode as they contribute to diagonal
+                                address, value = excitation(c.address, (dst1, dst2,), (src2, src1,))
+                                if !iszero(value)
+                                    value =  setindex(zeros(T), 2 * 
+                                        conj(c.operator.test_vector[index((i,j))] ) * value, 
+                                        index((src1.mode,src2.mode)))
+                                    # choose next state
+                                    if i + 1 <= n_modes
+                                        return (address, value::T), (i + 1, j, k, l)
+                                    else
+                                        return (address, value::T), (j + 2, j + 1, k, l)
+                                    end
                                 end
                             end
                         end
