@@ -698,7 +698,7 @@ from a provided test vector. Also, `m` = binomial(# of sites, 2).
 
 ```math
     ∂ρ̂ {(2)}/∂v_{kl} = ∑_{ij} v_{ij}^* â^†_{i} â^†_{j} â_{l} â_{k} - 
-        ζ v_{kl}^*)
+        ζ v_{kl}^*
 ```
 
 -`jacobian <:AbstractMatrix`: gradient is calculated with respect 
