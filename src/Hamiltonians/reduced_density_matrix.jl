@@ -366,7 +366,7 @@ and the operator is defined as below. A one-particle operator constructed
 from a provided test vector. Also, `m` = # of sites. 
 
 ```math
-    ∂ρ̂ {(1)}/∂v_j = ∑_{i} v_{i}^* â^†_{i} â_{j} - ζ v_{j}^*
+    \\frac{∂ρ̂ {(1)}}{∂v_j} = ∑_{i} v_{i}^* â^†_{i} â_{j} - ζ v_{j}^*
 ```
 
 -`jacobian <:AbstractMatrix`: gradient is calculated with respect 
@@ -376,7 +376,7 @@ the transpose of the Jacobian of test_vector with respect to its parameters
 `α₁,α₂,...,αₘ`. 
 
 ```math
-    ∂_α ρ̂ {(1)}= ∑_{ij} (v_{i}^* \\frac{∂v_j(α)}{∂α} + 
+    \\frac{∂ρ̂ {(1)}}{∂α}= ∑_{ij} (v_{i}^* \\frac{∂v_j(α)}{∂α} + 
         \\frac{∂v_i^*(α)}{∂α} v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
 ```
 """
@@ -697,7 +697,7 @@ and the operator is defined as below. A two-particle operator constructed
 from a provided test vector. Also, `m` = binomial(# of sites, 2).
 
 ```math
-    ∂ρ̂ {(2)}/∂v_{kl} = ∑_{ij} v_{ij}^* â^†_{i} â^†_{j} â_{l} â_{k} - 
+    \\frac{∂ρ̂ {(2)}}{∂v_{kl}} = ∑_{ij} v_{ij}^* â^†_{i} â^†_{j} â_{l} â_{k} - 
         ζ v_{kl}^*
 ```
 
@@ -708,7 +708,7 @@ the transpose of the Jacobian of test_vector with respect to its parameters
 `α₁,α₂,...,αₘ`.
 
 ```math
-    ∂_α ρ̂ {(2)}= ∑_{ij, kl} (v_{ij}^* \\frac{∂v_{kl}(α)}{∂α} + 
+    \\frac{∂ρ̂ {(2)}}{∂α} = ∑_{ij, kl} (v_{ij}^* \\frac{∂v_{kl}(α)}{∂α} + 
         \\frac{∂v_{ij}^*(α)}{∂α} v_{kl}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
         ζ δ_{ik}δ_{jl} )
 ```
