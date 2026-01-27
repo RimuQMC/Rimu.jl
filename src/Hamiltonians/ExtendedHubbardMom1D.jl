@@ -51,7 +51,7 @@ function ExtendedHubbardMom1D(
     kr = range(start; step = step, length = M)
     ks = SVector{M,TT}(kr)
     kes = SVector{M,TT}(dispersion.(t, kr .+ (boundary_condition/M)))
-    return ExtendedHubbardMom1D{TT,M,typeof(address),Float64(u),Float64(v),t,boundary_condition}(address, ks, kes)
+    return ExtendedHubbardMom1D{TT,M,typeof(address),U,V,t,boundary_condition}(address, ks, kes)
 end
 
 function Base.show(io::IO, h::ExtendedHubbardMom1D)
@@ -65,7 +65,20 @@ end
 
 dimension(::ExtendedHubbardMom1D, address) = number_conserving_dimension(address)
 
-LOStructure(::Type{<:ExtendedHubbardMom1D}) = IsHermitian()
+function LOStructure(::Type{<:ExtendedHubbardReal1D{<:Real,<:Any,<:Any,<:Any,<:Any,T}}) where T
+    if iszero(T)
+        return IsDiagonal()
+    else
+        return IsHermitian()
+    end
+end
+function LOStructure(::Type{<:ExtendedHubbardReal1D{<:Complex,<:Any,<:Any,U,V,T}}) where {U,V,T}
+    if iszero(imag(U)) && iszero(imag(V))
+        return IsHermitian() # still Hermitian with complex t
+    else
+        return AdjointKnown()
+    end
+end
 
 Base.getproperty(h::ExtendedHubbardMom1D, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::ExtendedHubbardMom1D, ::Val{:ks}) = getfield(h, :ks)
