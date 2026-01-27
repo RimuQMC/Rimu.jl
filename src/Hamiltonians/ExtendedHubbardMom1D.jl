@@ -29,10 +29,10 @@ in momentum space.
 * [`HubbardReal1D`](@ref)
 * [`ExtendedHubbardReal1D`](@ref)
 """
-struct ExtendedHubbardMom1D{M,AD<:AbstractFockAddress,U,V,T,BOUNDARY_CONDITION} <: AbstractHamiltonian{Float64}
+struct ExtendedHubbardMom1D{TT,M,AD<:AbstractFockAddress,U,V,T,BOUNDARY_CONDITION} <: AbstractHamiltonian{TT}
     address::AD # default starting address, should have N particles and M modes
-    ks::SVector{M,Float64} # values for k
-    kes::SVector{M,Float64} # values for kinetic energy
+    ks::SVector{M,TT} # values for k
+    kes::SVector{M,TT} # values for kinetic energy
 end
 
 function ExtendedHubbardMom1D(
@@ -41,15 +41,17 @@ function ExtendedHubbardMom1D(
 )
     M = num_modes(address)
     step = 2π/M
+    U, V = promote(float(u), float(v))
+    TT = typeof(V)
     if isodd(M)
         start = -π*(1+1/M) + step
     else
         start = -π + step
     end
     kr = range(start; step = step, length = M)
-    ks = SVector{M,Float64}(kr)
-    kes = SVector{M,Float64}(dispersion.(t, kr .+ (boundary_condition/M)))
-    return ExtendedHubbardMom1D{M,typeof(address),Float64(u),Float64(v),t,boundary_condition}(address, ks, kes)
+    ks = SVector{M,TT}(kr)
+    kes = SVector{M,TT}(dispersion.(t, kr .+ (boundary_condition/M)))
+    return ExtendedHubbardMom1D{TT,M,typeof(address),Float64(u),Float64(v),t,boundary_condition}(address, ks, kes)
 end
 
 function Base.show(io::IO, h::ExtendedHubbardMom1D)
@@ -69,10 +71,10 @@ Base.getproperty(h::ExtendedHubbardMom1D, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::ExtendedHubbardMom1D, ::Val{:ks}) = getfield(h, :ks)
 Base.getproperty(h::ExtendedHubbardMom1D, ::Val{:kes}) = getfield(h, :kes)
 Base.getproperty(h::ExtendedHubbardMom1D, ::Val{:address}) = getfield(h, :address)
-Base.getproperty(h::ExtendedHubbardMom1D{<:Any,<:Any,U}, ::Val{:u}) where {U} = U
-Base.getproperty(h::ExtendedHubbardMom1D{<:Any,<:Any,<:Any,V}, ::Val{:v}) where {V} = V
-Base.getproperty(h::ExtendedHubbardMom1D{<:Any,<:Any,<:Any,<:Any,T}, ::Val{:t}) where {T} = T
-Base.getproperty(h::ExtendedHubbardMom1D{<:Any,<:Any,<:Any,<:Any,<:Any,BOUNDARY_CONDITION}, 
+Base.getproperty(h::ExtendedHubbardMom1D{<:Any,<:Any,<:Any,U}, ::Val{:u}) where {U} = U
+Base.getproperty(h::ExtendedHubbardMom1D{<:Any,<:Any,<:Any,<:Any,V}, ::Val{:v}) where {V} = V
+Base.getproperty(h::ExtendedHubbardMom1D{<:Any,<:Any,<:Any,<:Any,<:Any,T}, ::Val{:t}) where {T} = T
+Base.getproperty(h::ExtendedHubbardMom1D{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,BOUNDARY_CONDITION}, 
     ::Val{:boundary_condition}) where {BOUNDARY_CONDITION} = BOUNDARY_CONDITION
 
 ks(h::ExtendedHubbardMom1D) = getfield(h, :ks)
@@ -89,28 +91,28 @@ end
     return singlies * (singlies - 1) * (M - 2) + doublies * (M - 1)
 end
 
-@inline function diagonal_element(h::ExtendedHubbardMom1D{M,A}, address::A) where {M,A<:SingleComponentFockAddress}
+@inline function diagonal_element(h::ExtendedHubbardMom1D{TT,M,A}, address::A) where {TT,M,A<:SingleComponentFockAddress}
     map = occupied_mode_map(address)
     return (dot(h.kes, map) + (h.u/ 2M) * momentum_transfer_diagonal(map) 
-        + (h.v/ M) * extended_momentum_transfer_diagonal(map, 2π / M))
+        + (h.v/ M) * extended_momentum_transfer_diagonal(map, 2π / M)) :: TT
 end
 
-@inline function diagonal_element(h::ExtendedHubbardMom1D{M,A}, address::A) where {M,A<:FermiFS}
+@inline function diagonal_element(h::ExtendedHubbardMom1D{TT,M,A}, address::A) where {TT,M,A<:FermiFS}
     map = occupied_mode_map(address)
-    return dot(h.kes, map) + (h.v/ M) * extended_momentum_transfer_diagonal(map, 2π / M)
+    return (dot(h.kes, map) + (h.v/ M) * extended_momentum_transfer_diagonal(map, 2π / M)) :: TT
 end
 
 @inline function get_offdiagonal(
-    ham::ExtendedHubbardMom1D{M,A}, address::A, chosen, map=occupied_mode_map(address)
-) where {M,A<:SingleComponentFockAddress}
+    ham::ExtendedHubbardMom1D{TT,M,A}, address::A, chosen, map=occupied_mode_map(address)
+) where {TT,M,A<:SingleComponentFockAddress}
     address, onproduct,_,_,q = momentum_transfer_excitation(address, chosen, map)
-    return address, ham.u * onproduct / 2M + ham.v * cos(q * 2π / M) * onproduct / M
+    return address, (ham.u * onproduct / 2M + ham.v * cos(q * 2π / M) * onproduct / M) :: TT
 end
 
 @inline function get_offdiagonal(
-    ham::ExtendedHubbardMom1D{M,A}, address::A, chosen, map=occupied_mode_map(address)
-) where {M,A<:FermiFS}
+    ham::ExtendedHubbardMom1D{TT,M,A}, address::A, chosen, map=occupied_mode_map(address)
+) where {TT,M,A<:FermiFS}
     address, onproduct,_,_,q = momentum_transfer_excitation(address, chosen, map)
-    return address, -ham.v * onproduct * cos(q * 2π / M) / M
+    return address, (-ham.v * onproduct * cos(q * 2π / M) / M) :: TT
 end
 momentum(ham::ExtendedHubbardMom1D) = MomentumMom1D(ham)
