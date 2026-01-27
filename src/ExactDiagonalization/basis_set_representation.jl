@@ -91,7 +91,7 @@ end
 function BasisSetRepresentation(hamiltonian::AbstractOperator, addr_or_vec; kwargs...)
     # In the default case we pass `AdjointUnknown()` in order to skip the
     # symmetrisation of the sparse matrix
-    return _bsr_ensure_symmetry(AdjointUnknown(), hamiltonian, addr_or_vec; kwargs...)
+    return _bsr_ensure_symmetry(LOStructure(hamiltonian), hamiltonian, addr_or_vec; kwargs...)
 end
 # special cases are needed for symmetry wrappers
 
@@ -111,16 +111,6 @@ function BasisSetRepresentation(
     # For symmetry wrappers it is necessary to explicity symmetrise the matrix to
     # avoid the loss of matrix symmetry due to floating point rounding errors
     return _bsr_ensure_symmetry(LOStructure(hamiltonian), hamiltonian, addr; kwargs...)
-end
-
-function BasisSetRepresentation(
-     hamiltonian::Union{HubbardMomSpace{<:Any,<:Any,<:Any,<:Any,<:SMatrix}, ExtendedHubbardMom1D,
-     GutzwillerSampling{<:Any,<:Any,<:Union{HubbardMomSpace{<:Any,<:Any,<:Any,<:Any,<:SMatrix},ExtendedHubbardMom1D}}}, 
-     addr=starting_address(hamiltonian); kwargs...
-)
-    # For symmetry wrappers it is necessary to explicity symmetrise the matrix to
-    # avoid the loss of matrix symmetry due to floating point rounding errors
-    return _bsr_ensure_symmetry(LOStructrure(hamiltonian), hamiltonian, addr; kwargs...)
 end
 
 # default, does not enforce symmetries
