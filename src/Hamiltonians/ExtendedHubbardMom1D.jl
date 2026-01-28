@@ -65,14 +65,14 @@ end
 
 dimension(::ExtendedHubbardMom1D, address) = number_conserving_dimension(address)
 
-function LOStructure(::Type{<:ExtendedHubbardReal1D{<:Real,<:Any,<:Any,<:Any,<:Any,T}}) where T
-    if iszero(T)
+function LOStructure(::Type{<:ExtendedHubbardMom1D{<:Real,<:Any,<:Any,U,V}}) where {U,V}
+    if iszero(U) && iszero(V)
         return IsDiagonal()
     else
         return IsHermitian()
     end
 end
-function LOStructure(::Type{<:ExtendedHubbardReal1D{<:Complex,<:Any,<:Any,U,V,T}}) where {U,V,T}
+function LOStructure(::Type{<:ExtendedHubbardMom1D{<:Complex,<:Any,<:Any,U,V,T}}) where {U,V,T}
     if iszero(imag(U)) && iszero(imag(V))
         return IsHermitian() # still Hermitian with complex t
     else
