@@ -70,13 +70,7 @@ function LOStructure(::Type{<:ExtendedHubbardReal1D{<:Real,<:Any,<:Any,<:Any,T}}
         return IsHermitian()
     end
 end
-function LOStructure(::Type{<:ExtendedHubbardReal1D{<:Complex,<:Any,U,V,T}}) where {U,V,T}
-    if iszero(imag(U)) && iszero(imag(V))
-        return IsHermitian() # still Hermitian with complex t
-    else
-        return AdjointKnown()
-    end
-end
+LOStructure(::Type{<:ExtendedHubbardReal1D{<:Complex}}) = AdjointKnown()
 
 function LinearAlgebra.adjoint(h::ExtendedHubbardReal1D{TT,A,U,V,T,B,I}) where {TT<:Complex,A,U,V,T,B,I}
     return ExtendedHubbardReal1D{TT,A,conj(U)+0im,conj(V)+0im,T,B,I}(h.address)
