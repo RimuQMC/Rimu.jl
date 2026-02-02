@@ -43,7 +43,13 @@ end
 dimension(::HubbardReal1D, address) = number_conserving_dimension(address)
 
 LOStructure(::Type{<:HubbardReal1D{<:Real}}) = IsHermitian()
-LOStructure(::Type{<:HubbardReal1D{<:Complex}}) = AdjointKnown()
+function LOStructure(::Type{<:HubbardReal1D{<:Complex,<:Any,U,T}}) where {U,T}
+    if iszero(imag(U))
+        return IsHermitian() # still Hermitian with complex t
+    else
+        return AdjointKnown()
+    end
+end
 
 function LinearAlgebra.adjoint(h::HubbardReal1D{TT,A,U,T}) where {TT<:Complex,A,U,T}
     return HubbardReal1D{TT,A,conj(U)+0im,T}(h.add)
