@@ -89,11 +89,12 @@ function BasisSetRepresentation(
     return BasisSetRepresentation(hamiltonian, starting_address(hamiltonian); kwargs...)
 end
 function BasisSetRepresentation(hamiltonian::AbstractOperator, addr_or_vec; kwargs...)
-    # In the default case we pass `AdjointUnknown()` in order to skip the
-    # symmetrisation of the sparse matrix
     return _bsr_ensure_symmetry(LOStructure(hamiltonian), hamiltonian, addr_or_vec; kwargs...)
 end
 # special cases are needed for symmetry wrappers
+function BasisSetRepresentation(hamiltonian::AbstractOperator{<:Complex}, addr_or_vec; kwargs...)
+    return _bsr_ensure_symmetry(AdjointUnknown(), hamiltonian, addr_or_vec; kwargs...)
+end
 
 function BasisSetRepresentation(
     hamiltonian::ParitySymmetry, addr=starting_address(hamiltonian);
