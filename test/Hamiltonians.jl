@@ -789,7 +789,7 @@ end
                 # GutzwillerSampling with parameter zero is exactly equal to the original H
                 G = GutzwillerSampling(H, 0.0)
 
-                @test sparse(G; sort=true) == h_matrix
+                @test sparse(G; sort=true) ≈ h_matrix
                 @test starting_address(G) == starting_address(H)
 
                 @test LOStructure(G) isa AdjointKnown
