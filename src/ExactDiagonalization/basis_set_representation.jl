@@ -94,7 +94,7 @@ function BasisSetRepresentation(hamiltonian::AbstractOperator, addr_or_vec; kwar
     return _bsr_ensure_symmetry(AdjointUnknown(), hamiltonian, addr_or_vec; kwargs...)
 end
 # special cases are needed for symmetry wrappers
-function BasisSetRepresentation(hamiltonian::Union(HubbardMomSpace,ExtendedHubbardMom1D), addr_or_vec; kwargs...)
+function BasisSetRepresentation(hamiltonian::Union{HubbardMomSpace,ExtendedHubbardMom1D}, addr_or_vec; kwargs...)
     # These hamiltonians contains trignomatric operations which make the off-diagonal elements
     # ``H[i,j] and H[j,i]`` unequal by about and below 1e-12 value when required to be Hermitian.
     return _bsr_ensure_symmetry(LOStructure(hamiltonian), hamiltonian, addr_or_vec; kwargs...)
