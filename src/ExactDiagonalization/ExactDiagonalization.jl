@@ -26,7 +26,7 @@ using CommonSolve: CommonSolve, solve, init
 using VectorInterface: VectorInterface, add
 using OrderedCollections: freeze
 using NamedTupleTools: delete
-using StaticArrays: setindex, SMatrix
+using StaticArrays: setindex
 import Folds
 
 using Rimu: Rimu, DictVectors, Hamiltonians, Interfaces, BitStringAddresses, replace_keys,
