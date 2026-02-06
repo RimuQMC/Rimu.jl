@@ -22,7 +22,7 @@ function dispersion_mom_space(ks::SVector{D}, geometry::CubicGrid{D, S}, t::SMat
     return SMatrix{C,M,Float64}(kes_mat), SMatrix{D,M,Float64}(ks_mat)
 end
 function value_of_mom_mode(add_index::Int, ks::SVector{D}, geometry::CubicGrid{D}) where {D}
-    mom_mode = reverse(geometry[add_index])
+    mom_mode = geometry[add_index]
     return [ks[i][mode] for (i, mode) in enumerate(mom_mode)]
 end
 
