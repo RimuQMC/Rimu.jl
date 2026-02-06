@@ -152,7 +152,6 @@ between two different component occupied mode maps `map1` and `map2`. `g` is the
 `u` and `w` are the on-site and nearest neighbour interaction parameters respectively.
 
 """
-
 @inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D, S}
 
     onproduct = 0
