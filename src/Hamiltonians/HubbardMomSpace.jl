@@ -40,27 +40,33 @@ end
     # Calculate the hopping term for a single component.
     comp = address.components
     onproduct = 0.0
-    for i in 1:C
+    @inbounds for i in 1:C
         onproduct += dot(kes[i,:], occupied_mode_map(comp[i]))
     end
     return onproduct
 end
 
-@inline _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress) = dot(kes[1,:], occupied_mode_map(address))
+@inline function _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress) 
+    return dot(kes[1,:], occupied_mode_map(address))
+end
 
 """
-    mom_transfer_mom_space(add, chosen, map, g; fold=true)
-    mom_transfer_mom_space(add1, add2, chosen, map1, map2, g; fold=true)
+    mom_transfer_offdiagonal(add, chosen, map, g; fold=true)
+    mom_transfer_offdiagonal(add1, add2, chosen, map1, map2, g; fold=true)
 
-Get the momentum transfer for a given excitation in a same or two different components of a
-multi-component Fock state address in momentum space, i.e., `add` or between `add1` and `add2`. 
-`map`, `map1` and `map2` are the occupied mode maps for the relevant components of the 
-multi-component Fock state. `chosen` is an integer that determines which excitation and `g` is
-a geometry of the lattice.
+This function does the excitation operation on the given `add` or between `add1` and `add2` 
+in momentum space for same or two different components of a multi-component Fock state 
+address respectively which cotributes to the off diagonal part of the Hamiltonian. 
+The excitation is carried out to get the reponse similar to the nearest neighbour 
+interaction and on-site interaction operation in real space. The excitation is 
+determined by the integer `chosen`. `map`, `map1` and `map2` are the occupied 
+mode maps for the relevant components of the multi-component Fock state.`g` is 
+the geometry of the lattice. If `fold` is true, momentum transfer that goes
+outside the first Brillouin zone is folded back into it.
 
-See also [`extended_mom_transfer_diag`](@ref). 
+See also [`mom_transfer_diagonal`](@ref). 
 """
-@inline function mom_transfer_mom_space(
+@inline function mom_transfer_offdiagonal(
     add::SingleComponentFockAddress{<:Any, M}, chosen::Int, map::ModeMap,
     g::CubicGrid{D,S}; fold=true) where {M, D, S}
     # Get the momentum transfer for a given excitation.
@@ -96,27 +102,27 @@ See also [`extended_mom_transfer_diag`](@ref).
     src_modes = (src_indices[1].mode, src_indices[2].mode)
     src_loc = (g[src_modes[1]], g[src_modes[2]])
     Q = g[mom_change+1] - g[1]
-    dst_loc = (src_loc[1]+Q, src_loc[2]-Q)
+    dst_loc = (src_loc[2]-Q, src_loc[1]+Q)
     if fold
         dst_loc = (mod1.(dst_loc[1], S) , mod1.(dst_loc[2], S))
         if dst_loc == src_loc || reverse(dst_loc) == src_loc
             # If the momentum transfer is out of bounds, we return the original address.
             Q = g[M] - g[1]
-            dst_loc = (src_loc[1]+Q, src_loc[2]-Q)
+            dst_loc = (src_loc[2]-Q, src_loc[1]+Q)
             dst_loc = (mod1.(dst_loc[1], S) , mod1.(dst_loc[2], S))
         end
-    elseif !(all(ones(Int, D) .≤ dst_loc[2] .≤ S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
+    elseif !(all(ones(Int, D) .≤ dst_loc[1] .≤ S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
         Q .-= S
-        dst_loc .= [SRC[1]+Q, SRC[2]-Q]
-        if !(all(ones(Int, D) .≤ dst_loc[2] .≤ S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
+        dst_loc .= [dst_loc[2]-Q, dst_loc[1]+Q]
+        if !(all(ones(Int, D) .≤ dst_loc[1] .≤ S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
             return add, 0.0, src_modes..., -Q
         end
     end
     dst_indices = find_mode(add, (g[dst_loc[1]], g[dst_loc[2]]))
-    return excitation(add, dst_indices, reverse(src_indices))..., src_modes..., -Q
+    return excitation(add, dst_indices, src_indices)..., src_modes..., -Q
 end
 
-@inline function mom_transfer_mom_space(
+@inline function mom_transfer_offdiagonal(
     add1::SingleComponentFockAddress{<:Any, M}, add2::SingleComponentFockAddress{<:Any, M}, 
     chosen::Int, map1::ModeMap, map2::ModeMap, g::CubicGrid{D,S}; fold=true) where {M, D, S}
     # Get the momentum transfer for a given excitation.
@@ -145,15 +151,21 @@ end
 end
 
 """
-    extended_mom_transfer_diag(map, g, u, w)
-    extended_mom_transfer_diag(map1, map2, g, u, w)
+    _mom_transfer_diagonal(map, g, u, w)
+    _mom_transfer_diagonal(map1, map2, g, u, w)
 
-Calculate the extended momentum transfer diagonal between a given same component occupied mode map `map` or
-between two different component occupied mode maps `map1` and `map2`. `g` is the geometry of the lattice.
-`u` and `w` are the on-site and nearest neighbour interaction parameters respectively.
+This function does the excitation operation on the given `map` or between `map1` and `map2` 
+which are the occupied mode maps for the relevant components  of the multi-component
+Fock state in momentum space. The operation is carried out for same or two different 
+components of a multi-component Fock state address respectively which cotributes to 
+the diagonal part of the Hamiltonian. The excitation is carried out to get the 
+reponse similar to the nearest neighbour interaction and on-site interaction 
+operation in real space. `g` is the geometry of the lattice. `u` and `w` are 
+the on-site and nearest neighbour interaction strengths respectively. If 
+either `u` or `w` is `nothing`, the corresponding interaction term is ignored. 
 
 """
-@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D, S}
+@inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D, S}
 
     onproduct = 0
     for i in 1:length(map)
@@ -168,7 +180,7 @@ between two different component occupied mode maps `map1` and `map2`. `g` is the
     return onproduct
 end
 
-@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, ::Nothing, w) where {D, S}
+@inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, ::Nothing, w) where {D, S}
     
     onproduct = 0
     for i in 1:length(map)
@@ -183,7 +195,7 @@ end
     return onproduct * w
 end
 
-@inline function extended_mom_transfer_diag(map::BoseOccupiedModeMap, ::CubicGrid, u, ::Nothing)
+@inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, ::CubicGrid, u, ::Nothing)
 
     onproduct = 0
     for i in 1:length(map)
@@ -197,7 +209,7 @@ end
     return onproduct * u
 end
 
-@inline function extended_mom_transfer_diag(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D, S}
+@inline function _mom_transfer_diagonal(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D, S}
 
     onproduct = 0
     for i in 1:length(map)
@@ -212,9 +224,9 @@ end
     return onproduct*w
 end
 
-@inline extended_mom_transfer_diag(::FermiOccupiedModeMap, ::CubicGrid, _, ::Nothing) = 0
+@inline _mom_transfer_diagonal(::FermiOccupiedModeMap, ::CubicGrid, _, ::Nothing) = 0
 
-@inline function extended_mom_transfer_diag(map1::ModeMap, map2::ModeMap, ::CubicGrid{D}, u, w) where D
+@inline function _mom_transfer_diagonal(map1::ModeMap, map2::ModeMap, ::CubicGrid{D}, u, w) where D
     onproduct = 0
     for i in map1
         occ_i = i.occnum
@@ -226,7 +238,7 @@ end
     return onproduct * _interaction_parameter_diag(u, w, D)
 end
 
-@inline function extended_mom_transfer_diag(map1::FermiOccupiedModeMap, map2::FermiOccupiedModeMap, 
+@inline function _mom_transfer_diagonal(map1::FermiOccupiedModeMap, map2::FermiOccupiedModeMap, 
     ::CubicGrid{D}, u, w) where D
     return length(map1) * length(map2) * _interaction_parameter_diag(u, w, D)
 end
@@ -240,29 +252,32 @@ function _cosin_sum(q::SVector{D}, S::NTuple{D}) where {D}
 end
 
 """
-    _mom_interactions_diag(component, g)
-Calculate the interaction terms for a given component of a multi-component Fock state address in momentum space.
-`component` is a tuple of all combination between the pair of relevant components of the multi-component Fock state 
-for which the interaction term needs to be calculated,
+    mom_transfer_diagonal(component, g)
+This function does the excitation operation on the given addresses in the `component` which 
+reoresents a multi-component Fock state address respectively. Thes return a diagonal element
+of the Hamiltonian. The excitation is carried out to get the reponse similar to the 
+nearest neighbour interaction and on-site interaction operation in real space.
 
 '''math
-    \\hat{H}_\\text{int} = \\frac{1}{2}\\sum_{p,q,σ,σ'} V_{σσ'} \\hat{b}^†_{pσ} \\hat{b}^†_{qσ'} \\hat{b}^†_{qσ'} \\hat{b}_{pσ}
+    \\hat{H}_\\text{int} = \\frac{1}{2}\\sum_{p,q,σ,σ'} V_{σσ'} 
+        \\hat{b}^†_{pσ} \\hat{b}^†_{qσ'} \\hat{b}^†_{qσ'} \\hat{b}_{pσ}
 '''
 
-where `V_{σσ}' is the interaction coefficent that depends on  `u_{σσ'}' and `w_{σσ'}'. `g` is the geometry of the lattice.
+where `V_{σσ}' is the interaction coefficent that depends on  `u_{σσ'}' and 
+`w_{σσ'}'. `g` is the geometry of the lattice.
 
 """
 
-function _mom_interactions_diag(component::Tuple, g::CubicGrid)
+function mom_transfer_diagonal(component::Tuple, g::CubicGrid)
     onproduct = 0
     for data in component
         if !(isnothing(data.u) && isnothing(data.w)) 
             if component_index(data)[3]
                 # If the occupied modes are the same, we can use the extended mom transfer.
-                onproduct += extended_mom_transfer_diag(data.occmap1, g, data.u, data.w)
+                onproduct += _mom_transfer_diagonal(data.occmap1, g, data.u, data.w)
             else
                 # Otherwise we need to calculate the interaction between two different occupied modes.
-                onproduct += extended_mom_transfer_diag(data.occmap1, data.occmap2, g, data.u, data.w)
+                onproduct += _mom_transfer_diagonal(data.occmap1, data.occmap2, g, data.u, data.w)
             end
         end
     end
@@ -422,10 +437,21 @@ starting_address(h::HubbardMomSpace) = h.address
 
 dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
 
-# offdiagonals =========================================================================== #
-# Holds the offdiagonals for a single-component nearest neighbour one-body term. It's
-# structured like a matric where the first index determines the occupied site in the adress
-# and the second index determines the site the particle will hop to.
+# offdiaonals =========================================================================== #
+"""
+    HubbardMomSpaceComponentData(geometry,parant::A,address1,address2,
+        u,w) <: AbstractMatrix{Pair{A,Float64}}
+
+This holds the offdiagonals for a single- and multi-component two-body on-site and 
+nearest-neighbour interaction terms. It is structured where the index `chosen` 
+determines the sources and destinations momentum modes of a two body excitation 
+operation between particles of single-component fock addresses `address1` and 
+`address2` of the multi-componentent fock address `parent`. It also determines 
+the momentum transfer `k` involved in the excitation. Atlast, `k` is use with the 
+interaction strengths `u` and `w` to calculate the coefficient of the respective 
+new address after the excitation and returns it as a pair of the new address and 
+the coefficent.
+"""
 struct HubbardMomSpaceComponentData{
     C,I1,I2,D,G,A,A1,A2,U<:Union{Float64,Nothing},W<:Union{Float64,Nothing},O1,O2
 } <: AbstractMatrix{Pair{A,Float64}}
@@ -452,6 +478,7 @@ struct HubbardMomSpaceComponentData{
         )
     end
 end
+
 
 function Base.size(data::HubbardMomSpaceComponentData{<:Any,I,I}) where {I}
     if isnothing(data.u) && isnothing(data.w)
@@ -481,7 +508,7 @@ function Base.getindex(data::HubbardMomSpaceComponentData{C,I,I,D}, chosen::Int)
     S = size(geometry)
     M = prod(S)
     map1 = data.occmap1
-    new_add, onproduct,_,_,q = mom_transfer_mom_space(data.address1, chosen, map1, geometry)
+    new_add, onproduct,_,_,q = mom_transfer_offdiagonal(data.address1, chosen, map1, geometry)
     if data.parent_address isa CompositeFS
         new_parent = BitStringAddresses.update_component(
             data.parent_address, new_add, Val(I)
@@ -497,7 +524,7 @@ function Base.getindex(data::HubbardMomSpaceComponentData{C,I1,I2,D}, chosen::In
     S = size(geometry)
     M = prod(S)
     new_add1, onproduct1,new_add2, onproduct2,_,_,q = 
-        mom_transfer_mom_space(data.address1,data.address2,chosen,data.occmap1,data.occmap2,data.geometry)
+        mom_transfer_offdiagonal(data.address1,data.address2,chosen,data.occmap1,data.occmap2,data.geometry)
     new_parent = BitStringAddresses.update_component(
         data.parent_address, new_add1, Val(I1)
     )
@@ -525,7 +552,7 @@ starting_address(column::HubbardMomSpaceColumn) = column.address
 
 function diagonal_element(col::HubbardMomSpaceColumn)
     return _mom_hopping(col.hamiltonian.kes, col.address) + 
-        _mom_interactions_diag(col.components, col.geometry)/num_modes(col.address)
+        mom_transfer_diagonal(col.components, col.geometry)/num_modes(col.address)
 end
 
 function operator_column(h::HubbardMomSpace{<:Any,<:Any,A,G}, address) where {A,G}
