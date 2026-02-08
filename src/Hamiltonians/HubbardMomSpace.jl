@@ -275,7 +275,7 @@ end
 """
     HubbardMomSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C, D), u=ones(C, C), w=zeros(C, C))
 
-Hubbard model in Mom space. Supports single or multi-component Fock state
+Hubbard model in momentum space. Supports single or multi-component Fock state
 addresses (with `C` components) and various (rectangular) lattice geometries
 in `D` dimensions and of `M` volume.
 
