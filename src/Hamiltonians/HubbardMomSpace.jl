@@ -76,7 +76,7 @@ See also [`mom_transfer_diagonal`](@ref).
 """
 @inline function mom_transfer_offdiagonal(
     add::SingleComponentFockAddress{<:Any, M}, chosen::Int, map::ModeMap,
-    g::CubicGrid{D,S}; fold=true) where {M, D, S}
+    g::CubicGrid{D,S}) where {M, D, S}
     # Get the momentum transfer for a given excitation.
     singlies = length(map) # number of at least singly occupied modes
 
@@ -111,20 +111,12 @@ See also [`mom_transfer_diagonal`](@ref).
     src_loc = (g[src_modes[1]], g[src_modes[2]])
     Q = g[mom_change+1] - g[1]
     dst_loc = (src_loc[2]-Q, src_loc[1]+Q)
-    if fold
+    dst_loc = (mod1.(dst_loc[1], S) , mod1.(dst_loc[2], S))
+    if dst_loc == src_loc || reverse(dst_loc) == src_loc
+        # If the momentum transfer is out of bounds, we return the original address.
+        Q = g[M] - g[1]
+        dst_loc = (src_loc[2]-Q, src_loc[1]+Q)
         dst_loc = (mod1.(dst_loc[1], S) , mod1.(dst_loc[2], S))
-        if dst_loc == src_loc || reverse(dst_loc) == src_loc
-            # If the momentum transfer is out of bounds, we return the original address.
-            Q = g[M] - g[1]
-            dst_loc = (src_loc[2]-Q, src_loc[1]+Q)
-            dst_loc = (mod1.(dst_loc[1], S) , mod1.(dst_loc[2], S))
-        end
-    elseif !(all(ones(Int, D) .≤ dst_loc[1] .≤ S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
-        Q .-= S
-        dst_loc .= [dst_loc[2]-Q, dst_loc[1]+Q]
-        if !(all(ones(Int, D) .≤ dst_loc[1] .≤ S) && all(ones(Int, D) .≤ dst_loc[2] .≤ S))
-            return add, 0.0, src_modes..., -Q
-        end
     end
     dst_indices = find_mode(add, (g[dst_loc[1]], g[dst_loc[2]]))
     return excitation(add, dst_indices, src_indices)..., src_modes..., -Q
@@ -132,7 +124,7 @@ end
 
 @inline function mom_transfer_offdiagonal(
     add1::SingleComponentFockAddress{<:Any, M}, add2::SingleComponentFockAddress{<:Any, M}, 
-    chosen::Int, map1::ModeMap, map2::ModeMap, g::CubicGrid{D,S}; fold=true) where {M, D, S}
+    chosen::Int, map1::ModeMap, map2::ModeMap, g::CubicGrid{D,S}) where {M, D, S}
     # Get the momentum transfer for a given excitation.
     singlies = length(map2)
 
@@ -144,16 +136,7 @@ end
     src_loc = (g[src_modes[1]], g[src_modes[2]])
     Q = g[mom_change+1] - g[1]
     dst_loc = (src_loc[1]+Q, src_loc[2]-Q)
-
-    if fold
-        dst_loc = (mod1.(dst_loc[1], S) , mod1.(dst_loc[2], S))
-    elseif !(all(x -> 1 ≤ x ≤ S, dst_loc[1]) && all(x -> 1 ≤ x ≤ S, dst_loc[2]))
-        Q .-= S
-        dst_loc .= [SRC[1]+Q, SRC[2]-Q]
-        if !(all(x -> 1 ≤ x ≤ S, dst_loc[1]) && all(x -> 1 ≤ x ≤ S, dst_loc[2]))
-            return add, 0.0, src_modes..., -Q
-        end
-    end
+    dst_loc = (mod1.(dst_loc[1], S) , mod1.(dst_loc[2], S))
     return excitation(add1, find_mode(add1, (g[dst_loc[1]],)), (src_indices[1],))..., 
         excitation(add2, find_mode(add2, (g[dst_loc[2]],)), (src_indices[2],))..., src_modes..., -Q
 end
