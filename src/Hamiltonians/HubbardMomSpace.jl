@@ -318,7 +318,10 @@ number of sites `M` inferred from the number of modes in `address`.
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
   corresponds to the interaction of a component with itself.
 * `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
+* `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
   `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
+  
+  See also [`HubbardRealSpace`](@ref), [`HubbardMom1D`](@ref), [`ExtendedHubbardReal1D`](@ref).
 """
 struct HubbardMomSpace{
     C, # components    
