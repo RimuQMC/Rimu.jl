@@ -437,20 +437,20 @@ starting_address(h::HubbardMomSpace) = h.address
 
 dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
 
-# offdiaonals =========================================================================== #
+# offdiagonals =========================================================================== #
 """
     HubbardMomSpaceComponentData(geometry,parant::A,address1,address2,
         u,w) <: AbstractMatrix{Pair{A,Float64}}
 
-This holds the offdiagonals for a single- and multi-component two-body on-site and 
-nearest-neighbour interaction terms. It is structured where the index `chosen` 
-determines the sources and destinations momentum modes of a two body excitation 
+This holds the off-diagonals for a single- and multi-component two-body on-site and 
+nearest-neighbour interaction terms. It is structured where the index `chosen.` 
+determines the sources and destinations momentum modes of a two-body excitation 
 operation between particles of single-component fock addresses `address1` and 
-`address2` of the multi-componentent fock address `parent`. It also determines 
-the momentum transfer `k` involved in the excitation. Atlast, `k` is use with the 
+`address2` of the multi-component fock address `parent`. It also determines 
+the momentum transfer `k` involved in the excitation. At last, `k` is used with the 
 interaction strengths `u` and `w` to calculate the coefficient of the respective 
-new address after the excitation and returns it as a pair of the new address and 
-the coefficent.
+new address after the excitation and returns it as a pair of the new address (key) and 
+the coefficient (value).
 """
 struct HubbardMomSpaceComponentData{
     C,I1,I2,D,G,A,A1,A2,U<:Union{Float64,Nothing},W<:Union{Float64,Nothing},O1,O2
