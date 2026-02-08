@@ -422,7 +422,7 @@ starting_address(h::HubbardMomSpace) = h.address
 
 dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
 
-# offdiaonals =========================================================================== #
+# offdiagonals =========================================================================== #
 # Holds the offdiagonals for a single-component nearest neighbour one-body term. It's
 # structured like a matric where the first index determines the occupied site in the adress
 # and the second index determines the site the particle will hop to.
