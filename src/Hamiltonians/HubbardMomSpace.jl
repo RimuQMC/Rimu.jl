@@ -316,8 +316,7 @@ number of sites `M` inferred from the number of modes in `address`.
   matrix corresponds to the hopping strength of the `i`-th component and `j`-th direction.
 * `u`: the on-site interaction parameters. Must be a symmetric matrix. `u[i, j]`
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
-  corresponds to the interaction of a component with itself. Note that `u[i,i]` mustadd
-  be zero for fermionic components.
+  corresponds to the interaction of a component with itself.
 * `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
   `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
 """
