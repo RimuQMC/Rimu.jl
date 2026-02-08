@@ -58,6 +58,7 @@ multi-component Fock state address in momentum space, i.e., `add` or between `ad
 multi-component Fock state. `chosen` is an integer that determines which excitation and `g` is
 a geometry of the lattice.
 
+See also [`extended_mom_transfer_diag`](@ref). 
 """
 @inline function mom_transfer_mom_space(
     add::SingleComponentFockAddress{<:Any, M}, chosen::Int, map::ModeMap,
