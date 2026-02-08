@@ -72,8 +72,13 @@ function LOStructure(::Type{<:ExtendedHubbardMom1D{<:Real,<:Any,<:Any,U,V}}) whe
         return IsHermitian()
     end
 end
-LOStructure(::Type{<:ExtendedHubbardMom1D{<:Complex}}) = AdjointKnown()
-
+function LOStructure(::Type{<:ExtendedHubbardMom1D{<:Complex,<:Any,<:Any,U,V}}) where {U,V}
+    if iszero(imag(U)) && iszero(imag(V))
+        return IsHermitian()
+    else 
+        return AdjointKnown()
+    end
+end
 Base.getproperty(h::ExtendedHubbardMom1D, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::ExtendedHubbardMom1D, ::Val{:ks}) = getfield(h, :ks)
 Base.getproperty(h::ExtendedHubbardMom1D, ::Val{:kes}) = getfield(h, :kes)
