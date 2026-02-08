@@ -28,12 +28,13 @@ end
         HubbardReal1DEP(BoseFS(1, 2, 3, 4); u=1.0im),
         HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
         HubbardMom1D(OccupationNumberFS(6, 0, 0, 4); t=1.0, u=0.5),
-        HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
+        HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5 + im),
         ExtendedHubbardReal1D(BoseFS((1, 0, 0, 0, 1)); u=1.0, v=2.0, t=3.0),
         ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); u=1 + 0.5im),
         ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); t=1 + 0.5im),
         ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); t=2.0, power=3),
         ExtendedHubbardMom1D(BoseFS((1, 0, 0, 0, 1)); u=1.0, v=2.0, t=3.0),
+        ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); u=1 + 0.5im),
         ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); t=1 + 0.5im),
         ExtendedHubbardMom1D(OccupationNumberFS(1,2,0,0); u=1.0, v=2.0, t=3.0),
         ExtendedHubbardMom1D(FermiFS(1,1,0,0); u=1.0, v=2.0, t=3.0),
@@ -739,10 +740,15 @@ end
                 w= [-1 0.5; 0.5 -2],
                 geometry=PeriodicBoundaries(3, 3),
             )
-
+            
             eig1 = eigsolve(BasisSetRep(H4; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
             eig2 = eigsolve(BasisSetRep(H5; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
             @test round(real(eig1); digits=10) == round(eig2; digits=10)
+
+            address = BoseFS(2,2,2,2)
+            v= 3
+            u=2.1
+            @test Matrix(ExtendedHubbardMom1D(address; v, u)) ≈ Matrix(HubbardMomSpace(address; w=v, u))
         end
     end
     @testset "Complex hopping" begin
@@ -773,6 +779,37 @@ end
         eig1 = eigsolve(BasisSetRep(H1; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
         eig2 = eigsolve(BasisSetRep(H2; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
         @test round(real(eig1); digits=10) == round(eig2; digits=10)
+    end
+    @testset "mom_transfer_offdiagonal" begin
+        addr1 = BoseFS(1,0,1,0)
+        addr2 = BoseFS(0,0,1,1)
+        geometry = PeriodicBoundaries(2,2)
+        map1 = occupied_mode_map(addr1)
+        map2 = occupied_mode_map(addr2)
+        chosen = 1
+
+        # test intra-component transfer
+        n_addr, val, _, _,intra_q = mom_transfer_offdiagonal(addr1, addr2, chosen, map1, map2, geometry)
+        @test excitation(addr1, find_mode(addr1, map1[1].mode + 1, map1[2].mode+1), (map1[1], map1[2],)) == (n_addr, val)
+        @test intra_q == geometry[chosen + 1] - geometry[1]
+
+        # test inter-component transfer
+        n_addr1, val1, n_addr2, val2, _, _,inter_q = mom_transfer_offdiagonal(addr1, addr2, chosen, map1, map2, geometry)
+        @test excitation(addr1, find_mode(addr1, map1[1].mode + 1), map1[1]) == (n_addr1, val1)
+        @test excitation(addr2, find_mode(addr2, map2[1].mode + 1), map2[1]) == (n_addr2, val2)
+        @test inter_q == geometry[chosen + 1] - geometry[1]
+    end
+    @testset "_mom_transfer_diagonal" begin
+        addr1 = BoseFS(1,0,1,0)
+        addr2 = BoseFS(0,0,1,1)
+        geometry = PeriodicBoundaries(2,2)
+        map1 = occupied_mode_map(addr1)
+        map2 = occupied_mode_map(addr2)
+
+        val1 = _mom_transfer_diagonal(map1, geometry, 1.0, 2.0)
+        val2 = _mom_transfer_diagonal(map2, geometry, 1.0, 2.0)
+        @test val1 ≈  2.0 * (1.0 + 2.0*cos((map1[2].mode - map1[1].mode-1)*2π/4))
+        @test val2 ≈ 2.0 * (1.0 + 2.0*cos((map2[2].mode - map2[1].mode-1)*2π/4))
     end
 end
 
