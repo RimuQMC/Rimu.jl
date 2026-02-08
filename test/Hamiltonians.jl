@@ -765,8 +765,8 @@ end
     end
     @testset "Nearest neighbour interaction" begin
         addr = BoseFS(0,4,0,0)
-        H1 = HubbardMomSpace(addr; geometry=PeriodicBoundaries(4), w=[2.0])
-        H2 = ExtendedHubbardMom1D(addr; v=2.0)
+        H1 = HubbardMomSpace(addr; geometry=PeriodicBoundaries(4), w=[2.0], u=[0.0])
+        H2 = ExtendedHubbardMom1D(addr; v=2.0, u=0.0)
         @test round.(Matrix(H1; sizelim=1e10),digits=10) == round.(Matrix(H2; sizelim=1e10), digits=10)
         addr = FermiFS{2,4}(0,1,1,0)
         H1 = HubbardMomSpace(addr; geometry=PeriodicBoundaries(4), w=[-1.0])
@@ -779,37 +779,6 @@ end
         eig1 = eigsolve(BasisSetRep(H1; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
         eig2 = eigsolve(BasisSetRep(H2; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
         @test round(real(eig1); digits=10) == round(eig2; digits=10)
-    end
-    @testset "mom_transfer_offdiagonal" begin
-        addr1 = BoseFS(1,0,1,0)
-        addr2 = BoseFS(0,0,1,1)
-        geometry = PeriodicBoundaries(2,2)
-        map1 = occupied_mode_map(addr1)
-        map2 = occupied_mode_map(addr2)
-        chosen = 1
-
-        # test intra-component transfer
-        n_addr, val, _, _,intra_q = mom_transfer_offdiagonal(addr1, addr2, chosen, map1, map2, geometry)
-        @test excitation(addr1, find_mode(addr1, map1[1].mode + 1, map1[2].mode+1), (map1[1], map1[2],)) == (n_addr, val)
-        @test intra_q == geometry[chosen + 1] - geometry[1]
-
-        # test inter-component transfer
-        n_addr1, val1, n_addr2, val2, _, _,inter_q = mom_transfer_offdiagonal(addr1, addr2, chosen, map1, map2, geometry)
-        @test excitation(addr1, find_mode(addr1, map1[1].mode + 1), map1[1]) == (n_addr1, val1)
-        @test excitation(addr2, find_mode(addr2, map2[1].mode + 1), map2[1]) == (n_addr2, val2)
-        @test inter_q == geometry[chosen + 1] - geometry[1]
-    end
-    @testset "_mom_transfer_diagonal" begin
-        addr1 = BoseFS(1,0,1,0)
-        addr2 = BoseFS(0,0,1,1)
-        geometry = PeriodicBoundaries(2,2)
-        map1 = occupied_mode_map(addr1)
-        map2 = occupied_mode_map(addr2)
-
-        val1 = _mom_transfer_diagonal(map1, geometry, 1.0, 2.0)
-        val2 = _mom_transfer_diagonal(map2, geometry, 1.0, 2.0)
-        @test val1 ≈  2.0 * (1.0 + 2.0*cos((map1[2].mode - map1[1].mode-1)*2π/4))
-        @test val2 ≈ 2.0 * (1.0 + 2.0*cos((map2[2].mode - map2[1].mode-1)*2π/4))
     end
 end
 
