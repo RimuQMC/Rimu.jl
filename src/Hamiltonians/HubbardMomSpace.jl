@@ -1,11 +1,23 @@
 """
-    dispersion_mom_space(ks, geometry, t)
-
-    Dispersion relation for a given set of k values, lattice geometry and hopping strengths t. Returns
-        ``-2(\\sum_{\\bar{k}} \\Re(t_{\\bar{k}}) \\cos(k_{\\bar{k}}) + \\Im(t_{\\bar{k}}) \\sin(k_{\\bar{k}}))``
-    where ``\\bar{k}`` runs over all dimensions of the lattice.
+    hubbard_dispersion_mom_space(t, k)
+Hubbard dispersion relation for momentum space models. Returns ``-2(\\Re(t) \\cos(k) - \\Im(t) \\sin(k))``.
 """
-function dispersion_mom_space(ks::SVector{D}, geometry::CubicGrid{D, S}, t::SMatrix) where {D, S}
+function hubbard_dispersion_mom_space(t::SVector, k::Vector)
+    # Calculate the dispersion relation for a given k value and hopping strength t.
+    return -2 * (real.(t') * cos.(k) - imag.(t') * sin.(k))
+end
+
+"""
+    dispersion_mom_space(ks, geometry, t; dispersion::Function = hubbard_dispersion_mom_space)
+
+Dispersion relation for a given set of `k` values, lattice geometry, and hopping strengths t. Returns
+a tuple of the kinetic energy values and the k values for each mode. The dispersion relation is 
+calculated using the provided `dispersion` function, which takes in the hopping strength and the `k`
+value as arguments. By default, it uses the `hubbard_dispersion_mom_space` function, which corresponds 
+to the standard Hubbard model. 
+"""
+function dispersion_mom_space(ks::SVector{D}, geometry::CubicGrid{D, S}, t::SMatrix, 
+        dispersion::Function = hubbard_dispersion_mom_space) where {D, S}
     # Calculate the dispersion relation for a given set of k values and hopping strength t.
     C,_ = size(t)
     M = prod(S)
@@ -15,7 +27,7 @@ function dispersion_mom_space(ks::SVector{D}, geometry::CubicGrid{D, S}, t::SMat
     for j in 1:C
         for i in 1:M
             mom_val = value_of_mom_mode(M-i+1, ks, geometry)
-            kes_mat[j,i] = convert(Float64,hub_dis_mom_space(t[j,:], mom_val)[1])
+            kes_mat[j,i] = convert(Float64,dispersion(t[j,:], mom_val)[1])
             ks_mat[:,i] = mom_val + phase[j,:]
         end
     end
@@ -26,10 +38,6 @@ function value_of_mom_mode(add_index::Int, ks::SVector{D}, geometry::CubicGrid{D
     return [ks[i][mode] for (i, mode) in enumerate(mom_mode)]
 end
 
-function hub_dis_mom_space(t::SVector, k::Vector)
-    # Calculate the dispersion relation for a given k value and hopping strength t.
-    return -2 * (real.(t') * cos.(k) - imag.(t') * sin.(k))
-end
 
 """
     _mom_hopping(kes, address)
@@ -55,11 +63,11 @@ end
     mom_transfer_offdiagonal(add1, add2, chosen, map1, map2, g; fold=true)
 
 This function does the excitation operation on the given `add` or between `add1` and `add2` 
-in momentum space for same or two different components of a multi-component Fock state 
-address respectively which cotributes to the off diagonal part of the Hamiltonian. 
-The excitation is carried out to get the reponse similar to the nearest neighbour 
-interaction and on-site interaction operation in real space. The excitation is 
-determined by the integer `chosen`. `map`, `map1` and `map2` are the occupied 
+in momentum space for the same or two different components of a multi-component Fock state 
+address, respectively, which contributes to the off-diagonal part of the Hamiltonian. 
+The excitation is carried out to get a response similar to the nearest neighbour 
+interaction and the on-site interaction operation in real space. The excitation is 
+determined by the integer `chosen`. `map`, `map1`, and `map2` are the occupied 
 mode maps for the relevant components of the multi-component Fock state.`g` is 
 the geometry of the lattice. If `fold` is true, momentum transfer that goes
 outside the first Brillouin zone is folded back into it.
@@ -156,12 +164,12 @@ end
 
 This function does the excitation operation on the given `map` or between `map1` and `map2` 
 which are the occupied mode maps for the relevant components  of the multi-component
-Fock state in momentum space. The operation is carried out for same or two different 
-components of a multi-component Fock state address respectively which cotributes to 
+Fock state in momentum space. The operation is carried out for the same or two different 
+components of a multi-component Fock state address, respectively, which contributes to 
 the diagonal part of the Hamiltonian. The excitation is carried out to get the 
-reponse similar to the nearest neighbour interaction and on-site interaction 
+response similar to the nearest neighbour interaction and on-site interaction 
 operation in real space. `g` is the geometry of the lattice. `u` and `w` are 
-the on-site and nearest neighbour interaction strengths respectively. If 
+the on-site and nearest neighbour interaction strengths, respectively. If 
 either `u` or `w` is `nothing`, the corresponding interaction term is ignored. 
 
 """
@@ -253,8 +261,8 @@ end
 
 """
     mom_transfer_diagonal(component, g)
-This function does the excitation operation on the given addresses in the `component` which 
-reoresents a multi-component Fock state address respectively. Thes return a diagonal element
+This function does the excitation operation on the given addresses in the `component`, which 
+represents a multi-component Fock state address, respectively. This returns a diagonal element
 of the Hamiltonian. The excitation is carried out to get the reponse similar to the 
 nearest neighbour interaction and on-site interaction operation in real space.
 
@@ -263,7 +271,7 @@ nearest neighbour interaction and on-site interaction operation in real space.
         \\hat{b}^†_{pσ} \\hat{b}^†_{qσ'} \\hat{b}^†_{qσ'} \\hat{b}_{pσ}
 '''
 
-where `V_{σσ}' is the interaction coefficent that depends on  `u_{σσ'}' and 
+where `V_{σσ}' is the interaction coefficient that depends on  `u_{σσ'}' and 
 `w_{σσ'}'. `g` is the geometry of the lattice.
 
 """
@@ -276,7 +284,7 @@ function mom_transfer_diagonal(component::Tuple, g::CubicGrid)
                 # If the occupied modes are the same, we can use the extended mom transfer.
                 onproduct += _mom_transfer_diagonal(data.occmap1, g, data.u, data.w)
             else
-                # Otherwise we need to calculate the interaction between two different occupied modes.
+                # Otherwise, we need to calculate the interaction between two different occupied modes.
                 onproduct += _mom_transfer_diagonal(data.occmap1, data.occmap2, g, data.u, data.w)
             end
         end
@@ -289,7 +297,8 @@ end
 @inline _interaction_parameter_diag(u::Float64, ::Nothing, _) = u
 
 """
-    HubbardMomSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C, D), u=ones(C, C), w=zeros(C, C))
+    HubbardMomSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C, D), u=ones(C, C), 
+        w=zeros(C, C), dispersion=hub_dis_mom_space) <: AbstractHamiltonian{Float64}
 
 Hubbard model in momentum space. Supports single or multi-component Fock state
 addresses (with `C` components) and various (rectangular) lattice geometries
@@ -322,19 +331,21 @@ Implemented [`CubicGrid`](@ref)s for keyword `geometry`
 * [`HardwallBoundaries`](@ref)
 * [`LadderBoundaries`](@ref)
 
-Default is `geometry=PeriodicBoundaries(M,)`, i.e. a one-dimensional lattice with the
+Default is `geometry=PeriodicBoundaries(M,)`, i.e., a one-dimensional lattice with the
 number of sites `M` inferred from the number of modes in `address`.
 
 ## Other parameters
 
 * `t`: the hopping strengths. Must be a matrix of length `C × D `. The `i`-th and `j`-th element of the
   matrix corresponds to the hopping strength of the `i`-th component and `j`-th direction.
-* `u`: the on-site interaction parameters. Must be a symmetric matrix. `u[i, j]`
+* `u`: the on-site interaction parameters. Must be a symmetric matrix. `u[i, j].`
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
   corresponds to the interaction of a component with itself.
 * `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
 * `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
   `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
+* `dispersion`: the function used to calculate the dispersion relation. Default is 
+    `hubbard_dispersion_mom_space` which corresponds to the standard Hubbard model. 
   
   See also [`HubbardRealSpace`](@ref), [`HubbardMom1D`](@ref), [`ExtendedHubbardReal1D`](@ref).
 """
@@ -365,6 +376,7 @@ function HubbardMomSpace(
     t=ones(num_components(address), num_dimensions(geometry)),
     u=ones(num_components(address), num_components(address)),
     w=zeros(num_components(address), num_components(address)),
+    dispersion::Function = hubbard_dispersion_mom_space,
 )
     C = num_components(address)
     D = num_dimensions(geometry)
@@ -400,7 +412,7 @@ function HubbardMomSpace(
             push!(ks_mat,reverse([j for j in kr]))
         end
     end
-    kes, ks =     dispersion_mom_space(SVector{D}(ks_mat), geometry, t_mat)
+    kes, ks = dispersion_mom_space(SVector{D}(ks_mat), geometry, t_mat, dispersion)
 
     return HubbardMomSpace{C,D,typeof(address),typeof(geometry),typeof(ks),typeof(kes),
     typeof(t_mat),typeof(u_mat),typeof(w_mat)}(
@@ -443,14 +455,14 @@ dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
         u,w) <: AbstractMatrix{Pair{A,Float64}}
 
 This holds the off-diagonals for a single- and multi-component two-body on-site and 
-nearest-neighbour interaction terms. It is structured where the index `chosen.` 
+nearest-neighbour interaction terms. It is structured where the index `chosen` 
 determines the sources and destinations momentum modes of a two-body excitation 
 operation between particles of single-component fock addresses `address1` and 
 `address2` of the multi-component fock address `parent`. It also determines 
 the momentum transfer `k` involved in the excitation. At last, `k` is used with the 
 interaction strengths `u` and `w` to calculate the coefficient of the respective 
-new address after the excitation and returns it as a pair of the new address (key) and 
-the coefficient (value).
+new address after the excitation and returns it as a pair of the new address and 
+the coefficient.
 """
 struct HubbardMomSpaceComponentData{
     C,I1,I2,D,G,A,A1,A2,U<:Union{Float64,Nothing},W<:Union{Float64,Nothing},O1,O2
