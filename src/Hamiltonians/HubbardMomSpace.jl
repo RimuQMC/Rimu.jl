@@ -176,7 +176,7 @@ end
     onproduct = 0
     for i in 1:length(map)
         occ_i = map[i].occnum
-        onproduct += occ_i * (occ_i - 1) * (w*D)
+        onproduct += occ_i * (occ_i - 1) * D
         for j in 1:i-1
             occ_j = map[j].occnum
             q = g[map[i].mode] - g[map[j].mode]
