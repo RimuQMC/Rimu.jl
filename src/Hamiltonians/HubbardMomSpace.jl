@@ -284,8 +284,11 @@ in `D` dimensions and of `M` volume.
   \\hat{H} = -\\sum_{k,σ} ϵ_{kσ} n_{kσ} +
   \\sum_{p,q,k,σ,σ'} V_{σσ'} a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}
 ```
-where ``ϵ_{kσ} = -2 (\\sum_{d=1}^{D} \\Re(t_{σ,d}) \\cos(k_d) - \\Im(t_{σ,d}) \\sin(k_d))`` and
+where ``ϵ_{kσ} = -2 (\\sum_{d=1}^{D} \\Re(t_{σ,d}) \\cos(k_d) - \\Im(t_{σ,d}) \\sin(k_d))`` is 
+the single-particle dispersion and
 ``V_{σσ'} = (u_{σσ'}(1- \\frac{δ_{σσ'}}{2}) + w_{σσ'} \\sum_{d=1}^{D} \\cos(q_d))/M``
+the coefficients of a two-body interaction with onsite (``u_{σσ'}``) and nearest-neighbour 
+(``w_{σσ'}``) interaction terms.
 
 ## Address types
 
