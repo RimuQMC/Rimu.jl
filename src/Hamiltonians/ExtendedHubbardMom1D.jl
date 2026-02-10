@@ -79,6 +79,9 @@ function LOStructure(::Type{<:ExtendedHubbardMom1D{<:Complex,<:Any,<:Any,U,V}}) 
         return AdjointKnown()
     end
 end
+function LinearAlgebra.adjoint(h::ExtendedHubbardMom1D{TT,M,A,U,V,T,B}) where {TT<:Complex,M,A,U,V,T,B}
+    return ExtendedHubbardMom1D{TT,M,A,conj(U)+0im,conj(V)+0im,T,B}(h.address,conj(h.ks),conj(h.kes))
+end
 Base.getproperty(h::ExtendedHubbardMom1D, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::ExtendedHubbardMom1D, ::Val{:ks}) = getfield(h, :ks)
 Base.getproperty(h::ExtendedHubbardMom1D, ::Val{:kes}) = getfield(h, :kes)
