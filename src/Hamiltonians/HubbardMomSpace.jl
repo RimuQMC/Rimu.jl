@@ -311,8 +311,6 @@ is produced if `address`is incompatible with the interaction parameters `u`.
 Implemented [`CubicGrid`](@ref)s for keyword `geometry`
 
 * [`PeriodicBoundaries`](@ref)
-* [`HardwallBoundaries`](@ref)
-* [`LadderBoundaries`](@ref)
 
 Default is `geometry=PeriodicBoundaries(M,)`, i.e., a one-dimensional lattice with the
 number of sites `M` inferred from the number of modes in `address`.
