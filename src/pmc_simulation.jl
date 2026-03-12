@@ -99,8 +99,17 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
 
     # seed the random number generator
     if !isnothing(random_seed)
-        Random.seed!(random_seed + hash(mpi_rank()))
+        # create a (version-stable) hash of the rank to add to the random seed for different
+        # sequences in different ranks
+        h = UInt64(0)
+        for byte in stable_hash(mpi_rank(); version=4)
+            h = h << 8 # the output of stable_hash is an array of bytes, so we shift them
+            h = h | byte # together to get a UInt64 hash value
+        end
+        Random.seed!(random_seed + h)
     end
+    rand() # warm up the RNG??? I'm not sure why this is needed, but without it, the
+    # FCIQMC results for the first few steps are different between v0.12.5 and v0.13.0.
 
     start_at = isnothing(start_at) ? starting_address(hamiltonian) : start_at
     vectors = _set_up_starting_vectors(

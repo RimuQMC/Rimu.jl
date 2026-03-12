@@ -307,7 +307,7 @@ end
     @test sim.aborted == true
     @test sim.success == false
     @test sim.modified == true
-    @test sim.message == "Aborted in step 5."
+    @test sim.message == "Aborted in step 3."
     @test size(sim.df, 1) < 100
 
     # population does not die with sensible default shift
@@ -327,7 +327,7 @@ end
     @test sim.aborted == true
     @test sim.success == false
     @test sim.modified == true
-    @test sim.message == "Aborted in step 3."
+    @test sim.message == "Aborted in step 2."
     @test size(sim.df, 1) < 100
 end
 

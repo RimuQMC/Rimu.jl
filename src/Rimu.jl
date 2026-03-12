@@ -11,6 +11,7 @@ using Reexport: Reexport, @reexport
 using Setfield: Setfield, @set
 using StaticArrays: StaticArrays, SVector, SMatrix
 using StatsBase: StatsBase
+using StableHashTraits: stable_hash
 using TerminalLoggers: TerminalLogger
 using Logging: ConsoleLogger
 using OrderedCollections: freeze
