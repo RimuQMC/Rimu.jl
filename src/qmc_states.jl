@@ -192,7 +192,7 @@ function state_vectors(state::R) where {R<:ReplicaState}
 end
 
 function report_default_metadata!(report::Report, state::ReplicaState)
-    report_metadata!(report, "RIMU_PACKAGE_VERSION", pkgversion(Rimu))
+    report_metadata!(report, "Rimu.PACKAGE_VERSION", pkgversion(Rimu))
     # add metadata from state
     s_state = first(state)
     algorithm = s_state.algorithm

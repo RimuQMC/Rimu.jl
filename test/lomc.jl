@@ -306,7 +306,7 @@ Random.seed!(1234)
             reporting_strategy = ReportDFAndInfo(reporting_interval=5, info_interval=10, io=devnull, writeinfo=true)
             df = lomc!(H, copy(dv); reporting_strategy, laststep=100).df
             @test size(df, 1) == 20
-            @test metadata(df, "RIMU_PACKAGE_VERSION") == string(pkgversion(Rimu))
+            @test metadata(df, "Rimu.PACKAGE_VERSION") == string(pkgversion(Rimu))
 
             out = @capture_out begin
                 reporting_strategy = ReportDFAndInfo(reporting_interval=5, info_interval=10, io=stdout, writeinfo=true)
