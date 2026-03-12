@@ -124,8 +124,8 @@ num_spectral_states(::ReplicaState{<:Any, S}) where {S} = S
 """
     num_overlaps(state_or_DataFrame)
 
-Return the number of overlaps between replicas that are being reported. Only counts 
-overlaps between replicas of the same spectral state, even if `AllOverlaps` is used with 
+Return the number of overlaps between replicas that are being reported. Only counts
+overlaps between replicas of the same spectral state, even if `AllOverlaps` is used with
 `mixed_spectral_overlaps=true`.
 
 The return value is `0` if no overlaps are being reported, and `N*(N-1)÷2` otherwise, where `N` is the value returned by [`num_replicas`](@ref).
@@ -192,7 +192,7 @@ function state_vectors(state::R) where {R<:ReplicaState}
 end
 
 function report_default_metadata!(report::Report, state::ReplicaState)
-    report_metadata!(report, "Rimu.PACKAGE_VERSION", Rimu.PACKAGE_VERSION)
+    report_metadata!(report, "RIMU_PACKAGE_VERSION", pkgversion(Rimu))
     # add metadata from state
     s_state = first(state)
     algorithm = s_state.algorithm

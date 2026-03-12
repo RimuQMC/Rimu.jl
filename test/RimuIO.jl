@@ -158,7 +158,7 @@ end
         @test meta.complex === 1.2 + 3im
         @test meta.bool === true
         @test meta.string === "a string"
-        @test meta.RIMU_PACKAGE_VERSION == Rimu.PACKAGE_VERSION
+        @test meta.RIMU_PACKAGE_VERSION == pkgversion(Rimu)
         rm(file)
     end
 
