@@ -26,17 +26,11 @@ import MPI
 @reexport using CommonSolve: CommonSolve, init, step!, solve, solve!
 @reexport using DataFrames
 
-"""
-    Rimu.PACKAGE_VERSION
-Constant that contains the current `VersionNumber` of `Rimu`.
-"""
-const PACKAGE_VERSION = VersionNumber(TOML.parsefile(pkgdir(Rimu, "Project.toml"))["version"])
-
 @doc """
     Rimu
 **Random integrators for many-body quantum systems**
 
-Welcome to `Rimu` version $PACKAGE_VERSION.
+Welcome to `Rimu` version $(pkgversion(Rimu)).
 Read the documentation [online](https://RimuQMC.github.io/Rimu.jl/).
 """
 Rimu

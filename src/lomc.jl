@@ -39,7 +39,7 @@ Alternatively, a `ReplicaState` can be passed in to continue a previous simulati
   All metadata is converted to strings.
 
 Some metadata is automatically added to the report `df` including
-[`Rimu.PACKAGE_VERSION`](@ref) and data from `state`.
+`pkgversion(Rimu)` and data from `state`.
 
 # Return values
 
