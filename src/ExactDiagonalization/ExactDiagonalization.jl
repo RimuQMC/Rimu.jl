@@ -27,6 +27,7 @@ using VectorInterface: VectorInterface, add
 using OrderedCollections: freeze
 using NamedTupleTools: delete
 using StaticArrays: setindex
+using PyFormattedStrings: PyFormattedStrings, @f_str
 import Folds
 
 using Rimu: Rimu, DictVectors, Hamiltonians, Interfaces, BitStringAddresses, replace_keys,
@@ -42,6 +43,7 @@ using ..Hamiltonians: allows_address_type, check_address_type, dimension,
 export ExactDiagonalizationProblem, KrylovKitSolver, LinearAlgebraSolver
 export ArpackSolver, LOBPCGSolver
 export BasisSetRepresentation, build_basis
+export estimate_memory_requirement
 
 export LinearMap
 

@@ -187,7 +187,7 @@ function loneliness(::Type{<:Complex}, vector, threshold)
 end
 
 """
-    Timer <: PostStepStrategy
+    Timer() <: PostStepStrategy
 
 Record current time after every step. See `Base.Libc.time` for information on what time
 is recorded.
@@ -288,3 +288,24 @@ function single_particle_density(add::Union{CompositeFS}; component=0)
         return float.(Tuple(onr(add)[component]))
     end
 end
+
+"""
+    VMSize(; human_readable=true) <: PostStepStrategy
+
+After each step, compute the maximum resident set size (VM size) of the current process in
+bytes. Reports to a column named `vm_size`.
+The `human_readable` keyword argument can be used to format the output in a human-readable
+way. The default is `true`, which formats the output as a string using `Base.format_bytes`.
+
+See also [`PostStepStrategy`](@ref).
+"""
+struct VMSize{HumanReadable} <: PostStepStrategy end
+
+VMSize(human_readable::Bool) = VMSize{human_readable}()
+function VMSize(; human_readable=true)
+    return VMSize(human_readable)
+end
+
+post_step_action(::VMSize{false}, _, _) = (:vm_size => get_vmsize(),)
+# `base.format_bytes` is not a public function, so might break in the future.
+post_step_action(::VMSize{true}, _, _) = (:vm_size => Base.format_bytes(get_vmsize()),)

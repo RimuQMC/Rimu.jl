@@ -246,7 +246,7 @@ using Rimu: num_replicas, num_spectral_states
     # continue simulation and change strategies
     sm3 = solve!(sm;
         last_step = 600,
-        post_step_strategy = Rimu.Timer(),
+        post_step_strategy = (Rimu.Timer(), VMSize()),
         metadata = Dict(:test => 1)
     )
     @test sm3 === sm
@@ -254,7 +254,7 @@ using Rimu: num_replicas, num_spectral_states
     @test sm.state.step[] == 600
     @test size(sm.df)[1] == 100 # the report was emptied
     @test parse(Int, Rimu.get_metadata(sm.report, "test")) == 1
-    @test Rimu.get_metadata(sm.report, "post_step_strategy") == "(Rimu.Timer(),)"
+    @test Rimu.get_metadata(sm.report, "post_step_strategy") == "(Rimu.Timer(), VMSize{true}())"
 
     # continue simulation and change replica strategy
     @test_throws ArgumentError solve!(sm; replica_strategy = NoStats(3))

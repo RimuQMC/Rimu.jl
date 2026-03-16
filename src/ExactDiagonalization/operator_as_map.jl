@@ -22,7 +22,7 @@ end
 
 Wrapper for an [`AbstractOperator`](@ref) and a basis that allows multiplying regular Julia
 vectors with the operator without storing the matrix representation of the operator in
-memory.
+memory. Requires that the `adjoint` of the operator is implemented.
 
 If an `op::`[`AbstractOperator`](@ref) with no `basis` is passed, the basis is constructed
 automatically from the [`starting_address`](@ref) (note that function is only defined for
@@ -82,7 +82,7 @@ function LinearMaps.LinearMap(
     full_basis::Bool=false,
 )
     if !isnothing(basis)
-        full_basis && @warn "`basis` and `full_basis` given. Ignorning `full_basis`."
+        full_basis && @warn "`basis` and `full_basis` given. Ignoring `full_basis`."
     elseif full_basis
         basis = build_basis(starting_address)
     else
@@ -97,6 +97,8 @@ function LinearMaps.LinearMap(
     )
     return LinearMap(operator; starting_address, full_basis)
 end
+
+Hamiltonians.dimension(op::LinearMap) = size(op, 1)
 
 Base.size(op::OperatorAsMap) = (length(op.basis), length(op.basis))
 Base.size(op::OperatorAsMap, i) = length(op.basis)

@@ -327,6 +327,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
                 solver = init(prob, alg)
                 @test repr(solver) isa String # no error on print
                 @test solver.problem == prob
+                @test dimension(solver) ≤ dimension(ham)
             end
             @testset "Sanity checks" begin
                 prob = ExactDiagonalizationProblem(ham)
@@ -335,6 +336,8 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
                 @test result.success
                 @test length(result.values) == length(result.vectors)
                 @test length(result.coefficient_vectors) == length(result.vectors)
+                @test dimension(result) ≤ dimension(ham)
+                @test dimension(result) == length(result.basis) == length(result.vectors[1])
 
                 for (i, dv) in enumerate(result.vectors)
                     @test DVec(zip(result.basis, result.coefficient_vectors[i])) ≈ dv
@@ -367,11 +370,6 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
                 prob = ExactDiagonalizationProblem(ham; algorithm=alg)
                 @test init(prob).algorithm == alg
                 @test init(prob, LinearAlgebraSolver()).algorithm == LinearAlgebraSolver()
-
-                @test_logs(
-                    (:warn, "The keyword(s) \"algorithm\" are unused and will be ignored."),
-                    solve(prob, KrylovKitSolver())
-                )
             end
             @testset "Unused kwargs" begin
                 prob = ExactDiagonalizationProblem(ham; one=1)
@@ -418,7 +416,7 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     @testset "Unsuccessful solve warning" begin
         ham = HubbardMom1D(BoseFS(10, 5 => 10); u=6.0)
         for alg in algs[2:end]
-            prob = ExactDiagonalizationProblem(ham; howmany=10)
+            prob = ExactDiagonalizationProblem(ham; warn=false, howmany=10)
             result = @test_logs((:warn,), solve(prob, alg; maxiters=1))
             @test !result.success
         end
@@ -427,14 +425,21 @@ Random.seed!(1234) # for reproducibility, as some solvers start with random vect
     @testset "General" begin
         @testset "Bad starting vector" begin
             ham = HubbardReal1D(BoseFS(1, 2, 3))
-            prob = ExactDiagonalizationProblem(ham, [1, 2, 3])
-            @test_throws ArgumentError init(prob, KrylovKitSolver(true))
-            @test_throws ArgumentError init(prob, ArpackSolver())
+            @test_throws ArgumentError ExactDiagonalizationProblem(ham, [1, 2, 3])
         end
 
         @testset "LOBPCG which errors" begin
             prob = ExactDiagonalizationProblem(HubbardMom1D(BoseFS(0, 2, 0)))
             @test_throws ArgumentError solve(prob, LOBPCGSolver(); which=:LM)
+        end
+
+        @testset "Memory info and warning" begin
+            @test_logs((:info,),
+                ExactDiagonalizationProblem(HubbardMom1D(BoseFS(0, 2, 0)); info=true)
+            )
+            @test_logs((:warn,),
+                ExactDiagonalizationProblem(HubbardReal1D(BoseFS(100, 1 => 100)))
+            )
         end
     end
 end

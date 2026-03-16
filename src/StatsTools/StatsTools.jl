@@ -32,8 +32,7 @@ using MonteCarloMeasurements: MonteCarloMeasurements, AbstractParticles, pcov,
 using Random: Random
 using SpecialFunctions: SpecialFunctions, erf
 using Statistics: Statistics
-using StrFormat: StrFormat, @f_str
-using StrLiterals: StrLiterals
+using PyFormattedStrings: PyFormattedStrings, @f_str
 import ..Interfaces: num_replicas, num_spectral_states, num_overlaps
 
 import ProgressLogging, Folds

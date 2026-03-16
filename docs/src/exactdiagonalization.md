@@ -12,6 +12,7 @@ ExactDiagonalization
 ExactDiagonalizationProblem
 solve(::ExactDiagonalizationProblem)
 init(::ExactDiagonalizationProblem)
+estimate_memory_requirement
 ```
 
 ## Solver algorithms

@@ -12,6 +12,10 @@ collection of addresses can be passed as `v0`.
 - `algorithm=LinearAlgebraSolver()`: The algorithm to use for solving the problem. The
     algorithm can also be specified as the second positional argument in the `init`
     function.
+- `linear_dimension` (optional): The estimated dimension of the problem. This is
+    usually automatically determined from the Hamiltonian.
+- `info=false`: Whether to print additional information about memory requirements.
+- `warn=true`: Whether to print warnings if available memory is insufficient.
 - Optional keyword arguments will be passed on to the `init` and `solve` functions.
 
 # Algorithms
@@ -78,6 +82,8 @@ julia> p = ExactDiagonalizationProblem(HubbardReal1D(BoseFS(1,1,1)))
 ExactDiagonalizationProblem(
   HubbardReal1D(fs"|1 1 1⟩"; u=1.0, t=1.0),
   nothing;
+  algorithm=LinearAlgebraSolver(),
+  linear_dimension=10,
   NamedTuple()...
 )
 
@@ -111,17 +117,68 @@ See also [`solve(::ExactDiagonalizationProblem)`](@ref),
     Using the `LOBPCGSolver()` algorithm requires the IterativeSolvers.jl package. The package
     can be loaded with `using IterativeSolvers`.
 """
-struct ExactDiagonalizationProblem{H<:AbstractHamiltonian, V}
+struct ExactDiagonalizationProblem{H<:AbstractHamiltonian,V,ALG<:AbstractAlgorithm,AV}
     hamiltonian::H
     initial_vector::V
+    algorithm::ALG
+    linear_dimension::Number
+    addr_or_vec::AV # starting address or iterable of addresses
     kwargs::NamedTuple
-
-    function ExactDiagonalizationProblem(
-        hamiltonian::H, initial_vector::V=nothing; kwargs...
-    ) where {H<:AbstractHamiltonian,V}
-        return new{H,V}(hamiltonian, initial_vector, NamedTuple(kwargs))
-    end
 end
+
+function ExactDiagonalizationProblem(
+    hamiltonian::H, initial_vector::V=nothing;
+    linear_dimension=nothing, algorithm::ALG=LinearAlgebraSolver(),
+    info=false, warn=true, kwargs...
+) where {H<:AbstractHamiltonian,V,ALG<:AbstractAlgorithm}
+    # Set up the starting address or vector of addresses
+    addr_or_vec = _set_up_starting_address(initial_vector, hamiltonian)
+    if linear_dimension === nothing
+        linear_dimension = dimension(
+            hamiltonian,
+            addr_or_vec isa AbstractFockAddress ? addr_or_vec : first(addr_or_vec)
+        )
+    end
+    dense, matrix_free, sparse = estimate_memory_requirement(
+        hamiltonian, linear_dimension
+    )
+    free_memory = Sys.free_memory() # available memory in bytes
+    total_memory = Sys.total_memory() # total memory in bytes
+    if info
+        message = "Setting up ExactDiagonalizationProblem with algorithm $(algorithm)\n"*
+            f"- Linear dimension is {float(linear_dimension):.1e}\n"*
+            f"- Estimated memory requirements: dense = {dense/1e6:.1e} MB, "*
+            f"matrix_free = {matrix_free/1e6:.1e} MB, "*
+            f"sparse = {sparse/1e6:.1e} MB\n"*
+            f"- Total available memory: {total_memory/1e6:.1e} MB, free: {free_memory/1e6:.1e} MB"
+        @info message
+    end
+    if warn
+        if algorithm isa LinearAlgebraSolver && total_memory < dense
+            message = "ExactDiagonalizationProblem with algorithm $(algorithm):\n"*
+                f"Available memory may be less than the required memory for a dense matrix.\n\n"*
+                f"Total available memory: {total_memory/1e6:.1e} MB, required: {dense/1e6:.1e} MB.\n"*
+                "Consider using a sparse algorithm like `algorithm=KrylovKitSolver()`!"
+            @warn message
+        elseif algorithm isa AbstractAlgorithm{false} && total_memory < sparse
+            message = "ExactDiagonalizationProblem with algorithm $(algorithm):\n"*
+                f"Available memory may be less than the required memory for a sparse matrix.\n\n"*
+                f"Total available memory: {total_memory / 1e6:.1e} MB, required: {sparse / 1e6:.1e} MB.\n"*
+                "Consider using a matrix-free algorithm like `algorithm=KrylovKitSolver(; matrix_free=true)`!"
+            @warn message
+        elseif algorithm isa AbstractAlgorithm{true} && total_memory < matrix_free
+            message = "ExactDiagonalizationProblem with algorithm $(algorithm)\n"*
+                f"Available memory may be less than the required memory for a matrix-free algorithm.\n"*
+                f"Total available memory: {total_memory / 1e6:.1e} MB, required: {matrix_free/1e6:.1e} MB"
+            @warn message
+        end
+    end
+    return ExactDiagonalizationProblem{H,V,ALG,typeof(addr_or_vec)}(
+        hamiltonian, initial_vector, algorithm, linear_dimension, addr_or_vec,
+        NamedTuple(kwargs)
+    )
+end
+
 function ExactDiagonalizationProblem(
     hamiltonian::AbstractHamiltonian, v0::AbstractDVec; kwargs...
 )
@@ -137,6 +194,8 @@ function Base.show(io::IO, p::ExactDiagonalizationProblem)
     print(io, ",\n  ")
     show(io, p.initial_vector)
     print(io, ";\n  ")
+    print(io, "algorithm=$(p.algorithm),\n  ")
+    print(io, "linear_dimension=$(p.linear_dimension),\n  ")
     show(io, p.kwargs)
     print(io, "...\n)")
 end
@@ -146,4 +205,65 @@ function Base.:(==)(p1::ExactDiagonalizationProblem, p2::ExactDiagonalizationPro
         p1.kwargs == p2.kwargs
 end
 
-Rimu.Hamiltonians.dimension(p::ExactDiagonalizationProblem) = dimension(p.hamiltonian)
+Rimu.Hamiltonians.dimension(p::ExactDiagonalizationProblem) = p.linear_dimension
+
+function _set_up_starting_address(v0, ham)
+    if isnothing(v0)
+        addr_or_vec = starting_address(ham)
+    elseif allows_address_type(ham, v0) ||
+           v0 isa Union{NTuple,Vector} && allows_address_type(ham, eltype(v0))
+        addr_or_vec = v0
+    elseif v0 isa FrozenDVec
+        addr_or_vec = keys(v0)
+    else
+        throw(ArgumentError("Invalid starting vector in `ExactDiagonalizationProblem`."))
+    end
+
+    return addr_or_vec # single address or iterable of addresses
+end
+
+"""
+    estimate_memory_requirement(::ExactDiagonalizationProblem)
+    estimate_memory_requirement(h::AbstractHamiltonian, linear_dimension=dimension(h))
+    -> (; dense, matrix_free, sparse)
+
+Estimate the memory requirement for an [`ExactDiagonalizationProblem`](@ref).
+This function estimates the memory requirement based on the linear dimension and the
+Hamiltonian. It returns an estimate of the memory size in bytes for three
+different types of algorithms:
+- `dense`: The memory requirement for [`LinearAlgebraSolver()`](@ref) using a dense matrix.
+- `matrix_free`: The memory requirement for [`KrylovKitSolver(; matrix_free=true)`](@ref)
+  using a matrix-free algorithm.
+- `sparse`: The memory requirement for [`KrylovKitSolver(; matrix_free=false)`](@ref)
+  using a sparse matrix.
+
+The memory requirements for other sparse solvers are expected to be similar to the
+`KrylovKitSolver` estimates.
+"""
+function estimate_memory_requirement(prob::ExactDiagonalizationProblem)
+    return estimate_memory_requirement(prob.hamiltonian, prob.linear_dimension)
+end
+
+function estimate_memory_requirement(
+    hamiltonian::AbstractHamiltonian,
+    linear_dimension=dimension(hamiltonian)
+)
+    krylovdim = 30
+    # standard Krylov dimension in KrylovKit, could be read from the algorithm
+    # LOBPCG should need much less memory
+    address_size = sizeof(starting_address(hamiltonian))
+    column_size = Rimu.num_offdiagonals(hamiltonian, starting_address(hamiltonian))
+    coefficient_size = sizeof(eltype(hamiltonian))
+
+    dense = 2 * linear_dimension^2 * coefficient_size + # for dense matrix and QR
+        linear_dimension * address_size # for basis
+
+    matrix_free = krylovdim * linear_dimension * coefficient_size + # for solver algorithm
+        2 * linear_dimension * (address_size + coefficient_size) # for LinearMap
+
+    sparse = linear_dimension * column_size * coefficient_size + # for sparse matrix
+        linear_dimension * address_size + # for basis
+        krylovdim * linear_dimension * coefficient_size # for solver algorithm
+
+    return (; dense, matrix_free, sparse)
+end

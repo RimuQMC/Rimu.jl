@@ -44,6 +44,8 @@ Base.iterate(S::EDResult, ::Val{:vectors}) = (S.vectors, Val(:success))
 Base.iterate(S::EDResult, ::Val{:success}) = (S.info, Val(:done))
 Base.iterate(::EDResult, ::Val{:done}) = nothing
 
+Hamiltonians.dimension(r::EDResult) = length(r.basis)
+
 function Base.show(io::IO, r::EDResult)
     io = IOContext(io, :compact => true)
     n = length(r.values)

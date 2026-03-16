@@ -39,7 +39,7 @@ struct KrylovKitSolver{MatrixFree} <: AbstractAlgorithm{MatrixFree}
     end
 end
 KrylovKitSolver(matrix_free::Bool; kwargs...) = KrylovKitSolver{matrix_free}(; kwargs...)
-KrylovKitSolver(; matrix_free=true, kwargs...) = KrylovKitSolver(matrix_free; kwargs...)
+KrylovKitSolver(; matrix_free=false, kwargs...) = KrylovKitSolver(matrix_free; kwargs...)
 
 function Base.show(io::IO, s::KrylovKitSolver)
     nt = (; matrix_free=ismatrixfree(s), s.kwargs...)
@@ -49,13 +49,12 @@ function Base.show(io::IO, s::KrylovKitSolver)
 end
 
 """
-    ArpackSolver(; kwargs...)
+    ArpackSolver(matrix_free::Bool; kwargs...)
+    ArpackSolver(; matrix_free = false, kwargs...)
 
 Algorithm for solving an [`ExactDiagonalizationProblem`](@ref) after instantiating a sparse
 matrix. It uses the Lanzcos method for hermitian problems, and the Arnoldi method for
-non-hermitian problems, using the Arpack Fortran library. This is faster than
-[`KrylovKitSolver(; matrix_free=true)`](@ref), but it requires more memory and will only be
-useful if the matrix fits into memory.
+non-hermitian problems, using the Arpack Fortran library.
 
 # Arguments
 - `matrix_free = false`: Whether to use a matrix-free algorithm. If `false`, a sparse matrix
@@ -86,7 +85,7 @@ struct ArpackSolver{MatrixFree} <: AbstractAlgorithm{MatrixFree}
     end
 end
 ArpackSolver(matrix_free::Bool; kwargs...) = ArpackSolver{matrix_free}(; kwargs...)
-ArpackSolver(; matrix_free=true, kwargs...) = ArpackSolver(matrix_free; kwargs...)
+ArpackSolver(; matrix_free=false, kwargs...) = ArpackSolver(matrix_free; kwargs...)
 
 function Base.show(io::IO, s::ArpackSolver)
     nt = (; matrix_free=ismatrixfree(s), s.kwargs...)
@@ -96,7 +95,8 @@ function Base.show(io::IO, s::ArpackSolver)
 end
 
 """
-    LOBPCGSolver(; kwargs...)
+    LOBPCGSolver(matrix_free::Bool; kwargs...)
+    LOBPCGSolver(; matrix_free = false, kwargs...)
 
 The Locally Optimal Block Preconditioned Conjugate Gradient Method (LOBPCG).
 Algorithm for solving an [`ExactDiagonalizationProblem`](@ref) after instantiating a
@@ -133,7 +133,7 @@ struct LOBPCGSolver{MatrixFree} <: AbstractAlgorithm{MatrixFree}
     end
 end
 LOBPCGSolver(matrix_free::Bool; kwargs...) = LOBPCGSolver{matrix_free}(; kwargs...)
-LOBPCGSolver(; matrix_free=true, kwargs...) = LOBPCGSolver(matrix_free; kwargs...)
+LOBPCGSolver(; matrix_free=false, kwargs...) = LOBPCGSolver(matrix_free; kwargs...)
 
 function Base.show(io::IO, s::LOBPCGSolver)
     nt = (; matrix_free=ismatrixfree(s), s.kwargs...)
