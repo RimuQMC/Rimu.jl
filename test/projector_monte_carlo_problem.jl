@@ -2,7 +2,7 @@ using Rimu
 using Test, Suppressor
 import Random
 
-using Rimu: is_finalized
+using Rimu: is_finalized, metadatasupport
 using Rimu.DictVectors: FrozenDVec
 using OrderedCollections: freeze
 
@@ -102,7 +102,7 @@ end
         @test startswith(sprint(show, state_vectors(sm)), "2×1 Rimu.StateVectors")
         @test num_overlaps(sm) == num_overlaps(p) == num_overlaps(sm.state)
         @test metadatasupport(typeof(sm)) == (read=true, write=true)
-        @test metadata(sm, "Rimu.PACKAGE_VERSION") == string(Rimu.PACKAGE_VERSION)
+        @test metadata(sm, "Rimu.PACKAGE_VERSION") == string(pkgversion(Rimu))
         @test metadata(sm) === metadata(sm.report)
         @test metadatakeys(sm) == keys(sm.report.meta)
         @test metadata!(sm, "test_key", 123) === sm
