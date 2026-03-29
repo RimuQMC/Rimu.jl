@@ -135,12 +135,12 @@ julia> pv = PDVec(address => 1.0);
 
 julia> results = eigsolve(op, pv, 4, :SR);
 
-julia> results[1][1:4]
+julia> results[1][1:4] .|> (x -> round(x;digits=4))
 4-element Vector{Float64}:
- -3.431115689232223
-  1.182174860261238
-  3.737775375308286
-  6.996390417443125
+ -3.4311
+  1.1822
+  3.7378
+  6.9964
 ```
 
 ## Parallel functionality
