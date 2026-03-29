@@ -66,10 +66,6 @@ end
     include("RimuIO.jl")
 end
 
-@safetestset "StatsTools" begin
-    include("StatsTools.jl")
-end
-
 @safetestset "BitStringAddresses" begin
     include("BitStringAddresses.jl")
 end
@@ -80,7 +76,11 @@ end
     include("ExactDiagonalization.jl")
 end
 
-@safetestset "doctests" begin
+@safetestset "StatsTools" begin # uses KrylovKit extension
+    include("StatsTools.jl")
+end
+
+@safetestset "doctests" begin # uses extension packages
     include("doctests.jl")
 end
 
@@ -101,4 +101,4 @@ end
     include("lomc.jl")
 end
 
-# Note: Running Rimu with several MPI ranks is tested seperately on GitHub CI and not here.
+# Note: Running Rimu with several MPI ranks is tested separately on GitHub CI and not here.
