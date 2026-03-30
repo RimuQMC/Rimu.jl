@@ -59,7 +59,7 @@ include("StatsTools/StatsTools.jl")
 @reexport using .StatsTools
 
 export mpi_rank, is_mpi_root, @mpi_root, mpi_barrier
-export mpi_comm, mpi_root, mpi_size, mpi_seed!, mpi_allprintln
+export mpi_comm, mpi_root, mpi_size, mpi_seed!, mpi_allprintln, stable_rank_hash
 export lomc!
 export default_starting_vector
 export FciqmcRunStrategy, RunTillLastStep

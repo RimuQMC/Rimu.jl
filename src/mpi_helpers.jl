@@ -59,15 +59,33 @@ The MPI barrier with optional argument. MPI syncronizing.
 mpi_barrier(comm = mpi_comm()) = MPI.Barrier(comm)
 
 """
+    stable_rank_hash(rank = mpi_rank())
+
+Compute a version-stable hash of an MPI `rank` as a `UInt64`. Uses
+`StableHashTraits.stable_hash` to ensure the result is identical across Julia versions.
+"""
+function stable_rank_hash(rank = mpi_rank())
+    h = UInt64(0)
+    for byte in stable_hash(rank; version=4)
+        h = h << 8 # the output of stable_hash is an array of bytes, so we shift them
+        h = h | byte # together to get a UInt64 hash value
+    end
+    return h
+end
+
+"""
     mpi_seed!(seed = rand(Random.RandomDevice(), UInt))
 Re-seed the random number generators in an MPI-safe way. If seed is provided,
 the random numbers from `rand` will follow a deterministic sequence.
 
 Independence of the random number generators on different MPI ranks is achieved
-by adding `hash(mpi_rank())` to `seed`.
+by adding a stable hash of `mpi_rank()` to `seed`. The hash is version-stable,
+i.e. it produces the same result regardless of the Julia version.
+
+See also [`stable_rank_hash`](@ref).
 """
 function mpi_seed!(seed = rand(Random.RandomDevice(), UInt))
-    rngs = Random.seed!(seed + hash(mpi_rank()))
+    rngs = Random.seed!(seed + stable_rank_hash())
     return rngs
 end
 
