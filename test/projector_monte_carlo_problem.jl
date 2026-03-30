@@ -2,7 +2,7 @@ using Rimu
 using Test, Suppressor
 import Random
 
-using Rimu: is_finalized
+using Rimu: is_finalized, metadatasupport
 using Rimu.DictVectors: FrozenDVec
 using OrderedCollections: freeze
 
@@ -101,6 +101,16 @@ end
         )
         @test startswith(sprint(show, state_vectors(sm)), "2×1 Rimu.StateVectors")
         @test num_overlaps(sm) == num_overlaps(p) == num_overlaps(sm.state)
+        @test metadatasupport(typeof(sm)) == (read=true, write=true)
+        @test metadata(sm, "Rimu.PACKAGE_VERSION") == string(pkgversion(Rimu))
+        @test metadata(sm) === metadata(sm.report)
+        @test metadatakeys(sm) == keys(sm.report.meta)
+        @test metadata!(sm, "test_key", 123) === sm
+        @test metadata(sm, "test_key") == "123"
+        @test deletemetadata!(sm, "test_key") === sm
+        @test isnothing(metadata(sm, "test_key", nothing))
+        @test emptymetadata!(sm) === sm
+        @test isempty(keys(sm.report.meta))
     end
 
     @testset "Default DVec" begin
@@ -228,7 +238,7 @@ using Rimu: num_replicas, num_spectral_states
     @test sm.state.step[] == 100
     solve!(sm; last_step=200)
     @test sm.state.step[] == 200
-    @test sm.success == true == parse(Bool, (Rimu.get_metadata(sm.report, "success")))
+    @test sm.success == true == parse(Bool, (metadata(sm.report, "success")))
 
     # time out
     p = ProjectorMonteCarloProblem(h; last_step=500, wall_time=1e-3)
@@ -253,8 +263,8 @@ using Rimu: num_replicas, num_spectral_states
     @test sm.success == true
     @test sm.state.step[] == 600
     @test size(sm.df)[1] == 100 # the report was emptied
-    @test parse(Int, Rimu.get_metadata(sm.report, "test")) == 1
-    @test Rimu.get_metadata(sm.report, "post_step_strategy") == "(Rimu.Timer(),)"
+    @test parse(Int, metadata(sm.report, "test")) == 1
+    @test metadata(sm.report, "post_step_strategy") == "(Rimu.Timer(),)"
 
     # continue simulation and change replica strategy
     @test_throws ArgumentError solve!(sm; replica_strategy = NoStats(3))

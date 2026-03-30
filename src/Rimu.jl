@@ -1,7 +1,10 @@
 module Rimu
 
 using Arrow: Arrow
-using DataFrames: DataFrames, DataFrame, metadata
+using DataAPI: DataAPI, metadata, metadata!
+import DataAPI: metadata, metadatasupport, metadatakeys, metadata!, deletemetadata!,
+    emptymetadata!
+using DataFrames: DataFrames, DataFrame
 using DataStructures: DataStructures
 using LinearAlgebra: LinearAlgebra, dot, isdiag, eigvecs, norm, ⋅
 using OrderedCollections: OrderedCollections, LittleDict, freeze
@@ -16,6 +19,7 @@ using Logging: ConsoleLogger
 using OrderedCollections: freeze
 using Random: Random, RandomDevice, seed!
 using NamedTupleTools: NamedTupleTools, namedtuple, delete
+using Base: delete!
 import Tables
 import ConsoleProgressMonitor
 import TOML

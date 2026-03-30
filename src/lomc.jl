@@ -173,7 +173,7 @@ function lomc!(
 
     if !isempty(df)
         df = vcat(df, result_df) # metadata is not propagated
-        for (key, val) in get_metadata(simulation.report) # add metadata
+        for (key, val) in DataAPI.metadata(simulation.report) # add metadata
             DataFrames.metadata!(df, key, val)
         end
         return (; df, state=simulation.state)
@@ -226,7 +226,7 @@ function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", me
     )
     report = Report()
     report_default_metadata!(report, state)
-    report_metadata!(report, problem.metadata) # add user metadata
+    metadata!(report, problem.metadata) # add user metadata
 
     simulation = PMCSimulation(
         problem, state, report, false, false, false, "", 0.0
@@ -240,7 +240,7 @@ function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", me
 
     if !isempty(df)
         df = vcat(df, result_df) # metadata is not propagated
-        for (key, val) in get_metadata(report) # add metadata
+        for (key, val) in DataAPI.metadata(report) # add metadata
             DataFrames.metadata!(df, key, val)
         end
         return (; df, state)
