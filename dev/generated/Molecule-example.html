@@ -9,9 +9,9 @@ Website: elem.co.il
 Julia version: 1.12.5
 BLAS threads: 2
 OpenMP threads: 1
-Hostname: runnervm0kj6c
+Hostname: runnervmrg6be
 Scratch directory: /tmp
-Date: 2026-03-12 05:11:11
+Date: 2026-03-30 08:50:54
 ╭──────────────────────────────╮ 
 │        ╭─────────────╮       ├─╮
 │ Electron Correlation methods │ │
@@ -34,7 +34,7 @@ time_step = 0.001;</code></pre><p>Define the problem via <a href="../projectormo
     target_walkers,
     initiator=true,
 )</code></pre><pre><code class="nohighlight hljs">ProjectorMonteCarloProblem with 1 replica(s) and 1 spectral state(s):
-  algorithm = FCIQMC(DoubleLogUpdate{Int64}(1000, 0.08, 0.0016), ConstantTimeStep())
+  algorithm = FCIQMC(DoubleLogUpdate(target_walkers=1000, ζ=0.08, ξ=0.0016), ConstantTimeStep())
   hamiltonian = MolecularHamiltonian(&quot;/home/runner/work/Rimu.jl/Rimu.jl/test/examples/h2o.FCIDUMP&quot;, starting_address=fs&quot;|⇅⇅⇅⇅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⋅⟩&quot;)
   style = IsDynamicSemistochastic{Float64,ThresholdCompression,DynamicSemistochastic}()
   initiator = Initiator{Float64}(1.0)
@@ -50,8 +50,8 @@ time_step = 0.001;</code></pre><p>Define the problem via <a href="../projectormo
   spectral_strategy = GramSchmidt(1; orthogonalization_interval=1)
   max_length = 2100
   metadata = OrderedCollections.LittleDict(&quot;display_name&quot; =&gt; &quot;PMCSimulation&quot;)
-  random_seed = 3305981808514109913</code></pre><p>Run the calculation.</p><pre><code class="language-julia hljs">result = solve(p);</code></pre><p>Store the result into DataFrame.</p><pre><code class="language-julia hljs">df = DataFrame(result);</code></pre><p>To analyse the energy shift, we can use <a href="../statstools.html#Rimu.StatsTools.shift_estimator-Tuple{Any}"><code>shift_estimator</code></a>.</p><pre><code class="language-julia hljs">se = shift_estimator(df; skip=steps_equilibrate)</code></pre><pre><code class="nohighlight hljs">BlockingResult{Float64}
-  mean = -76.244 ± 0.066
-  with uncertainty of ± 0.005990970105036406
+  random_seed = 8454013308561490383</code></pre><p>Run the calculation.</p><pre><code class="language-julia hljs">result = solve(p);</code></pre><p>Store the result into DataFrame.</p><pre><code class="language-julia hljs">df = DataFrame(result);</code></pre><p>To analyse the energy shift, we can use <a href="../statstools.html#Rimu.StatsTools.shift_estimator-Tuple{Any}"><code>shift_estimator</code></a>.</p><pre><code class="language-julia hljs">se = shift_estimator(df; skip=steps_equilibrate)</code></pre><pre><code class="nohighlight hljs">BlockingResult{Float64}
+  mean = -76.271 ± 0.072
+  with uncertainty of ± 0.0065108023631108595
   from 62 blocks after 5 transformations (k = 6).
-</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="HO-example.html">« Degenerate perturbation theory in a harmonic oscillator basis</a><a class="docs-footer-nextpage" href="../exactdiagonalization.html">Exact Diagonalization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 12 March 2026 05:12">Thursday 12 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="HO-example.html">« Degenerate perturbation theory in a harmonic oscillator basis</a><a class="docs-footer-nextpage" href="../exactdiagonalization.html">Exact Diagonalization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 30 March 2026 08:51">Monday 30 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
