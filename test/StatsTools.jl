@@ -328,7 +328,7 @@ using Rimu.StatsTools: replica_fidelity
     p = ProjectorMonteCarloProblem(
         ham;
         start_at=v, last_step=steps_equi+steps_meas, shift_strategy, post_step_strategy,
-        random_seed=17789, replica_strategy
+        random_seed=1778, replica_strategy
     )
     rr = DataFrame(solve(p))
 

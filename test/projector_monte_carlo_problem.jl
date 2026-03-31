@@ -327,7 +327,7 @@ end
     @test sim.aborted == true
     @test sim.success == false
     @test sim.modified == true
-    @test sim.message == "Aborted in step 2."
+    @test sim.message == "Aborted in step 4."
     @test size(sim.df, 1) < 100
 end
 

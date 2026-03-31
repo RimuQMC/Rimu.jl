@@ -98,13 +98,7 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     n_spectral = num_spectral_states(spectral_strategy)
 
     # seed the random number generator
-    if !isnothing(random_seed)
-        Random.seed!(random_seed + stable_rank_hash())
-        # Warm up the RNG to preserve FCIQMC behavior across versions.
-        # Without this call, the FCIQMC results for the first few steps were observed
-        # to differ between v0.12.5 and v0.13.0 for fixed random_seed values.
-        rand()
-    end
+    isnothing(random_seed) || mpi_seed!(random_seed)
 
     start_at = isnothing(start_at) ? starting_address(hamiltonian) : start_at
     vectors = _set_up_starting_vectors(
