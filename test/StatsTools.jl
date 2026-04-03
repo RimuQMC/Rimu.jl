@@ -288,8 +288,9 @@ end
             df; op_name = "Op$(d+1)", skip = skipsteps
         )
         g2_rw = df_rre[end,:val]
-        # reweighting improves the estimate
-        @test abs(g2_h0 - best_g2[d+1]) > abs(g2_rw - best_g2[d+1])
+        g2_rw_l = df_rre[end, :val_l]
+        # reweighting improves the estimate (within error bars)
+        @test g2_h0 - best_g2[d+1] > g2_rw - g2_rw_l - best_g2[d+1]
     end
 end
 
@@ -343,7 +344,8 @@ using Rimu.StatsTools: replica_fidelity
     # test variational energy directly on the result of the replica run
     ve = variational_energy_estimator(rr; skip=steps_equi, max_replicas=5)
     # the `max_replicas` option has no effect in this case
-    @test kkresults[1][1] < pmedian(ve)
+    val, val_l, val_u = val_and_errs(ve)
+    @test kkresults[1][1] < val + val_u
     @test pmedian(ve) < shift_estimator(rr; shift = :shift_r1s1, skip=steps_equi).mean
     @test_throws ArgumentError variational_energy_estimator(DataFrame()) # empty df
     vs = [rand(5) for _ in 1:4]

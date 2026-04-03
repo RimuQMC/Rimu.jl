@@ -99,8 +99,9 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
 
     # seed the random number generator
     if !isnothing(random_seed)
-        Random.seed!(random_seed + hash(mpi_rank()))
+        mpi_seed!(random_seed)
     end
+    first_rand = rand(UInt)
 
     start_at = isnothing(start_at) ? starting_address(hamiltonian) : start_at
     vectors = _set_up_starting_vectors(
@@ -160,12 +161,21 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     report = Report()
     report_default_metadata!(report, state)
     metadata!(report, metadata) # add user metadata
+    metadata!(report, "random_seed", random_seed) # reproducibility support
+    metadata!(report, "first_rand", first_rand)
+    metadata!(report, "threading", threading)
+    metadata!(report, "hash(1)", hash(1))
 
     # Sanity checks.
     @assert allequal(i->state[i].algorithm, n_replicas * n_spectral) &&
         first(state).algorithm == algorithm
     @assert allequal(i -> state[i].hamiltonian, n_replicas * n_spectral) &&
         first(state).hamiltonian == hamiltonian
+    @assert if eltype(state_vectors(state)) <: PDVec
+        any(x -> length(x.segments) > 1, state_vectors(state)) === threading
+    else
+        threading === false
+    end "threading must be true if any starting vector has multiple segments, and false otherwise."
 
     return PMCSimulation(
         problem, state, report, false, false, false, "", 0.0

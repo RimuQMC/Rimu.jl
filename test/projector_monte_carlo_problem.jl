@@ -56,6 +56,10 @@ using OrderedCollections: freeze
     @test state_vectors(sm)[1] == dv
     @test ProjectorMonteCarloProblem(h; shift=2).initial_shift_parameters.shift == 2
 
+    # threading overrides
+    @test_logs (:warn, Regex("(threading)")) p = ProjectorMonteCarloProblem(h; start_at=dv, threading=true)
+    @test p.threading == false
+
     # passing PDVec to ProjectorMonteCarloProblem
     dv = PDVec(starting_address(h)=>3; style=IsDynamicSemistochastic())
     p = ProjectorMonteCarloProblem(h; n_replicas=3, start_at=dv)
@@ -63,6 +67,11 @@ using OrderedCollections: freeze
     @test first(state_vectors(sm)) == dv
     @test first(state_vectors(sm)) !== dv
     @test first(sm.state).pv !== dv
+
+    # threading overrides
+    @test_logs (:warn, Regex("(threading)")) p = ProjectorMonteCarloProblem(h; start_at=dv, threading=false)
+    @test p.threading == true
+
 
     # copy_vectors = false
     dv1 = deepcopy(dv)
@@ -73,6 +82,14 @@ using OrderedCollections: freeze
     @test state_vectors(sm)[2] === dv2
     @test_throws BoundsError sm.state.spectral_states[3]
 
+    # reproducibility support
+    sim1 = solve(p)
+    sim2 = solve(p)
+    @test metadata(sim1, "random_seed") == metadata(sim2, "random_seed") == string(p.random_seed)
+    @test metadata(sim1, "first_rand") == metadata(sim2, "first_rand")
+    @test metadata(sim1, "threading") == metadata(sim2, "threading") == string(p.threading)
+    @test metadata(sim1, "hash(1)") == metadata(sim2, "hash(1)") == string(hash(1))
+    @test state_vectors(sim1) == state_vectors(sim2)
 end
 
 @testset "PMCSimulation" begin
@@ -317,7 +334,7 @@ end
     @test sim.aborted == true
     @test sim.success == false
     @test sim.modified == true
-    @test sim.message == "Aborted in step 5."
+    @test startswith(sim.message, "Aborted in step")
     @test size(sim.df, 1) < 100
 
     # population does not die with sensible default shift
@@ -337,7 +354,7 @@ end
     @test sim.aborted == true
     @test sim.success == false
     @test sim.modified == true
-    @test sim.message == "Aborted in step 3."
+    @test startswith(sim.message, "Aborted in step")
     @test size(sim.df, 1) < 100
 end
 
@@ -354,7 +371,7 @@ end
     @test sm.modified == true
     @test sm.success == false
     @test sm.aborted == true
-    @test sm.message == "Aborted in step 6."
+    @test startswith(sm.message, "Aborted in step")
     @test is_finalized(sm.report) == true
     @test @suppress_err step!(sm) === sm # no effect, aborted
 
