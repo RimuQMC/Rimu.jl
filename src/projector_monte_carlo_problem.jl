@@ -271,6 +271,13 @@ function ProjectorMonteCarloProblem(
         initiator = initiator ? Initiator() : NonInitiator()
     end
 
+    if Threads.nthreads() == 1
+        if threading === true
+            @warn "Only one thread is available, overriding the threading setting."
+        end
+        threading = false
+    end
+
     if (start_at isa PDVec && length(start_at.segments) > 1) ||
         (eltype(start_at) <: PDVec && any(x->length(x.segments) > 1, start_at))
         if threading === false

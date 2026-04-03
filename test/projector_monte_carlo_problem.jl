@@ -17,7 +17,7 @@ using OrderedCollections: freeze
 
     simulation = init(p)
     @test simulation.hamiltonian == h
-    @test only(state_vectors(simulation)) isa PDVec
+    @test only(state_vectors(simulation)) isa (p.threading ? PDVec : DVec)
     sp = only(simulation.state).shift_parameters
     @test sp.shift == diagonal_element(h, starting_address(h))
     @test sp.pnorm == walkernumber(only(state_vectors(simulation)))
@@ -69,9 +69,10 @@ using OrderedCollections: freeze
     @test first(sm.state).pv !== dv
 
     # threading overrides
-    @test_logs (:warn, Regex("(threading)")) p = ProjectorMonteCarloProblem(h; start_at=dv, threading=false)
-    @test p.threading == true
-
+    if Threads.nthreads() > 1
+        @test_logs (:warn, Regex("(threading)")) p = ProjectorMonteCarloProblem(h; start_at=dv, threading=false)
+        @test p.threading == true
+    end
 
     # copy_vectors = false
     dv1 = deepcopy(dv)
@@ -138,7 +139,7 @@ end
         @test StochasticStyle(only(state_vectors(sm))) isa IsDynamicSemistochastic
 
         sm = init(ProjectorMonteCarloProblem(H; threading=true))
-        @test only(state_vectors(sm)) isa PDVec
+        @test only(state_vectors(sm)) isa (sm.problem.threading ? PDVec : DVec)
         @test StochasticStyle(only(state_vectors(sm))) isa IsDynamicSemistochastic
 
         sm = init(ProjectorMonteCarloProblem(H; threading=false, initiator=true))

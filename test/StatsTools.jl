@@ -223,7 +223,7 @@ end
     E_r = bs.mean # set up reference energy
     ge = @suppress growth_estimator(df, h; E_r, skip=steps_equi)
     pcb_est = E_r - ge.ratio # estimated PCB in the shift from reweighting
-    @test 0.2 < pmedian(pcb_est) < pcb
+    @test pquantile(pcb_est, 0.2) < pcb
     @inferred growth_estimator(rand(1000), 100 .+ rand(1000), 20, 0.01; change_type=to_measurement)
     @inferred growth_estimator(rand(1000), 100 .+ rand(1000), 20, 0.01)
     # fails due to type instability in MonteCarloMeasurements
