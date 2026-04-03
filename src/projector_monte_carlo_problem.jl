@@ -132,8 +132,33 @@ number of threads used. If only one thread is used and the other values are iden
 results of two simulations can be expected to be identical.
 ## Example
 ```jldoctest
-```
+julia> p = ProjectorMonteCarloProblem(HubbardReal1D(BoseFS(1,1,1)); threading=false);
 
+julia> sim1 = solve(p);
+
+julia> sim2 = solve(p);
+
+julia> metadata(sim1, "random_seed") == metadata(sim2, "random_seed")
+true
+
+julia> metadata(sim1, "first_rand") == metadata(sim2, "first_rand")
+true
+
+julia> metadata(sim1, "hash(1)") == metadata(sim2, "hash(1)") == string(hash(1))
+true
+
+julia> state_vectors(sim1) == state_vectors(sim2) # results of PMC are bitwise identical
+true
+
+julia> p = ProjectorMonteCarloProblem(HubbardReal1D(BoseFS(1,1,1)); random_seed=false);
+
+julia> sim1 = solve(p);
+
+julia> sim2 = solve(p);
+
+julia> state_vectors(sim1) == state_vectors(sim2) # without seeding, results are not identical
+false
+```
 """
 struct ProjectorMonteCarloProblem{N,S} # is not type stable but does not matter
     # N is the number of replicas, S is the number of spectral states
