@@ -23,12 +23,11 @@ function dispersion_mom_space(ks::SVector{D}, geometry::CubicGrid{D, S}, t::SMat
     M = prod(S)
     kes_mat = zeros(Float64,C,M)
     ks_mat = zeros(Float64,D,M)
-    phase = atan.(imag.(t)./real.(t))
-    for j in 1:C
-        for i in 1:M
-            mom_val = value_of_mom_mode(M-i+1, ks, geometry)
+    for i in 1:M
+        mom_val = value_of_mom_mode(M-i+1, ks, geometry)
+        ks_mat[:,i] = mom_val
+        for j in 1:C
             kes_mat[j,i] = convert(Float64,dispersion(t[j,:], mom_val)[1])
-            ks_mat[:,i] = mom_val + phase[j,:]
         end
     end
     return SMatrix{C,M,Float64}(kes_mat), SMatrix{D,M,Float64}(ks_mat)
