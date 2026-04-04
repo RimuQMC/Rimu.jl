@@ -44,6 +44,7 @@ end
     include("projector_monte_carlo_problem.jl")
 end
 
+using Rimu: default_logger, smart_logger
 @testset "Logging" begin
     default_logger()
     l = Base.global_logger()
