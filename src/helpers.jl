@@ -56,7 +56,7 @@ Base.length(m::MultiScalar) = length(m.tuple)
 
 # this is run during Rimu initialisation and sets the default
 """
-    smart_logger(args...)
+    Rimu.smart_logger(args...)
 Enable terminal progress bar during interactive use (i.e. unless running on CI or HPC).
 Arguments are passed on to the logger. This is run once during `Rimu` startup. Undo with
 [`default_logger`](@ref) or by setting `Base.global_logger()`.
@@ -73,7 +73,7 @@ function smart_logger(args...; kwargs...)
     return Base.global_logger()
 end
 """
-    default_logger(args...)
+    Rimu.default_logger(args...)
 Reset the `global_logger` to `Logging.ConsoleLogger`. Undoes the effect of
 [`smart_logger`](@ref). Arguments are passed on to `Logging.ConsoleLogger`.
 """
@@ -149,4 +149,24 @@ function clean_and_warn_if_others_present(nt::NamedTuple{names}, keys) where {na
         @warn "The keyword(s) \"$(join(unused, "\", \""))\" are unused and will be ignored."
     end
     return NamedTuple{filter(x -> x ∈ keys, names)}(nt)
+end
+
+# From https://github.com/JuliaFolds2/TransducersNext.jl
+# Copyright (c) 2018 Takafumi Arakaki & Mason Protter
+# used under the MIT License, see LICENSE.md for full license details.
+"""
+    @public ex
+
+Make `ex` public, i.e. declare it as part of the stable interface without exporting the
+name. This is relevant for Julia 1.11 and later versions, but on earlier versions it does
+nothing.
+"""
+macro public(ex)
+    if VERSION >= v"1.11.0-DEV.469"
+        args = ex isa Symbol ? (ex,) : Base.isexpr(ex, :tuple) ? ex.args :
+               error("malformed input to `@public`: $ex")
+        esc(Expr(:public, args...))
+    else
+        nothing
+    end
 end
