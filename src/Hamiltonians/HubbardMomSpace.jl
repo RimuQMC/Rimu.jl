@@ -473,22 +473,22 @@ end
 
 function Base.size(data::HubbardMomSpaceComponentData{<:Any,I,I}) where {I}
     if isnothing(data.u) && isnothing(data.w)
-        return 0
+        return (0,)
     else
         M = num_modes(data.address1)
         s1, d1 = num_singly_doubly_occupied_sites(data.address1)
-        return  s1 * (s1 - 1) * (M - 2) + d1 * (M - 1)
+        return  (s1 * (s1 - 1) * (M - 2) + d1 * (M - 1),)
     end
 end
 
 function Base.size(data::HubbardMomSpaceComponentData)
     if isnothing(data.u) && isnothing(data.w)
-        return 0
+        return (0,)
     else
         M = num_modes(data.address1)
         s1 = length(data.occmap1)
         s2 = length(data.occmap2)
-        return s1 * s2 * (M - 1)
+        return (s1 * s2 * (M - 1),)
     end
 end
 
@@ -626,7 +626,7 @@ end
 @inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, 
     ::Tuple{},::Tuple{Nothing}, ::Tuple{}, ::Val, ::Val) = ()
 @inline function _mom_interactions_col(h::HubbardMomSpace{C,D}, address::AbstractFockAddress, 
-    a::SingleComponentFockAddress, (b,as...)::Tuple{N}, m::Tuple{Nothing}, σ::NTuple{N}, ::Val{I1}, 
+    a::SingleComponentFockAddress, (b,as...)::NTuple{N}, m::Tuple{Nothing}, σ::NTuple{N}, ::Val{I1}, 
     ::Val{I2}) where {C,D,N,I1,I2}
     return (HubbardMomSpaceComponentData{C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
             _mom_interactions_col(h, address, a, as, m, σ[2:N], Val(I1), Val(I2+1))...)
@@ -635,7 +635,7 @@ end
 @inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, 
     ::Tuple{},::Tuple{Nothing}, ::Tuple{Nothing}, ::Val, ::Val) = ()
 @inline function _mom_interactions_col(h::HubbardMomSpace{C,D}, address::AbstractFockAddress, 
-    a::SingleComponentFockAddress, (b,as...)::Tuple{N}, m::Tuple{Nothing}, σ::Tuple{Nothing}, ::Val{I1}, 
+    a::SingleComponentFockAddress, (b,as...)::NTuple{N}, m::Tuple{Nothing}, σ::Tuple{Nothing}, ::Val{I1}, 
     ::Val{I2}) where {C,D,N,I1,I2}
     return (HubbardMomSpaceComponentData{C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
             _mom_interactions_col(h, address, a, as, m, σ, Val(I1), Val(I2+1))...)
@@ -672,7 +672,7 @@ end
 @inline function Base.iterate(ods::HubbardMomSpaceColumnOffdiagonals, state=(1,1))
     component_index, chosen = state
     component_index = _test_interaction_coeff(ods, component_index)
-    if chosen > index_apply(size, ods.components, component_index)
+    if chosen > index_apply(size, ods.components, component_index)[1]
         chosen = 1
         component_index += 1
     end
@@ -687,7 +687,7 @@ end
 end
 
 @inline function _test_interaction_coeff(ods::HubbardMomSpaceColumnOffdiagonals, component_index::Int)
-    if index_apply(size, ods.components, component_index) == 0 && component_index < length(ods.components)
+    if index_apply(size, ods.components, component_index)[1] == 0 && component_index < length(ods.components)
         return _test_interaction_coeff(ods, component_index + 1)
     else
         return component_index
