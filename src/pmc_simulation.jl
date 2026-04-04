@@ -101,7 +101,7 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     if !isnothing(random_seed)
         mpi_seed!(random_seed)
     end
-    first_rand = rand(UInt)
+    first_rand = isnothing(random_seed) ? nothing : rand(UInt)
 
     start_at = isnothing(start_at) ? starting_address(hamiltonian) : start_at
     vectors = _set_up_starting_vectors(
