@@ -106,6 +106,59 @@ julia> size(DataFrame(simulation))
     is not provided.
 
 See also [`init`](@ref), [`solve`](@ref).
+
+# Extended help
+
+## Reproducibility support
+
+While the Monte Carlo algorithm is based on random number generation, which follows a
+deterministic sequence if the seed is fixed, the results of `solve`ing a
+`ProjectorMonteCarloProblem` are not generally guaranteed to be bitwise identical across
+different runs, even with the same random seed. This is because
+- the order of storage of addresses in `DVec` or `PDVec` objects used internally depends
+  on the output of `hash()`, which is not guaranteed to be stable across Julia versions or
+  when a new Julia process is started, and
+- the order of operations is unpredictable when multithreading is used.
+
+However, if multithreading is not used and the random seed is fixed, the results of
+`solve`ing a `ProjectorMonteCarloProblem` will be identical across runs and within the same
+Julia session, even if the same `ProjectorMonteCarloProblem` is solved multiple times. If it
+can be confirmed that the hash values are consistent and the same random number generator is
+used, the results will also be identical across Julia sessions and versions.
+
+To support reproducibility, the metadata of the simulation report includes the random seed
+used, the value of the first random number generated, the output of `hash(1)`, and the
+number of threads used. If only one thread is used and the other values are identical, the
+results of two simulations can be expected to be identical.
+## Example
+```jldoctest
+julia> p = ProjectorMonteCarloProblem(HubbardReal1D(BoseFS(1,1,1)); threading=false);
+
+julia> sim1 = solve(p);
+
+julia> sim2 = solve(p);
+
+julia> metadata(sim1, "random_seed") == metadata(sim2, "random_seed")
+true
+
+julia> metadata(sim1, "first_rand") == metadata(sim2, "first_rand")
+true
+
+julia> metadata(sim1, "hash(1)") == metadata(sim2, "hash(1)") == string(hash(1))
+true
+
+julia> state_vectors(sim1) == state_vectors(sim2) # results of PMC are bitwise identical
+true
+
+julia> p = ProjectorMonteCarloProblem(HubbardReal1D(BoseFS(1,1,1)); random_seed=false);
+
+julia> sim1 = solve(p);
+
+julia> sim2 = solve(p);
+
+julia> state_vectors(sim1) == state_vectors(sim2) # without seeding, results are not identical
+false
+```
 """
 struct ProjectorMonteCarloProblem{N,S} # is not type stable but does not matter
     # N is the number of replicas, S is the number of spectral states
@@ -216,6 +269,26 @@ function ProjectorMonteCarloProblem(
 
     if initiator isa Bool
         initiator = initiator ? Initiator() : NonInitiator()
+    end
+
+    if Threads.nthreads() == 1
+        if threading === true
+            @warn "Only one thread is available, overriding the threading setting."
+        end
+        threading = false
+    end
+
+    if (start_at isa PDVec && length(start_at.segments) > 1) ||
+        (eltype(start_at) <: PDVec && any(x->length(x.segments) > 1, start_at))
+        if threading === false
+            @warn "Starting vector(s) have multiple segments, overriding the threading setting."
+        end
+        threading = true
+    elseif (start_at isa AbstractDVec || eltype(start_at) <: AbstractDVec)
+        if threading === true
+            @warn "Starting vector(s) are not PDVecs, overriding the threading setting."
+        end
+        threading = false
     end
 
     if isnothing(threading)
