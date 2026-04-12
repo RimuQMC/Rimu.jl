@@ -2,6 +2,7 @@ using Rimu
 using Test, Suppressor
 import Random
 
+using Rimu.Interfaces
 using Rimu: is_finalized, metadatasupport
 using Rimu.DictVectors: FrozenDVec
 using OrderedCollections: freeze

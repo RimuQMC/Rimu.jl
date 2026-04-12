@@ -4,6 +4,8 @@ using Random
 using Suppressor
 using SparseArrays
 
+using Rimu.Interfaces
+
 @testset "BasisSetRepresentation" begin
     @testset "basics" begin
         m = 100

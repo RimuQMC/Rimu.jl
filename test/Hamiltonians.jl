@@ -6,6 +6,7 @@ using Test
 using DataFrames
 using Suppressor
 using StaticArrays
+using Rimu.BitStringAddresses
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
@@ -1793,11 +1794,11 @@ end
     rdm = ReducedDensityMatrix{ComplexF64}(1)
     m = dot(gs, rdm, gs)
     @test all(x -> abs(x) < √eps(Float64), m - m') # hermitian up to floating point noise
-    
+
     # a global relative phase in the vectors results in a global phase in the RDM
     m_phase = dot(im * gs, rdm, gs)
     @test all(x -> abs(x) < √eps(Float64), m_phase + im * m)
-    
+
     # complex non-hermitian Hamiltonian still produces approx hermitian RDM
     Hc = HubbardReal1D(BoseFS(0,1,2,0); u = 1+im)
     resc = solve(ExactDiagonalizationProblem(Hc))

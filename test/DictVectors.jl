@@ -2,6 +2,7 @@ using LinearAlgebra
 using Random
 using Rimu
 using Rimu.DictVectors
+using Rimu.Interfaces
 using Rimu.StochasticStyles: IsStochastic2Pop, StochasticStyle
 using StaticArrays
 using Suppressor

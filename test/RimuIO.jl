@@ -4,6 +4,9 @@ using Arrow
 using DataFrames
 using Tables
 
+using Rimu.Interfaces
+using Rimu.BitStringAddresses
+
 const tmpdir = mktempdir()
 
 @testset "save_df, load_df" begin

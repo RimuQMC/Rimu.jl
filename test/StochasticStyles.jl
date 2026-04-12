@@ -1,6 +1,7 @@
 using Rimu
 using Test
 using Rimu.StochasticStyles
+using Rimu.Interfaces
 
 using Rimu.StochasticStyles: projected_deposit!, diagonal_step!, spawn!
 using Rimu.StochasticStyles:

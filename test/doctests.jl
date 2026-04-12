@@ -4,7 +4,8 @@ using Rimu
 DocMeta.setdocmeta!(
     Rimu,
     :DocTestSetup,
-    :(using Rimu; using Rimu.StatsTools; using DataFrames; using Random;
+    :(using Rimu; using Rimu.StatsTools; using Rimu.Interfaces;
+      using Rimu.BitStringAddresses; using DataFrames; using Random;
       using LinearAlgebra; using Suppressor);
     recursive=true,
 )

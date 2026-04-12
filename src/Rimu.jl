@@ -43,10 +43,29 @@ include("helpers.jl") # non MPI-dependent helper functions
 include("mpi_helpers.jl")
 
 include("Interfaces/Interfaces.jl")
-@reexport using .Interfaces
+using .Interfaces
 import .Interfaces: dot_from_right, num_replicas, num_overlaps, num_spectral_states
+
+@public Interfaces
+export AbstractFockAddress, StochasticStyle, AbstractDVec
+export localpart, freeze
+export AbstractHamiltonian, AbstractObservable, AbstractOperator
+export starting_address, parent_operator, diagonal_element, operator_column, offdiagonals
+export LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint
+export num_particles, num_modes, num_components
+
 include("BitStringAddresses/BitStringAddresses.jl")
-@reexport using .BitStringAddresses
+using .BitStringAddresses
+
+@public BitStringAddresses
+export BoseFS, FermiFS
+export CompositeFS, FermiFS2C, time_reverse
+export OccupationNumberFS
+export SortedParticleList
+export near_uniform
+export onr, occupation_number_representation
+export @fs_str
+
 include("Hamiltonians/Hamiltonians.jl")
 @reexport using .Hamiltonians
 include("StochasticStyles/StochasticStyles.jl")
