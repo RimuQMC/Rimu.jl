@@ -135,9 +135,9 @@ function AllOverlaps(
     if isnothing(operator)
         operators = ()
     elseif operator isa TupleOrVector
-        if !(eltype(operator) <: AbstractOperator)
-            throw(ArgumentError("operator must be an AbstractOperator or a Tuple or "*
-                "Vector of AbstractHamiltonians"))
+        if !(eltype(operator) <: AbstractObservable)
+            throw(ArgumentError("operator must be an AbstractObservable or a Tuple or "*
+                "Vector of AbstractObservables"))
         end
         operators = operator
     else
