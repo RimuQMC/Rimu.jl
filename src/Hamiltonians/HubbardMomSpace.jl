@@ -709,7 +709,7 @@ end
 struct MomentumMomSpace{T,C,D,H<:AbstractHamiltonian{T}} <: AbstractHamiltonian{Vector{T}}
     ham::H
 end
-LOStructure(::Type{MomentumMomSpace{H,T}}) where {H,T <: Real} = IsDiagonal()
+LOStructure(::Type{<:MomentumMomSpace}) = IsDiagonal()
 num_offdiagonals(ham::MomentumMomSpace, _) = 0
 function diagonal_element(mom::MomentumMomSpace{<:Any,1,D}, address::SingleComponentFockAddress) where D
     return [dot(mom.ham.ks[i,:], occupied_mode_map(address)) for i in 1:D]
