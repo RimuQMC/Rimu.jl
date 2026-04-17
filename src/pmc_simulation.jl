@@ -100,8 +100,9 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
 
     # seed the random number generator
     if !isnothing(random_seed)
-        Random.seed!(random_seed + hash(mpi_rank()))
+        mpi_seed!(random_seed)
     end
+    first_rand = isnothing(random_seed) ? nothing : rand(UInt)
 
     start_at = isnothing(start_at) ? starting_address(hamiltonian) : start_at
     vectors = _set_up_starting_vectors(
@@ -161,13 +162,22 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     )
     report = Report()
     report_default_metadata!(report, state)
-    report_metadata!(report, metadata) # add user metadata
+    metadata!(report, metadata) # add user metadata
+    metadata!(report, "random_seed", random_seed) # reproducibility support
+    metadata!(report, "first_rand", first_rand)
+    metadata!(report, "threading", threading)
+    metadata!(report, "hash(1)", hash(1))
 
     # Sanity checks.
     @assert allequal(i->state[i].algorithm, n_replicas * n_spectral) &&
         first(state).algorithm == algorithm
     @assert allequal(i -> state[i].hamiltonian, n_replicas * n_spectral) &&
         first(state).hamiltonian == hamiltonian
+    @assert if eltype(state_vectors(state)) <: PDVec
+        any(x -> length(x.segments) > 1, state_vectors(state)) === threading
+    else
+        threading === false
+    end "threading must be true if any starting vector has multiple segments, and false otherwise."
 
     return PMCSimulation(
         problem, state, report, false, false, false, "", 0.0
@@ -193,11 +203,11 @@ num_overlaps(sm::PMCSimulation) = num_overlaps(sm.state)
 function report_simulation_status_metadata!(report::Report, sm::PMCSimulation)
     @unpack modified, aborted, success, message, elapsed_time = sm
 
-    report_metadata!(report, "modified", modified)
-    report_metadata!(report, "aborted", aborted)
-    report_metadata!(report, "success", success)
-    report_metadata!(report, "message", message)
-    report_metadata!(report, "elapsed_time", elapsed_time)
+    metadata!(report, "modified", modified)
+    metadata!(report, "aborted", aborted)
+    metadata!(report, "success", success)
+    metadata!(report, "message", message)
+    metadata!(report, "elapsed_time", elapsed_time)
     return report
 end
 
@@ -380,7 +390,7 @@ function CommonSolve.solve!(sm::PMCSimulation;
     if !isnothing(last_step)
         state = sm.state
         sm.state = @set state.simulation_plan.last_step = last_step
-        report_metadata!(sm.report, "laststep", last_step)
+        metadata!(sm.report, "laststep", last_step)
         reset_flags = true
     end
     if !isnothing(wall_time)
@@ -418,8 +428,8 @@ function CommonSolve.solve!(sm::PMCSimulation;
         empty!(report)
         report_default_metadata!(report, sm.state)
     end
-    isnothing(metadata) || report_metadata!(report, metadata) # add user metadata
-    isnothing(display_name) || report_metadata!(report, "display_name", display_name)
+    isnothing(metadata) || metadata!(report, metadata) # add user metadata
+    isnothing(display_name) || metadata!(report, "display_name", display_name)
 
     @unpack simulation_plan, step, reporting_strategy = sm.state
 
@@ -448,7 +458,7 @@ function CommonSolve.solve!(sm::PMCSimulation;
 
     starting_time = time() + sm.elapsed_time # simulation time accumulates
     update_steps = max((last_step - initial_step) ÷ 200, 100) # log often but not too often
-    name = get_metadata(sm.report, "display_name")
+    name = DataAPI.metadata(sm.report, "display_name")
 
     @withprogress name = while !sm.aborted && !sm.success
         if time() - starting_time > simulation_plan.wall_time
@@ -466,5 +476,22 @@ function CommonSolve.solve!(sm::PMCSimulation;
     sm.elapsed_time = time() - starting_time
     report_simulation_status_metadata!(report, sm) # potentially overwrite values
     finalize_report!(reporting_strategy, report)
+    return sm
+end
+
+# Metadata support for DataAPI
+DataAPI.metadatasupport(::Type{PMCSimulation}) = DataAPI.metadatasupport(Report)
+DataAPI.metadata(sm::PMCSimulation, args...) = DataAPI.metadata(sm.report, args...)
+DataAPI.metadatakeys(sm::PMCSimulation) = DataAPI.metadatakeys(sm.report)
+function DataAPI.metadata!(sm::PMCSimulation, args...; kwargs...)
+    DataAPI.metadata!(sm.report, args...; kwargs...)
+    return sm
+end
+function DataAPI.deletemetadata!(sm::PMCSimulation, key)
+    DataAPI.deletemetadata!(sm.report, key)
+    return sm
+end
+function DataAPI.emptymetadata!(sm::PMCSimulation)
+    DataAPI.emptymetadata!(sm.report)
     return sm
 end

@@ -39,7 +39,7 @@ Alternatively, a `ReplicaState` can be passed in to continue a previous simulati
   All metadata is converted to strings.
 
 Some metadata is automatically added to the report `df` including
-[`Rimu.PACKAGE_VERSION`](@ref) and data from `state`.
+`pkgversion(Rimu)` and data from `state`.
 
 # Return values
 
@@ -173,7 +173,7 @@ function lomc!(
 
     if !isempty(df)
         df = vcat(df, result_df) # metadata is not propagated
-        for (key, val) in get_metadata(simulation.report) # add metadata
+        for (key, val) in DataAPI.metadata(simulation.report) # add metadata
             DataFrames.metadata!(df, key, val)
         end
         return (; df, state=simulation.state)
@@ -226,7 +226,7 @@ function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", me
     )
     report = Report()
     report_default_metadata!(report, state)
-    report_metadata!(report, problem.metadata) # add user metadata
+    metadata!(report, problem.metadata) # add user metadata
 
     simulation = PMCSimulation(
         problem, state, report, false, false, false, "", 0.0
@@ -240,7 +240,7 @@ function lomc!(state::ReplicaState, df=DataFrame(); laststep=0, name="lomc!", me
 
     if !isempty(df)
         df = vcat(df, result_df) # metadata is not propagated
-        for (key, val) in get_metadata(report) # add metadata
+        for (key, val) in DataAPI.metadata(report) # add metadata
             DataFrames.metadata!(df, key, val)
         end
         return (; df, state)

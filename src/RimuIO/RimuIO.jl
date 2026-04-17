@@ -51,7 +51,7 @@ function save_df(
     if metadata === nothing
         metadata = [key => string(val) for (key, val) in DataFrames.metadata(df)]
     end
-    push!(metadata, "RIMU_PACKAGE_VERSION" => string(Rimu.PACKAGE_VERSION))
+    push!(metadata, "RIMU_PACKAGE_VERSION" => string(pkgversion(Rimu)))
     Arrow.write(filename, df; compress, metadata, kwargs...)
 end
 
@@ -90,7 +90,7 @@ state is loaded.
 See also [`load_state`](@ref).
 """
 function save_state(filename, vector; kwargs...)
-    new_kwargs = (; RIMU_PACKAGE_VERSION=Rimu.PACKAGE_VERSION, kwargs...)
+    new_kwargs = (; RIMU_PACKAGE_VERSION=pkgversion(Rimu), kwargs...)
     if mpi_size() > 1
         _save_state_mpi(filename, vector; new_kwargs...)
     else

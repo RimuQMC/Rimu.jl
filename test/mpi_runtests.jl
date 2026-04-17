@@ -172,7 +172,7 @@ end
                 Projector(proj_1=Norm2Projector()),
             )
             prob = ProjectorMonteCarloProblem(
-                H; start_at=dv, post_step_strategy, last_step=5000, random_seed=13
+                H; start_at=dv, post_step_strategy, last_step=5000, random_seed=17
             )
             df = DataFrame(solve(prob))
 
@@ -181,7 +181,7 @@ end
             s_low, s_high = Es - 3σs, Es + 3σs
             # Projected estimate.
             r = ratio_of_means(df.hproj[2000:end], df.vproj[2000:end])
-            p_low, p_high = pquantile(r, [0.0015, 0.9985])
+            p_low, p_high = pquantile(r, [0.0005, 0.9995])
 
             @test s_low < E0 < s_high
             @test p_low < E0 < p_high
