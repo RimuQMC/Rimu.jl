@@ -366,8 +366,7 @@ function HubbardMomSpace(
         throw(ArgumentError("`geometry` does not have the correct number of sites"))
     elseif !(address isa SingleComponentFockAddress || address isa CompositeFS)
         throw(ArgumentError(
-            "unsupported address type detected use `CompositeFS` or 
-            `<: SingleComponentFockAddress`"
+            "unsupported address type; use `CompositeFS` or a subtype of `SingleComponentFockAddress`"
         ))
     end
 
