@@ -329,7 +329,7 @@ end
 
     @testset "onr, constructors" begin
         for o in (small, big, giant, giant_sparse, giant_dense)
-            f = FermiFS(o)FermiFS
+            f = FermiFS(o)
             @test onr(f) == o
             @test typeof(f)(onr(f)) == f
         end
