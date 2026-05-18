@@ -94,7 +94,7 @@ export MolecularHamiltonian
 
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
-export StringCorrelator, G2MomCorrelator, G1RealtoMomCorrelator, G2RealtoMomCorrelator
+export StringCorrelator, G2MomCorrelator
 
 export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
 
