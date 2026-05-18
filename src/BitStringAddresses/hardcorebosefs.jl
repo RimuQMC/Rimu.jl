@@ -29,7 +29,7 @@ See the examples below.
 
 ```jldoctest
 julia> HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
-HardcoreBoseFS{2,5}(0, 1, 1, 0, 0)
+HardcoreBoseFS{2,5}(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS([abs(i - 2) ≤ 1 for i in 1:5])
 HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
