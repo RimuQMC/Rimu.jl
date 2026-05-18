@@ -329,7 +329,7 @@ end
 
     @testset "onr, constructors" begin
         for o in (small, big, giant, giant_sparse, giant_dense)
-            f = FermiFS(o)
+            f = FermiFS(o)FermiFS
             @test onr(f) == o
             @test typeof(f)(onr(f)) == f
         end
@@ -606,3 +606,28 @@ end
     @test hopnextneighbour(ffsend,1, π) == (ffs1, exp(im*π))
 
 end
+
+@testset "HardcoreBoseFS" begin
+    add_hb = HardcoreBoseFS(1, 0, 1, 0, 0)
+    @test add_hb isa Rimu.BitStringAddresses.SingleComponentFockAddress
+
+    add_f = FermiFS(1, 0, 1, 0, 0)
+
+    @test bitstring(add_f) == bitstring(add_hb)
+    @test find_mode(add_hb, 1) == find_mode(add_f, 1)
+
+    src = find_mode(add_hb, 1)
+    dst = find_mode(add_hb, 4)
+    @test src == FermiFSIndex(occnum=1, mode=1, offset=0)
+
+    n_add_f, val_f = excitation(add_f, (dst,), (src,))
+    n_add_hb, val_hb = excitation(add_hb, (dst,), (src,))
+    
+    @test n_add_hb isa HardcoreBoseFS
+    @test bitstring(n_add_f) == bitstring(n_add_hb)
+    @test val_f == -val_hb
+
+    @test dimension(n_add_f) == dimension(n_add_hb)
+end
+   
+    

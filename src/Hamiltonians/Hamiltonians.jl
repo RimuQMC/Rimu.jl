@@ -94,7 +94,7 @@ export MolecularHamiltonian
 
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
-export StringCorrelator, G2MomCorrelator
+export StringCorrelator, G2MomCorrelator, G1RealtoMomCorrelator, G2RealtoMomCorrelator
 
 export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
 
@@ -159,3 +159,4 @@ include("angular_momentum.jl")
 include("Product.jl")
 include("Sum.jl")
 end
+
