@@ -23,29 +23,22 @@ chosen automatically based on the properties of the address.
 * `HardcoreBoseFS{N,M,S}(bs::S)`: Unsafe constructor. Does not check whether the number of
   particles in `bs` is equal to `N`, or whether each mode only contains one particle.
 
-* [`@fs_str`](@ref): Addresses are sometimes printed in a compact manner. This
-  representation can also be used as a constructor. See the examples below.
+See the examples below.
 
 # Examples
 
 ```jldoctest
-julia> HardcoreBoseFS{3,5}(0, 1, 1, 1, 0)
-HardcoreBoseFS{3,5}(0, 1, 1, 1, 0)
+julia> HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS{2,5}(0, 1, 1, 0, 0)
 
-julia> HardcoreBoseFS([abs(i - 3) ≤ 1 for i in 1:5])
-HardcoreBoseFS{3,5}(0, 1, 1, 1, 0)
+julia> HardcoreBoseFS([abs(i - 2) ≤ 1 for i in 1:5])
+HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 
-julia> HardcoreBoseFS(5, 2 => 1, 3 => 1, 4 => 1)
-HardcoreBoseFS{3,5}(0, 1, 1, 1, 0)
+julia> HardcoreBoseFS(5, 1 => 1, 2 => 1, 3 => 1)
+HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 
-julia> HardcoreBoseFS{3,5}(i => 1 for i in 2:4)
-HardcoreBoseFS{3,5}(0, 1, 1, 1, 0)
-
-julia> fs"|⋅↑↑↑⋅⟩"
-HardcoreBoseFS{3,5}(0, 1, 1, 1, 0)
-
-julia> fs"|f 5: 2 3 4⟩"
-HardcoreBoseFS{3,5}(0, 1, 1, 1, 0)
+julia> HardcoreBoseFS{3,5}(i => 1 for i in 1:3)
+HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),
