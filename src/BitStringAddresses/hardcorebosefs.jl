@@ -42,7 +42,7 @@ HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),
-[`HardcoreBoseFS2C`](@ref), [`BitString`](@ref), [`OccupationNumberFS`](@ref).
+[`FermiFS`](@ref), [`BitString`](@ref), [`OccupationNumberFS`](@ref).
 """
 struct HardcoreBoseFS{N,M,S} <: SingleComponentFockAddress{N,M}
     bs::S
