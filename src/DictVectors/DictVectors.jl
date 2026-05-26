@@ -28,7 +28,7 @@ using ..StochasticStyles: StochasticStyles, IsDeterministic
 import ..Interfaces: deposit!, storage, StochasticStyle, default_style, freeze, localpart,
     working_memory, sum_mutating!
 
-export deposit!, storage, walkernumber, walkernumber_and_length, dot_from_right
+export deposit!, perform_spawns!, storage, walkernumber, walkernumber_and_length, dot_from_right
 export DVec, InitiatorDVec, PDVec, PDWorkingMemory
 
 export InitiatorRule, Initiator, SimpleInitiator, NonInitiator, CoherentInitiator
