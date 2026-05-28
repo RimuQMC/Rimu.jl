@@ -1,9 +1,10 @@
 """
     HardcoreBoseFS{N,M,S} <: SingleComponentFockAddress
 
-Address type that represents a Fock state of `N` fermions of the same spin in `M` modes by
-wrapping a [`BitString`](@ref), or a [`SortedParticleList`](@ref). Which is wrapped is
-chosen automatically based on the properties of the address.
+Address type that represents a Fock state of `N` hardcore bosons in `M` modes, with
+occupancies restricted to 0 or 1 per mode, by wrapping a [`BitString`](@ref) or a
+[`SortedParticleList`](@ref). Which is wrapped is chosen automatically based on the
+properties of the address.
 
 # Constructors
 
