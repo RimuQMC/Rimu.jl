@@ -3,6 +3,7 @@ name: Run tests
 on:
   push:
   pull_request:
+  workflow_dispatch: # Allows manual triggering from the web UI
 
 jobs:
   test:
