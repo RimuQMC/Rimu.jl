@@ -136,9 +136,9 @@ num_unoccupied_modes(::FermiFS{N,M}) where {N,M} = M - N
 unoccupied_modes(a::FermiFS{N,M,S}) where {N,M,S} = FermiUnoccupiedModes{M - N,S}(a.bs)
 
 """
-    unoccupied_mode_map(addr::FermiFS) <: AbstractVector
+    unoccupied_mode_map(addr::Union{FermiFS, HardcoreBoseFS}) <: AbstractVector
 
-Get a map of unoccupied modes in [`FermiFS`](@ref) address as an `AbstractVector`
+Get a map of unoccupied modes in [`FermiFS`](@ref) or [`HardcoreBoseFS`](@ref) address as an `AbstractVector`
 of indices compatible with [`excitation`](@ref).
 
 `unoccupied_mode_map(addr)[i]` contains the index for the `i`-th unoccupied mode.
@@ -165,7 +165,7 @@ true
 ```
 See also [`occupied_mode_map`](@ref).
 """
-function unoccupied_mode_map(addr::FermiFS{N,M}) where {N,M}
+function unoccupied_mode_map(addr::Union{FermiFS{N,M}, HardcoreBoseFS{N,M}}) where {N,M}
     modes = unoccupied_modes(addr)
     T = eltype(modes)
     L = num_unoccupied_modes(addr)
