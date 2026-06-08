@@ -100,9 +100,9 @@ HardcoreBoseFS(pairs::Pair...) = throw(ArgumentError("number of modes must be pr
 
 function print_address(io::IO, f::HardcoreBoseFS{N,M}; compact=false) where {N,M}
     if compact && f.bs isa SortedParticleList
-        print(io, "|f ", M, ": ", join(Int.(f.bs.storage), ' '), "⟩")
+        print(io, "|h ", M, ": ", join(Int.(f.bs.storage), ' '), "⟩")
     elseif compact
-        print(io, "|", join(map(o -> o == 0 ? '⋅' : '↑', onr(f))), "⟩")
+        print(io, "|", join(map(o -> o == 0 ? '⋅' : '■', onr(f))), "⟩")
     elseif f.bs isa SortedParticleList
         print(io, "HardcoreBoseFS{$N,$M}(", onr_sparse_string(onr(f)), ")")
     else
