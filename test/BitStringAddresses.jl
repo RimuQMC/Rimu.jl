@@ -628,6 +628,45 @@ end
     @test val_f == -val_hb
 
     @test dimension(n_add_f) == dimension(n_add_hb)
+    @testset "Randomized Tests" begin
+        function rand_onr_fermi(N, M)
+            return SVector{M}(shuffle([ones(Int,N); zeros(Int,M - N)]))
+        end
+        for (N, M) in ((15, 16), (10, 29), (32, 60), (180, 200), (10, 200), (1, 20))
+            @testset "$N, $M" begin
+                for _ in 1:10
+                    input = rand_onr_fermi(N, M)
+                    hcbose = HardcoreBoseFS(input)
+                    @test HardcoreBoseFS{N,M,typeof(hcbose.bs)}(hcbose.bs) === hcbose
+
+                    @test num_particles(hcbose) == N
+                    @test num_modes(hcbose) == M
+                    @test onr(hcbose) == input
+
+                    check_single_excitations(hcbose, 64)
+                    check_double_excitations(hcbose, 8)
+                    check_triple_excitations(hcbose, 4)
+
+                    @test map(i -> i.mode, occupied_modes(hcbose)) == findall(≠(0), input)
+                    @test map(i -> i.mode, unoccupied_modes(hcbose)) == findall(==(0), input)
+                    @test map(i -> i.occnum, each_mode(hcbose)) == input
+                    @test map(i -> i.mode, each_mode(hcbose)) == eachindex(input)
+
+                    @test onr(reverse(hcbose)) == reverse(input)
+
+                    # Check that the result of show can be pasted into the REPL
+                    @test eval(Meta.parse(repr(hcbose))) == hcbose
+                    # Check that compact string can be parsed.
+                    @test parse_address(sprint(show, hcbose; context=:compact => true)) == hcbose
+
+                    # Check that the result of show can be pasted into the REPL
+                    @test eval(Meta.parse(repr(hcbose))) == hcbose
+                    # Check that compact string can be parsed.
+                    @test parse_address(sprint(show, hcbose; context=:compact => true)) == hcbose
+                end
+            end
+        end
+    end
 end
    
     
