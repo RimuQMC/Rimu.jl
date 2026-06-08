@@ -129,10 +129,10 @@ Base.bitstring(a::FermiFS) = bitstring(a.bs)
 Base.isless(a::FermiFS, b::FermiFS) = isless(a.bs, b.bs)
 Base.hash(a::FermiFS,  h::UInt) = hash(a.bs, h)
 Base.:(==)(a::FermiFS, b::FermiFS) = a.bs == b.bs
-num_occupied_modes(::FermiFS{N}) where {N} = N
+num_occupied_modes(::Union{FermiFS{N}, HardcoreBoseFS{N}}) where {N} = N
 occupied_modes(a::FermiFS{N,<:Any,S}) where {N,S} = FermiOccupiedModes{N,S}(a.bs)
 
-num_unoccupied_modes(::FermiFS{N,M}) where {N,M} = M - N
+num_unoccupied_modes(::Union{FermiFS{N,M}, HardcoreBoseFS{N,M}}) where {N,M} = M - N
 unoccupied_modes(a::FermiFS{N,M,S}) where {N,M,S} = FermiUnoccupiedModes{M - N,S}(a.bs)
 
 """
