@@ -266,7 +266,6 @@ The phonon_op function applies the creation and annihalation operators on a chos
     if !isnothing(h.momentum_cutoff)
         occ = onr(new_addr)
         phononmom = zero(h.ks[1])
-        #phononmom = zeros(D)
         for m in 1:M
             
             phononmom += h.ks[m] * occ[m]
@@ -300,4 +299,3 @@ end
 parent_operator(col::FroehlichPolaronNDColumn) = col.hamiltonian
 starting_address(col::FroehlichPolaronNDColumn) = col.address
 num_offdiagonals(col::FroehlichPolaronNDColumn) = col.num_offdiagonals
-
