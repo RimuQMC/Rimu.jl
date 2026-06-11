@@ -5,7 +5,7 @@
 The Froehlich polaron Hamiltonian for a `D` dimensional lattice with `M ` momentum modes is given by
 
 ```math
-H = \\frac{(\\hat{p}_f - \\mathbf{p})^2}{m} + \\omega \\hat{N} +  \\sum_{\\mathbf{k}}(v_{\\mathbf{k}}^{\\ast} \\hat{a}_{\\mathbf{k}}^\\dagger + v_{\\mathbf{k}} \\hat{a}_{\\mathbf{k}})
+H = \\frac{(\\hat{p}_f - \\mathbf{p})^2}{2m} + \\omega \\hbar \\sum_{\\mathbf{k}}\\hat{N}_{\\mathbf{k}} +  \\sum_{\\mathbf{k}}(v_{\\mathbf{k}}^{\\ast} \\hat{a}_{\\mathbf{k}}^\\dagger + v_{\\mathbf{k}} \\hat{a}_{\\mathbf{k}})
 ```
 
 where ``p`` is the total momentum, ``p̂_f = Σ_k k âₖ^† âₖ`` is the momentum operator for the
@@ -30,6 +30,7 @@ All of the components of ``V_k`` that are not dependent on ``\\mathbf{k}`` are s
 * `momentum_cutoff=nothing`: the maximum boson momentum allowed for an address.
 * `mode_cutoff`: the maximum number of bosons in each momentum mode. Defaults to the maximum
     value supported by the address type [`OccupationNumberFS`](@ref).
+* `twist`: supports twisted boundry conditons
 
 # Examples
 ```jldoctest
@@ -53,7 +54,7 @@ julia> dimension(FroehlichPolaronND(fs; alpha = 1,D = 2, mode_cutoff=5))
 ```
 
 See also [`OccupationNumberFS`](@ref), [`dimension`](@ref), [`AbstractHamiltonian`](@ref).
-"""
+""" 
 struct FroehlichPolaronND{
         T,
         M, #num_modes
@@ -73,6 +74,7 @@ struct FroehlichPolaronND{
     momentum_cutoff::Union{MC, Nothing}
     mode_cutoff::Union{Int, Nothing}
     vk_constant::T
+    twist::SVector{D, Float64}
 end
 
 
@@ -87,6 +89,7 @@ function FroehlichPolaronND(
     p = zeros(D),
     momentum_cutoff = nothing,
     mode_cutoff = nothing,
+    twist = zeros(D)
     
 ) where {M, AT}
 
@@ -119,10 +122,10 @@ function FroehlichPolaronND(
         kv = ntuple(d -> begin
             if isodd(round(M^(1/D)))
                 
-                m = idx[d] - 1 - div(round(M^(1/D)), 2)
+                m = idx[d] - 1 - div(round(M^(1/D)), 2) + twist[d]
             else
                 
-                m = idx[d] - div(round(M^(1/D)) ,2)
+                m = idx[d] - div(round(M^(1/D)) ,2) + twist[d]
             end
             (2π / l[d]) * m
         end, D)
@@ -154,7 +157,7 @@ function FroehlichPolaronND(
 
 
     return FroehlichPolaronND{typeof(alpha), M,D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
-        address ,geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant)
+        address ,geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant,twist)
 end
 
 
@@ -228,7 +231,7 @@ Base.size(ods::FroehlichPolaronNDOffdiagonals) = (ods.num_offdiagonals,)
         return h.vk_constant
     else
         if knorm == 0.0
-            return 0.0
+            return  0.0
         else
             return h.vk_constant * sqrt(1/ (knorm^(D-1)))
         end
@@ -238,6 +241,7 @@ end
 """
 The phonon_op function applies the creation and annihalation operators on a chosen address and returns the new offdiagonal element.
 """
+
 
 @inline function phonon_op(h::FroehlichPolaronND{T,M,D}, addr, chosen) where {T,M,D}
     if chosen ≤ M
@@ -261,7 +265,8 @@ The phonon_op function applies the creation and annihalation operators on a chos
 
     if !isnothing(h.momentum_cutoff)
         occ = onr(new_addr)
-        phononmom = zeros(D)
+        phononmom = zero(h.ks[1])
+        #phononmom = zeros(D)
         for m in 1:M
             
             phononmom += h.ks[m] * occ[m]
@@ -295,3 +300,4 @@ end
 parent_operator(col::FroehlichPolaronNDColumn) = col.hamiltonian
 starting_address(col::FroehlichPolaronNDColumn) = col.address
 num_offdiagonals(col::FroehlichPolaronNDColumn) = col.num_offdiagonals
+
