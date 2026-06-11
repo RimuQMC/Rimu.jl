@@ -18,7 +18,7 @@ function PDWorkingMemoryColumn(t::PDVec{K,V}, style=t.style) where {K,V}
     return PDWorkingMemoryColumn(segments, t.initiator, style)
 end
 
-function deposit!(c::PDWorkingMemoryColumn{K,V,W}, k::K, val, parent) where {K,V,W}
+function deposit!(c::PDWorkingMemoryColumn{K,V,W}, k::K, val, parent::Pair{K}) where {K,V,W}
     segment_id = fastrange_hash(k, num_segments(c))
     segment = c.segments[segment_id]
     new_val = get(segment, k, zero(W)) + to_initiator_value(c.initiator, k, V(val), parent)
@@ -296,7 +296,7 @@ working_memory(t::PDVec) = PDWorkingMemory(t)
 
 function Interfaces.apply_operator!(
     working_memory::PDWorkingMemory, target::PDVec, source::PDVec, ham, boost=1,
-)
+)   
     stat_names, stats = perform_spawns!(working_memory, source, ham, boost)
     collect_local!(working_memory)
     sync_stat_names, sync_stats = synchronize_remote!(working_memory)
@@ -307,153 +307,3 @@ function Interfaces.apply_operator!(
 
     return stat_names, stats, working_memory, target
 end
-
-
-# -------------------------------------------------------------------
-# Neural Ansatz dispatch of apply_operator!()
-# -------------------------------------------------------------------
-function ansatz_modify_new!(working_memory, ansatz)
-    # collect spawned addresses in first column of working memory
-    empty!(ansatz.addrs_buffer)
-    empty!(ansatz.result_buffer)
-    empty!(ansatz.result_dict)
-    f = first_column(working_memory)
-    for seg in f.segments
-        for key in keys(seg)
-            push!(ansatz.addrs_buffer, key)
-        end
-    end
-
-    # run new addresses through NeuralAnsatz
-    # also addrs_buffer needs to fit to batch size of NeuralAnsatz
-    total    = length(ansatz.addrs_buffer)
-    batch    = size(ansatz.x_cpu_buffer, 2) # num of columns is batch size
-    n_chunks = cld(total, batch) # how many runs of NN batch needs to be done to fit addrs_buffer
-    for c in 1:n_chunks
-        i_start = (c-1) * batch + 1
-        i_end   = min(c * batch, total)
-        n_real  = i_end - i_start + 1
-
-        tmp_addr = view(ansatz.addrs_buffer, i_start:i_end)  # slicing of vector for batch pass
-        ψ = ansatz(tmp_addr, [])[1, :] # flatten result as originally it is (1, batch)
-        append!(ansatz.result_buffer, view(ψ, 1:n_real))  # only take real results
-    end
-    
-    # update dictionary values of walkers
-    idx = 1
-    for seg in f.segments
-        seg_len = length(seg)
-        for i in idx:(idx + seg_len - 1)
-            key = ansatz.addrs_buffer[i]
-            # Float64 ONLY !
-            # seg[key] = DictVectors.NonInitiatorValue(seg[key].value * clamp(ansatz.result_buffer[i], 1e-3, 1e3))
-            seg[key] = DictVectors.NonInitiatorValue(seg[key].value * ansatz.result_buffer[i])
-            # seg[key] = DictVectors.NonInitiatorValue(exp(seg[key].value + ansatz.result_buffer[i]))
-        end
-        idx += seg_len
-    end
-
-    # put result to Dictonary to modify source after spawns
-    sizehint!(ansatz.result_dict, total) # preallocate Dictionary for NN result
-    for (k, v) in zip(ansatz.addrs_buffer, ansatz.result_buffer)
-        ansatz.result_dict[k] = v
-    end
-end
-
-function ansatz_first_modify!(source, ansatz)
-    if ansatz.first_iter == true
-        # collect addresses
-        empty!(ansatz.addrs_buffer)
-        empty!(ansatz.result_buffer)
-        empty!(ansatz.result_dict)
-        for key in keys(source)
-            push!(ansatz.addrs_buffer, key)
-        end
-
-        # run new addresses through NeuralAnsatz
-        # also addrs_buffer needs to fit to batch size of NeuralAnsatz
-        total    = length(ansatz.addrs_buffer)
-        batch    = size(ansatz.x_cpu_buffer, 2) # num of columns is batch size
-        n_chunks = cld(total, batch) # how many runs of NN batch needs to be done to fit addrs_buffer
-        for c in 1:n_chunks
-            i_start = (c-1) * batch + 1
-            i_end   = min(c * batch, total)
-            n_real  = i_end - i_start + 1
-
-            tmp_addr = view(ansatz.addrs_buffer, i_start:i_end)  # slicing of vector for batch pass
-            ψ = ansatz(tmp_addr, [])[1, :] # flatten result as originally it is (1, batch)
-            append!(ansatz.result_buffer, view(ψ, 1:n_real))  # only take real results
-        end
-        # put result to Dictonary to modify source after spawns
-        sizehint!(ansatz.result_dict, total) # preallocate Dictionary for NN result
-        for (k, v) in zip(ansatz.addrs_buffer, ansatz.result_buffer)
-            ansatz.result_dict[k] = v
-        end
-        ansatz.first_iter = false
-    end
-
-    # update source PDVec values
-    # for i in eachindex(ansatz.addrs_buffer)
-    #     key = ansatz.addrs_buffer[i]
-    #     ϵ = 0.00001 # save check for zero division
-    #     if ansatz.result_buffer[i] > ϵ
-    #         source[key] /= ansatz.result_buffer[i]
-    #     else
-    #         source[key] /= ϵ
-    #     end
-    # end
-end
-
-function Interfaces.apply_operator!(
-    working_memory::PDWorkingMemory, target::PDVec, source::PDVec, ham, ansatz, boost,
-)   
-    # First initialisation run of NeuralAnsatz for source sampling (* 1/ψ_in)
-    if ansatz.first_iter == true
-        ansatz_first_modify!(source, ansatz)
-    end
-
-    stat_names, stats = perform_spawns!(working_memory, source, ham, boost) # here ansatz modify output (* 1/ψ_in) after spawnw
-    collect_local!(working_memory)
-    sync_stat_names, sync_stats = synchronize_remote!(working_memory)
-    
-    # modify new walkers values with NeuralAnsatz sampling (* ψ_out) -> completing guiding ratio
-    ansatz_modify_new!(working_memory, ansatz)
-    
-    target, comp_stat_names, comp_stats = move_and_compress!(target, working_memory)
-
-    stat_names = (stat_names..., comp_stat_names..., sync_stat_names...)
-    stats = (stats..., comp_stats..., sync_stats...)
-
-    return stat_names, stats, working_memory, target
-end
-
-function deposit!(c::PDWorkingMemoryColumn{K,V,W}, k::K, val, parent, ham, ansatz) where {K,V,W}
-    segment_id = fastrange_hash(k, num_segments(c))
-    segment = c.segments[segment_id]
-
-    # insert modified NeuralAnsatz value for source sampling (* 1/ψ_in)
-    if ansatz.result_dict[parent[1]] < eps(Float64)
-        val = val / eps(Float64)
-        # val = log(val) 
-    else
-        # val = val / clamp(ansatz.result_dict[parent[1]], 1e-3, 1e3)
-        val = val / ansatz.result_dict[parent[1]]
-        # val = log(val) - ansatz.result_dict[parent[1]]
-    end
-
-    new_val = get(segment, k, zero(W)) + to_initiator_value(c.initiator, k, V(val), parent)
-    if iszero(new_val)
-        delete!(segment, k)
-    else
-        segment[k] = new_val 
-    end
-    return nothing
-end
-
-
-
-
-
-
-
-
