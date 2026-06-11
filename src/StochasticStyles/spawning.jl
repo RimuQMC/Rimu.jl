@@ -68,7 +68,7 @@ end
 """
     diagonal_step!(w, column, val, threshold=0) -> (clones, deaths, zombies)
 
-Perform diagonal step on a walker `starting_address(column)`. Optional argument
+Perform diagonal step on `column` with value `val`. Optional argument
 `threshold` sets the projection threshold. If `eltype(w)` is an `Integer`, the `val` is
 rounded to the nearest integer stochastically.
 """
