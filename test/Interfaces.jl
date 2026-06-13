@@ -50,3 +50,51 @@ end
     @test df.hproj[end] / df.vproj[end] ≈ eigs.values[1] rtol=0.01
     @test normalize(state_vectors(sm)[1]) ≈ DVec(pairs(eigs.vectors[:, 1])) rtol = 0.01
 end
+
+@testset "apply_operator!" begin
+    ham = [1 1 2 3 2;
+           2 0 2 2 3;
+           0 0 0 3 2;
+           0 0 1 1 2;
+           0 1 0 1 0]
+    vector = ones(5)
+
+    mh = MatrixHamiltonian(ham)
+    sv = DVec(pairs(vector))
+    wm = working_memory(sv)
+
+    stat_names, stats, wm, target = apply_operator!(wm, zerovector(sv), sv, mh)
+    @test target == DVec(pairs(ham * vector))
+
+    mpi_seed!(123)
+    h = HubbardReal1D(BoseFS(3, 1, 2))
+    basis = build_basis(h)
+    style = IsDeterministic(StochasticStyles.ThresholdCompression())
+
+    # apply_operator! with DVec
+    dv = DVec([basis[i] => 0.1*rand() for i in 1:length(basis)]; style)
+    wm = working_memory(dv)
+    # turn off compression
+    stat_names, stats, wm, target = apply_operator!(wm, zerovector(dv), dv, h, 1, Val(false))
+    @test target == DVec(pairs(h * dv))
+    # pass a CompressionStrategy directly
+    stat_names, stats, wm, target3 = apply_operator!(NoCompression(), wm, zerovector(dv), dv, h, 1)
+    @test target3 == DVec(pairs(h * dv))
+    # turn on compression
+    stat_names, stats, wm, target2 = apply_operator!(wm, zerovector(dv), dv, h)
+    @test length(target2) < length(target)
+
+    # apply_operator! with PDVec
+    pdv = PDVec([basis[i] => 0.1*rand() for i in 1:length(basis)]; style)
+    wm = working_memory(pdv)
+    # turn off compression
+    stat_names, stats, wm, target = apply_operator!(wm, zerovector(pdv), pdv, h, 1, Val(false))
+    @test target == PDVec(pairs(h * pdv))
+    # pass a CompressionStrategy directly
+    stat_names, stats, wm, target3 = apply_operator!(NoCompression(), wm, zerovector(pdv), pdv, h, 1)
+    @test target3 == PDVec(pairs(h * pdv))
+
+    # turn on compression
+    stat_names, stats, wm, target2 = apply_operator!(wm, zerovector(pdv), pdv, h)
+    @test length(target2) < length(target)
+end
