@@ -252,7 +252,7 @@ end
 """
     move_and_compress!(::CompressionStrategy, dst::PDVec, src::PDWorkingMemory)
 
-Move the values in `src` to `dst`, compressing the according to the
+Move the values in `src` to `dst`, compressing the data stochastically according to the
 [`CompressionStrategy`](@ref) on the way. This step can only be performed after
 [`collect_local!`](@ref) and [`synchronize_remote!`](@ref).
 
