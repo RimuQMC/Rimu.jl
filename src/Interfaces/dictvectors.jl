@@ -100,7 +100,7 @@ w = \\hat{T} v ,
 where ``\\hat{T}`` is the `operator`, ``w`` is the `target` and ``v`` is the
 `source`. The `working_memory` is used as temporary storage.
 
-Whether the operation is performed in a stochastic, semistochastic, or determistic way is
+Whether the operation is performed in a stochastic, semistochastic, or deterministic way is
 controlled by the trait `StochasticStyle(target)`. See [`StochasticStyle`](@ref).
 By default, the resulting vector is compressed stochastically after applying the operator
 according to the `CompressionStrategy(StochasticStyle(target))`.
