@@ -75,26 +75,20 @@ end
     dv = DVec([basis[i] => 0.1*rand() for i in 1:length(basis)]; style)
     wm = working_memory(dv)
     # turn off compression
-    stat_names, stats, wm, target = apply_operator!(wm, zerovector(dv), dv, h, 1, Val(false))
-    @test target == DVec(pairs(h * dv))
-    # pass a CompressionStrategy directly
     stat_names, stats, wm, target3 = apply_operator!(NoCompression(), wm, zerovector(dv), dv, h, 1)
     @test target3 == DVec(pairs(h * dv))
     # turn on compression
     stat_names, stats, wm, target2 = apply_operator!(wm, zerovector(dv), dv, h)
-    @test length(target2) < length(target)
+    @test length(target2) < length(target3)
 
     # apply_operator! with PDVec
     pdv = PDVec([basis[i] => 0.1*rand() for i in 1:length(basis)]; style)
     wm = working_memory(pdv)
     # turn off compression
-    stat_names, stats, wm, target = apply_operator!(wm, zerovector(pdv), pdv, h, 1, Val(false))
-    @test target == PDVec(pairs(h * pdv))
-    # pass a CompressionStrategy directly
     stat_names, stats, wm, target3 = apply_operator!(NoCompression(), wm, zerovector(pdv), pdv, h, 1)
     @test target3 == PDVec(pairs(h * pdv))
 
     # turn on compression
     stat_names, stats, wm, target2 = apply_operator!(wm, zerovector(pdv), pdv, h)
-    @test length(target2) < length(target)
+    @test length(target2) < length(target3)
 end

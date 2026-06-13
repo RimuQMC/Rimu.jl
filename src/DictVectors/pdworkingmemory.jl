@@ -250,7 +250,6 @@ function synchronize_remote!(w::PDWorkingMemory)
 end
 
 """
-    move_and_compress!(dst::PDVec, src::PDWorkingMemory)
     move_and_compress!(::CompressionStrategy, dst::PDVec, src::PDWorkingMemory)
 
 Move the values in `src` to `dst`, compressing the according to the
@@ -259,10 +258,6 @@ Move the values in `src` to `dst`, compressing the according to the
 
 See [`PDWorkingMemory`](@ref).
 """
-function move_and_compress!(dst::PDVec, src::PDWorkingMemory)
-    compression = CompressionStrategy(StochasticStyle(src))
-    return move_and_compress!(compression, dst, src)
-end
 function move_and_compress!(compression::CompressionStrategy, dst::PDVec, src::PDWorkingMemory)
     stat_names, init = step_stats(compression)
     stats = Folds.mapreduce(add, dst.segments, local_segments(src); init) do dst_seg, src_seg
