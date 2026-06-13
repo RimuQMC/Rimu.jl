@@ -25,8 +25,7 @@ end
     @test_throws ArgumentError num_overlaps(DataFrame())
 end
 
-# using lomc! with a matrix was removed in Rimu.jl v0.12.0
-@testset "lomc! with matrix" begin
+@testset "PMC with matrix hamiltonian" begin
     ham = [1 1 2 3 2;
            2 0 2 2 3;
            0 0 0 3 2;
