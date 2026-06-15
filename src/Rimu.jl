@@ -53,7 +53,7 @@ include("StochasticStyles/StochasticStyles.jl")
 @reexport using .StochasticStyles
 include("DictVectors/DictVectors.jl")
 @reexport using .DictVectors
-using .DictVectors: FrozenDVec
+using .DictVectors: FrozenDVec, PDWorkingMemory
 include("ExactDiagonalization/ExactDiagonalization.jl")
 @reexport using .ExactDiagonalization
 include("RimuIO/RimuIO.jl")

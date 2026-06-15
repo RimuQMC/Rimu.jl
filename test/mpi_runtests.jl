@@ -8,6 +8,7 @@ using MPI
 
 using Rimu.StatsTools
 using Rimu.DictVectors: PointToPoint, AllToAll, copy_to_local!, NonInitiatorValue
+using Rimu.DictVectors: PDWorkingMemory
 using Rimu.Interfaces
 
 const N_REPEATS = 5
