@@ -156,16 +156,16 @@ end
     OverlapwithOptimization(gradientoverlap; 
         method = RAdam(0.1), step=100, threshold = 1e-3)) <: GlobalStepAction
 
-Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩ and 
-optimize the parameters of `gradientoverlap`(<:GlobalStepAction) after every 
-`step` number of collected gradient data in the FCIQMC simulation between all 
-pairs of replica states for a given operator `O`. The results are returned 
-what provided from gradientoverlap. 
-    The optimization is carried out using the optimization `method` 
-(default to RAdam(0.1)) which is downloaded from `Optimisers.jl`. There are 
-other methods that can be usedsuch as Adam and Momentum.
-    FCIQMC simulation is setup to be turminate when the sum of the absolute 
-value of gradient become smaller then `threshold` (default to 1e-3). 
+Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩ and
+optimize the parameters of `gradientoverlap` (<:GlobalStepAction) after every
+`step` collected gradient data points in the FCIQMC simulation between all
+pairs of replica states for a given operator `O`. The results returned are
+those provided by `gradientoverlap`.
+    The optimization is carried out using the optimization `method`
+(defaults to `RAdam(0.1)`) from `Optimisers.jl`. Other methods can also be
+used, such as Adam and Momentum.
+    The FCIQMC simulation is set up to terminate when the sum of the absolute
+value of the gradient becomes smaller than `threshold` (default: `1e-3`).
 
 # Examples
 
