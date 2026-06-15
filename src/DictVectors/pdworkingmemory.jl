@@ -293,13 +293,13 @@ end
 working_memory(t::PDVec) = PDWorkingMemory(t)
 
 function Interfaces.apply_operator!(
-    CS::CompressionStrategy, working_memory::PDWorkingMemory,
+    compression::CompressionStrategy, working_memory::PDWorkingMemory,
     target::PDVec, source::PDVec, ham, boost=1,
 )
     stat_names, stats = perform_spawns!(working_memory, source, ham, boost)
     collect_local!(working_memory)
     sync_stat_names, sync_stats = synchronize_remote!(working_memory)
-    target, comp_stat_names, comp_stats = move_and_compress!(CS, target, working_memory)
+    target, comp_stat_names, comp_stats = move_and_compress!(compression, target, working_memory)
 
     stat_names = (stat_names..., comp_stat_names..., sync_stat_names...)
     stats = (stats..., comp_stats..., sync_stats...)
