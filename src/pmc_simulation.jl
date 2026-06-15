@@ -304,7 +304,7 @@ function CommonSolve.step!(sm::PMCSimulation)
 
     # report replica stats
     if step[] % reporting_interval(reporting_strategy) == 0
-        replica_names, replica_values = replica_stats!(replica_strategy, spectral_states)
+        replica_names, replica_values = replica_stats(replica_strategy, spectral_states)
         report!(reporting_strategy, step[], report, replica_names, replica_values)
         for action! in state.global_step_actions
             action_results = action!(state)

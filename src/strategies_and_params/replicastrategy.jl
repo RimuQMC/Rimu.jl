@@ -15,7 +15,7 @@ number of replicas is `N`.
 A subtype of `ReplicaStrategy{N}` must implement the following
 function:
 
-* [`Rimu.replica_stats!`](@ref) - return a
+* [`Rimu.replica_stats`](@ref) - return a
   tuple of `String`s or `Symbols` of names for replica statistics and a tuple of the values.
   These will be reported to the `DataFrame` returned by [`ProjectorMonteCarloProblem`](@ref).
 """
@@ -32,8 +32,7 @@ See also [`ProjectorMonteCarloProblem`](@ref), [`AllOverlaps`](@ref), [`num_spec
 num_replicas(::ReplicaStrategy{N}) where {N} = N
 
 """
-    replica_stats!(RS::ReplicaStrategy{N}, state::Rimu.ReplicaState) -> (names, values)
-    replica_stats!(RS::ReplicaStrategy{N}, spectral_states::NTuple{N,SingleState}) -> (names, values)
+    replica_stats(RS::ReplicaStrategy{N}, spectral_states::NTuple{N,SingleState}) -> (names, values)
 
 Return the names and values of statistics related to `N` replica states consistent with the
 [`ReplicaStrategy`](@ref) `RS`. `names`
@@ -42,13 +41,9 @@ length. This function will be called every [`reporting_interval`](@ref) steps fr
 [`ProjectorMonteCarloProblem`](@ref), or once per time step if `reporting_interval` is not
 defined.
 
-This function may mutate the `ReplicaStrategy` `RS` if appropriate. A new `ReplicaStrategy`
-should implement either a method that accepts `ReplicaState` or one that accepts
-`spectral_states`, but not both.
-
 Part of the [`ReplicaStrategy`](@ref) interface. See also [`SingleState`](@ref).
 """
-replica_stats!
+replica_stats
 
 """
     NoStats(N=1) <: ReplicaStrategy{N}
@@ -61,7 +56,7 @@ See also [`ProjectorMonteCarloProblem`](@ref).
 struct NoStats{N} <: ReplicaStrategy{N} end
 NoStats(N=1) = NoStats{N}()
 
-replica_stats!(::NoStats, _) = (), ()
+replica_stats(::NoStats, _) = (), ()
 undo_transforms(::NoStats{N}, _) where {N} = NoStats{N}()
 
 """
@@ -157,7 +152,7 @@ function AllOverlaps(
     }(operators)
 end
 
-function replica_stats!(
+function replica_stats(
     rs::AllOverlaps{N,<:Any,<:Any,B,S}, spectral_states::NTuple{N}
 ) where {N,B,S}
     n_spectral = num_spectral_states(spectral_states[1])
