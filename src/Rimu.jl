@@ -73,7 +73,7 @@ export DontUpdate, DoubleLogUpdate, DoubleLogUpdateAfterTargetWalkers
 export ReportingStrategy, ReportDFAndInfo, ReportToFile
 export ReplicaStrategy, NoStats, AllOverlaps
 export ParticleDensityGradientOverlap, OperatorOverlaps, 
-    OverlapwithOptimization, CoefficientVectorOverlaps
+    OptimizationAction, CoefficientVectorOverlaps
 export PostStepStrategy, Projector, ProjectedEnergy, SignCoherence, WalkerLoneliness, Timer,
     SingleParticleDensity, single_particle_density
 export TimeStepStrategy, ConstantTimeStep, OvershootControl

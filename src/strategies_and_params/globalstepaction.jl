@@ -22,7 +22,7 @@ function (ooa::OperatorOverlaps)(state::ReplicaState)
                 (i, j) in StrictPairIter(n_reps),
                 s in 1:n_specs
     ]
-    return NamedTuple((ooa.name => overlaps,))
+    return NamedTuple((ooa.name => overlaps,)), false
 end
 
 # StrictPairIter yields tuples (a,b) with 1 <= a < b <= n for n items
@@ -80,40 +80,33 @@ function (cvo::CoefficientVectorOverlaps)(state::ReplicaState)
         (i,j) in StrictPairIter(n_reps),
         s in 1:n_specs
     ]
-    return NamedTuple((cvo.name => overlaps,))
+    return NamedTuple((cvo.name => overlaps,)), false
 end
 
 """
-    ParticleDensityGradientOverlap(op; name = (:gradient_vector_overlaps, 
-        :coefficient_vector_overlaps, :parameters), testfunction,
+    ParticleDensityGradientOverlap(op; testfunction,
         parameter=[SVector{1,Float64}(ones(Float64, 1))], 
         normalise::Bool=true) <: GlobalStepAction
 
-Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩  
-and coefficient vector overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica 
-states for a given operator `O` and its parameters `α`. `parameter` is of 
-type `Vector{SVector}` where each index refers to perticular spectral state.
-`testfunction` is a nothing or a function with parameters (̄α, # of sites) 
-depending on whether the optimization is applied to entire Vector or it 
-with the fixed functional form.
-The results and `parameter` are returned in a `NamedTuple` with a single 
-field with key `name` (default `(:gradient_vector_overlaps, 
-:coefficient_vector_overlaps, :parameters)`) and value array of overlaps.
-
+Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩, 
+coefficient vector overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica states 
+for a given operator `O` and its optimization parameters `α`. 
+`optimizationparameter` is of type `Vector{SVector}` where each index refers 
+to perticular spectral state.`testfunction` is a nothing or a function with 
+parameters (̄α, # of sites) depending on whether the optimization is 
+applied to entire Vector or it with the fixed functional form.
 """
 mutable struct ParticleDensityGradientOverlap{OpType, normalize, P} <: GlobalStepAction
     operators::OpType
-    name::Tuple{Symbol, Symbol, Symbol}
     testfunction::Union{Function, Nothing}
-    parameter::P
+    optimizationparameter::P
 end
 
-function ParticleDensityGradientOverlap(op; name = (:gradient_vector_overlaps, 
-        :coefficient_vector_overlaps, :parameters), testfunction=nothing, 
-        parameter::Vector=[SVector{1,Float64}(ones(Float64, 1))],
+function ParticleDensityGradientOverlap(op; testfunction=nothing, 
+        optimizationparameter::Vector=[SVector{1,Float64}(ones(Float64, 1))],
         normalize::Bool=true)
-    return ParticleDensityGradientOverlap{typeof(op), normalize, typeof(parameter)}(
-        op, name, testfunction, parameter)
+    return ParticleDensityGradientOverlap{typeof(op), normalize, typeof(optimizationparameter)}(
+        op, testfunction, optimizationparameter)
 end
 
 function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
@@ -123,8 +116,8 @@ function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
     n_reps = num_replicas(state)
     vectors = state_vectors(state) # 2D array: (replica, spectral state)
     M = num_modes(keytype(vectors[1,1]))
-    gradient = zeros(eltype(ooa.parameter), binomial(n_reps, 2) , n_specs)
-    coeff = zeros(eltype(ooa.parameter[1]), binomial(n_reps,2), n_specs)
+    gradient = zeros(eltype(ooa.optimizationparameter), binomial(n_reps, 2) , n_specs)
+    coeff = zeros(eltype(ooa.optimizationparameter[1]), binomial(n_reps,2), n_specs)
 
     for s in 1:n_specs
 
@@ -133,8 +126,8 @@ function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
         
         if !iszero(sum(coeff[:,s]))
             test_vector, jacobian = isnothing(ooa.testfunction) ? 
-                (ooa.parameter[s],nothing) : 
-                ooa.testfunction(ooa.parameter[s], M)
+                (ooa.optimizationparameter[s],nothing) : 
+                ooa.testfunction(ooa.optimizationparameter[s], M)
 
             op = ooa.operators[1](test_vector; normalize)
             zeta = sum([dot_from_right(vectors[i, s], op, vectors[j, s]) / 
@@ -148,23 +141,23 @@ function (ooa::ParticleDensityGradientOverlap{<:Any, normalize})(
             end
         end
     end
-    return NamedTuple((ooa.name[1] => gradient, ooa.name[2] => coeff, 
-            ooa.name[3] => ooa.parameter))
+    return gradient, coeff, ooa.optimizationparameter
 end
 
 """
-    OverlapwithOptimization(gradientoverlap; 
-        method = RAdam(0.1), step=100, threshold = 1e-3)) <: GlobalStepAction
+    OptimizationAction(gradientaction; 
+        method = RAdam(0.1), optimizationstep=100, threshold = 1e-3)) <: GlobalStepAction
 
-Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩ and 
-optimize the parameters of `gradientoverlap`(<:GlobalStepAction) after every 
-`step` number of collected gradient data in the FCIQMC simulation between all 
-pairs of replica states for a given operator `O`. The results are returned 
-what provided from gradientoverlap. 
+Compute and report gradient of an observable `O` (⟨ψ_i|∂O/∂α|ψ_j⟩) at each reporting 
+step and optimize the `optimizationparameters` of `gradientaction`(<:GlobalStepAction) 
+after every `optimizationstep * reporting step` in the FCIQMC simulation between all 
+pairs of replica states and spectral states. The gradient and `optimizationparameter`
+(argument of `gradientaction`) are returned in a `NamedTuple` with a single field 
+with the name `gradient` and `optimizationparameter` respectively.
     The optimization is carried out using the optimization `method` 
 (default to RAdam(0.1)) which is downloaded from `Optimisers.jl`. There are 
-other methods that can be usedsuch as Adam and Momentum.
-    FCIQMC simulation is setup to be turminate when the sum of the absolute 
+other methods that can be used such as Adam and Momentum.
+    FCIQMC simulation is optimization_state to be turminate when the sum of the absolute 
 value of gradient become smaller then `threshold` (default to 1e-3). 
 
 # Examples
@@ -187,51 +180,68 @@ HubbardRealSpace(
 julia> parameter = [SVector{45,Float64}([1/45 for _ in 1:45])];
 
 julia> gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
-                   TestTwoParticleDensityGradient); name=(:gradient_test_overlaps,
-                   :coefficient_vector_overlaps, :parameter), 
+                   TestTwoParticleDensityGradient);
                    testfunction = nothing, parameter);
 
-julia> oops = OverlapwithOptimization(gop; step = 5, threshold = 1e-2);
+julia> oops = OptimizationAction(gop; optimizationstep = 5, threshold = 1e-2);
 
 julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,));
 
 julia> solve(p);
 ```
 """
-mutable struct OverlapwithOptimization{threshold,T} <: GlobalStepAction
-    gradientoverlap::GlobalStepAction
-    Setup::T
-    Step::Int
+mutable struct OptimizationAction{threshold,O,T} <: GlobalStepAction
+    gradientaction::GlobalStepAction
+    optimizationstate::O
+    optimizationstep::Int
+    gradientnumerator::T
+    gradientdenominator::Vector{Float64}
 end
 
-function OverlapwithOptimization(gradientoverlap; 
-        method = RAdam(0.1), step=100, threshold = 1e-3)
-    _setup = setup(method, (x = destructure(gradientoverlap.parameter)[1],))
-    return OverlapwithOptimization{threshold, typeof(_setup)}(gradientoverlap,
-        _setup, step)
+function OptimizationAction(
+    gradientaction; method = RAdam(0.1), optimizationstep=100, threshold = 1e-3
+)
+
+    optimizationstate = setup(method, (x = destructure(gradientaction.optimizationparameter)[1],))
+    gradientnumerator = zero(gradientaction.optimizationparameter)
+    gradientdenominator = zeros(Float64, length(gradientaction.optimizationparameter))
+    return OptimizationAction{threshold, typeof(optimizationstate), typeof(gradientnumerator)}(
+        gradientaction, optimizationstate, optimizationstep, gradientnumerator, gradientdenominator
+    )
 end
 
-function (ooa::OverlapwithOptimization)(state::ReplicaState) 
-    return (ooa.gradientoverlap)(state)
-end
+function (ooa::OptimizationAction{threshold})(state::ReplicaState) where threshold
 
-function (ooa::OverlapwithOptimization{threshold})(df::DataFrame) where threshold
-    # destructure the parameters of each spectral state to a single Vector.
-    para = (x = destructure(ooa.gradientoverlap.parameter)[1],)
-    v, re = destructure(grad_rrs(ooa, df))
-    if isnan(sum(abs.(v))) # to ignore NaN as parameter
-        return false
+    if state.step[] % (ooa.optimizationstep * state.reporting_strategy.reporting_interval) == 0
+        gradient, coeff, parameter = (ooa.gradientaction)(state) 
+        ooa.gradientnumerator += [sum(gradient[:,s]) for s in 1:length(gradient[1,:])]
+        ooa.gradientdenominator += [sum(coeff[:,s]) for s in 1:length(coeff[1,:])]
+
+
+        para = (x = destructure(ooa.gradientaction.optimizationparameter)[1],)
+        grad = ooa.gradientnumerator ./ ooa.gradientdenominator
+        ooa.gradientnumerator .= zero(ooa.gradientnumerator)
+        ooa.gradientdenominator .= zero(ooa.gradientdenominator)
+        v, re = destructure(grad)
+        if isnan(sum(abs.(v))) # to ignore NaN as parameter
+            return NamedTuple((:gradient => grad, 
+                :optimizationparameter => ooa.gradientaction.parameter)), false
+        end
+        optimizationstate, para = update(ooa.optimizationstate, para, (x = -v,));
+        
+        # restructure (re) the parameters of each spectral state to a separate SVector. 
+        ooa.gradientaction.optimizationparameter = re(para.x)
+        ooa.optimizationstate = optimizationstate
+        
+        return  NamedTuple((:gradient => grad, 
+            :optimizationparameter => ooa.gradientaction.optimizationparameter)),
+            sum(abs.(v)) < threshold
+    else
+        gradient, coeff, parameter = (ooa.gradientaction)(state) 
+        ooa.gradientnumerator .+= [sum(gradient[:,s]) for s in 1:length(gradient[1,:])]
+        ooa.gradientdenominator += [sum(coeff[:,s]) for s in 1:length(coeff[1,:])]
+        grad = ooa.gradientnumerator ./ ooa.gradientdenominator
+        return NamedTuple((:gradient => grad, 
+            :optimizationparameter => ooa.gradientaction.optimizationparameter)), false
     end
-    _setup, para = update(ooa.Setup, para, (x = -v,));
-    
-    # restructure (re) the parameters of each spectral state to a separate SVector. 
-    ooa.gradientoverlap.parameter = re(para.x)
-    ooa.Setup = _setup
-    return sum(abs.(v)) < threshold
-end
-
-@inline function grad_rrs(ooa::OverlapwithOptimization, df)
-    A = sum(df[!,ooa.gradientoverlap.name[1]])
-    A_d = sum(df[!,ooa.gradientoverlap.name[2]])
-    return [sum(A[:,s])./sum(A_d[:,s]) for s in 1:length(A[1,:])]
 end

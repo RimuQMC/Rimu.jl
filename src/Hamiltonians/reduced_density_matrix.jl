@@ -255,7 +255,7 @@ If `normalize` is true (default), the vector is normalized before use.
     ρ̂ = ∑_{ij} v_i^* v_j â^†_{i} â_{j}
 ```
 """
-struct TestOneParticleDensity{T,V<:SVector{<:Any,T},M} <: AbstractOperator{T}
+struct TestOneParticleDensity{T,V<:Vector{T},M} <: AbstractOperator{T}
     test_vector::V
 end
 function TestOneParticleDensity(v; normalize=true)
@@ -264,7 +264,7 @@ function TestOneParticleDensity(v; normalize=true)
     end
     M = length(v)
     T = float(eltype(v))
-    tv = SVector{M,T}(v)
+    tv = Vector{T}(v)
     return TestOneParticleDensity{T,typeof(tv),M}(tv)
 end
 
@@ -349,10 +349,10 @@ end
     TestOneParticleDensityGradient(test_vector, jacobian=nothing; normalize=true,
         zeta=0) <: AbstractOperator{SVector{m,T}}
  
-An expectation value with this operator yields a gradient `TestOneParticleDensity` 
+An expectation value of this operator yields a gradient of `TestOneParticleDensity` 
 for a given test vector. Here, `test_vector` is the test vector and `T` is the 
-eltype of `test_vector`. If `normalize` is true (default), the vector is 
-normalized before use. `zeta` is the expectation value of 
+eltype of `test_vector`. If `normalize` is true (default), the test vector is 
+normalized before use. `zeta` represents the expectation value of 
 `TestOneParticleDensity` for a given `test_vector`.
 
 ```math
@@ -562,9 +562,10 @@ smallest eigenvalue) of the two-particle density matrix.
 If `normalize` is true (default), the vector is normalized before use.
 
 ```math
-    ρ̂ {(2)}= ∑_{ij,kl} v_{ij}^* v_{kl} â^†_{i} â^†_{j} â_{l} â_{k}
+    ρ̂ {(2)}= ∑_{ij,kl} v_{index(i,j)}^* v_{index(k,l)} â^†_{i} â^†_{j} â_{l} â_{k}
 ```
-Also, in `vᵢⱼ`, i and j are site indices (with i < j). 
+Where, `index(i,j)` represent an index ([`index`](@ref)) in the test vector in which `i` 
+and `j` are site indices (with i < j). 
 """
 struct TestTwoParticleDensity{T,V<:SVector{<:Any,T},Dim} <: AbstractOperator{T}
     test_vector::V
@@ -680,15 +681,17 @@ end
     TestTwoParticleDensityGradient(test_vector, jacobian=nothing; normalize=true,
         zeta=0) <: AbstractOperator{SVector(m,T)}
  
-An expectation value with this operator yields a gradient `TestTwoParticleDensity` 
+An expectation value of this operator yields a gradient of`TestTwoParticleDensity` 
 for a given test vector. Here `test_vector` is the test vector and `T` is the 
 eltype of `test_vector`. If `normalize` is true (default), the vector is 
 normalized before use. `zeta` is the expectation value of 
 `TestTwoParticleDensity` for a given `test_vector`.
 
 ```math
-    ζ = \\langle ∑_{ij,kl} ρ̂ {(2)}_{ij,kl} v_{ij}^* v_{kl} \\rangle
+    ζ = \\langle ∑_{ij,kl} ρ̂ {(2)}_{ij,kl} v_{index(i,j)}^* v_{index(k,l)} \\rangle
 ```
+Where, `index(i,j)` represent an index ([`index`](@ref)) in the test vector in which `i` 
+and `j` are site indices (with i < j). 
 
 There are two cases involved:
 
@@ -697,8 +700,8 @@ and the operator is defined as below. A two-particle operator constructed
 from a provided test vector. Also, `m` = binomial(# of sites, 2).
 
 ```math
-    \\frac{∂ρ̂ {(2)}}{∂v_{kl}} = ∑_{ij} v_{ij}^* â^†_{i} â^†_{j} â_{l} â_{k} - 
-        ζ v_{kl}^*
+    \\frac{∂ρ̂ {(2)}}{∂v_{kl}} = ∑_{ij} v_{index(i,j)}^* â^†_{i} â^†_{j} â_{l} â_{k} - 
+        ζ v_{index(k,l)}^*
 ```
 
 -`jacobian <:AbstractMatrix`: gradient is calculated with respect 
@@ -708,11 +711,10 @@ the transpose of the Jacobian of test_vector with respect to its parameters
 `α₁,α₂,...,αₘ`.
 
 ```math
-    \\frac{∂ρ̂ {(2)}}{∂α} = ∑_{ij, kl} (v_{ij}^* \\frac{∂v_{kl}(α)}{∂α} + 
-        \\frac{∂v_{ij}^*(α)}{∂α} v_{kl}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
+    \\frac{∂ρ̂ {(2)}}{∂α} = ∑_{ij, kl} (v_{index(i,j)}^* \\frac{∂v_{index(k,l)}(α)}{∂α} + 
+        \\frac{∂v_{index(i,j)}^*(α)}{∂α} v_{index(k,l)}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
         ζ δ_{ik}δ_{jl} )
 ```
-Also, in `vᵢⱼ`, i and j are site indices (with i < j).
 """
 struct TestTwoParticleDensityGradient{T,dim,V<:SVector,J} <: AbstractOperator{SVector{dim,T}}
     test_vector::V
