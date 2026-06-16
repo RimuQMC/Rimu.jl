@@ -7,21 +7,21 @@ See [`ProjectorMonteCarloProblem`](@ref), [`FCIQMC`](@ref).
 abstract type PMCAlgorithm end
 
 """
-    GlobalStepAction
-Abstract type for actions to perform at each global step in the simulation.
+    StepAction
+Abstract type for actions to perform at each reporting step in the simulation.
 
 # Usage
-Pass an instance of a subtype of `GlobalStepAction` to the `global_step_actions` keyword
+Pass an instance of a subtype of `StepAction` to the `step_actions` keyword
 argument of [`ProjectorMonteCarloProblem`](@ref). The action may report results at each step
 that are collected in the final report.
 
 # Extended Help
-## Implementing a new global step action
+## Implementing a new step action
 Action objects should be callable, accepting a `Rimu.ReplicaState` and returning
 a `NamedTuple` of results to be reported. Reporting of action results is handled
 by the `reporting_strategy`.
 """
-abstract type GlobalStepAction end
+abstract type StepAction end
 
 
 """
@@ -122,7 +122,7 @@ julia> size(DataFrame(simulation))
 - `minimum_size = 2*num_spectral_states(spectral_strategy)`: The minimum size of the basis
     used to construct starting vectors for simulations of spectral states, if `start_at`
     is not provided.
-- `global_step_actions = ()`: Warning: experimental feature - subject to change.
+- `step_actions = ()`: Warning: experimental feature - subject to change.
     Tuple of actions to perform at each global step. Each action
     should be a callable object that accepts a `Rimu.ReplicaState` and returns a
     `NamedTuple` of results to be reported. Reporting of action results is handled
@@ -208,7 +208,7 @@ struct ProjectorMonteCarloProblem{N,S} # is not type stable but does not matter
     metadata::LittleDict{String,String} # user-supplied metadata + display_name
     random_seed::Union{Nothing,UInt64}
     minimum_size::Int
-    global_step_actions::NTuple{<:Any,GlobalStepAction} # GlobalStepAction is a callable object
+    step_actions::NTuple{<:Any,StepAction} # StepAction is a callable object
 end
 
 function Base.show(io::IO, p::ProjectorMonteCarloProblem)
@@ -225,7 +225,7 @@ function Base.show(io::IO, p::ProjectorMonteCarloProblem)
     print(io, "  reporting_strategy = ", p.reporting_strategy)
     println(io, "  post_step_strategy = ", p.post_step_strategy)
     println(io, "  spectral_strategy = ", p.spectral_strategy)
-    println(io, "  global_step_actions = ", p.global_step_actions)
+    println(io, "  step_actions = ", p.step_actions)
     println(io, "  max_length = ", p.max_length)
     println(io, "  metadata = ", p.metadata)
     print(io, "  random_seed = ", p.random_seed)
@@ -259,7 +259,7 @@ function ProjectorMonteCarloProblem(
     post_step_strategy = (),
     n_spectral = 1,
     spectral_strategy = GramSchmidt(n_spectral),
-    global_step_actions = (),
+    step_actions = (),
     minimum_size = 2*num_spectral_states(spectral_strategy),
     max_length = nothing,
     maxlength = nothing, # deprecated
@@ -267,8 +267,8 @@ function ProjectorMonteCarloProblem(
     display_name = "PMCSimulation",
     random_seed = true
 )
-    if global_step_actions isa GlobalStepAction
-        global_step_actions = (global_step_actions,)
+    if step_actions isa StepAction
+        step_actions = (step_actions,)
     end
 
     if !isnothing(walltime)
@@ -401,7 +401,7 @@ function ProjectorMonteCarloProblem(
         metadata,
         random_seed,
         minimum_size,
-        global_step_actions
+        step_actions
     )
 end
 

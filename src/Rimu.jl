@@ -101,7 +101,7 @@ include("strategies_and_params/spectralstrategy.jl")
 include("projector_monte_carlo_problem.jl")
 include("qmc_states.jl")
 
-include("strategies_and_params/globalstepaction.jl") # need ReplicaState
+include("strategies_and_params/stepaction.jl") # need ReplicaState
 
 include("fciqmc.jl")
 include("pmc_simulation.jl")

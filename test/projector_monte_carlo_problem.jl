@@ -397,6 +397,6 @@ end
     @test p.simulation_plan.wall_time == 23
 end
 
-@safetestset "Global Step Action" begin
-    include("global_step_action_test.jl")
+@safetestset "Step Action" begin
+    include("step_action_test.jl")
 end

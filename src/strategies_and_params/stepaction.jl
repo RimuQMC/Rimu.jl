@@ -1,14 +1,14 @@
-# GlobalStepAction is defined in projector_monte_carlo_problem.jl to avoid circular
+# StepAction is defined in projector_monte_carlo_problem.jl to avoid circular
 # dependencies
 
 """
-    OperatorOverlaps(operator; name=:operator_overlaps) <: GlobalStepAction
+    OperatorOverlaps(operator; name=:operator_overlaps) <: StepAction
 Compute and report the overlaps ⟨ψ_i|O|ψ_j⟩ between all pairs of replica states
 for a given operator `O` and for each spectral state as a matrix. The results are reported
 with the name given by the `name` keyword argument.
-See also [`GlobalStepAction`](@ref) and [`CoefficientVectorOverlaps`](@ref).
+See also [`StepAction`](@ref) and [`CoefficientVectorOverlaps`](@ref).
 """
-@kwdef struct OperatorOverlaps{OpType} <: GlobalStepAction
+@kwdef struct OperatorOverlaps{OpType} <: StepAction
     operator::OpType
     name::Symbol = :operator_overlaps
 end
@@ -63,13 +63,13 @@ function Base.iterate(iter::StrictPairIter, state::Tuple{Int,Int})
 end
 
 """
-    CoefficientVectorOverlaps(; name=:coefficient_vector_overlaps) <: GlobalStepAction
+    CoefficientVectorOverlaps(; name=:coefficient_vector_overlaps) <: StepAction
 Compute and report the overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica states for each
 spectral state as a matrix. The results are reported with the name given by the `name`
 keyword argument.
-See also [`GlobalStepAction`](@ref) and [`OperatorOverlaps`](@ref).
+See also [`StepAction`](@ref) and [`OperatorOverlaps`](@ref).
 """
-@kwdef struct CoefficientVectorOverlaps <: GlobalStepAction
+@kwdef struct CoefficientVectorOverlaps <: StepAction
     name::Symbol = :coefficient_vector_overlaps
 end
 function (cvo::CoefficientVectorOverlaps)(state::ReplicaState)
@@ -86,7 +86,7 @@ end
 """
     ParticleDensityGradientOverlap(op; testfunction,
         parameter=[SVector{1,Float64}(ones(Float64, 1))], 
-        normalise::Bool=true) <: GlobalStepAction
+        normalise::Bool=true) <: StepAction
 
 Compute and report the particle density gradient overlaps ⟨ψ_i|∂O/∂α|ψ_j⟩, 
 coefficient vector overlaps ⟨ψ_i|ψ_j⟩ between all pairs of replica states 
@@ -96,7 +96,7 @@ to perticular spectral state.`testfunction` is a nothing or a function with
 parameters (̄α, # of sites) depending on whether the optimization is 
 applied to entire Vector or it with the fixed functional form.
 """
-mutable struct ParticleDensityGradientOverlap{OpType, normalize, P} <: GlobalStepAction
+mutable struct ParticleDensityGradientOverlap{OpType, normalize, P} <: StepAction
     operators::OpType
     testfunction::Union{Function, Nothing}
     optimizationparameter::P
@@ -146,10 +146,10 @@ end
 
 """
     OptimizationAction(gradientaction; 
-        method = RAdam(0.1), optimizationstep=100, threshold = 1e-3)) <: GlobalStepAction
+        method = RAdam(0.1), optimizationstep=100, threshold = 1e-3)) <: StepAction
 
 Compute and report gradient of an observable `O` (⟨ψ_i|∂O/∂α|ψ_j⟩) at each reporting 
-step and optimize the `optimizationparameters` of `gradientaction`(<:GlobalStepAction) 
+step and optimize the `optimizationparameters` of `gradientaction`(<:StepAction) 
 after every `optimizationstep * reporting step` in the FCIQMC simulation between all 
 pairs of replica states and spectral states. The gradient and `optimizationparameter`
 (argument of `gradientaction`) are returned in a `NamedTuple` with a single field 
@@ -189,8 +189,8 @@ julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops
 julia> solve(p);
 ```
 """
-mutable struct OptimizationAction{threshold,O,T} <: GlobalStepAction
-    gradientaction::GlobalStepAction
+mutable struct OptimizationAction{threshold,O,T} <: StepAction
+    gradientaction::StepAction
     optimizationstate::O
     optimizationstep::Int
     gradientnumerator::T

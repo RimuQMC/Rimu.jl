@@ -1,6 +1,6 @@
 using Test
 using Rimu
-using Rimu: GlobalStepAction, OperatorOverlaps, StrictPairIter, SingleState,
+using Rimu: StepAction, OperatorOverlaps, StrictPairIter, SingleState,
     SpectralState, CoefficientVectorOverlaps, ParticleDensityGradientOverlap,
     OptimizationAction
 using StaticArrays: SVector
@@ -18,7 +18,7 @@ end
     # Operator overlaps test
     oops = OperatorOverlaps(h; name=:test_overlaps)
     @test oops == OperatorOverlaps(h, :test_overlaps)
-    p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,))
+    p = ProjectorMonteCarloProblem(h; n_replicas=3, step_actions=(oops,))
     res = solve(p)
     @test res.df.test_overlaps isa Vector{Matrix{Float64}}
     # Coefficient vector overlaps test
@@ -27,7 +27,7 @@ end
     p2 = ProjectorMonteCarloProblem(
         h;
         replica_strategy,
-        global_step_actions=(cvos,oops)
+        step_actions=(cvos,oops)
     )
     res2 = solve(p2)
     df2 = res2.df
@@ -54,7 +54,7 @@ end
             TestTwoParticleDensityGradient); testfunction = nothing, optimizationparameter)
         oops = OptimizationAction(gop; optimizationstep = 5, threshold = 1e-2)
 
-        p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,))
+        p = ProjectorMonteCarloProblem(h; n_replicas=3, step_actions=(oops,))
         res = solve(p)
         df = res.df
         @test (length(unique(df.optimizationparameter[1:5])),
@@ -67,7 +67,7 @@ end
         p2 = ProjectorMonteCarloProblem(
             h;
             replica_strategy,
-            global_step_actions=(oops,)
+            step_actions=(oops,)
         )
         res2 = solve(p2)
         df2 = res2.df
