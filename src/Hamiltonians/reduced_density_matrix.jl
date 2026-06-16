@@ -409,8 +409,9 @@ function TestOneParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
             jacobian = SMatrix{dim,S,T}(jacobian)
         end
         if normalize
-            test_vector = test_vector/norm(test_vector)
-            jacobian = jacobian/norm(test_vector)
+            test_vector_norm = norm(test_vector)
+            test_vector = test_vector / test_vector_norm
+            jacobian = jacobian / test_vector_norm
         end
     end
     return TestOneParticleDensityGradient{T,dim,typeof(test_vector),typeof(jacobian)}(
