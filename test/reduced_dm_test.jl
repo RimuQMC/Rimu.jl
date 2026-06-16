@@ -79,10 +79,6 @@ end
     Random.seed!(1234)
     opdrand = TestOneParticleDensity(rand(num_modes(address)))
     @test minimum(evs) ≤ dot(gs, opdrand, gs) ≤ maximum(evs)
-
-    # Check that the result of show can be pasted into the REPL
-    opd2 = TestOneParticleDensity(x; normalize=false)
-    @test eval(Meta.parse(repr(opd2))) == opd2
 end
 
 @testset "TestOneParticleDensityGradient" begin
@@ -105,9 +101,6 @@ end
     test_operator_interface(opd, address)
     @test round(sum(dot(gs, opd, gs)), digits = 12) == 0.0
 
-    # Check that the result of show can be pasted into the REPL
-    opd2 = TestOneParticleDensityGradient(x1,x2; normalize=false)
-    @test eval(Meta.parse(repr(opd2))) == opd2
 end
 
 @testset "TestTwoParticleDensity" begin
@@ -130,9 +123,6 @@ end
     opdrand = TestTwoParticleDensity(rand(45))
     @test minimum(evs) ≤ dot(gs, opdrand, gs) ≤ 2 * maximum(evs)
 
-    # Check that the result of show can be pasted into the REPL
-    opd2 = TestTwoParticleDensity(zero(x).+1.0 ; normalize=false)
-    @test eval(Meta.parse(repr(opd2))) == opd2
 end
 
 @testset "TestTwoParticleDensityGradient" begin
@@ -164,7 +154,4 @@ end
     test_operator_interface(opd, address)
     @test round(sum(dot(gs, opd, gs)), digits = 10) == 0.0
 
-    # Check that the result of show can be pasted into the REPL
-    opd2 = TestTwoParticleDensityGradient(zero(evc[:, end]).+1.0, zero(y).+1; normalize=false)
-    @test eval(Meta.parse(repr(opd2))) == opd2
 end

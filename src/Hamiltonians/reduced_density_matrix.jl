@@ -260,7 +260,7 @@ struct TestOneParticleDensity{T,V<:Vector{T},M} <: AbstractOperator{T}
 end
 function TestOneParticleDensity(v; normalize=true)
     if normalize
-        v = v / norm(v)
+        v ./= norm(v)
     end
     M = length(v)
     T = float(eltype(v))
@@ -269,9 +269,10 @@ function TestOneParticleDensity(v; normalize=true)
 end
 
 function Base.show(io::IO, topd::TestOneParticleDensity)
-    print(io, "TestOneParticleDensity(", topd.test_vector)
-    if !(norm(topd.test_vector) ≈ 1.0)
-        print(io, "; normalize=false")
+    io = IOContext(io, :compact => true)
+    print(io, "TestOneParticleDensity($(topd.test_vector)")
+    if !(norm(topd.test_vector) == 1.0)
+        print(io, "; normalize = false")
     end
     print(io, ")")
 end
@@ -409,9 +410,8 @@ function TestOneParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
             jacobian = SMatrix{dim,S,T}(jacobian)
         end
         if normalize
-            test_vector_norm = norm(test_vector)
-            test_vector = test_vector / test_vector_norm
-            jacobian = jacobian / test_vector_norm
+            test_vector = test_vector/norm(test_vector)
+            jacobian = jacobian/norm(test_vector)
         end
     end
     return TestOneParticleDensityGradient{T,dim,typeof(test_vector),typeof(jacobian)}(
@@ -419,6 +419,7 @@ function TestOneParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
 end
 
 function Base.show(io::IO, topd::TestOneParticleDensityGradient)
+    io = IOContext(io, :compact => true)
     print(io, "TestOneParticleDensityGradient(", topd.test_vector,",", topd.jacobian,)
     print(io, "; zeta=",topd.zeta,)
     if !(norm(topd.test_vector) ≈ 1.0)
@@ -476,7 +477,8 @@ Base.eltype(::TestOneParticleDensityGradientOffdiagonals{A,T}) where {A,T} = Tup
 Base.IteratorSize(::TestOneParticleDensityGradientOffdiagonals) = Base.SizeUnknown()
 # Base.length(od::TestOneParticleDensityGradientOffdiagonals) = num_offdiagonals(od.column)
 function Base.iterate(od::TestOneParticleDensityGradientOffdiagonals{A,T}, state=(1, 1)) where {A,T}
-    if od.column.operator.jacobian isa Nothing
+    dim = size(od.column.operator.test_vector)[end]
+    if length(T) == dim
         return fullvectorTestOneParticleDensityGradient(od, state)
     else
         return fixfunctionTestOneParticleDensityGradient(od, state)
@@ -567,7 +569,7 @@ If `normalize` is true (default), the vector is normalized before use.
 Where, `index(i,j)` represent an index ([`index`](@ref)) in the test vector in which `i` 
 and `j` are site indices (with i < j). 
 """
-struct TestTwoParticleDensity{T,V<:SVector{<:Any,T},Dim} <: AbstractOperator{T}
+struct TestTwoParticleDensity{T,V<:Vector{T},Dim} <: AbstractOperator{T}
     test_vector::V
 end
 function TestTwoParticleDensity(v; normalize=true)
@@ -576,11 +578,12 @@ function TestTwoParticleDensity(v; normalize=true)
     end
     T = float(eltype(v))
     dim = length(v)
-    tv = SVector{dim,T}(v)
+    tv = Vector{T}(v)
     return TestTwoParticleDensity{T,typeof(tv),dim}(tv)
 end
 
 function Base.show(io::IO, topd::TestTwoParticleDensity)
+    io = IOContext(io, :compact => true)
     print(io, "TestTwoParticleDensity(", topd.test_vector)
     if !(norm(topd.test_vector) ≈ 1.0)
         print(io, "; normalize=false")
@@ -745,9 +748,8 @@ function TestTwoParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
             jacobian = SMatrix{dim,S,T}(jacobian)
         end
         if normalize
-            test_vector_norm = norm(test_vector)
-            test_vector = test_vector / test_vector_norm
-            jacobian = jacobian / test_vector_norm
+            test_vector = test_vector/norm(test_vector)
+            jacobian = jacobian/norm(test_vector)
         end
     end
     return TestTwoParticleDensityGradient{T,dim,typeof(test_vector),typeof(jacobian)}(
@@ -755,6 +757,7 @@ function TestTwoParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
 end
 
 function Base.show(io::IO, topd::TestTwoParticleDensityGradient)
+    io = IOContext(io, :compact => true)
     print(io, "TestTwoParticleDensityGradient(", topd.test_vector,",", topd.jacobian,)
     print(io, "; zeta=",topd.zeta,)
     if !(norm(topd.test_vector) ≈ 1.0)
