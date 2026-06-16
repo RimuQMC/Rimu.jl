@@ -184,7 +184,7 @@ julia> gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
 
 julia> oops = OptimizationAction(gop; optimizationstep = 5, threshold = 1e-2);
 
-julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, global_step_actions=(oops,));
+julia> p = ProjectorMonteCarloProblem(h; n_replicas=3, step_actions=(oops,));
 
 julia> solve(p);
 ```
