@@ -159,7 +159,6 @@ with the name `gradient` and `optimizationparameter` respectively.
 other methods that can be used such as Adam and Momentum.
     FCIQMC simulation is optimization_state to be turminate when the sum of the absolute 
 value of gradient become smaller then `threshold` (default to 1e-3). 
-
 # Examples
 
 ```jldoctest
