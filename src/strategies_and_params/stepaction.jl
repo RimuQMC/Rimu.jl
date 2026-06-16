@@ -176,11 +176,11 @@ HubbardRealSpace(
   w = [-1.0;;],
 )
 
-julia> parameter = [SVector{45,Float64}([1/45 for _ in 1:45])];
+julia> optimizationparameter = [SVector{45,Float64}([1/45 for _ in 1:45])];
 
 julia> gop = ParticleDensityGradientOverlap((TestTwoParticleDensity,
                    TestTwoParticleDensityGradient);
-                   testfunction = nothing, parameter);
+                   testfunction = nothing, optimizationparameter);
 
 julia> oops = OptimizationAction(gop; optimizationstep = 5, threshold = 1e-2);
 
