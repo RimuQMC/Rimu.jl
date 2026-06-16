@@ -85,7 +85,7 @@ end
     @test eval(Meta.parse(repr(opd2))) == opd2
 end
 
-@testset "TestTestOneParticleDensityGradient" begin
+@testset "TestOneParticleDensityGradient" begin
     address = BoseFS(1, 1, 1, 0, 0, 0)
 
     h = HubbardRealSpace(address; t=1, u=0.2)
