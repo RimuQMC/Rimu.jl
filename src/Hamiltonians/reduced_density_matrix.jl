@@ -476,8 +476,7 @@ Base.eltype(::TestOneParticleDensityGradientOffdiagonals{A,T}) where {A,T} = Tup
 Base.IteratorSize(::TestOneParticleDensityGradientOffdiagonals) = Base.SizeUnknown()
 # Base.length(od::TestOneParticleDensityGradientOffdiagonals) = num_offdiagonals(od.column)
 function Base.iterate(od::TestOneParticleDensityGradientOffdiagonals{A,T}, state=(1, 1)) where {A,T}
-    dim = size(od.column.operator.test_vector)[end]
-    if length(T) == dim
+    if od.column.operator.jacobian isa Nothing
         return fullvectorTestOneParticleDensityGradient(od, state)
     else
         return fixfunctionTestOneParticleDensityGradient(od, state)
