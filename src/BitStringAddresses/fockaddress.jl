@@ -622,7 +622,8 @@ bose_num_occupied_modes
 """
     FermiFSIndex
 
-Struct used for indexing and performing [`excitation`](@ref)s on a [`FermiFS`](@ref).
+Struct used for indexing and performing [`excitation`](@ref)s on a [`FermiFS`](@ref) 
+and [`HardcoreBoseFS`](@ref).
 
 ## Fields:
 
