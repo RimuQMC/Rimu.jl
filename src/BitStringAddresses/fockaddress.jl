@@ -429,6 +429,12 @@ function parse_address(str)
     if !isnothing(m)
         return BoseFS(parse.(Int, split(m.captures[1], r" +")))
     end
+    # Single HardcoreBoseFS
+    m = match(r"\|([ ⋅∘]+)⟩", str)
+    if !isnothing(m)
+        chars = filter(!=(' '), Vector{Char}(m.captures[1]))
+        return HardcoreBoseFS(chars .== '∘')
+    end
     # Single FermiFS
     m = match(r"\|([ ⋅↑]+)⟩", str)
     if !isnothing(m)
