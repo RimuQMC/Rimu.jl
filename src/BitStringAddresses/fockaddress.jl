@@ -382,6 +382,12 @@ function parse_address(str)
         particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
         return BoseFS(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
     end
+    # Sparse HardcoreBoseFS
+    m = match(r"\|h *([0-9]+): *([ 0-9]+)⟩", str)
+    if !isnothing(m)
+        particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
+        return HardcoreBoseFS(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
+    end
     # Sparse FermiFS
     m = match(r"\|f *([0-9]+): *([ 0-9]+)⟩", str)
     if !isnothing(m)
