@@ -667,6 +667,13 @@ end
             end
         end
     end
+    @testset "occupation numbers as arguments" begin
+        t = (1, 0, 1, 0, 1, 0, 1, 0, 1, 0)
+        @test HardcoreBoseFS(t...) == HardcoreBoseFS(t) # pass occupation numbers or tuple
+        @test HardcoreBoseFS(1) == fs"|●⟩" # single occupation number
+        @test_throws ArgumentError HardcoreBoseFS(2)
+        @test HardcoreBoseFS(5, 1 => 0) == fs"|∘∘∘∘∘⟩" # vacuum with 5 modes
+    end
 end
    
     
