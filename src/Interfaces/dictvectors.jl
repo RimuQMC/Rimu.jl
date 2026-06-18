@@ -43,7 +43,7 @@ abstract type AbstractDVec{K,V} end
     deposit!(w::AbstractDVec, add, val, parent::Pair)
 
 Add `val` into `w` at address `add`, possibly taking into account information from `parent`.
-[`InitiatorRule`](@ref)s are implemented through this function (using type information in `w`)
+[`InitiatorRule`](@ref Main.DictVectors.InitiatorRule)s are implemented through this function (using type information in `w`)
 and other custom behavior can be implemented by dispatching on type information in 
 `parent`. 
 
