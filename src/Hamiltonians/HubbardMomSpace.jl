@@ -4,7 +4,7 @@ Hubbard dispersion relation for momentum space models. Returns ``-2(\\Re(t) \\co
 """
 function hubbard_dispersion_mom_space(t::SVector, k::Vector)
     # Calculate the dispersion relation for a given k value and hopping strength t.
-    return -2 * (real.(t') * cos.(k) + imag.(t') * sin.(k))
+    return -2 * (dot(real.(t), cos.(k)) + dot(imag.(t), sin.(k)))
 end
 
 """
