@@ -5,12 +5,18 @@ on:
     branches-ignore:
     - 'doc/**'
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   run:
+    if: ${{ !startsWith(github.head_ref, 'compathelper/') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@v3
         with:
           version: 1.11
           # fails with newer versions; probably related to BenchmarkCI not supporting them yet

@@ -18,7 +18,7 @@ function PDWorkingMemoryColumn(t::PDVec{K,V}, style=t.style) where {K,V}
     return PDWorkingMemoryColumn(segments, t.initiator, style)
 end
 
-function deposit!(c::PDWorkingMemoryColumn{K,V,W}, k::K, val, parent) where {K,V,W}
+function deposit!(c::PDWorkingMemoryColumn{K,V,W}, k::K, val, parent::Pair{K}) where {K,V,W}
     segment_id = fastrange_hash(k, num_segments(c))
     segment = c.segments[segment_id]
     new_val = get(segment, k, zero(W)) + to_initiator_value(c.initiator, k, V(val), parent)
@@ -250,17 +250,15 @@ function synchronize_remote!(w::PDWorkingMemory)
 end
 
 """
-    move_and_compress!(dst::PDVec, src::PDWorkingMemory)
     move_and_compress!(::CompressionStrategy, dst::PDVec, src::PDWorkingMemory)
 
-Move the values in `src` to `dst`, compressing the according to the
+Move the values in `src` to `dst`, compressing the data stochastically according to the
 [`CompressionStrategy`](@ref) on the way. This step can only be performed after
 [`collect_local!`](@ref) and [`synchronize_remote!`](@ref).
 
 See [`PDWorkingMemory`](@ref).
 """
-function move_and_compress!(dst::PDVec, src::PDWorkingMemory)
-    compression = CompressionStrategy(StochasticStyle(src))
+function move_and_compress!(compression::CompressionStrategy, dst::PDVec, src::PDWorkingMemory)
     stat_names, init = step_stats(compression)
     stats = Folds.mapreduce(add, dst.segments, local_segments(src); init) do dst_seg, src_seg
         empty!(dst_seg)
@@ -295,12 +293,13 @@ end
 working_memory(t::PDVec) = PDWorkingMemory(t)
 
 function Interfaces.apply_operator!(
-    working_memory::PDWorkingMemory, target::PDVec, source::PDVec, ham, boost=1,
+    compression::CompressionStrategy, working_memory::PDWorkingMemory,
+    target::PDVec, source::PDVec, ham, boost=1,
 )
     stat_names, stats = perform_spawns!(working_memory, source, ham, boost)
     collect_local!(working_memory)
     sync_stat_names, sync_stats = synchronize_remote!(working_memory)
-    target, comp_stat_names, comp_stats = move_and_compress!(target, working_memory)
+    target, comp_stat_names, comp_stats = move_and_compress!(compression, target, working_memory)
 
     stat_names = (stat_names..., comp_stat_names..., sync_stat_names...)
     stats = (stats..., comp_stats..., sync_stats...)
