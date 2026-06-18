@@ -18,7 +18,7 @@ function PDWorkingMemoryColumn(t::PDVec{K,V}, style=t.style) where {K,V}
     return PDWorkingMemoryColumn(segments, t.initiator, style)
 end
 
-function deposit!(c::PDWorkingMemoryColumn{K,V,W}, k::K, val, parent) where {K,V,W}
+function deposit!(c::PDWorkingMemoryColumn{K,V,W}, k::K, val, parent::Pair{K}) where {K,V,W}
     segment_id = fastrange_hash(k, num_segments(c))
     segment = c.segments[segment_id]
     new_val = get(segment, k, zero(W)) + to_initiator_value(c.initiator, k, V(val), parent)

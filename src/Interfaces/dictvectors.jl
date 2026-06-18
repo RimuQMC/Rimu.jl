@@ -42,12 +42,21 @@ abstract type AbstractDVec{K,V} end
 """
     deposit!(w::AbstractDVec, add, val, parent::Pair)
 
-Add `val` into `w` at address `add`, taking into account initiator rules if applicable.
-`parent` contains the `address => value` pair from which the pair `add => val`
-was created. [`InitiatorDVec`](@ref Main.DictVectors.InitiatorDVec) can intercept this and add its own functionality.
+Add `val` into `w` at address `add`, possibly taking into account information from `parent`.
+[`InitiatorRule`](@ref Main.DictVectors.InitiatorRule)s are implemented through this function (using type information in `w`)
+and other custom behavior can be implemented by dispatching on type information in 
+`parent`. 
+
+For `parent` pass the pair `column => value` where `column = hamiltonian * address` is the 
+[`AbstractOperatorColumn`](@ref) from which the spawn originated and `value` the value of 
+the spawning configuration, if this information is available. Alternatively, the pair `
+address => value` may be passed.
 """
 function deposit!(w, add, val, _)
     w[add] += convert(valtype(w), val)
+end
+function deposit!(w, add, val, parent::Pair{<:AbstractOperatorColumn})
+    return deposit!(w, add, val, starting_address(first(parent)) => last(parent))
 end
 
 @deprecate zero! zerovector!

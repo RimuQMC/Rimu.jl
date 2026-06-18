@@ -86,8 +86,8 @@ export
 
 include("abstractfockaddress.jl")
 include("stochasticstyles.jl")
-include("dictvectors.jl")
 include("hamiltonians.jl")
+include("dictvectors.jl")
 include("dataframes.jl")
 
 end

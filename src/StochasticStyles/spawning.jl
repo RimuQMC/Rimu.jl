@@ -23,6 +23,7 @@ end
             val = zero(T)
         end
     end
+
     if !iszero(val)
         deposit!(w, add, val, parent)
     end
@@ -38,6 +39,7 @@ end
     end
 
     new_val = T(sign(val)) * floor(T, abs(val) + rand())
+
     if !iszero(new_val)
         deposit!(w, add, new_val, parent)
     end
@@ -66,13 +68,13 @@ end
 """
     diagonal_step!(w, column, val, threshold=0) -> (clones, deaths, zombies)
 
-Perform diagonal step on a walker `starting_address(column) => val`. Optional argument
+Perform diagonal step on `column` with value `val`. Optional argument
 `threshold` sets the projection threshold. If `eltype(w)` is an `Integer`, the `val` is
 rounded to the nearest integer stochastically.
 """
 @inline function diagonal_step!(w, column, val, threshold=0)
     new_val = diagonal_element(column) * val
-    res = projected_deposit!(w, starting_address(column), new_val, starting_address(column) => val, threshold)
+    res = projected_deposit!(w, starting_address(column), new_val, column => val, threshold)
     return clones_deaths_zombies(res, typeof(res)(val))
 end
 
@@ -171,7 +173,7 @@ See [`SpawningStrategy`](@ref).
     for (new_add, mat_elem) in offdiagonals(column)
         attempts += 1
         spawns += abs(projected_deposit!(
-            w, new_add, val * mat_elem, starting_address(column) => val, s.threshold
+            w, new_add, val * mat_elem, column => val, s.threshold
         ))
     end
     return (attempts, spawns)
@@ -201,7 +203,7 @@ end
     else
         new_add, prob, mat_elem = random_offdiagonal(column)
         new_val = val * mat_elem / prob
-        spawns = abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
+        spawns = abs(projected_deposit!(w, new_add, new_val, column => val, s.threshold))
         return (1, spawns)
     end
 end
@@ -233,7 +235,7 @@ end
     for _ in 1:num_attempts
         new_add, prob, mat_elem = random_offdiagonal(column)
         new_val = mat_elem * magnitude / prob
-        spawns += abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
+        spawns += abs(projected_deposit!(w, new_add, new_val, column => val, s.threshold))
     end
     return (num_attempts, spawns)
 end
@@ -281,7 +283,7 @@ end
         for i in sample(1:num_offdiags, num_attempts; replace=false)
             new_add, mat_elem = offdiags[i]
             new_val = mat_elem * magnitude / prob
-            spawns += abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
+            spawns += abs(projected_deposit!(w, new_add, new_val, column => val, s.threshold))
         end
     end
     return (num_attempts, spawns)
@@ -328,7 +330,7 @@ end
         if rand() < prob
             new_add, mat_elem = offdiags[i]
             new_val = mat_elem / prob * val
-            spawns += abs(projected_deposit!(w, new_add, new_val, starting_address(column) => val, s.threshold))
+            spawns += abs(projected_deposit!(w, new_add, new_val, column => val, s.threshold))
             num_attempts += 1
         end
     end
