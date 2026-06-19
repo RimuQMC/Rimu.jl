@@ -347,38 +347,34 @@ function Base.iterate(od::TestOneParticleDensityOffdiagonals, state=(1, 1))
 end
 
 """
-    TestOneParticleDensityGradient(test_vector, jacobian=nothing; normalize=true,
-        zeta=0) <: AbstractOperator{SVector{m,T}}
+    TestOneParticleDensityGradient(
+        v :> AbstractVector{T}, jacobian=nothing; normalize=true, zeta=0
+    ) <: AbstractOperator{SVector{m,T}}
 
-An expectation value of this operator yields a gradient of `TestOneParticleDensity`
-for a given test vector. Here, `test_vector` is the test vector and `T` is the
-eltype of `test_vector`. If `normalize` is true (default), the test vector is
-normalized before use. `zeta` represents the expectation value of
-`TestOneParticleDensity` for a given `test_vector`.
+This operator represents the gradient of [`TestOneParticleDensity`](@ref), ``ρ̂``, with
+respect to the test vector `v` itself or with respect to the parameters of the
+test vector if a Jacobian is provided. Here `m` is the number of parameters. If `normalize`
+is true (default), the vector is normalized before use. For `zeta` pass the expectation
+value of [`TestOneParticleDensity`](@ref) for the test_vector `v`, ``ζ = ⟨ρ̂⟩``.
+
+The gradient can be calculated in two ways depending on the type of `jacobian`:
+
+- `jacobian <: Nothing`: The gradient is calculated for each element of `v`
+and the operator is defined as below. The number of derivatives returned is
+`m == length(v) == M`, where `M` is the number of single-particle modes.
 
 ```math
-    ζ = \\langle ∑_{i,j} ρ̂ {(1)}_{i,j} v_{i}^* v_{j} \\rangle
+    \\frac{∂ρ̂}{∂v_j} = ∑_{i} v_{i}^* â^†_{i} â_{j} - ζ v_{j}^*
 ```
 
-There are two cases involved:
-
-- `jacobian <:Nothing`: gradient is calculated for each element of `test_vector`,
-and the operator is defined as below. A one-particle operator constructed
-from a provided test vector. Also, `m` = # of sites.
-
-```math
-    \\frac{∂ρ̂ {(1)}}{∂v_j} = ∑_{i} v_{i}^* â^†_{i} â_{j} - ζ v_{j}^*
-```
-
--`jacobian <:AbstractMatrix`: gradient is calculated with respect
-to the parameters of the given test_vector, which has a fixed functional form.
-Here, `jacobian` is a matrix of dimension (m × # of sites) representing
-the transpose of the Jacobian of test_vector with respect to its parameters
-`α₁,α₂,...,αₘ`.
+- `jacobian <: AbstractMatrix`: The gradient is calculated with respect to the parameters
+of the given test vector `v` determined by the Jacobian. Here, `jacobian` is a matrix of
+dimension `m` × `M` representing the transpose of the Jacobian of the test vector with
+respect to its parameters `α₁, α₂, ..., αₘ`.
 
 ```math
-    \\frac{∂ρ̂ {(1)}}{∂α}= ∑_{ij} (v_{i}^* \\frac{∂v_j(α)}{∂α} +
-        \\frac{∂v_i^*(α)}{∂α} v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
+    \\frac{∂ρ̂}{∂α}= ∑_{ij} \\left[v_{i}^* \\frac{∂v_j}{∂α} +
+        \\frac{∂v_i^*}{∂α} v_{j}\\right] (â^†_{i} â_{j} - ζ δ_{i,j})
 ```
 """
 struct TestOneParticleDensityGradient{T,dim,V<:SVector,J} <: AbstractOperator{SVector{dim,T}}
@@ -558,16 +554,16 @@ end
 
 """
      TestTwoParticleDensity(v; normalize=true) <: AbstractOperator{eltype(v)}
-A two-particle operator constructed from a provided test vector `v`. An expectation value
+A two-fermion operator constructed from a provided test vector `v`. An expectation value
 with this operator yields a lower bound on the largest eigenvalue (and an upper bound on the
 smallest eigenvalue) of the two-particle density matrix.
 If `normalize` is true (default), the vector is normalized before use.
 
 ```math
-    ρ̂ {(2)}= ∑_{ij,kl} v_{index(i,j)}^* v_{index(k,l)} â^†_{i} â^†_{j} â_{l} â_{k}
+    ρ̂ = ∑_{ij,kl} v_{[i,j]}^* v_{[k,l]} â^†_{i} â^†_{j} â_{l} â_{k} ,
 ```
-Where, `index(i,j)` represent an [`index`](@ref Hamiltonians.index) in the test vector in
-which `i` and `j` are site indices (with i < j).
+where `[i,j]` represents a scalar index into the test vector calculated by
+[`index(i,j)`](@ref) and `i` and `j` are single-particle indices (with i < j).
 """
 struct TestTwoParticleDensity{T,V<:Vector{T},Dim} <: AbstractOperator{T}
     test_vector::V
@@ -681,42 +677,39 @@ function Base.iterate(od::TestTwoParticleDensityOffdiagonals, state=(2, 1, 2, 1)
 end
 
 """
-    TestTwoParticleDensityGradient(test_vector, jacobian=nothing; normalize=true,
-        zeta=0) <: AbstractOperator{SVector(m,T)}
+    TestTwoParticleDensityGradient(
+        v <: AbstractVector{T}, jacobian=nothing; normalize=true, zeta=0
+    ) <: AbstractOperator{SVector(m,T)}
 
-An expectation value of this operator yields a gradient of`TestTwoParticleDensity`
-for a given test vector. Here `test_vector` is the test vector and `T` is the
-eltype of `test_vector`. If `normalize` is true (default), the vector is
-normalized before use. `zeta` is the expectation value of
-`TestTwoParticleDensity` for a given `test_vector`.
+This operator represents the gradient of the operator[`TestTwoParticleDensity`](@ref),
+``ρ̂``, with respect to the test vector `v` itself or with respect to the parameters of the
+test vector if a Jacobian is provided. Here `m` is the number of parameters. If `normalize`
+is true (default), the vector is normalized before use. For `zeta` pass the expectation
+value of [`TestTwoParticleDensity`](@ref) for the test_vector `v`, ``ζ = ⟨ρ̂⟩``.
+
+The gradient can be calculated in two ways depending on the type of `jacobian`:
+
+- `jacobian <: Nothing`: The gradient is calculated for each element of `v`
+and the operator is defined as below. The number of derivatives returned is
+`m == length(v) == binomial(M, 2)`, where `M` is the number of single-particle modes.
 
 ```math
-    ζ = \\langle ∑_{ij,kl} ρ̂ {(2)}_{ij,kl} v_{index(i,j)}^* v_{index(k,l)} \\rangle
+    \\frac{∂ρ̂}{∂v_{kl}} = ∑_{ij} v_{[i,j]}^* â^†_{i} â^†_{j} â_{l} â_{k} -
+        ζ v_{[k,l]}^* ,
 ```
-Where, `index(i,j)` represent an index ([`index`](@ref)) in the test vector in which `i`
-and `j` are site indices (with i < j).
+where `[i,j]` represents a scalar index into the test vector calculated by
+[`index(i,j)`](@ref) and `i` and `j` are single-particle indices (with i < j).
 
-There are two cases involved:
-
-- `jacobian <:Nothing`: gradient is calculated for each element of `test_vector`,
-and the operator is defined as below. A two-particle operator constructed
-from a provided test vector. Also, `m` = binomial(# of sites, 2).
-
-```math
-    \\frac{∂ρ̂ {(2)}}{∂v_{kl}} = ∑_{ij} v_{index(i,j)}^* â^†_{i} â^†_{j} â_{l} â_{k} -
-        ζ v_{index(k,l)}^*
-```
-
--`jacobian <:AbstractMatrix`: gradient is calculated with respect
-to the parameters of the given test_vector, which has a fixed functional form. Here,
-`jacobian` is a matrix of dimension (m × binomial(# of sites, 2)) representing
-the transpose of the Jacobian of test_vector with respect to its parameters
-`α₁,α₂,...,αₘ`.
+- `jacobian <: AbstractMatrix`: The gradient is calculated with respect
+to the parameters of the given test vector `v` determined by the Jacobian. Here,
+`jacobian` is a matrix of dimension `m` × `binomial(M, 2)` representing
+the transpose of the Jacobian of `v` with respect to its parameters
+`α₁, α₂, ..., αₘ`.
 
 ```math
-    \\frac{∂ρ̂ {(2)}}{∂α} = ∑_{ij, kl} (v_{index(i,j)}^* \\frac{∂v_{index(k,l)}(α)}{∂α} +
-        \\frac{∂v_{index(i,j)}^*(α)}{∂α} v_{index(k,l)}) (â^†_{i} â^†_{j} â_{l} â_{k} -
-        ζ δ_{ik}δ_{jl} )
+    \\frac{∂ρ̂}{∂α} = ∑_{ij, kl} \\left[ v_{[i,j]}^* \\frac{∂v_{[k,l]}}{∂α} +
+        \\frac{∂v_{[i,j]}^*}{∂α} v_{[k,l]}\\right] (â^†_{i} â^†_{j} â_{l} â_{k} -
+        ζ δ_{ik}δ_{jl})
 ```
 """
 struct TestTwoParticleDensityGradient{T,dim,V<:SVector,J} <: AbstractOperator{SVector{dim,T}}
