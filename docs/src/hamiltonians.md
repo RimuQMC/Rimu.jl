@@ -119,6 +119,8 @@ LadderBoundaries
 The following internal functions and types are documented here for completeness, 
 but are not part of the public API and may change any time. Use at your own risk.
 ```@docs
+Hamiltonians.index
+Hamiltonians.vertices
 Hamiltonians.one_electron_diagonal
 Hamiltonians.two_electron_diagonal
 Hamiltonians.MolecularHamiltonianOffDiagonals

@@ -309,7 +309,7 @@ end
 function Interfaces.offdiagonals(c::TestOneParticleDensityColumn{A,T}) where {A,T}
     TestOneParticleDensityOffdiagonals{A,T,typeof(c)}(c)
 end
-struct TestOneParticleDensityOffdiagonals{A,T,C} 
+struct TestOneParticleDensityOffdiagonals{A,T,C}
     column::C
 end
 Base.eltype(::TestOneParticleDensityOffdiagonals{A,T}) where {A,T} = Tuple{A,T}
@@ -349,11 +349,11 @@ end
 """
     TestOneParticleDensityGradient(test_vector, jacobian=nothing; normalize=true,
         zeta=0) <: AbstractOperator{SVector{m,T}}
- 
-An expectation value of this operator yields a gradient of `TestOneParticleDensity` 
-for a given test vector. Here, `test_vector` is the test vector and `T` is the 
-eltype of `test_vector`. If `normalize` is true (default), the test vector is 
-normalized before use. `zeta` represents the expectation value of 
+
+An expectation value of this operator yields a gradient of `TestOneParticleDensity`
+for a given test vector. Here, `test_vector` is the test vector and `T` is the
+eltype of `test_vector`. If `normalize` is true (default), the test vector is
+normalized before use. `zeta` represents the expectation value of
 `TestOneParticleDensity` for a given `test_vector`.
 
 ```math
@@ -362,22 +362,22 @@ normalized before use. `zeta` represents the expectation value of
 
 There are two cases involved:
 
-- `jacobian <:Nothing`: gradient is calculated for each element of `test_vector`, 
-and the operator is defined as below. A one-particle operator constructed 
-from a provided test vector. Also, `m` = # of sites. 
+- `jacobian <:Nothing`: gradient is calculated for each element of `test_vector`,
+and the operator is defined as below. A one-particle operator constructed
+from a provided test vector. Also, `m` = # of sites.
 
 ```math
     \\frac{∂ρ̂ {(1)}}{∂v_j} = ∑_{i} v_{i}^* â^†_{i} â_{j} - ζ v_{j}^*
 ```
 
--`jacobian <:AbstractMatrix`: gradient is calculated with respect 
-to the parameters of the given test_vector, which has a fixed functional form. 
-Here, `jacobian` is a matrix of dimension (m × # of sites) representing 
-the transpose of the Jacobian of test_vector with respect to its parameters 
-`α₁,α₂,...,αₘ`. 
+-`jacobian <:AbstractMatrix`: gradient is calculated with respect
+to the parameters of the given test_vector, which has a fixed functional form.
+Here, `jacobian` is a matrix of dimension (m × # of sites) representing
+the transpose of the Jacobian of test_vector with respect to its parameters
+`α₁,α₂,...,αₘ`.
 
 ```math
-    \\frac{∂ρ̂ {(1)}}{∂α}= ∑_{ij} (v_{i}^* \\frac{∂v_j(α)}{∂α} + 
+    \\frac{∂ρ̂ {(1)}}{∂α}= ∑_{ij} (v_{i}^* \\frac{∂v_j(α)}{∂α} +
         \\frac{∂v_i^*(α)}{∂α} v_{j}) (â^†_{i} â_{j} - ζ δ_{i,j})
 ```
 """
@@ -386,7 +386,7 @@ struct TestOneParticleDensityGradient{T,dim,V<:SVector,J} <: AbstractOperator{SV
     jacobian::J
     zeta::T
 end
-function TestOneParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0, 
+function TestOneParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
     normalize=true)
 
     if jacobian isa Nothing
@@ -457,8 +457,8 @@ function Interfaces.diagonal_element(c::TestOneParticleDensityGradientColumn{
         val = zero(T)
         M = num_modes(c.address)
         @inbounds for i in 1:M
-            val += (conj(c.operator.jacobian[:,i]) * c.operator.test_vector[i] .+ 
-                conj.(c.operator.test_vector[i]) * c.operator.jacobian[:,i]) * 
+            val += (conj(c.operator.jacobian[:,i]) * c.operator.test_vector[i] .+
+                conj.(c.operator.test_vector[i]) * c.operator.jacobian[:,i]) *
                 (Onr[i] - c.operator.zeta)
         end
     end
@@ -501,9 +501,9 @@ end
                 dst = find_mode(c.address, i)
                 address, value = excitation(c.address, (dst,), (src,))
                 if !iszero(value)
-                    val = T((conj(c.operator.test_vector[i]) * 
-                        c.operator.jacobian[:,src.mode] .+ 
-                        conj.(c.operator.jacobian[:,i]) * 
+                    val = T((conj(c.operator.test_vector[i]) *
+                        c.operator.jacobian[:,src.mode] .+
+                        conj.(c.operator.jacobian[:,i]) *
                         c.operator.test_vector[src.mode]) * value)
                     # choose next state
                     if i + 1 <= n_modes
@@ -537,7 +537,7 @@ end
                 dst = find_mode(c.address, i)
                 address, value = excitation(c.address, (dst,), (src,))
                 if !iszero(value)
-                    value =  setindex(zeros(T), conj(c.operator.test_vector[i]) 
+                    value =  setindex(zeros(T), conj(c.operator.test_vector[i])
                         * value, src.mode)
                     # choose next state
                     if i + 1 <= n_modes
@@ -566,8 +566,8 @@ If `normalize` is true (default), the vector is normalized before use.
 ```math
     ρ̂ {(2)}= ∑_{ij,kl} v_{index(i,j)}^* v_{index(k,l)} â^†_{i} â^†_{j} â_{l} â_{k}
 ```
-Where, `index(i,j)` represent an index ([`index`](@ref)) in the test vector in which `i` 
-and `j` are site indices (with i < j). 
+Where, `index(i,j)` represent an [`index`](@ref Hamiltonians.index) in the test vector in
+which `i` and `j` are site indices (with i < j).
 """
 struct TestTwoParticleDensity{T,V<:Vector{T},Dim} <: AbstractOperator{T}
     test_vector::V
@@ -651,7 +651,7 @@ function Base.iterate(od::TestTwoParticleDensityOffdiagonals, state=(2, 1, 2, 1)
                             if !(i == src1.mode && j == src2.mode)# omit same mode as they contribute to diagonal
                                 address, val = excitation(c.address, (dst1, dst2,), (src2, src1,))
                                 if !iszero(val)
-                                    val *= 2*conj(c.operator.test_vector[index((i,j))]) * 
+                                    val *= 2*conj(c.operator.test_vector[index((i,j))]) *
                                         c.operator.test_vector[index((src1.mode,src2.mode))]
                                     # choose next state
                                     if i + 1 <= n_modes
@@ -683,39 +683,39 @@ end
 """
     TestTwoParticleDensityGradient(test_vector, jacobian=nothing; normalize=true,
         zeta=0) <: AbstractOperator{SVector(m,T)}
- 
-An expectation value of this operator yields a gradient of`TestTwoParticleDensity` 
-for a given test vector. Here `test_vector` is the test vector and `T` is the 
-eltype of `test_vector`. If `normalize` is true (default), the vector is 
-normalized before use. `zeta` is the expectation value of 
+
+An expectation value of this operator yields a gradient of`TestTwoParticleDensity`
+for a given test vector. Here `test_vector` is the test vector and `T` is the
+eltype of `test_vector`. If `normalize` is true (default), the vector is
+normalized before use. `zeta` is the expectation value of
 `TestTwoParticleDensity` for a given `test_vector`.
 
 ```math
     ζ = \\langle ∑_{ij,kl} ρ̂ {(2)}_{ij,kl} v_{index(i,j)}^* v_{index(k,l)} \\rangle
 ```
-Where, `index(i,j)` represent an index ([`index`](@ref)) in the test vector in which `i` 
-and `j` are site indices (with i < j). 
+Where, `index(i,j)` represent an index ([`index`](@ref)) in the test vector in which `i`
+and `j` are site indices (with i < j).
 
 There are two cases involved:
 
-- `jacobian <:Nothing`: gradient is calculated for each element of `test_vector`, 
-and the operator is defined as below. A two-particle operator constructed 
+- `jacobian <:Nothing`: gradient is calculated for each element of `test_vector`,
+and the operator is defined as below. A two-particle operator constructed
 from a provided test vector. Also, `m` = binomial(# of sites, 2).
 
 ```math
-    \\frac{∂ρ̂ {(2)}}{∂v_{kl}} = ∑_{ij} v_{index(i,j)}^* â^†_{i} â^†_{j} â_{l} â_{k} - 
+    \\frac{∂ρ̂ {(2)}}{∂v_{kl}} = ∑_{ij} v_{index(i,j)}^* â^†_{i} â^†_{j} â_{l} â_{k} -
         ζ v_{index(k,l)}^*
 ```
 
--`jacobian <:AbstractMatrix`: gradient is calculated with respect 
-to the parameters of the given test_vector, which has a fixed functional form. Here, 
-`jacobian` is a matrix of dimension (m × binomial(# of sites, 2)) representing 
-the transpose of the Jacobian of test_vector with respect to its parameters 
+-`jacobian <:AbstractMatrix`: gradient is calculated with respect
+to the parameters of the given test_vector, which has a fixed functional form. Here,
+`jacobian` is a matrix of dimension (m × binomial(# of sites, 2)) representing
+the transpose of the Jacobian of test_vector with respect to its parameters
 `α₁,α₂,...,αₘ`.
 
 ```math
-    \\frac{∂ρ̂ {(2)}}{∂α} = ∑_{ij, kl} (v_{index(i,j)}^* \\frac{∂v_{index(k,l)}(α)}{∂α} + 
-        \\frac{∂v_{index(i,j)}^*(α)}{∂α} v_{index(k,l)}) (â^†_{i} â^†_{j} â_{l} â_{k} - 
+    \\frac{∂ρ̂ {(2)}}{∂α} = ∑_{ij, kl} (v_{index(i,j)}^* \\frac{∂v_{index(k,l)}(α)}{∂α} +
+        \\frac{∂v_{index(i,j)}^*(α)}{∂α} v_{index(k,l)}) (â^†_{i} â^†_{j} â_{l} â_{k} -
         ζ δ_{ik}δ_{jl} )
 ```
 """
@@ -724,9 +724,9 @@ struct TestTwoParticleDensityGradient{T,dim,V<:SVector,J} <: AbstractOperator{SV
     jacobian::J
     zeta::T
 end
-function TestTwoParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0, 
+function TestTwoParticleDensityGradient(test_vector, jacobian=nothing; zeta = 0,
     normalize=true)
-    
+
     if jacobian isa Nothing
         T = float(eltype(test_vector))
         dim = length(test_vector)
@@ -797,10 +797,10 @@ function Interfaces.diagonal_element(c::TestTwoParticleDensityGradientColumn{
         @inbounds for i in 1:M
             for j in 1:i-1
                 val += 2 * (2*Onr[i]*Onr[j] - c.operator.zeta) *
-                    ((conj(c.operator.jacobian[:, index((i, j))]) * 
-                    c.operator.test_vector[index((i, j))]) + 
-                    (c.operator.jacobian[:, index((i, j))] * 
-                    conj(c.operator.test_vector[index((i, j))])))  
+                    ((conj(c.operator.jacobian[:, index((i, j))]) *
+                    c.operator.test_vector[index((i, j))]) +
+                    (c.operator.jacobian[:, index((i, j))] *
+                    conj(c.operator.test_vector[index((i, j))])))
             end
         end
     end
@@ -855,9 +855,9 @@ end
                             if !(i == src1.mode && j == src2.mode)# omit same mode as they contribute to diagonal
                                 address, value = excitation(c.address, (dst1, dst2,), (src2, src1,))
                                 if !iszero(value)
-                                    val = (conj(c.operator.jacobian[:,index((i,j))]) * 
-                                        c.operator.test_vector[index((src1.mode,src2.mode))] + 
-                                        c.operator.jacobian[:,index((src1.mode,src2.mode))] * 
+                                    val = (conj(c.operator.jacobian[:,index((i,j))]) *
+                                        c.operator.test_vector[index((src1.mode,src2.mode))] +
+                                        c.operator.jacobian[:,index((src1.mode,src2.mode))] *
                                         conj(c.operator.test_vector[index((i,j))])) * 4 * value
                                     # choose next state
                                     if i + 1 <= n_modes
@@ -907,8 +907,8 @@ function fullvectorTestTwoParticleDensityGradient(
                             if !(i == src1.mode && j == src2.mode)# omit same mode as they contribute to diagonal
                                 address, value = excitation(c.address, (dst1, dst2,), (src2, src1,))
                                 if !iszero(value)
-                                    value =  setindex(zeros(T), 2 * 
-                                        conj(c.operator.test_vector[index((i,j))] ) * value, 
+                                    value =  setindex(zeros(T), 2 *
+                                        conj(c.operator.test_vector[index((i,j))] ) * value,
                                         index((src1.mode,src2.mode)))
                                     # choose next state
                                     if i + 1 <= n_modes

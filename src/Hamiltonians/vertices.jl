@@ -54,7 +54,7 @@ function _first_vertex(index::I, ::Val{2}, ::I=I(0), ::I=I(0)) where {I}
 end
 
 """
-    vertices(index::I, ::Val{N})::NTuple{N,I}
+    Hamiltonians.vertices(index::I, ::Val{N})::NTuple{N,I}
 
 Get the vertices of simplex represented by index.
 """
@@ -73,7 +73,7 @@ end
 @inline vertices(index, ::Val{1}) = (index,)
 
 """
-    index(vertices)
+    Hamiltonians.index(vertices)
 
 Calculate the index from tuple or static vector of vertices. The index is equal to
 
