@@ -352,6 +352,8 @@ end
     parse_address(str)
 
 Parse the compact representation of a Fock state address.
+
+See also [`@fs_str`](@ref), [`SingleComponentFockAddress`](@ref), [`CompositeFS`](@ref).
 """
 function parse_address(str)
     # CompositeFS
@@ -457,16 +459,16 @@ julia> DVec(BoseFS{3,4}(0, 1, 2, 0) => 1)
 DVec{BoseFS{3, 4, BitString{6, 1, UInt8}},Int64} with 1 entry, style = IsStochasticInteger{Int64}()
   fs"|0 1 2 0⟩" => 1
 
-julia> fs"|0 1 2 0⟩" => 1 # Copied from above printout
+julia> fs"|0 1 2 0⟩" => 1 # Copied from above printout; \\rangle(tab) -> ⟩
 BoseFS{3,4}(0, 1, 2, 0) => 1
 
-julia> fs"|1 2 3⟩⊗|0 1 0⟩" # composite bosonic Fock state
+julia> fs"|1 2 3⟩⊗|0 1 0⟩" # composite bosonic Fock state; \\otimes(tab) -> ⊗
 CompositeFS(
   BoseFS{6,3}(1, 2, 3),
   BoseFS{1,3}(0, 1, 0),
 )
 
-julia> fs"|↑↓↑⟩" # construct a fermionic Fock state
+julia> fs"|↑↓↑⟩" # construct a fermionic Fock state; \\uparrow(tab) -> ↑, \\downarrow(tab) -> ↓
 CompositeFS(
   FermiFS{2,3}(1, 0, 1),
   FermiFS{1,3}(0, 1, 0),
@@ -475,13 +477,16 @@ CompositeFS(
 julia> s = fs"|0 1 2 0⟩{}" # constructing OccupationNumberFS with default UInt8 container
 OccupationNumberFS{4, UInt8}(0, 1, 2, 0)
 
-julia> [s] # prints out with the signifcant number of bits specified in braces
+julia> [s] # prints out with the significant number of bits specified in braces
 1-element Vector{OccupationNumberFS{4, UInt8}}:
  fs"|0 1 2 0⟩{8}"
+
+julia> fs"|●∘●⟩" # \\mdlgblkcircle(tab) -> ●, \\circ(tab) -> ∘
+HardcoreBoseFS{2,3}(1, 0, 1)
 ```
 
 See also [`FermiFS`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref), [`FermiFS2C`](@ref),
-[`OccupationNumberFS`](@ref).
+[`OccupationNumberFS`](@ref), [`HardcoreBoseFS`](@ref).
 """
 macro fs_str(str)
     return parse_address(str)
@@ -634,7 +639,7 @@ bose_num_occupied_modes
 """
     FermiFSIndex
 
-Struct used for indexing and performing [`excitation`](@ref)s on a [`FermiFS`](@ref) 
+Struct used for indexing and performing [`excitation`](@ref)s on a [`FermiFS`](@ref)
 and [`HardcoreBoseFS`](@ref).
 
 ## Fields:

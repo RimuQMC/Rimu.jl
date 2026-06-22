@@ -24,6 +24,9 @@ properties of the address.
 * `HardcoreBoseFS{N,M,S}(bs::S)`: Unsafe constructor. Does not check whether the number of
   particles in `bs` is equal to `N`, or whether each mode only contains one particle.
 
+* [`@fs_str`](@ref): Addresses are sometimes printed in a compact manner. This
+  representation can also be used as a constructor. See the examples below.
+
 See the examples below.
 
 # Examples
@@ -41,15 +44,15 @@ HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 julia> HardcoreBoseFS{3,5}(i => 1 for i in 1:3)
 HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 
-julia> fs"|∘●∘●⟩"
-HardcoreBoseFS{2,4}(0, 1, 0, 1)
+julia> fs"|●●●∘∘⟩" # \\mdlgblkcircle(tab) -> ●, \\circ(tab) -> ∘, \\rangle(tab) -> ⟩
+HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 
-julia> fs"|h 5: 2 3 4⟩"
-HardcoreBoseFS{3,5}(0, 1, 1, 1, 0)
+julia> fs"|h 5: 1 2 3⟩"
+HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),
-[`FermiFS`](@ref), [`BitString`](@ref), [`OccupationNumberFS`](@ref).
+[`FermiFS`](@ref), [`BitString`](@ref), [`OccupationNumberFS`](@ref), [`@fs_str`](@ref).
 """
 struct HardcoreBoseFS{N,M,S} <: SingleComponentFockAddress{N,M}
     bs::S
@@ -114,7 +117,7 @@ function print_address(io::IO, f::HardcoreBoseFS{N,M}; compact=false) where {N,M
     else
         print(io, "HardcoreBoseFS{$N,$M}", tuple(onr(f)...))
     end
-end 
+end
 
 function excitation(a::HardcoreBoseFS{N,M,S}, creations, destructions) where {N,M,S}
     new_bs, value = fermi_excitation(a.bs, creations, destructions)

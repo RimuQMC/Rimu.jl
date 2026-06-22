@@ -115,12 +115,14 @@ CompositeFS(
   FermiFS{2,3}(0, 1, 1),
 )
 
-julia> fs"|↑↓↓⟩"
+julia> fs"|↑↓↓⟩" # \\uparrow(tab) -> ↑, \\downarrow(tab) -> ↓, \\rangle(tab) -> ⟩
 CompositeFS(
   FermiFS{1,3}(1, 0, 0),
   FermiFS{2,3}(0, 1, 1),
 )
 ```
+
+See also: [`CompositeFS`](@ref), [`FermiFS`](@ref), [`@fs_str`](@ref).
 """
 const FermiFS2C{N1,N2,M,N,F1,F2} =
     CompositeFS{2,N,M,Tuple{F1,F2}} where {F1<:FermiFS{N1,M},F2<:FermiFS{N2,M}}
@@ -150,20 +152,20 @@ end
 """
     FermiFS2CModes
 
-This struct stores the occupied and unoccupied mode maps associated with an 
-address of type [`FermiFS2C`](@ref). It should be constructed using the 
-[`full_mode_maps`](@ref) function.  
+This struct stores the occupied and unoccupied mode maps associated with an
+address of type [`FermiFS2C`](@ref). It should be constructed using the
+[`full_mode_maps`](@ref) function.
 
-The struct has two fields, `occupied` and `unoccupied`, each containing a 
-`ModeMap` represented as a two-element `Tuple`:  
+The struct has two fields, `occupied` and `unoccupied`, each containing a
+`ModeMap` represented as a two-element `Tuple`:
 
 - Index `1` corresponds to the α spin channel
 - Index `2` corresponds to the β spin channel
 
 This convention follows the spin-channel indexing defined in [`FermiFS2C`](@ref).
 
-See also 
-[`FermiFS2C`](@ref), [`ModeMap`](@ref), [`occupied_mode_map`](@ref), 
+See also
+[`FermiFS2C`](@ref), [`ModeMap`](@ref), [`occupied_mode_map`](@ref),
 and [`unoccupied_mode_map`](@ref).
 """
 struct FermiFS2CModes{TI<:FermiFSIndex,OA,OB,UA,UB}

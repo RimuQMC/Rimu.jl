@@ -22,7 +22,7 @@ particles is runtime data, and can be retrieved with [`num_particles(address)`](
 julia> ofs = OccupationNumberFS(1,2,3)
 OccupationNumberFS{3, UInt8}(1, 2, 3)
 
-julia> ofs == fs"|1 2 3⟩{8}"
+julia> ofs == fs"|1 2 3⟩{8}" # \\rangle(tab) -> ⟩
 true
 
 julia> num_particles(ofs)
@@ -40,6 +40,8 @@ OccupationNumberFS{4, UInt8}(2, 0, 4, 0)
 julia> OccupationNumberFS(5, i=>i^2 for i in 2:4) # sparse with list comprehension
 OccupationNumberFS{5, UInt8}(0, 4, 9, 16, 0)
 ```
+See also: [`BoseFS`](@ref), [`HardcoreBoseFS`](@ref), [`FermiFS`](@ref),
+[`SingleComponentFockAddress`](@ref), [`CompositeFS`](@ref), [`@fs_str`](@ref).
 """
 struct OccupationNumberFS{M,T<:Unsigned} <: SingleComponentFockAddress{missing,M}
     onr::SVector{M,T}

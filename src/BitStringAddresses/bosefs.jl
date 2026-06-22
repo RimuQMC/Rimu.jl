@@ -41,7 +41,7 @@ BoseFS{6,5}(0, 1, 2, 3, 0)
 julia> BoseFS{6,5}(i => i - 1 for i in 2:4)
 BoseFS{6,5}(0, 1, 2, 3, 0)
 
-julia> fs"|0 1 2 3 0⟩"
+julia> fs"|0 1 2 3 0⟩" # \\rangle(tab) -> ⟩
 BoseFS{6,5}(0, 1, 2, 3, 0)
 
 julia> fs"|b 5: 2 3 3 4 4 4⟩"
@@ -49,7 +49,7 @@ BoseFS{6,5}(0, 1, 2, 3, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`OccupationNumberFS`](@ref),
-[`FermiFS`](@ref), [`CompositeFS`](@ref), [`FermiFS2C`](@ref).
+[`FermiFS`](@ref), [`CompositeFS`](@ref), [`FermiFS2C`](@ref), [`@fs_str`](@ref).
 """
 struct BoseFS{N,M,S} <: SingleComponentFockAddress{N,M}
     bs::S

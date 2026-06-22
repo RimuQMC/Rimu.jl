@@ -41,7 +41,7 @@ FermiFS{3,5}(0, 1, 1, 1, 0)
 julia> FermiFS{3,5}(i => 1 for i in 2:4)
 FermiFS{3,5}(0, 1, 1, 1, 0)
 
-julia> fs"|⋅↑↑↑⋅⟩"
+julia> fs"|⋅↑↑↑⋅⟩" # \\uparrow(tab) -> ↑, \\cdot(tab) -> ⋅, \\rangle(tab) -> ⟩
 FermiFS{3,5}(0, 1, 1, 1, 0)
 
 julia> fs"|f 5: 2 3 4⟩"
@@ -49,7 +49,7 @@ FermiFS{3,5}(0, 1, 1, 1, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),
-[`FermiFS2C`](@ref), [`BitString`](@ref), [`OccupationNumberFS`](@ref).
+[`FermiFS2C`](@ref), [`BitString`](@ref), [`OccupationNumberFS`](@ref), [`@fs_str`](@ref).
 """
 struct FermiFS{N,M,S} <: SingleComponentFockAddress{N,M}
     bs::S
