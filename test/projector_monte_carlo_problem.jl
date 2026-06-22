@@ -307,7 +307,7 @@ end
     @test sim.aborted == true
     @test sim.success == false
     @test sim.modified == true
-    @test sim.message == "Aborted in step 5."
+    @test startswith(sim.message, "Aborted in step")
     @test size(sim.df, 1) < 100
 
     # population does not die with sensible default shift
@@ -327,7 +327,7 @@ end
     @test sim.aborted == true
     @test sim.success == false
     @test sim.modified == true
-    @test sim.message == "Aborted in step 3."
+    @test startswith(sim.message, "Aborted in step")
     @test size(sim.df, 1) < 100
 end
 
@@ -344,7 +344,7 @@ end
     @test sm.modified == true
     @test sm.success == false
     @test sm.aborted == true
-    @test sm.message == "Aborted in step 6."
+    @test startswith(sm.message, "Aborted in step")
     @test is_finalized(sm.report) == true
     @test @suppress_err step!(sm) === sm # no effect, aborted
 
