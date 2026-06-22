@@ -40,6 +40,12 @@ HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS{3,5}(i => 1 for i in 1:3)
 HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+
+julia> fs"|∘●∘●⟩"
+HardcoreBoseFS{2,4}(0, 1, 0, 1)
+
+julia> fs"|h 5: 2 3 4⟩"
+HardcoreBoseFS{3,5}(0, 1, 1, 1, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),
