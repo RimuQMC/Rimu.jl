@@ -119,6 +119,10 @@ function print_address(io::IO, f::HardcoreBoseFS{N,M}; compact=false) where {N,M
     end
 end
 
+function near_uniform(::Type{HardcoreBoseFS{N,M}}) where {N,M}
+    return HardcoreBoseFS([fill(1, N); fill(0, M - N)])
+end
+
 function excitation(a::HardcoreBoseFS{N,M,S}, creations, destructions) where {N,M,S}
     new_bs, value = fermi_excitation(a.bs, creations, destructions)
     return HardcoreBoseFS{N,M,S}(new_bs), abs(value) # different from FermiFS, no sign
