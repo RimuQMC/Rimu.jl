@@ -41,7 +41,7 @@ FermiFS{3,5}(0, 1, 1, 1, 0)
 julia> FermiFS{3,5}(i => 1 for i in 2:4)
 FermiFS{3,5}(0, 1, 1, 1, 0)
 
-julia> fs"|⋅↑↑↑⋅⟩"
+julia> fs"|⋅↑↑↑⋅⟩" # \\uparrow(tab) -> ↑, \\cdot(tab) -> ⋅, \\rangle(tab) -> ⟩
 FermiFS{3,5}(0, 1, 1, 1, 0)
 
 julia> fs"|f 5: 2 3 4⟩"
@@ -49,7 +49,7 @@ FermiFS{3,5}(0, 1, 1, 1, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),
-[`FermiFS2C`](@ref), [`BitString`](@ref), [`OccupationNumberFS`](@ref).
+[`FermiFS2C`](@ref), [`BitString`](@ref), [`OccupationNumberFS`](@ref), [`@fs_str`](@ref).
 """
 struct FermiFS{N,M,S} <: SingleComponentFockAddress{N,M}
     bs::S
@@ -125,28 +125,63 @@ function print_address(io::IO, f::FermiFS{N,M}; compact=false) where {N,M}
     end
 end
 
-Base.bitstring(a::FermiFS) = bitstring(a.bs)
-Base.isless(a::FermiFS, b::FermiFS) = isless(a.bs, b.bs)
-Base.hash(a::FermiFS,  h::UInt) = hash(a.bs, h)
-Base.:(==)(a::FermiFS, b::FermiFS) = a.bs == b.bs
-num_occupied_modes(::FermiFS{N}) where {N} = N
-occupied_modes(a::FermiFS{N,<:Any,S}) where {N,S} = FermiOccupiedModes{N,S}(a.bs)
+function near_uniform(::Type{FermiFS{N,M}}) where {N,M}
+    return FermiFS([fill(1, N); fill(0, M - N)])
+end
 
-num_unoccupied_modes(::FermiFS{N,M}) where {N,M} = M - N
-unoccupied_modes(a::FermiFS{N,M,S}) where {N,M,S} = FermiUnoccupiedModes{M - N,S}(a.bs)
+function excitation(a::FermiFS{N,M,S}, creations, destructions) where {N,M,S}
+    new_bs, value = fermi_excitation(a.bs, creations, destructions)
+    return FermiFS{N,M,S}(new_bs), value # carries sign, different from HardcoreBoseFS
+end
+
+# joint functions for FermiFS and HardcoreBoseFS
+const FermiOrHardcoreBoseFS{N,M,S} = Union{FermiFS{N,M,S}, HardcoreBoseFS{N,M,S}}
+
+Base.bitstring(a::FermiOrHardcoreBoseFS) = bitstring(a.bs)
+Base.isless(a::F, b::F) where {F <: FermiOrHardcoreBoseFS} = isless(a.bs, b.bs)
+Base.hash(a::FermiOrHardcoreBoseFS, h::UInt) = hash(a.bs, h)
+Base.:(==)(a::F, b::F) where {F<:FermiOrHardcoreBoseFS} = a.bs == b.bs
+
+num_occupied_modes(::FermiOrHardcoreBoseFS{N}) where {N} = N
+num_unoccupied_modes(::FermiOrHardcoreBoseFS{N,M}) where {N,M} = M - N
+
+occupied_modes(a::FermiOrHardcoreBoseFS{N,<:Any,S}) where {N,S} = FermiOccupiedModes{N,S}(a.bs)
+unoccupied_modes(a::FermiOrHardcoreBoseFS{N,M,S}) where {N,M,S} = FermiUnoccupiedModes{M - N,S}(a.bs)
+
+@inline function onr(a::FermiOrHardcoreBoseFS{<:Any,M}) where {M}
+    result = zero(MVector{M,Int32})
+    @inbounds for (_, mode) in occupied_modes(a)
+        result[mode] = 1
+    end
+    return SVector(result)
+end
+
+find_mode(a::FermiOrHardcoreBoseFS, i, occ=nothing) = fermi_find_mode(a.bs, i)
+function find_occupied_mode(a::FermiOrHardcoreBoseFS, i::Integer)
+    for k in occupied_modes(a)
+        i -= 1
+        i == 0 && return k
+    end
+    return FermiFSIndex(0, 0, 0)
+end
+
+function Base.reverse(f::FermiOrHardcoreBoseFS)
+    return typeof(f)(reverse(f.bs))
+end
 
 """
-    unoccupied_mode_map(addr::FermiFS) <: AbstractVector
+    unoccupied_mode_map(address::Union{FermiFS, HardcoreBoseFS}) <: AbstractVector
 
-Get a map of unoccupied modes in [`FermiFS`](@ref) address as an `AbstractVector`
-of indices compatible with [`excitation`](@ref).
+Get a map of unoccupied modes in `address` as an `AbstractVector` of indices compatible
+with [`excitation`](@ref).
 
-`unoccupied_mode_map(addr)[i]` contains the index for the `i`-th unoccupied mode.
+`unoccupied_mode_map(address)[i]` contains the index for the `i`-th unoccupied mode.
 This is useful because unoccupied modes is required in some cases.
-`unoccupied_mode_map(addr)` is an eager version of the iterator returned by
+`unoccupied_mode_map(address)` is an eager version of the iterator returned by
 [`unoccupied_modes`](@ref). It is similar to [`onr`](@ref) but contains more information.
 
-Note that this function is only implemented for addresses of type [`FermiFS`](@ref).
+Note that this function is only implemented for addresses of type [`FermiFS`](@ref) and
+[`HardcoreBoseFS`](@ref).
 
 # Example
 
@@ -165,7 +200,7 @@ true
 ```
 See also [`occupied_mode_map`](@ref).
 """
-function unoccupied_mode_map(addr::FermiFS{N,M}) where {N,M}
+function unoccupied_mode_map(addr::FermiOrHardcoreBoseFS{N,M}) where {N,M}
     modes = unoccupied_modes(addr)
     T = eltype(modes)
     L = num_unoccupied_modes(addr)
@@ -176,35 +211,4 @@ function unoccupied_mode_map(addr::FermiFS{N,M}) where {N,M}
         @inbounds indices[i] = index
     end
     return ModeMap(SVector(indices), i)
-end
-
-function near_uniform(::Type{FermiFS{N,M}}) where {N,M}
-    return FermiFS([fill(1, N); fill(0, M - N)])
-end
-
-@inline function onr(a::FermiFS{<:Any,M}) where {M}
-    result = zero(MVector{M,Int32})
-    @inbounds for (_, mode) in occupied_modes(a)
-        result[mode] = 1
-    end
-    return SVector(result)
-end
-
-find_mode(a::FermiFS, i, occ=nothing) = fermi_find_mode(a.bs, i)
-
-function find_occupied_mode(a::FermiFS, i::Integer)
-    for k in occupied_modes(a)
-        i -= 1
-        i == 0 && return k
-    end
-    return FermiFSIndex(0, 0, 0)
-end
-
-function Base.reverse(f::FermiFS)
-    return typeof(f)(reverse(f.bs))
-end
-
-function excitation(a::FermiFS{N,M,S}, creations, destructions) where {N,M,S}
-    new_bs, value = fermi_excitation(a.bs, creations, destructions)
-    return FermiFS{N,M,S}(new_bs), value
 end

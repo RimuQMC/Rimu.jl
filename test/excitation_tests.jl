@@ -47,7 +47,7 @@ function excitation_svec(b::BoseFS{N,M}, creations, destructions) where {N,M}
         return BoseFS{N,M}(Tuple(onrep)), √value
     end
 end
-function excitation_svec(f::FermiFS{N,M}, creations, destructions) where {N,M}
+function excitation_svec(f::Union{FermiFS{N,M},HardcoreBoseFS{N,M}}, creations, destructions) where {N,M}
     onrep = MVector(onr(f))
     num = 0
 
@@ -65,7 +65,11 @@ function excitation_svec(f::FermiFS{N,M}, creations, destructions) where {N,M}
         end
         @inbounds onrep[c] += 1
     end
-    return FermiFS{N,M}(Tuple(onrep)), ifelse(iseven(num), 1.0, -1.0)
+    if f isa FermiFS
+        return FermiFS{N,M}(Tuple(onrep)), ifelse(iseven(num), 1.0, -1.0)
+    elseif f isa HardcoreBoseFS
+        return HardcoreBoseFS{N,M}(Tuple(onrep)), ifelse(iseven(num), 1.0, 1.0)
+    end
 end
 
 """

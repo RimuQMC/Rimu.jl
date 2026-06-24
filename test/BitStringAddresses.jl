@@ -606,3 +606,84 @@ end
     @test hopnextneighbour(ffsend,1, π) == (ffs1, exp(im*π))
 
 end
+
+@testset "HardcoreBoseFS" begin
+    add_hb = HardcoreBoseFS(1, 0, 1, 0, 0)
+    @test add_hb isa Rimu.BitStringAddresses.SingleComponentFockAddress
+
+    add_f = FermiFS(1, 0, 1, 0, 0)
+
+    @test bitstring(add_f) == bitstring(add_hb)
+    @test find_mode(add_hb, 1) == find_mode(add_f, 1)
+
+    src = find_mode(add_hb, 1)
+    dst = find_mode(add_hb, 4)
+    @test src == FermiFSIndex(occnum=1, mode=1, offset=0)
+
+    n_add_f, val_f = excitation(add_f, (dst,), (src,))
+    n_add_hb, val_hb = excitation(add_hb, (dst,), (src,))
+    
+    @test n_add_hb isa HardcoreBoseFS
+    @test bitstring(n_add_f) == bitstring(n_add_hb)
+    @test val_f == -val_hb
+
+    @test dimension(n_add_f) == dimension(n_add_hb)
+    @test near_uniform(HardcoreBoseFS{2,5}) == HardcoreBoseFS{2,5}(1, 1, 0, 0, 0)
+
+    S = typeof(BitString{6}(big"0x07")) # corresponds to the occupation pattern (1, 1, 1, 0, 0, 0)
+    @test_throws ArgumentError HardcoreBoseFS{2,5,S}(onr(add_hb))
+    S = SortedParticleList{3,6,UInt8} # corresponds to N=3, M=6
+    @test_throws ArgumentError HardcoreBoseFS{2,5,S}(onr(add_hb))
+    S = typeof(BitString{5}(big"0x05")) # corresponds to the occupation pattern (1, 0, 1, 0, 0)
+    @test HardcoreBoseFS{2,5,S}(onr(add_hb)) == HardcoreBoseFS{2,5}(1 => 1, 3 => 1)
+    @test_throws ArgumentError HardcoreBoseFS(1 => 1, 3 => 1)    
+    
+    @testset "Randomized Tests" begin
+        function rand_onr_fermi(N, M)
+            return SVector{M}(shuffle([ones(Int,N); zeros(Int,M - N)]))
+        end
+        for (N, M) in ((15, 16), (10, 29), (32, 60), (180, 200), (10, 200), (1, 20))
+            @testset "$N, $M" begin
+                for _ in 1:10
+                    input = rand_onr_fermi(N, M)
+                    hcbose = HardcoreBoseFS(input)
+                    @test HardcoreBoseFS{N,M,typeof(hcbose.bs)}(hcbose.bs) === hcbose
+
+                    @test num_particles(hcbose) == N
+                    @test num_modes(hcbose) == M
+                    @test onr(hcbose) == input
+
+                    check_single_excitations(hcbose, 64)
+                    check_double_excitations(hcbose, 8)
+                    check_triple_excitations(hcbose, 4)
+
+                    @test map(i -> i.mode, occupied_modes(hcbose)) == findall(≠(0), input)
+                    @test map(i -> i.mode, unoccupied_modes(hcbose)) == findall(==(0), input)
+                    @test map(i -> i.occnum, each_mode(hcbose)) == input
+                    @test map(i -> i.mode, each_mode(hcbose)) == eachindex(input)
+
+                    @test onr(reverse(hcbose)) == reverse(input)
+
+                    # Check that the result of show can be pasted into the REPL
+                    @test eval(Meta.parse(repr(hcbose))) == hcbose
+                    # Check that compact string can be parsed.
+                    @test parse_address(sprint(show, hcbose; context=:compact => true)) == hcbose
+
+                    # Check that the result of show can be pasted into the REPL
+                    @test eval(Meta.parse(repr(hcbose))) == hcbose
+                    # Check that compact string can be parsed.
+                    @test parse_address(sprint(show, hcbose; context=:compact => true)) == hcbose
+                end
+            end
+        end
+    end
+    @testset "occupation numbers as arguments" begin
+        t = (1, 0, 1, 0, 1, 0, 1, 0, 1, 0)
+        @test HardcoreBoseFS(t...) == HardcoreBoseFS(t) # pass occupation numbers or tuple
+        @test HardcoreBoseFS(1) == fs"|●⟩" # single occupation number
+        @test_throws ArgumentError HardcoreBoseFS(2)
+        @test HardcoreBoseFS(5, 1 => 0) == fs"|∘∘∘∘∘⟩" # vacuum with 5 modes
+    end
+end
+   
+    
