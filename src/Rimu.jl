@@ -20,6 +20,8 @@ using OrderedCollections: freeze
 using Random: Random, RandomDevice, seed!
 using NamedTupleTools: NamedTupleTools, namedtuple, delete
 using Base: delete!
+using Optimisers: Adam, RAdam, destructure, Restructure,
+    setup, update
 import Tables
 import ConsoleProgressMonitor
 import TOML
@@ -70,6 +72,8 @@ export ShiftStrategy, LogUpdate, LogUpdateAfterTargetWalkers
 export DontUpdate, DoubleLogUpdate, DoubleLogUpdateAfterTargetWalkers
 export ReportingStrategy, ReportDFAndInfo, ReportToFile
 export ReplicaStrategy, NoStats, AllOverlaps
+export ParticleDensityGradientOverlap, OperatorOverlaps, 
+    OptimizationAction, CoefficientVectorOverlaps
 export PostStepStrategy, Projector, ProjectedEnergy, SignCoherence, WalkerLoneliness, Timer,
     SingleParticleDensity, single_particle_density
 export TimeStepStrategy, ConstantTimeStep, OvershootControl
@@ -95,8 +99,10 @@ include("strategies_and_params/timestepstrategy.jl")
 include("strategies_and_params/spectralstrategy.jl")
 
 include("projector_monte_carlo_problem.jl")
-
 include("qmc_states.jl")
+
+include("strategies_and_params/stepaction.jl") # need ReplicaState
+
 include("fciqmc.jl")
 include("pmc_simulation.jl")
 

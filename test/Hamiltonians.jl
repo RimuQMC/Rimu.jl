@@ -3,6 +3,7 @@ using LinearAlgebra
 using Random
 using Rimu
 using Test
+using SafeTestsets
 using DataFrames
 using Suppressor
 using StaticArrays
@@ -1757,70 +1758,21 @@ end
     end
 end
 
-@testset "ReducedDensityMatrix" begin
-    dvec_f = PDVec(FermiFS{2,4}(1,1,0,0) => 0.5, FermiFS{2,4}(0,0,1,1)=>0.5)
-    dvec_b = PDVec(BoseFS{4,4}(0,0,2,2) => 0.5, BoseFS{4,4}(2,2,0,0)=>0.5)
-    op = ReducedDensityMatrix(1)
-    spd_b = zeros(4,4)
-    spd_f = zeros(4,4)
-    for i in 1:4, j in 1:4
-        spd_b[i,j] = dot(dvec_b, SingleParticleExcitation(i, j), dvec_b)
-        spd_f[i,j] = dot(dvec_f, SingleParticleExcitation(i, j), dvec_f)
-    end
-    tpd_f = zeros(6,6)
-    t1 = 0; t2 = 0
-    for i in 1:4, j in i+1:4;
-        t1 += 1; t2 = 0;
-        for k in 1:4, l in k+1:4
-            t2+=1; tpd_f[t1,t2] = dot(dvec_f, TwoParticleExcitation(i, j, k, l), dvec_f);
-        end
-    end
-    @test dot(dvec_f, op, dvec_f) == spd_f
-    @test dot(dvec_b, op, dvec_b) == spd_b
-    @test dot(dvec_f, ReducedDensityMatrix(2), dvec_f) == tpd_f
-    @test_throws ArgumentError dot(dvec_b, ReducedDensityMatrix(2), dvec_b)
-    @test LOStructure(op) isa IsHermitian
-    test_observable_interface(ReducedDensityMatrix(1), BoseFS{4,4}(2,2,0,0))
-    test_observable_interface(ReducedDensityMatrix(2), FermiFS{2,4}(1,1,0,0))
-    for r in (ReducedDensityMatrix(1), ReducedDensityMatrix{ComplexF32}(2))
-        # Check that the result of show can be pasted into the REPL
-        @test eval(Meta.parse(repr(r))) == r
-    end
-    # complex hermitian Hamiltonian still produces approx hermitian RDM
-    H = HubbardReal1D(BoseFS(0,1,2,0); t = 1+im)
-    res = solve(ExactDiagonalizationProblem(H))
-    gs = res.vectors[1]
-    rdm = ReducedDensityMatrix{ComplexF64}(1)
-    m = dot(gs, rdm, gs)
-    @test all(x -> abs(x) < √eps(Float64), m - m') # hermitian up to floating point noise
-    
-    # a global relative phase in the vectors results in a global phase in the RDM
-    m_phase = dot(im * gs, rdm, gs)
-    @test all(x -> abs(x) < √eps(Float64), m_phase + im * m)
-    
-    # complex non-hermitian Hamiltonian still produces approx hermitian RDM
-    Hc = HubbardReal1D(BoseFS(0,1,2,0); u = 1+im)
-    resc = solve(ExactDiagonalizationProblem(Hc))
-    gsc = resc.vectors[1]
-    mc = dot(gsc, rdm, gsc)
-    @test all(x -> abs(x) < √eps(Float64), mc - mc') # hermitian up to floating point noise
-end
-
 @testset "HamiltonianProduct" begin
-    addr = BoseFS(2,0,0)
+    addr = BoseFS(2, 0, 0)
 
     H = HubbardReal1D(addr)
     start_at = DVec(addr => 10; style=IsStochasticWithThreshold(0.1))
-    P = H*H
+    P = H * H
     problem = ProjectorMonteCarloProblem(P; start_at, last_step=10000, target_walkers=10000)
     df = DataFrame(solve(problem))
     energy = shift_estimator(df; skip=5000)
-    @test energy.mean ≈ eigvals(Matrix(P))[1] atol=5*energy.err
+    @test energy.mean ≈ eigvals(Matrix(P))[1] atol = 5 * energy.err
 
-    H1 = HubbardReal1D(addr;u=1.0im)
+    H1 = HubbardReal1D(addr; u=1.0im)
     H2 = ExtendedHubbardReal1D(addr)
-    @test LOStructure(H2*H2) == IsHermitian()
-    P = H1*H2
+    @test LOStructure(H2 * H2) == IsHermitian()
+    P = H1 * H2
     @test LOStructure(P) == AdjointKnown()
     c = operator_column(P, addr)
 
@@ -1834,15 +1786,15 @@ end
 
     c2 = operator_column(H2, addr)
     c1 = operator_column(H1, addr)
-    ods_manual = DVec(addr => diagonal_element(c2)*diagonal_element(c1))
+    ods_manual = DVec(addr => diagonal_element(c2) * diagonal_element(c1))
     for (add1, val1) in offdiagonals(c1)
-        ods_manual += DVec(add1 => val1*diagonal_element(c2))
+        ods_manual += DVec(add1 => val1 * diagonal_element(c2))
     end
     for (add2, val2) in offdiagonals(c2)
         c1 = operator_column(H1, add2)
-        ods_manual += DVec(add2 => val2*diagonal_element(c1))
+        ods_manual += DVec(add2 => val2 * diagonal_element(c1))
         for (add1, val1) in offdiagonals(c1)
-            ods_manual += DVec(add1 => val1*val2)
+            ods_manual += DVec(add1 => val1 * val2)
         end
     end
     @test ods_product == ods_manual
@@ -1850,32 +1802,32 @@ end
     basis = build_basis(addr)
     @test Matrix(H1, basis) * Matrix(H2, basis) ≈ Matrix(H1 * H2, basis)
 
-    addr = FermiFS(1,0,0)
+    addr = FermiFS(1, 0, 0)
     H3 = HubbardReal1D(addr)
-    @test_throws ArgumentError H1*H3
+    @test_throws ArgumentError H1 * H3
 
-    addr = FermiFS(1,1,1)
+    addr = FermiFS(1, 1, 1)
     H4 = HubbardReal1D(addr)
-    P = H4*H4
+    P = H4 * H4
     c = operator_column(P, addr)
     @test iszero(last.(collect(offdiagonals(c))))
 
     @testset "ScaledHamiltonian" begin
-        addr = BoseFS(2,0,0)
+        addr = BoseFS(2, 0, 0)
         basis = build_basis(addr)
         H = HubbardReal1D(addr)
 
-        H1 = 2*H
-        @test Matrix(H1) == 2*Matrix(H)
+        H1 = 2 * H
+        @test Matrix(H1) == 2 * Matrix(H)
         @test LOStructure(H1) == LOStructure(H)
-        @test 2*H1 == 4*H
-        @test 1*H1 == H1
+        @test 2 * H1 == 4 * H
+        @test 1 * H1 == H1
 
-        H2 = 3im*H
-        @test Matrix(H2) == 3im*Matrix(H)
+        H2 = 3im * H
+        @test Matrix(H2) == 3im * Matrix(H)
         @test eltype(H2) <: Complex
         @test LOStructure(H2) == AdjointKnown()
-        @test H2' == -3im*H
+        @test H2' == -3im * H
     end
 end
 
@@ -1974,4 +1926,8 @@ end
     @test length(collect(offdiagonals(col))) == 4
     dv = DVec(addr => 1.0)
     @test dv ⋅ col == (col ⋅ dv)' == col[addr]
+end
+
+@safetestset "Density Matrices" begin
+    include("reduced_dm_test.jl")
 end

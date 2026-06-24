@@ -107,6 +107,7 @@ struct ReplicaState{
     RS<:ReportingStrategy,
     RRS<:ReplicaStrategy,
     PS<:NTuple{<:Any,PostStepStrategy},
+    GSA<:Tuple
 } <: AbstractMatrix{SingleState}
     spectral_states::R
     max_length::Ref{Int}
@@ -115,6 +116,7 @@ struct ReplicaState{
     reporting_strategy::RS
     post_step_strategy::PS
     replica_strategy::RRS
+    step_actions::GSA
 end
 
 
@@ -213,6 +215,7 @@ function report_default_metadata!(report::Report, state::ReplicaState)
     metadata!(report, "post_step_strategy", state.post_step_strategy)
     metadata!(report, "v_summary", summary(s_state.v))
     metadata!(report, "v_type", typeof(s_state.v))
+    metadata!(report, "step_actions", state.step_actions)
     return report
 end
 
