@@ -152,8 +152,9 @@ function near_uniform_onr(::Val{N}, ::Val{M}) where {N, M}
 end
 
 """
-    near_uniform(T::Type{<:SingleComponentFockAddress{N,M}}) -> address::T
-    near_uniform(T::Type{<:SingleComponentFockAddress}, N::Integer, M::Integer) -> address::T
+    near_uniform(T::Type{<:SingleComponentFockAddress{N,M}}) → address::T
+    near_uniform(T::Type{<:SingleComponentFockAddress}, N::Integer, M::Integer) → address::T
+    near_uniform(address::SingleComponentFockAddress) → address::typeof(address)
 
 Create a single component Fock state with `M` modes and `N` particles with near uniform
 occupation numbers.
@@ -168,15 +169,15 @@ FermiFS{3,5}(1, 1, 1, 0, 0)
 
 julia> near_uniform(HardcoreBoseFS{missing}, 3, 5)
 HardcoreBoseFS{missing,5}(1, 1, 1, 0, 0)
+
+julia> near_uniform(BoseFS(10,0,0,0))
+BoseFS{10,4}(3, 3, 2, 2)
 ```
 """
 function near_uniform(T::Type{<:SingleComponentFockAddress{N,M}}) where {N,M}
     return T(near_uniform_onr(Val(N), Val(M)))
 end
-# function near_uniform(::Type{<:BoseFS{N,M}}) where {N,M}
-#     return BoseFS{N,M}(near_uniform_onr(Val(N),Val(M)))
-# end
-# near_uniform(b::AbstractFockAddress) = near_uniform(typeof(b))
+near_uniform(b::SingleComponentFockAddress) = near_uniform(typeof(b))
 function near_uniform(T::Type{<:SingleComponentFockAddress}, N::Integer, M::Integer)
     return near_uniform(T, Val(N), Val(M))
 end
