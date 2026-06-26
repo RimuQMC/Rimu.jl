@@ -20,13 +20,20 @@ end
 
 # Slow constructor - not to be used internallly
 function CompositeFS(adds::Vararg{SingleComponentFockAddress})
-    N = sum(a -> num_particles(typeof(a)), adds)
+    if any(a -> num_particles(typeof(a)) === Missing, adds)
+        N = Missing
+    else
+        N = sum(a -> num_particles(typeof(a)), adds)
+    end
     M1, M2 = extrema(num_modes, adds)
     if M1 ≠ M2
         throw(ArgumentError("all addresses must have the same number of modes"))
     end
     return CompositeFS{length(adds),N,M1,typeof(adds)}(adds)
 end
+function Interfaces.num_particles(cfs::CompositeFS{<:Any,missing})
+    sum(num_particles, cfs.components)
+end # only required for missing, as the fallback for others is defined in the abstract type
 
 Interfaces.num_components(::Type{<:CompositeFS{C}}) where {C} = C
 Base.hash(c::CompositeFS, u::UInt) = hash(c.components, u)

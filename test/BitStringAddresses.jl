@@ -319,6 +319,10 @@ end
         @test FermiFS(1) == fs"|↑⟩" # single occupation number
         @test_throws ArgumentError FermiFS(2)
         @test FermiFS(5, 1 => 0) == fs"|⋅⋅⋅⋅⋅⟩" # vacuum with 5 modes
+        @test FermiFS{missing}(t...) == FermiFS{missing}(t) # pass occupation numbers or tuple
+        @test FermiFS{missing}(1) == fs"|↑⟩{}" # single occupation number
+        @test_throws ArgumentError FermiFS{2}(1)
+        @test FermiFS{missing}(5, 1 => 0) == fs"|⋅⋅⋅⋅⋅⟩{}" # vacuum with 5 modes
     end
 
     small = SVector(1, 0, 0, 0, 0, 1, 1, 1, 0, 0)
@@ -330,8 +334,10 @@ end
     @testset "onr, constructors" begin
         for o in (small, big, giant, giant_sparse, giant_dense)
             f = FermiFS(o)
-            @test onr(f) == o
+            fm = FermiFS{missing}(o)
+            @test onr(f) == o == onr(fm)
             @test typeof(f)(onr(f)) == f
+            @test typeof(fm)(onr(fm)) == fm
         end
 
         @test FermiFS(small).bs isa BitString
@@ -339,12 +345,23 @@ end
         @test FermiFS(giant_sparse).bs isa SortedParticleList
         @test FermiFS(giant_dense).bs isa BitString
 
+        @test FermiFS{missing}(small).bs isa BitString
+        @test FermiFS{missing}(big).bs isa BitString
+        @test FermiFS{missing}(giant_sparse).bs isa BitString
+        @test FermiFS{missing}(giant_dense).bs isa BitString
+
         sp_10 = FermiFS(10, 1 => 1, 5 => 1)
         @test num_modes(sp_10) == 10
         @test num_particles(sp_10) == 2
+        sp_15 = FermiFS{missing}(15, 1 => 1, 5 => 1)
+        @test num_modes(sp_15) == 15
+        @test num_particles(sp_15) == 2
         sp_20 = FermiFS{4,20}(1 => 1, 3 => 1, 5 => 1, 7 => 1)
         @test num_modes(sp_20) == 20
         @test num_particles(sp_20) == 4
+        sp_30 = FermiFS{missing,30}(1 => 1, 3 => 1, 5 => 1, 7 => 1)
+        @test num_modes(sp_30) == 30
+        @test num_particles(sp_30) == 4
 
         @test_throws ArgumentError FermiFS(3, 4 => 1)
         @test_throws ArgumentError FermiFS(3, 2 => -1)
@@ -359,6 +376,10 @@ end
             sites = collect(occupied_modes(f))
             @test occupied_mode_map(f) == sites
             @test getproperty.(sites, :mode) == findall(≠(0), onr(f))
+            fm = FermiFS{missing}(o)
+            sites = collect(occupied_modes(fm))
+            @test occupied_mode_map(fm) == sites
+            @test getproperty.(sites, :mode) == findall(≠(0), onr(fm))
         end
     end
     @testset "unoccupied_modes" begin
@@ -367,6 +388,10 @@ end
             sites = collect(unoccupied_modes(f))
             @test unoccupied_mode_map(f) == sites
             @test getproperty.(sites, :mode) == findall(==(0), onr(f))
+            fm = FermiFS{missing}(o)
+            sites = collect(unoccupied_modes(fm))
+            @test unoccupied_mode_map(fm) == sites
+            @test getproperty.(sites, :mode) == findall(==(0), onr(fm))
         end
     end
     @testset "each_mode" begin
@@ -374,6 +399,9 @@ end
             f = FermiFS(o)
             @test map(i -> i.occnum, each_mode(f)) == o
             @test map(i -> i.mode, each_mode(f)) == eachindex(o)
+            fm = FermiFS{missing}(o)
+            @test map(i -> i.occnum, each_mode(fm)) == o
+            @test map(i -> i.mode, each_mode(fm)) == eachindex(o)
         end
     end
     @testset "Randomized Tests" begin
@@ -385,22 +413,33 @@ end
                 for _ in 1:10
                     input = rand_onr_fermi(N, M)
                     fermi = FermiFS(input)
+                    mfermi = FermiFS{missing}(input)
                     @test FermiFS{N,M,typeof(fermi.bs)}(fermi.bs) === fermi
+                    @test FermiFS{missing,M,typeof(mfermi.bs)}(mfermi.bs) === mfermi
 
-                    @test num_particles(fermi) == N
-                    @test num_modes(fermi) == M
-                    @test onr(fermi) == input
+                    @test num_particles(fermi) == N == num_particles(mfermi)
+                    @test num_modes(fermi) == M == num_modes(mfermi)
+                    @test onr(fermi) == input == onr(mfermi)
 
                     check_single_excitations(fermi, 64)
                     check_double_excitations(fermi, 8)
                     check_triple_excitations(fermi, 4)
+
+                    check_single_excitations(mfermi, 64)
+                    check_double_excitations(mfermi, 8)
+                    check_triple_excitations(mfermi, 4)
 
                     @test map(i -> i.mode, occupied_modes(fermi)) == findall(≠(0), input)
                     @test map(i -> i.mode, unoccupied_modes(fermi)) == findall(==(0), input)
                     @test map(i -> i.occnum, each_mode(fermi)) == input
                     @test map(i -> i.mode, each_mode(fermi)) == eachindex(input)
 
-                    @test onr(reverse(fermi)) == reverse(input)
+                    @test map(i -> i.mode, occupied_modes(mfermi)) == findall(≠(0), input)
+                    @test map(i -> i.mode, unoccupied_modes(mfermi)) == findall(==(0), input)
+                    @test map(i -> i.occnum, each_mode(mfermi)) == input
+                    @test map(i -> i.mode, each_mode(mfermi)) == eachindex(input)
+
+                    @test onr(reverse(fermi)) == reverse(input) == onr(reverse(mfermi))
 
                     # Check that the result of show can be pasted into the REPL
                     @test eval(Meta.parse(repr(fermi))) == fermi
@@ -408,9 +447,9 @@ end
                     @test parse_address(sprint(show, fermi; context=:compact => true)) == fermi
 
                     # Check that the result of show can be pasted into the REPL
-                    @test eval(Meta.parse(repr(fermi))) == fermi
+                    @test eval(Meta.parse(repr(mfermi))) == mfermi
                     # Check that compact string can be parsed.
-                    @test parse_address(sprint(show, fermi; context=:compact => true)) == fermi
+                    @test parse_address(sprint(show, mfermi; context=:compact => true)) == mfermi
                 end
             end
         end
@@ -420,34 +459,34 @@ end
 @testset "Multicomponent" begin
     @testset "CompositeFS" begin
         fs1 = CompositeFS(
-            FermiFS((1,1,0,0,0,0)), FermiFS((1,1,1,0,0,0)), BoseFS((5,0,0,0,0,0))
+            FermiFS((1,1,0,0,0,0)), FermiFS{missing}((1,1,1,0,0,0)), BoseFS((5,0,0,0,0,0))
         )
         @test num_modes(fs1) == 6
         @test num_components(fs1) == 3
         @test num_particles(fs1) == 10
         @test fs1.components[1] == FermiFS((1,1,0,0,0,0))
-        @test fs1.components[2] == FermiFS((1,1,1,0,0,0))
+        @test fs1.components[2] == FermiFS{missing}((1,1,1,0,0,0))
         @test fs1.components[3] == BoseFS((5,0,0,0,0,0))
         @test eval(Meta.parse(repr(fs1))) == fs1
         str = sprint(show, fs1; context=:compact => true)
         @test parse_address(str) == fs1
 
         fs2 = CompositeFS(
-            FermiFS((0,1,1,0,0,0)), FermiFS((1,0,1,0,1,0)), BoseFS((1,1,1,1,1,0))
+            FermiFS((0,1,1,0,0,0)), FermiFS{missing}((1,0,1,0,1,0)), BoseFS((1,1,1,1,1,0))
         )
         @test fs1 < fs2
 
         @test_throws ArgumentError CompositeFS(BoseFS((1,1)), BoseFS((1,1,1)))
 
         @inferred update_component(fs1, FermiFS((0,0,0,1,1,0)), Val(1))
-        @inferred update_component(fs1, FermiFS((0,0,1,1,1,0)), Val(2))
+        @inferred update_component(fs1, FermiFS{missing}((0,0,1,1,1,0)), Val(2))
         @inferred update_component(fs1, BoseFS((1,1,1,1,1,0)), Val(3))
         @test_throws MethodError update_component(fs1, BoseFS((1,1,1,1,1,0)), Val(1))
         @test_throws MethodError update_component(fs1, FermiFS((1,1,1,1,1,0)), Val(1))
 
-        fs3 = Rimu.BitStringAddresses.update_component(fs1, FermiFS((0,0,1,1,1,0)), Val(2))
+        fs3 = update_component(fs1, FermiFS{missing}((0,0,1,1,1,0)), Val(2))
         @test fs3 == CompositeFS(
-            FermiFS((1,1,0,0,0,0)), FermiFS((0,0,1,1,1,0)), BoseFS((5,0,0,0,0,0)),
+            FermiFS((1,1,0,0,0,0)), FermiFS{missing}((0,0,1,1,1,0)), BoseFS((5,0,0,0,0,0)),
         )
         @test onr(fs3) == ([1,1,0,0,0,0], [0,0,1,1,1,0], [5,0,0,0,0,0])
         @test onr(fs3, LadderBoundaries(2, 3)) == (
@@ -609,26 +648,36 @@ end
 
 @testset "HardcoreBoseFS" begin
     add_hb = HardcoreBoseFS(1, 0, 1, 0, 0)
+    add_hb_m = HardcoreBoseFS{missing}(1, 0, 1, 0, 0)
     @test add_hb isa Rimu.BitStringAddresses.SingleComponentFockAddress
 
     add_f = FermiFS(1, 0, 1, 0, 0)
+    add_f_m = FermiFS{missing}(1, 0, 1, 0, 0)
 
-    @test bitstring(add_f) == bitstring(add_hb)
-    @test find_mode(add_hb, 1) == find_mode(add_f, 1)
+    @test bitstring(add_f) == bitstring(add_hb) == bitstring(add_f_m) == bitstring(add_hb_m)
+    @test find_mode(add_hb, 1) == find_mode(add_f, 1) == find_mode(add_hb_m, 1)
 
     src = find_mode(add_hb, 1)
     dst = find_mode(add_hb, 4)
+    @test src == find_mode(add_hb_m, 1) == find_mode(add_f, 1) == find_mode(add_f_m, 1)
     @test src == FermiFSIndex(occnum=1, mode=1, offset=0)
 
     n_add_f, val_f = excitation(add_f, (dst,), (src,))
     n_add_hb, val_hb = excitation(add_hb, (dst,), (src,))
-    
+
     @test n_add_hb isa HardcoreBoseFS
     @test bitstring(n_add_f) == bitstring(n_add_hb)
     @test val_f == -val_hb
 
+    n_add_f_m, val_f_m = excitation(add_f_m, (), (src,))
+    n_add_hb_m, val_hb_m = excitation(add_hb_m, (), (src,))
+    @test bitstring(n_add_f_m) == bitstring(n_add_hb_m)
+    @test val_f_m == val_hb_m
+    @test num_particles(n_add_hb_m) == num_particles(add_hb_m) - 1 == num_particles(n_add_f_m)
+
     @test dimension(n_add_f) == dimension(n_add_hb)
     @test near_uniform(HardcoreBoseFS{2,5}) == HardcoreBoseFS{2,5}(1, 1, 0, 0, 0)
+    @test near_uniform(HardcoreBoseFS{missing}, 2, 5) == HardcoreBoseFS{missing,5}(1, 1, 0, 0, 0)
 
     S = typeof(BitString{6}(big"0x07")) # corresponds to the occupation pattern (1, 1, 1, 0, 0, 0)
     @test_throws ArgumentError HardcoreBoseFS{2,5,S}(onr(add_hb))
@@ -636,8 +685,8 @@ end
     @test_throws ArgumentError HardcoreBoseFS{2,5,S}(onr(add_hb))
     S = typeof(BitString{5}(big"0x05")) # corresponds to the occupation pattern (1, 0, 1, 0, 0)
     @test HardcoreBoseFS{2,5,S}(onr(add_hb)) == HardcoreBoseFS{2,5}(1 => 1, 3 => 1)
-    @test_throws ArgumentError HardcoreBoseFS(1 => 1, 3 => 1)    
-    
+    @test_throws ArgumentError HardcoreBoseFS(1 => 1, 3 => 1)
+
     @testset "Randomized Tests" begin
         function rand_onr_fermi(N, M)
             return SVector{M}(shuffle([ones(Int,N); zeros(Int,M - N)]))
@@ -647,22 +696,34 @@ end
                 for _ in 1:10
                     input = rand_onr_fermi(N, M)
                     hcbose = HardcoreBoseFS(input)
+                    hcbosem = HardcoreBoseFS{missing}(input)
                     @test HardcoreBoseFS{N,M,typeof(hcbose.bs)}(hcbose.bs) === hcbose
+                    @test HardcoreBoseFS{missing,M,typeof(hcbosem.bs)}(hcbosem.bs) === hcbosem
 
-                    @test num_particles(hcbose) == N
-                    @test num_modes(hcbose) == M
-                    @test onr(hcbose) == input
+                    @test num_particles(hcbose) == N == num_particles(hcbosem)
+                    @test num_modes(hcbose) == M == num_modes(hcbosem)
+                    @test onr(hcbose) == input == onr(hcbosem)
 
                     check_single_excitations(hcbose, 64)
                     check_double_excitations(hcbose, 8)
                     check_triple_excitations(hcbose, 4)
+
+                    check_single_excitations(hcbosem, 64)
+                    check_double_excitations(hcbosem, 8)
+                    check_triple_excitations(hcbosem, 4)
 
                     @test map(i -> i.mode, occupied_modes(hcbose)) == findall(≠(0), input)
                     @test map(i -> i.mode, unoccupied_modes(hcbose)) == findall(==(0), input)
                     @test map(i -> i.occnum, each_mode(hcbose)) == input
                     @test map(i -> i.mode, each_mode(hcbose)) == eachindex(input)
 
+                    @test map(i -> i.mode, occupied_modes(hcbosem)) == findall(≠(0), input)
+                    @test map(i -> i.mode, unoccupied_modes(hcbosem)) == findall(==(0), input)
+                    @test map(i -> i.occnum, each_mode(hcbosem)) == input
+                    @test map(i -> i.mode, each_mode(hcbosem)) == eachindex(input)
+
                     @test onr(reverse(hcbose)) == reverse(input)
+                    @test onr(reverse(hcbosem)) == reverse(input)
 
                     # Check that the result of show can be pasted into the REPL
                     @test eval(Meta.parse(repr(hcbose))) == hcbose
@@ -670,9 +731,9 @@ end
                     @test parse_address(sprint(show, hcbose; context=:compact => true)) == hcbose
 
                     # Check that the result of show can be pasted into the REPL
-                    @test eval(Meta.parse(repr(hcbose))) == hcbose
+                    @test eval(Meta.parse(repr(hcbosem))) == hcbosem
                     # Check that compact string can be parsed.
-                    @test parse_address(sprint(show, hcbose; context=:compact => true)) == hcbose
+                    @test parse_address(sprint(show, hcbosem; context=:compact => true)) == hcbosem
                 end
             end
         end
@@ -683,7 +744,9 @@ end
         @test HardcoreBoseFS(1) == fs"|●⟩" # single occupation number
         @test_throws ArgumentError HardcoreBoseFS(2)
         @test HardcoreBoseFS(5, 1 => 0) == fs"|∘∘∘∘∘⟩" # vacuum with 5 modes
+        @test HardcoreBoseFS{missing}(t...) == HardcoreBoseFS{missing}(t) # pass occupation numbers or tuple
+        @test HardcoreBoseFS{missing}(1) == fs"|●⟩{}" # single occupation number
+        @test_throws ArgumentError HardcoreBoseFS{missing}(2)
+        @test HardcoreBoseFS{missing}(5, 1 => 0) == fs"|∘∘∘∘∘⟩{}" # vacuum with 5 modes
     end
 end
-   
-    

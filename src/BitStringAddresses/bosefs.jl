@@ -152,10 +152,11 @@ function near_uniform_onr(::Val{N}, ::Val{M}) where {N, M}
 end
 
 """
-    near_uniform(BoseFS{N,M}) -> BoseFS{N,M}
+    near_uniform(T::Type{<:SingleComponentFockAddress{N,M}}) -> address::T
+    near_uniform(T::Type{<:SingleComponentFockAddress}, N::Integer, M::Integer) -> address::T
 
-Create bosonic Fock state with near uniform occupation number of `M` modes with
-a total of `N` particles.
+Create a single component Fock state with `M` modes and `N` particles with near uniform
+occupation numbers.
 
 # Examples
 ```jldoctest
@@ -164,12 +165,24 @@ BoseFS{7,5}(2, 2, 1, 1, 1)
 
 julia> near_uniform(FermiFS{3,5})
 FermiFS{3,5}(1, 1, 1, 0, 0)
+
+julia> near_uniform(HardcoreBoseFS{missing}, 3, 5)
+HardcoreBoseFS{missing,5}(1, 1, 1, 0, 0)
 ```
 """
-function near_uniform(::Type{<:BoseFS{N,M}}) where {N,M}
-    return BoseFS{N,M}(near_uniform_onr(Val(N),Val(M)))
+function near_uniform(T::Type{<:SingleComponentFockAddress{N,M}}) where {N,M}
+    return T(near_uniform_onr(Val(N), Val(M)))
 end
-near_uniform(b::AbstractFockAddress) = near_uniform(typeof(b))
+# function near_uniform(::Type{<:BoseFS{N,M}}) where {N,M}
+#     return BoseFS{N,M}(near_uniform_onr(Val(N),Val(M)))
+# end
+# near_uniform(b::AbstractFockAddress) = near_uniform(typeof(b))
+function near_uniform(T::Type{<:SingleComponentFockAddress}, N::Integer, M::Integer)
+    return near_uniform(T, Val(N), Val(M))
+end
+function near_uniform(T::Type{<:SingleComponentFockAddress}, ::Val{N}, ::Val{M}) where {N,M}
+    return T(near_uniform_onr(Val(N), Val(M)))
+end
 
 onr(b::BoseFS{<:Any,M}) where {M} = to_bose_onr(b.bs, Val(M))
 const occupation_number_representation = onr # resides here because `onr` has to be defined

@@ -3,7 +3,8 @@
 
 Address type that represents a Fock state of `N` fermions of the same spin in `M` modes by
 wrapping a [`BitString`](@ref), or a [`SortedParticleList`](@ref). Which is wrapped is
-chosen automatically based on the properties of the address.
+chosen automatically based on the properties of the address. Set `N` to `missing` if the
+number of particles is not known at compile time.
 
 # Constructors
 
@@ -56,7 +57,7 @@ struct FermiFS{N,M,S} <: SingleComponentFockAddress{N,M}
 end
 
 function check_fermi_onr(onr, N, M)
-    sum(onr) == N ||
+    ismissing(N) || sum(onr) == N ||
         throw(ArgumentError("Invalid ONR: $N particles expected, $(sum(onr)) given."))
     length(onr) == M ||
         throw(ArgumentError("Invalid ONR: $M modes expected, $(length(onr)) given."))
@@ -82,6 +83,11 @@ function FermiFS{N,M,S}(onr::Union{SVector{M},MVector{M},NTuple{M}}) where {N,M,
 end
 function FermiFS{N,M}(onr::Union{AbstractArray{<:Integer},NTuple{M,<:Integer}}) where {N,M}
     @boundscheck check_fermi_onr(onr, N, M)
+    if ismissing(N)
+        S = typeof(BitString{M}(0))
+        return FermiFS{N,M,S}(from_fermi_onr(S, onr))
+    end
+
     spl_type = select_int_type(M)
     # Pick smaller address type, but prefer dense.
     # Alway pick dense if it fits into one chunk.
@@ -102,20 +108,32 @@ function FermiFS(onr)
     N = sum(onr)
     return FermiFS{N,M}(onr)
 end
+function FermiFS{N}(onr) where {N}
+    onr = Tuple(onr)
+    M = length(onr)
+    return FermiFS{N,M}(onr)
+end
+
 FermiFS(vals::Integer...) = FermiFS(vals) # list occupation numbers
 FermiFS(val::Integer) = FermiFS((val,)) # single mode
+FermiFS{N}(vals::Integer...) where N = FermiFS{N}(vals) # list occupation numbers
+FermiFS{N}(val::Integer) where {N} = FermiFS{N}((val,)) # single mode
 FermiFS{N,M}(vals::Integer...) where {N,M} = FermiFS{N,M}(vals)
 
 # Sparse constructors
 FermiFS(M::Integer, pairs::Pair...) = FermiFS(M, pairs)
+FermiFS{N}(M::Integer, pairs::Pair...) where {N} = FermiFS{N}(M, pairs)
 FermiFS(M::Integer, pairs) = FermiFS(sparse_to_onr(M, pairs))
-FermiFS{N,M}(pairs::Vararg{Pair,N}) where {N,M} = FermiFS{N,M}(pairs)
-FermiFS{N,M}(pairs) where {N,M} = FermiFS{N,M}(sparse_to_onr(M, pairs))
+FermiFS{N}(M::Integer, pairs) where {N} = FermiFS{N}(sparse_to_onr(M, pairs))
+FermiFS{N,M}(pairs::Vararg{Pair}) where {N,M} = FermiFS{N,M}(pairs)
+FermiFS{N,M}(pairs) where {N,M} = FermiFS{N}(sparse_to_onr(M, pairs))
 FermiFS(pairs::Pair...) = throw(ArgumentError("number of modes must be provided"))
 
 function print_address(io::IO, f::FermiFS{N,M}; compact=false) where {N,M}
     if compact && f.bs isa SortedParticleList
         print(io, "|f ", M, ": ", join(Int.(f.bs.storage), ' '), "⟩")
+    elseif compact && ismissing(N)
+        print(io, "|", join(map(o -> o == 0 ? '⋅' : '↑', onr(f))), "⟩{}")
     elseif compact
         print(io, "|", join(map(o -> o == 0 ? '⋅' : '↑', onr(f))), "⟩")
     elseif f.bs isa SortedParticleList
@@ -125,28 +143,32 @@ function print_address(io::IO, f::FermiFS{N,M}; compact=false) where {N,M}
     end
 end
 
-function near_uniform(::Type{FermiFS{N,M}}) where {N,M}
-    return FermiFS([fill(1, N); fill(0, M - N)])
-end
-
-function excitation(a::FermiFS{N,M,S}, creations, destructions) where {N,M,S}
+function excitation(
+    a::FermiFS{N,M,S}, creations::NTuple{NC}, destructions::NTuple{ND}
+) where {N,M,S,NC,ND}
     new_bs, value = fermi_excitation(a.bs, creations, destructions)
-    return FermiFS{N,M,S}(new_bs), value # carries sign, different from HardcoreBoseFS
+    NN = ismissing(N) ? missing : N + NC - ND # done at compile time
+    return FermiFS{NN,M,S}(new_bs), value # carries sign, different from HardcoreBoseFS
 end
 
 # joint functions for FermiFS and HardcoreBoseFS
 const FermiOrHardcoreBoseFS{N,M,S} = Union{FermiFS{N,M,S}, HardcoreBoseFS{N,M,S}}
 
+Interfaces.num_particles(a::FermiOrHardcoreBoseFS{missing}) = count_ones(a.bs)
+# only required for missing, as the fallback for other types is defined in the abstract type
 Base.bitstring(a::FermiOrHardcoreBoseFS) = bitstring(a.bs)
 Base.isless(a::F, b::F) where {F <: FermiOrHardcoreBoseFS} = isless(a.bs, b.bs)
 Base.hash(a::FermiOrHardcoreBoseFS, h::UInt) = hash(a.bs, h)
-Base.:(==)(a::F, b::F) where {F<:FermiOrHardcoreBoseFS} = a.bs == b.bs
+Base.:(==)(a::FermiOrHardcoreBoseFS, b::FermiOrHardcoreBoseFS) = a.bs == b.bs
 
-num_occupied_modes(::FermiOrHardcoreBoseFS{N}) where {N} = N
-num_unoccupied_modes(::FermiOrHardcoreBoseFS{N,M}) where {N,M} = M - N
+num_occupied_modes(a::FermiOrHardcoreBoseFS) = num_particles(a)
+num_unoccupied_modes(a::FermiOrHardcoreBoseFS) = num_modes(a) - num_particles(a)
 
 occupied_modes(a::FermiOrHardcoreBoseFS{N,<:Any,S}) where {N,S} = FermiOccupiedModes{N,S}(a.bs)
 unoccupied_modes(a::FermiOrHardcoreBoseFS{N,M,S}) where {N,M,S} = FermiUnoccupiedModes{M - N,S}(a.bs)
+function unoccupied_modes(a::FermiOrHardcoreBoseFS{missing,<:Any,S}) where {S}
+    FermiUnoccupiedModes{missing,S}(a.bs)
+end
 
 @inline function onr(a::FermiOrHardcoreBoseFS{<:Any,M}) where {M}
     result = zero(MVector{M,Int32})
@@ -200,7 +222,7 @@ true
 ```
 See also [`occupied_mode_map`](@ref).
 """
-function unoccupied_mode_map(addr::FermiOrHardcoreBoseFS{N,M}) where {N,M}
+function unoccupied_mode_map(addr::FermiOrHardcoreBoseFS)
     modes = unoccupied_modes(addr)
     T = eltype(modes)
     L = num_unoccupied_modes(addr)

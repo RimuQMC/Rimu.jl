@@ -4,7 +4,8 @@
 Address type that represents a Fock state of `N` hardcore bosons in `M` modes, with
 occupancies restricted to 0 or 1 per mode, by wrapping a [`BitString`](@ref) or a
 [`SortedParticleList`](@ref). Which is wrapped is chosen automatically based on the
-properties of the address.
+properties of the address. Set `N` to `missing` if the number of particles is not known at
+compile time.
 
 # Constructors
 
@@ -76,6 +77,11 @@ function HardcoreBoseFS{N,M,S}(onr::Union{SVector{M},MVector{M},NTuple{M}}) wher
 end
 function HardcoreBoseFS{N,M}(onr::Union{AbstractArray{<:Integer},NTuple{M,<:Integer}}) where {N,M}
     @boundscheck check_fermi_onr(onr, N, M)
+    if ismissing(N)
+        S = typeof(BitString{M}(0))
+        return HardcoreBoseFS{N,M,S}(from_fermi_onr(S, onr))
+    end
+
     spl_type = select_int_type(M)
     # Pick smaller address type, but prefer dense.
     # Alway pick dense if it fits into one chunk.
@@ -96,20 +102,32 @@ function HardcoreBoseFS(onr)
     N = sum(onr)
     return HardcoreBoseFS{N,M}(onr)
 end
+function HardcoreBoseFS{N}(onr) where {N}
+    onr = Tuple(onr)
+    M = length(onr)
+    return HardcoreBoseFS{N,M}(onr)
+end
+
 HardcoreBoseFS(vals::Integer...) = HardcoreBoseFS(vals) # list occupation numbers
 HardcoreBoseFS(val::Integer) = HardcoreBoseFS((val,)) # single mode
+HardcoreBoseFS{N}(vals::Integer...) where N = HardcoreBoseFS{N}(vals) # list occupation numbers
+HardcoreBoseFS{N}(val::Integer) where {N} = HardcoreBoseFS{N}((val,)) # single mode
 HardcoreBoseFS{N,M}(vals::Integer...) where {N,M} = HardcoreBoseFS{N,M}(vals)
 
 # Sparse constructors
 HardcoreBoseFS(M::Integer, pairs::Pair...) = HardcoreBoseFS(M, pairs)
+HardcoreBoseFS{N}(M::Integer, pairs::Pair...) where {N} = HardcoreBoseFS{N}(M, pairs)
 HardcoreBoseFS(M::Integer, pairs) = HardcoreBoseFS(sparse_to_onr(M, pairs))
-HardcoreBoseFS{N,M}(pairs::Vararg{Pair,N}) where {N,M} = HardcoreBoseFS{N,M}(pairs)
-HardcoreBoseFS{N,M}(pairs) where {N,M} = HardcoreBoseFS{N,M}(sparse_to_onr(M, pairs))
+HardcoreBoseFS{N}(M::Integer, pairs) where {N} = HardcoreBoseFS{N}(sparse_to_onr(M, pairs))
+HardcoreBoseFS{N,M}(pairs::Vararg{Pair}) where {N,M} = HardcoreBoseFS{N,M}(pairs)
+HardcoreBoseFS{N,M}(pairs) where {N,M} = HardcoreBoseFS{N}(sparse_to_onr(M, pairs))
 HardcoreBoseFS(pairs::Pair...) = throw(ArgumentError("number of modes must be provided"))
 
 function print_address(io::IO, f::HardcoreBoseFS{N,M}; compact=false) where {N,M}
     if compact && f.bs isa SortedParticleList
         print(io, "|h ", M, ": ", join(Int.(f.bs.storage), ' '), "⟩")
+    elseif compact && ismissing(N)
+        print(io, "|", join(map(o -> o == 0 ? '∘' : '●', onr(f))), "⟩{}")
     elseif compact
         print(io, "|", join(map(o -> o == 0 ? '∘' : '●', onr(f))), "⟩")
     elseif f.bs isa SortedParticleList
@@ -119,13 +137,12 @@ function print_address(io::IO, f::HardcoreBoseFS{N,M}; compact=false) where {N,M
     end
 end
 
-function near_uniform(::Type{HardcoreBoseFS{N,M}}) where {N,M}
-    return HardcoreBoseFS([fill(1, N); fill(0, M - N)])
-end
-
-function excitation(a::HardcoreBoseFS{N,M,S}, creations, destructions) where {N,M,S}
+function excitation(
+    a::HardcoreBoseFS{N,M,S}, creations::NTuple{NC}, destructions::NTuple{ND}
+) where {N,M,S,NC,ND}
     new_bs, value = fermi_excitation(a.bs, creations, destructions)
-    return HardcoreBoseFS{N,M,S}(new_bs), abs(value) # different from FermiFS, no sign
+    NN = ismissing(N) ? missing : N + NC - ND # done at compile time
+    return HardcoreBoseFS{NN,M,S}(new_bs), abs(value) # different from FermiFS, no sign
 end
 
 # See "fermifs.jl" for other function definitions for HardcoreBoseFS.

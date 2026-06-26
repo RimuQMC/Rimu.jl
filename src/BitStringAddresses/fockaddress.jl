@@ -170,11 +170,10 @@ are tuples of the appropriate address indices (i.e. [`BoseFSIndex`](@ref) for bo
 [`FermiFSIndex`](@ref) for fermions).
 
 ```math
-a^†_{c_1} a^†_{c_2} \\ldots a_{d_1} a_{d_2} \\ldots |\\mathrm{addr}\\rangle \\to
-α|\\mathrm{naddr}\\rangle
+a^†_{c_1} a^†_{c_2} … a_{d_1} a_{d_2} … |f⟩ → α|f'⟩
 ```
 
-Returns the new address `naddr` and the factor `α`. The value of `α` is given by the square
+Returns the new address `f'` and the factor `α`. The value of `α` is given by the square
 root of the product of mode occupations before destruction and after creation. If the
 excitation is illegal, returns an arbitrary address and the value `0.0`.
 
@@ -187,8 +186,14 @@ FermiFS{6,8}(1, 1, 0, 0, 1, 1, 1, 1)
 julia> i, j, k, l = find_mode(f, (3,4,2,5))
 (FermiFSIndex(occnum=0, mode=3, offset=2), FermiFSIndex(occnum=0, mode=4, offset=3), FermiFSIndex(occnum=1, mode=2, offset=1), FermiFSIndex(occnum=1, mode=5, offset=4))
 
-julia> excitation(f, (i,j), (k,l))
+julia> excitation(f, (i,j), (k,l)) # number conserving excitation
 (FermiFS{6,8}(1, 0, 1, 1, 0, 1, 1, 1), -1.0)
+
+julia> fm = FermiFS{missing}(1,1,0,0,1,1,1,1)
+FermiFS{missing,8}(1, 1, 0, 0, 1, 1, 1, 1)
+
+julia> excitation(fm, (i,), (k,l)) # particle number changes
+(FermiFS{missing,8}(1, 0, 1, 0, 0, 1, 1, 1), 1.0)
 ```
 
 See [`SingleComponentFockAddress`](@ref).
@@ -360,7 +365,7 @@ function parse_address(str)
     m = match(r"⊗", str)
     if !isnothing(m)
         if !isnothing(match(r"[↓⇅]", str))
-            throw(ArgumentError("invalid fock state format \"$str\""))
+            throw(ArgumentError("invalid Fock state format \"$str\""))
         else
             return CompositeFS(map(parse_address, split(str, r" *⊗ *"))...)
         end
@@ -368,9 +373,16 @@ function parse_address(str)
     # FermiFS2C
     m = match(r"[↓⇅]", str)
     if !isnothing(m)
+        m = match(r"\|([↑↓⇅⋅ ]+)⟩{}", str)
+        if !isnothing(m) # FermiFS2C with missing particle number
+            chars = filter(!=(' '), Vector{Char}(m.captures[1]))
+            f1 = FermiFS{missing}((chars .== '↑') .| (chars .== '⇅'))
+            f2 = FermiFS{missing}((chars .== '↓') .| (chars .== '⇅'))
+            return CompositeFS(f1, f2)
+        end
         m = match(r"\|([↑↓⇅⋅ ]+)⟩", str)
         if isnothing(m)
-            throw(ArgumentError("invalid fock state format \"$str\""))
+            throw(ArgumentError("invalid Fock state format \"$str\""))
         else
             chars = filter(!=(' '), Vector{Char}(m.captures[1]))
             f1 = FermiFS((chars .== '↑') .| (chars .== '⇅'))
@@ -431,11 +443,24 @@ function parse_address(str)
     if !isnothing(m)
         return BoseFS(parse.(Int, split(m.captures[1], r" +")))
     end
-    # Single HardcoreBoseFS
+
+    # HardcoreBoseFS with missing particle number
+    m = match(r"\|([ ∘●]+)⟩{}", str)
+    if !isnothing(m)
+        chars = filter(!=(' '), Vector{Char}(m.captures[1]))
+        return HardcoreBoseFS{missing}(chars .== '●')
+    end
+    # HardcoreBoseFS
     m = match(r"\|([ ∘●]+)⟩", str)
     if !isnothing(m)
         chars = filter(!=(' '), Vector{Char}(m.captures[1]))
         return HardcoreBoseFS(chars .== '●')
+    end
+    # Single FermiFS with missing particle number
+    m = match(r"\|([ ⋅↑]+)⟩{}", str)
+    if !isnothing(m)
+        chars = filter(!=(' '), Vector{Char}(m.captures[1]))
+        return FermiFS{missing}(chars .== '↑')
     end
     # Single FermiFS
     m = match(r"\|([ ⋅↑]+)⟩", str)
@@ -673,6 +698,7 @@ end
 
 Base.length(::FermiOccupiedModes{N}) where {N} = N
 Base.eltype(::FermiOccupiedModes) = FermiFSIndex
+Base.IteratorSize(::FermiOccupiedModes{missing}) = Base.SizeUnknown()
 
 """
     FermiUnoccupiedModes{N}
@@ -684,6 +710,7 @@ struct FermiUnoccupiedModes{N,S} <: ModeIterator
 end
 Base.length(::FermiUnoccupiedModes{N}) where {N} = N
 Base.eltype(::FermiUnoccupiedModes) = FermiFSIndex
+Base.IteratorSize(::FermiUnoccupiedModes{missing}) = Base.SizeUnknown()
 
 """
     from_fermi_onr(::Type{B}, onr) -> B
