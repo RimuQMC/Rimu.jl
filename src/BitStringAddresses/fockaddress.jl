@@ -168,7 +168,7 @@ unoccupied_modes
 Generate an excitation on address `addr` by applying `creations` and `destructions`, which
 are tuples of the appropriate address indices (i.e. [`BoseFSIndex`](@ref) for
 [`BoseFS`](@ref) and [`OccupationNumberFS`](@ref), or
-[`FermiFSIndex`](@ref) for [`FermiFS`](@ref) and [`HardcoreBoseFSIndex`](@ref);
+[`FermiFSIndex`](@ref) for [`FermiFS`](@ref) and [`HardcoreBoseFS`](@ref);
  [`OccupationNumberFS`](@ref) also supports integer indices).
 
 ```math
