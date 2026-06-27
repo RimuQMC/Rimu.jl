@@ -159,7 +159,8 @@ Interfaces.num_particles(a::FermiOrHardcoreBoseFS{missing}) = count_ones(a.bs)
 Base.bitstring(a::FermiOrHardcoreBoseFS) = bitstring(a.bs)
 Base.isless(a::F, b::F) where {F <: FermiOrHardcoreBoseFS} = isless(a.bs, b.bs)
 Base.hash(a::FermiOrHardcoreBoseFS, h::UInt) = hash(a.bs, h)
-Base.:(==)(a::FermiOrHardcoreBoseFS, b::FermiOrHardcoreBoseFS) = a.bs == b.bs
+Base.:(==)(a::FermiFS, b::FermiFS) = a.bs == b.bs
+Base.:(==)(a::HardcoreBoseFS, b::HardcoreBoseFS) = a.bs == b.bs
 
 num_occupied_modes(a::FermiOrHardcoreBoseFS) = num_particles(a)
 num_unoccupied_modes(a::FermiOrHardcoreBoseFS) = num_modes(a) - num_particles(a)
