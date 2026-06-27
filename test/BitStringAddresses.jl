@@ -698,6 +698,10 @@ end
     @test HardcoreBoseFS{2,5,S}(onr(add_hb)) == HardcoreBoseFS{2,5}(1 => 1, 3 => 1)
     @test_throws ArgumentError HardcoreBoseFS(1 => 1, 3 => 1)
 
+    @test HardcoreBoseFS{missing}(1, 0, 1) == HardcoreBoseFS(1, 0, 1)
+    @test HardcoreBoseFS(1, 0, 1) != FermiFS(1, 0, 1)
+    @test HardcoreBoseFS(1, 0, 1).bs == FermiFS(1, 0, 1).bs
+
     @testset "Randomized Tests" begin
         function rand_onr_fermi(N, M)
             return SVector{M}(shuffle([ones(Int,N); zeros(Int,M - N)]))
