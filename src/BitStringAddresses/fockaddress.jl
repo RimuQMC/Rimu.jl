@@ -6,7 +6,14 @@
 
 A type representing a single component Fock state with `N` particles and `M` modes.
 
-Implemented subtypes: [`BoseFS`](@ref), [`FermiFS`](@ref).
+Implemented subtypes:
+- [`BoseFS`](@ref): Bosonic Fock state with fixed particle and mode number.
+- [`FermiFS`](@ref): Fermionic Fock state with fixed mode number and fixed or variable
+    particle number.
+- [`OccupationNumberFS`](@ref): Bosonic Fock state with a fixed number of modes. The number
+    of particles is not part of the type and can be changed by operators.
+- [`HardcoreBoseFS`](@ref): Fock state for hardcore bosons with fixed mode number and fixed
+    or variable particle number.
 
 # Supported functionality
 
@@ -609,7 +616,9 @@ end
 """
     BoseFSIndex
 
-Struct used for indexing and performing [`excitation`](@ref)s on a [`BoseFS`](@ref).
+Struct used for indexing and performing [`excitation`](@ref)s on a [`BoseFS`](@ref) or
+[`OccupationNumberFS`](@ref). `BoseFSIndex` is returned by [`find_mode`](@ref) and
+[`find_occupied_mode`](@ref).
 
 ## Fields:
 
@@ -619,6 +628,8 @@ Struct used for indexing and performing [`excitation`](@ref)s on a [`BoseFS`](@r
  the address is represented by a bitstring, and the position in the list when it is
  represented by `SortedParticleList`.
 
+See also [`FermiFSIndex`](@ref), [`find_mode`](@ref), [`find_occupied_mode`](@ref),
+[`excitation`](@ref).
 """
 Base.@kwdef struct BoseFSIndex<:FieldVector{3,Int}
     occnum::Int
@@ -636,7 +647,7 @@ Base.show(io::IO, ::MIME"text/plain", i::BoseFSIndex) = show(io, i)
     BoseOccupiedModes{C,S<:BoseFS}
 
 Iterator for occupied modes in [`BoseFS`](@ref). The definition of `iterate` is dispatched
-on the storage type.
+on the storage type. The iterator returns [`BoseFSIndex`](@ref)s.
 
 See [`occupied_modes`](@ref).
 
@@ -726,7 +737,8 @@ bose_num_occupied_modes
     FermiFSIndex
 
 Struct used for indexing and performing [`excitation`](@ref)s on a [`FermiFS`](@ref)
-and [`HardcoreBoseFS`](@ref).
+and [`HardcoreBoseFS`](@ref). `FermiFSIndex` is returned by [`find_mode`](@ref) and
+[`find_occupied_mode`](@ref).
 
 ## Fields:
 
@@ -735,6 +747,8 @@ and [`HardcoreBoseFS`](@ref).
 * `offset`: the position of the mode in the address. This is `mode - 1` when the address is
   represented by a bitstring, and the position in the list when using `SortedParticleList`.
 
+See also [`BoseFSIndex`](@ref), [`find_mode`](@ref), [`find_occupied_mode`](@ref),
+[`excitation`](@ref).
 """
 Base.@kwdef struct FermiFSIndex<:FieldVector{3,Int}
     occnum::Int
@@ -751,7 +765,8 @@ Base.show(io::IO, ::MIME"text/plain", i::FermiFSIndex) = show(io, i)
 """
     FermiOccupiedModes{N,S<:BitString}
 
-Iterator over occupied modes in address. `N` is the number of fermions. See [`occupied_modes`](@ref).
+Iterator over occupied modes in address. `N` is the number of fermions. See
+[`occupied_modes`](@ref). The iterator returns [`FermiFSIndex`](@ref)s.
 """
 struct FermiOccupiedModes{N,S} <: ModeIterator
     storage::S
@@ -764,7 +779,8 @@ Base.eltype(::FermiOccupiedModes) = FermiFSIndex
 """
     FermiUnoccupiedModes{N}
 
-Iterator over unoccupied modes in address. `N` is the number of unoccupied orbitals. See [`unoccupied_modes`](@ref).
+Iterator over unoccupied modes in address. `N` is the number of unoccupied orbitals. See
+[`unoccupied_modes`](@ref). The iterator returns [`FermiFSIndex`](@ref)s.
 """
 struct FermiUnoccupiedModes{N,S} <: ModeIterator
     storage::S
@@ -786,7 +802,7 @@ This function is a part of the interface for an underlying storage format used b
 from_fermi_onr
 
 """
-    fermi_find_mode(bs::B, i::Integer) -> FermiFSIndex
+    fermi_find_mode(bs::B, i::Integer) → FermiFSIndex
 
 Find `i`-th mode in `bs` if `bs` is a fermionic address. Should return an appropriately
 formatted [`FermiFSIndex`](@ref).
@@ -799,7 +815,7 @@ fermi_find_mode
 """
     fermi_excitation(
         bs::B, creations::NTuple{N,FermiFSIndex}, destructions::NTuple{N,FermiFSIndex}
-    ) -> Tuple{B,Float64}
+    ) → Tuple{B,Float64}
 
 Perform excitation as if `bs` was a fermionic address.
 
