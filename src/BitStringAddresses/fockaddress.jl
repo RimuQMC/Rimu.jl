@@ -166,8 +166,10 @@ unoccupied_modes
     excitation(addr::SingleComponentFockAddress, creations::NTuple, destructions::NTuple)
 
 Generate an excitation on address `addr` by applying `creations` and `destructions`, which
-are tuples of the appropriate address indices (i.e. [`BoseFSIndex`](@ref) for bosons, or
-[`FermiFSIndex`](@ref) for fermions).
+are tuples of the appropriate address indices (i.e. [`BoseFSIndex`](@ref) for
+[`BoseFS`](@ref) and [`OccupationNumberFS`](@ref), or
+[`FermiFSIndex`](@ref) for [`FermiFS`](@ref) and [`HardcoreBoseFSIndex`](@ref);
+ [`OccupationNumberFS`](@ref) also supports integer indices).
 
 ```math
 a^†_{c_1} a^†_{c_2} … a_{d_1} a_{d_2} … |f⟩ → α|f'⟩
@@ -175,7 +177,9 @@ a^†_{c_1} a^†_{c_2} … a_{d_1} a_{d_2} … |f⟩ → α|f'⟩
 
 Returns the new address `f'` and the factor `α`. The value of `α` is given by the square
 root of the product of mode occupations before destruction and after creation. If the
-excitation is illegal, returns an arbitrary address and the value `0.0`.
+excitation is illegal, returns an arbitrary address and the value `0.0`. Note that the
+number of particles may change if the number of creation and destruction operators is not
+equal. This may affect the type of the returned address. See examples below.
 
 # Example
 
@@ -189,11 +193,26 @@ julia> i, j, k, l = find_mode(f, (3,4,2,5))
 julia> excitation(f, (i,j), (k,l)) # number conserving excitation
 (FermiFS{6,8}(1, 0, 1, 1, 0, 1, 1, 1), -1.0)
 
-julia> fm = FermiFS{missing}(1,1,0,0,1,1,1,1)
+julia> excitation(f, (j,), (k,l)) # particle number changes, different address type
+(FermiFS{5,8}(1, 0, 0, 1, 0, 1, 1, 1), 1.0)
+
+julia> fm = FermiFS{missing}(1,1,0,0,1,1,1,1) # number non-conserving address
 FermiFS{missing,8}(1, 1, 0, 0, 1, 1, 1, 1)
 
-julia> excitation(fm, (i,), (k,l)) # particle number changes
+julia> excitation(fm, (i,), (k,l)) # particle number changes, same address type
 (FermiFS{missing,8}(1, 0, 1, 0, 0, 1, 1, 1), 1.0)
+
+julia> s = fs"|1 2 3⟩{}"
+OccupationNumberFS{3, UInt8}(1, 2, 3)
+
+julia> num_particles(s)
+6
+
+julia> es, α = excitation(s, (1,1), (3,))
+(OccupationNumberFS{3, UInt8}(3, 2, 2), 4.242640687119285)
+
+julia> num_particles(es)
+7
 ```
 
 See [`SingleComponentFockAddress`](@ref).
