@@ -177,12 +177,17 @@ BoseFS{10,4}(3, 3, 2, 2)
 function near_uniform(T::Type{<:SingleComponentFockAddress{N,M}}) where {N,M}
     return T(near_uniform_onr(Val(N), Val(M)))
 end
-near_uniform(b::SingleComponentFockAddress) = near_uniform(typeof(b))
 function near_uniform(T::Type{<:SingleComponentFockAddress}, N::Integer, M::Integer)
     return near_uniform(T, Val(N), Val(M))
 end
 function near_uniform(T::Type{<:SingleComponentFockAddress}, ::Val{N}, ::Val{M}) where {N,M}
     return T(near_uniform_onr(Val(N), Val(M)))
+end
+near_uniform(b::SingleComponentFockAddress) = near_uniform(typeof(b))
+function near_uniform(b::SingleComponentFockAddress{missing})
+    N = num_particles(b)
+    M = num_modes(b)
+    return near_uniform(typeof(b), Val(N), Val(M))
 end
 
 onr(b::BoseFS{<:Any,M}) where {M} = to_bose_onr(b.bs, Val(M))

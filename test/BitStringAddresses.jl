@@ -461,9 +461,10 @@ end
         fs1 = CompositeFS(
             FermiFS((1,1,0,0,0,0)), FermiFS{missing}((1,1,1,0,0,0)), BoseFS((5,0,0,0,0,0))
         )
+        @test num_particles(typeof(fs1)) === missing
+        @test num_particles(fs1) == 10
         @test num_modes(fs1) == 6
         @test num_components(fs1) == 3
-        @test num_particles(fs1) == 10
         @test fs1.components[1] == FermiFS((1,1,0,0,0,0))
         @test fs1.components[2] == FermiFS{missing}((1,1,1,0,0,0))
         @test fs1.components[3] == BoseFS((5,0,0,0,0,0))
@@ -500,6 +501,16 @@ end
         @test fs"|↑⋅⇅⋅↓⟩" == CompositeFS(FermiFS((1,0,1,0,0)), FermiFS((0,0,1,0,1)))
         @test fs"|↑⋅⟩ ⊗ |0 2⟩ ⊗ |b 2: 1 1⟩ ⊗ |f 2: 1 2⟩" == CompositeFS(
             FermiFS((1, 0)), BoseFS((0, 2)), BoseFS((2, 0)), FermiFS((1, 1))
+        )
+
+        fermim = FermiFS2C{missing}((0, 0, 1, 1, 0, 0), (0, 1, 0, 0, 1, 0))
+        @test parse_address(sprint(show, fermim; context=:compact => true)) == fermim
+
+        @test fs"|↑⋅⇅⋅↓⟩{}" == CompositeFS(FermiFS{missing}((1, 0, 1, 0, 0)),
+                FermiFS{missing}((0, 0, 1, 0, 1))
+        )
+        @test fs"|↑⋅⟩{} ⊗ |0 2⟩ ⊗ |b 2: 1 1⟩ ⊗ |f 2: 1 2⟩{}" == CompositeFS(
+            FermiFS{missing}((1, 0)), BoseFS((0, 2)), BoseFS((2, 0)), FermiFS{missing}((1, 1))
         )
         @test_throws ArgumentError parse_address("|2 3⟩ ⊗ |↓↑⟩")
         @test_throws ArgumentError parse_address("|⋅↓⟩ ⊗ |2 3⟩")
@@ -749,4 +760,25 @@ end
         @test_throws ArgumentError HardcoreBoseFS{missing}(2)
         @test HardcoreBoseFS{missing}(5, 1 => 0) == fs"|∘∘∘∘∘⟩{}" # vacuum with 5 modes
     end
+end
+
+@testset "missing particle number" begin
+    @test_throws ArgumentError parse_address("|2 3⟩{x}")
+    @test_throws ArgumentError parse_address("|⋅↑⟩{3}")
+    @test_throws ArgumentError parse_address("|●∘⟩{8}")
+    @test_throws ArgumentError parse_address("|↓↑⟩{3}")
+    @test_throws ArgumentError parse_address("|b 2: 1 2⟩{7}")
+    @test fs"|b 2: 1 2⟩{}" == OccupationNumberFS(1,1)
+    @test_throws ArgumentError parse_address("|h 2: 1 2⟩{7}")
+    @test fs"|h 2: 1 2⟩{}" == HardcoreBoseFS{missing}(1, 1)
+    @test_throws ArgumentError parse_address("|f 3: 1 2⟩{7}")
+    @test fs"|f 3: 1 2⟩{}" == FermiFS{missing}(1, 1, 0)
+    @test near_uniform(FermiFS{missing}(1, 0, 0)) == FermiFS{missing}(1, 0, 0)
+    @test near_uniform(HardcoreBoseFS{missing}(1, 0, 0)) == HardcoreBoseFS{missing}(1, 0, 0)
+    @test near_uniform(OccupationNumberFS(10, 0, 0)) == OccupationNumberFS(4, 3, 3)
+
+    fs = FermiFS{missing}(1, 0, 1, 1, 1, 0)
+    @test ismissing(num_particles(typeof(fs)))
+    @test length(occupied_modes(fs)) == num_particles(fs) == 4
+    @test length(unoccupied_modes(fs)) == num_modes(fs) - num_particles(fs) == 2
 end

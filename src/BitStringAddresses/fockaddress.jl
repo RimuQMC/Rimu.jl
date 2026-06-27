@@ -365,7 +365,7 @@ function parse_address(str)
     m = match(r"⊗", str)
     if !isnothing(m)
         if !isnothing(match(r"[↓⇅]", str))
-            throw(ArgumentError("invalid Fock state format \"$str\""))
+            throw(ArgumentError("invalid Fock state format \"$str\"; 2-component FermiFS cannot be combined with ⊗"))
         else
             return CompositeFS(map(parse_address, split(str, r" *⊗ *"))...)
         end
@@ -373,8 +373,11 @@ function parse_address(str)
     # FermiFS2C
     m = match(r"[↓⇅]", str)
     if !isnothing(m)
-        m = match(r"\|([↑↓⇅⋅ ]+)⟩{}", str)
+        m = match(r"\|([↑↓⇅⋅ ]+)⟩{", str)
         if !isnothing(m) # FermiFS2C with missing particle number
+            if isnothing(match(r"{}", str))
+                throw(ArgumentError("invalid Fock state format \"$str\""))
+            end
             chars = filter(!=(' '), Vector{Char}(m.captures[1]))
             f1 = FermiFS{missing}((chars .== '↑') .| (chars .== '⇅'))
             f2 = FermiFS{missing}((chars .== '↓') .| (chars .== '⇅'))
@@ -390,17 +393,44 @@ function parse_address(str)
             return CompositeFS(f1, f2)
         end
     end
+    # Sparse OccupationNumberFS
+    m = match(r"\|b *([0-9]+): *([ 0-9]+)⟩{", str)
+    if !isnothing(m)
+        if isnothing(match(r"{}", str))
+            throw(ArgumentError("invalid Fock state format \"$str\""))
+        end
+        particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
+        return OccupationNumberFS(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
+    end
     # Sparse BoseFS
     m = match(r"\|b *([0-9]+): *([ 0-9]+)⟩", str)
     if !isnothing(m)
         particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
         return BoseFS(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
     end
+    # Sparse HardcoreBoseFS with missing particle number
+    m = match(r"\|h *([0-9]+): *([ 0-9]+)⟩{", str)
+    if !isnothing(m)
+        if isnothing(match(r"{}", str))
+            throw(ArgumentError("invalid Fock state format \"$str\""))
+        end
+        particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
+        return HardcoreBoseFS{missing}(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
+    end
     # Sparse HardcoreBoseFS
     m = match(r"\|h *([0-9]+): *([ 0-9]+)⟩", str)
     if !isnothing(m)
         particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
         return HardcoreBoseFS(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
+    end
+    # Sparse FermiFS with missing particle number
+    m = match(r"\|f *([0-9]+): *([ 0-9]+)⟩{", str)
+    if !isnothing(m)
+        if isnothing(match(r"{}", str))
+            throw(ArgumentError("invalid Fock state format \"$str\""))
+        end
+        particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
+        return FermiFS{missing}(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
     end
     # Sparse FermiFS
     m = match(r"\|f *([0-9]+): *([ 0-9]+)⟩", str)
@@ -445,8 +475,11 @@ function parse_address(str)
     end
 
     # HardcoreBoseFS with missing particle number
-    m = match(r"\|([ ∘●]+)⟩{}", str)
+    m = match(r"\|([ ∘●]+)⟩{", str)
     if !isnothing(m)
+        if isnothing(match(r"{}", str))
+            throw(ArgumentError("invalid Fock state format \"$str\""))
+        end
         chars = filter(!=(' '), Vector{Char}(m.captures[1]))
         return HardcoreBoseFS{missing}(chars .== '●')
     end
@@ -457,8 +490,11 @@ function parse_address(str)
         return HardcoreBoseFS(chars .== '●')
     end
     # Single FermiFS with missing particle number
-    m = match(r"\|([ ⋅↑]+)⟩{}", str)
+    m = match(r"\|([ ⋅↑]+)⟩{", str)
     if !isnothing(m)
+        if isnothing(match(r"{}", str))
+            throw(ArgumentError("invalid Fock state format \"$str\""))
+        end
         chars = filter(!=(' '), Vector{Char}(m.captures[1]))
         return FermiFS{missing}(chars .== '↑')
     end
@@ -493,10 +529,16 @@ CompositeFS(
   BoseFS{1,3}(0, 1, 0),
 )
 
-julia> fs"|↑↓↑⟩" # construct a fermionic Fock state; \\uparrow(tab) -> ↑, \\downarrow(tab) -> ↓
+julia> fs"|↑↓↑⟩" # 2-component fermions; \\uparrow(tab) -> ↑, \\downarrow(tab) -> ↓
 CompositeFS(
   FermiFS{2,3}(1, 0, 1),
   FermiFS{1,3}(0, 1, 0),
+)
+
+julia> fs"|↑↓↑⇅⟩{}" # spinor fermions; \\dblarrowupdown(tab) -> ⇅
+CompositeFS(
+  FermiFS{missing,4}(1, 0, 1, 1),
+  FermiFS{missing,4}(0, 1, 0, 1),
 )
 
 julia> s = fs"|0 1 2 0⟩{}" # constructing OccupationNumberFS with default UInt8 container
@@ -697,8 +739,8 @@ struct FermiOccupiedModes{N,S} <: ModeIterator
 end
 
 Base.length(::FermiOccupiedModes{N}) where {N} = N
+Base.length(it::FermiOccupiedModes{missing}) = count_ones(it.storage)
 Base.eltype(::FermiOccupiedModes) = FermiFSIndex
-Base.IteratorSize(::FermiOccupiedModes{missing}) = Base.SizeUnknown()
 
 """
     FermiUnoccupiedModes{N}
@@ -709,8 +751,8 @@ struct FermiUnoccupiedModes{N,S} <: ModeIterator
     storage::S
 end
 Base.length(::FermiUnoccupiedModes{N}) where {N} = N
+Base.length(it::FermiUnoccupiedModes{missing}) = count_zeros(it.storage)
 Base.eltype(::FermiUnoccupiedModes) = FermiFSIndex
-Base.IteratorSize(::FermiUnoccupiedModes{missing}) = Base.SizeUnknown()
 
 """
     from_fermi_onr(::Type{B}, onr) -> B
