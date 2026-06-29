@@ -372,14 +372,16 @@ function Base.empty(t::PDVec{K,V}, ::Type{V}; kwargs...) where {K,V}
     return empty(t; kwargs...)
 end
 function Base.empty(
-    t::PDVec{K,<:Any,N}, ::Type{V}; style=default_style(V), kwargs...
+    t::PDVec{K,<:Any,N}, ::Type{V}; style=t.style(V), initiator=t.initiator,
+    communicator=t.communicator, kwargs...
 ) where {K,V,N}
-    return PDVec{K,V,N}(; style, kwargs...)
+    return PDVec{K,V,N}(; style, initiator, communicator, kwargs...)
 end
 function Base.empty(
-    t::PDVec{<:Any,<:Any,N}, ::Type{K}, ::Type{V}; style=default_style(V), kwargs...
+    t::PDVec{<:Any,<:Any,N}, ::Type{K}, ::Type{V}; style=t.style(V),
+    initiator=t.initiator, communicator=t.communicator, kwargs...
 ) where {K,V,N}
-    return PDVec{K,V,N}(; style, kwargs...)
+    return PDVec{K,V,N}(; style, initiator, communicator, kwargs...)
 end
 function Base.empty!(t::PDVec)
     Folds.foreach(empty!, t.segments, )

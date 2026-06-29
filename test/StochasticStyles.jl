@@ -305,3 +305,9 @@ end
         @test exact[k] ≈ ds_exact[k]
     end
 end
+
+@testset "style(V) adapts type parameters" begin
+    @test IsDynamicSemistochastic()(Float32) == IsDynamicSemistochastic{Float32}()
+    @test IsStochasticInteger()(Int32) == IsStochasticInteger{Int32}()
+    @test IsDeterministic()(Float32) == IsDeterministic{Float32}()
+end

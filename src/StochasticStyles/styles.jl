@@ -216,3 +216,21 @@ default_style(::Type{T}) where {T<:Integer} = IsStochasticInteger{T}()
 default_style(::Type{T}) where {T<:AbstractFloat} = IsDeterministic{T}()
 default_style(::Type{T}) where {T<:Complex{<:AbstractFloat}} = IsDeterministic{T}()
 default_style(::Type{T}) where {T<:Complex{<:Integer}} = IsStochastic2Pop{T}()
+
+(::StochasticStyle)(::Type{V}) where {V} = default_style(V)
+
+(::IsStochasticInteger)(::Type{V}) where {V<:Integer} = IsStochasticInteger{V}()
+(::IsStochasticInteger)(::Type{V}) where {V} = default_style(V)
+
+(::IsStochastic2Pop)(::Type{V}) where {V<:Complex{<:Integer}} = IsStochastic2Pop{V}()
+(::IsStochastic2Pop)(::Type{V}) where {V} = default_style(V)
+
+(s::IsDeterministic)(::Type{V}) where {V<:FloatOrComplexFloat} = IsDeterministic{V}(s.compression)
+(s::IsDeterministic)(::Type{V}) where {V} = default_style(V)
+
+(s::IsStochasticWithThreshold)(::Type{V}) where {V<:AbstractFloat} = IsStochasticWithThreshold{V}(V(s.threshold))
+(s::IsStochasticWithThreshold)(::Type{V}) where {V} = default_style(V)
+
+(s::IsDynamicSemistochastic)(::Type{V}) where {V<:FloatOrComplexFloat} =
+    IsDynamicSemistochastic(V(s.proj_threshold), s.compression, s.spawning)
+(s::IsDynamicSemistochastic)(::Type{V}) where {V} = default_style(V)

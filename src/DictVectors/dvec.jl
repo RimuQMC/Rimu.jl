@@ -79,19 +79,18 @@ function DVec(dv::AbstractDVec{K,V}; style=StochasticStyle(dv), capacity=0) wher
     return copyto!(dvec, dv)
 end
 
-function Base.empty(dvec::DVec{K,V}; style=dvec.style) where {K,V}
+function Base.empty(dvec::DVec{K,V}; style=dvec.style) where {K,V}   # was wrongly commented out
     return DVec{K,V}(; style)
 end
 function Base.empty(dvec::DVec{K,V}, ::Type{V}; style=dvec.style) where {K,V}
     return empty(dvec; style)
 end
-function Base.empty(::DVec{K}, ::Type{V}; style=default_style(V)) where {K,V}
+function Base.empty(dvec::DVec{K}, ::Type{V}; style=dvec.style(V)) where {K,V}
     return DVec{K,V}(; style)
 end
-function Base.empty(::DVec, ::Type{K}, ::Type{V}; style=default_style(V)) where {K,V}
+function Base.empty(dvec::DVec, ::Type{K}, ::Type{V}; style=dvec.style(V)) where {K,V}
     return DVec{K,V}(; style)
 end
-
 ###
 ### Show
 ###

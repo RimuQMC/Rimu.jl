@@ -2,7 +2,7 @@ using LinearAlgebra
 using Random
 using Rimu
 using Rimu.DictVectors
-using Rimu.DictVectors: PDWorkingMemory
+using Rimu.DictVectors: PDWorkingMemory, NotDistributed, AllToAll, Initiator, NonInitiator, CommunicatorError
 using Rimu.StochasticStyles: IsStochastic2Pop, StochasticStyle
 using StaticArrays
 using Suppressor
@@ -106,7 +106,9 @@ function test_dvec_interface(type; kwargs...)
             @testset "zerovector(!)" begin
                 u = type(9 => 1 + im, 2 => 2 - im, 13 => im, 4 => -im; kwargs...)
                 e = type{Int,Complex{Int}}(; kwargs...)
-
+                u_style = type(:a => 1; style=IsDynamicSemistochastic(), kwargs...)
+                e_same = empty(u_style)
+                e_new = empty(u_style, Float32)
                 @test isempty(e)
                 @test e == zerovector(u) == empty(u) == similar(u)
                 @test e == zerovector!(copy(u)) == zerovector!(copy(u)) == empty!(copy(u))
@@ -125,6 +127,13 @@ function test_dvec_interface(type; kwargs...)
                 v = type(1 => 1; kwargs...)
                 @test zerovector!!(v, Int) ≡ v
                 @test zerovector!!(v, Float64) ≢ v
+
+                @test StochasticStyle(e_same) isa IsDynamicSemistochastic
+                @test StochasticStyle(e_new) isa IsDynamicSemistochastic{Float32}
+                @test valtype(e_new) === Float32
+                @test StochasticStyle(similar(u_style, Float32)) isa IsDynamicSemistochastic{Float32}
+
+
             end
             @testset "scale(!)" begin
                 u = type(1 => 1.0 + im, 2 => -2.0im; kwargs...)
@@ -468,6 +477,17 @@ using Rimu.DictVectors: num_segments, is_distributed, SegmentedBuffer, replace_c
 
                 @test dot(pv1, op, pv2, wm) ≈ dot(pv1, op, dv2)
             end
+        end
+
+        @testset "preserve initiator and communicator" begin
+            pv = PDVec(:a => 1; initiator=true)
+            e = empty(pv, Float64)
+            @test e.initiator isa Initiator 
+            @test e.communicator == pv.communicator  
+            pv2 = PDVec(:b => 1; communicator=NotDistributed(), initiator=NonInitiator())
+            e2 = empty(pv2, Float32)
+            @test e2.communicator isa NotDistributed
+            @test e2.initiator isa NonInitiator
         end
     end
 
