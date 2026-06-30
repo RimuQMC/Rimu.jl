@@ -16,8 +16,8 @@ calculated using the provided `dispersion` function, which takes in the hopping 
 value as arguments. By default, it uses the `hubbard_dispersion_mom_space` function, which corresponds 
 to the standard Hubbard model. 
 """
-function dispersion_mom_space(ks::SVector{D}, geometry::CubicGrid{D, S}, t::SMatrix, 
-        dispersion::Function = hubbard_dispersion_mom_space) where {D, S}
+function _mom_space_energies_and_ks(ks::SVector{D}, geometry::CubicGrid{D, S}, t::SMatrix, 
+        dispersion::Function) where {D, S}
     # Calculate the dispersion relation for a given set of k values and hopping strength t.
     C,_ = size(t)
     M = prod(S)
