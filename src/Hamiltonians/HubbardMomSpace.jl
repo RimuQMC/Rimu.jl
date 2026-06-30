@@ -1,22 +1,14 @@
 """
-    hubbard_dispersion_mom_space(t, k)
-Hubbard dispersion relation for momentum space models. Returns ``-2(\\Re(t) \\cos(k) + \\Im(t) \\sin(k))``.
-"""
-function hubbard_dispersion_mom_space(t::SVector, k::Vector)
-    # Calculate the dispersion relation for a given k value and hopping strength t.
-    return -2 * (dot(real.(t), cos.(k)) + dot(imag.(t), sin.(k)))
-end
+    _mom_space_energies_and_ks(ks, geometry, t; dispersion::Function = hubbard_dispersion_mom_space)
 
+This function returns a tuple of the kinetic energy values and the k values for each mode for a 
+given set of `ks` values, lattice `geometry`, and hopping strengths `t`. `ks` should pass a 
+vector of single particle allowed momentum values along each of the dimensions of the grid as 
+defined in `geometry`. The dispersion relation is calculated using the provided `dispersion` 
+function, which takes in the hopping strength and the `ks` value as arguments. By default, it
+uses the `hubbard_dispersion` function, which corresponds to the standard Hubbard model. 
 """
-    dispersion_mom_space(ks, geometry, t; dispersion::Function = hubbard_dispersion_mom_space)
-
-Dispersion relation for a given set of `k` values, lattice geometry, and hopping strengths t. Returns
-a tuple of the kinetic energy values and the k values for each mode. The dispersion relation is 
-calculated using the provided `dispersion` function, which takes in the hopping strength and the `k`
-value as arguments. By default, it uses the `hubbard_dispersion_mom_space` function, which corresponds 
-to the standard Hubbard model. 
-"""
-function _mom_space_energies_and_ks(ks::SVector{D}, geometry::CubicGrid{D, S}, t::SMatrix, 
+function _mom_space_energies_and_ks(ks::Vector, geometry::CubicGrid{D, S}, t::SMatrix, 
         dispersion::Function) where {D, S}
     # Calculate the dispersion relation for a given set of k values and hopping strength t.
     C,_ = size(t)
@@ -27,16 +19,15 @@ function _mom_space_energies_and_ks(ks::SVector{D}, geometry::CubicGrid{D, S}, t
         mom_val = value_of_mom_mode(M-i+1, ks, geometry)
         ks_mat[:,i] = mom_val
         for j in 1:C
-            kes_mat[j,i] = convert(Float64,dispersion(t[j,:], mom_val)[1])
+            kes_mat[j,i] = convert(Float64,sum(dispersion.(t[j,:], mom_val)))
         end
     end
     return SMatrix{C,M,Float64}(kes_mat), SMatrix{D,M,Float64}(ks_mat)
 end
-function value_of_mom_mode(add_index::Int, ks::SVector{D}, geometry::CubicGrid{D}) where {D}
+function value_of_mom_mode(add_index::Int, ks::Vector, geometry::CubicGrid)
     mom_mode = geometry[add_index]
     return [ks[i][mode] for (i, mode) in enumerate(mom_mode)]
 end
-
 
 """
     _mom_hopping(kes, address)
@@ -355,7 +346,7 @@ function HubbardMomSpace(
     t=ones(num_components(address), num_dimensions(geometry)),
     u=ones(num_components(address), num_components(address)),
     w=zeros(num_components(address), num_components(address)),
-    dispersion::Function = hubbard_dispersion_mom_space,
+    dispersion::Function = hubbard_dispersion,
 )
     C = num_components(address)
     D = num_dimensions(geometry)
@@ -390,7 +381,7 @@ function HubbardMomSpace(
             push!(ks_mat,reverse([j for j in kr]))
         end
     end
-    kes, ks = dispersion_mom_space(SVector{D}(ks_mat), geometry, t_mat, dispersion)
+    kes, ks = _mom_space_energies_and_ks(ks_mat, geometry, t_mat, dispersion)
 
     return HubbardMomSpace{C,D,typeof(address),typeof(geometry),typeof(ks),typeof(kes),
     typeof(t_mat),typeof(u_mat),typeof(w_mat)}(
