@@ -271,7 +271,7 @@ end
 
 """
     HubbardMomSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C, D), u=ones(C, C), 
-        w=zeros(C, C), dispersion=hub_dis_mom_space) <: AbstractHamiltonian{Float64}
+        w=zeros(C, C), dispersion=hubbard_dispersion) <: AbstractHamiltonian{Float64}
 
 Hubbard model in momentum space. Supports single or multi-component Fock state
 addresses (with `C` components) and various (rectangular) lattice geometries
@@ -282,7 +282,7 @@ in `D` dimensions and of `M` volume.
   \\sum_{p,q,k,σ,σ'} V_{σσ'} a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}
 ```
 where ``ϵ_{kσ} = -2 (\\sum_{d=1}^{D} \\Re(t_{σ,d}) \\cos(k_d) + \\Im(t_{σ,d}) \\sin(k_d))`` is 
-the single-particle dispersion and
+the single-particle `dispersion` and
 ``V_{σσ'} = (u_{σσ'}(1- \\frac{δ_{σσ'}}{2}) + w_{σσ'} \\sum_{d=1}^{D} \\cos(q_d))/M``
 the coefficients of a two-body interaction with onsite (``u_{σσ'}``) and nearest-neighbour 
 (``w_{σσ'}``) interaction terms.
@@ -315,7 +315,7 @@ number of sites `M` inferred from the number of modes in `address`.
 * `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
   `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
 * `dispersion`: the function used to calculate the dispersion relation. Default is 
-    `hubbard_dispersion_mom_space` which corresponds to the standard Hubbard model. 
+    `hubbard_dispersion` which corresponds to the standard Hubbard model. 
   
   See also [`HubbardRealSpace`](@ref), [`HubbardMom1D`](@ref), [`ExtendedHubbardReal1D`](@ref).
 """
