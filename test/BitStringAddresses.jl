@@ -785,4 +785,14 @@ end
     @test ismissing(num_particles(typeof(fs)))
     @test length(occupied_modes(fs)) == num_particles(fs) == 4
     @test length(unoccupied_modes(fs)) == num_modes(fs) - num_particles(fs) == 2
+
+    f = FermiFS(1, 1, 0, 0, 1, 1, 1, 1)
+    i, j, k, l = find_mode(f, (3, 4, 2, 5))
+    @test_throws ArgumentError excitation(f, (i,), (k, l)) # number non-conserving excitation
+    h = HardcoreBoseFS(1, 1, 0, 0, 1, 1, 1, 1)
+    i, j, k, l = find_mode(h, (3, 4, 2, 5))
+    @test_throws ArgumentError excitation(h, (i,), (k, l)) # number non-conserving excitation
+    b = BoseFS(1, 1, 0, 0, 1, 1, 1, 1)
+    i, j, k, l = find_mode(b, (3, 4, 2, 5))
+    @test_throws ArgumentError excitation(b, (i,), (k, l)) # number non-conserving excitation
 end
