@@ -186,7 +186,8 @@ Returns the new address `f'` and the factor `α`. The value of `α` is given by 
 root of the product of mode occupations before destruction and after creation. If the
 excitation is illegal, returns an arbitrary address and the value `0.0`. Note that the
 number of particles may change if the number of creation and destruction operators is not
-equal. This may affect the type of the returned address. See examples below.
+equal and `num_particles(typeof(addr))` is `missing`.
+See examples below.
 
 # Example
 
@@ -199,9 +200,6 @@ julia> i, j, k, l = find_mode(f, (3,4,2,5))
 
 julia> excitation(f, (i,j), (k,l)) # number conserving excitation
 (FermiFS{6,8}(1, 0, 1, 1, 0, 1, 1, 1), -1.0)
-
-julia> excitation(f, (j,), (k,l)) # particle number changes, different address type
-(FermiFS{5,8}(1, 0, 0, 1, 0, 1, 1, 1), 1.0)
 
 julia> fm = FermiFS{missing}(1,1,0,0,1,1,1,1) # number non-conserving address
 FermiFS{missing,8}(1, 1, 0, 0, 1, 1, 1, 1)

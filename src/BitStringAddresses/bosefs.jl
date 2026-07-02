@@ -298,13 +298,10 @@ end
 
 function excitation(b::B, creations::NTuple{C}, destructions::NTuple{C}) where {B<:BoseFS, C}
     new_bs, val = bose_excitation(b.bs, creations, destructions)
-    return B(new_bs), val
+    return B(new_bs), val # type doesn't change
 end
-function excitation(b::BoseFS{N,M}, c::NTuple{C}, d::NTuple{D}) where {N, M, C, D}
-    ofs = OccupationNumberFS(b)
-    new_ofs, val = excitation(ofs, c, d)
-    NNEW = N + C - D # done at compile time
-    return BoseFS{NNEW, M}(onr(new_ofs)), val
+function excitation(b::BoseFS, c::NTuple{C}, d::NTuple{D}) where {C, D}
+    throw(ArgumentError("number of creations and destructions must be equal, got $C and $D"))
 end
 
 """

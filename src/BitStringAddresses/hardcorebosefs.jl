@@ -140,9 +140,11 @@ end
 function excitation(
     a::HardcoreBoseFS{N,M,S}, creations::NTuple{NC}, destructions::NTuple{ND}
 ) where {N,M,S,NC,ND}
+    if NC != ND && !ismissing(N)
+        throw(ArgumentError("number of creations and destructions must be equal, got $NC and $ND"))
+    end
     new_bs, value = fermi_excitation(a.bs, creations, destructions)
-    NN = ismissing(N) ? missing : N + NC - ND # done at compile time
-    return HardcoreBoseFS{NN,M,S}(new_bs), abs(value) # different from FermiFS, no sign
+    return HardcoreBoseFS{N,M,S}(new_bs), abs(value) # different from FermiFS, no sign
 end
 
 # See "fermifs.jl" for other function definitions for HardcoreBoseFS.
