@@ -4,7 +4,7 @@
 Address type that represents a Fock state of `N` fermions of the same spin in `M` modes by
 wrapping a [`BitString`](@ref), or a [`SortedParticleList`](@ref). Which is wrapped is
 chosen automatically based on the properties of the address. Set `N` to `missing` if the
-number of particles is not known at compile time.
+number of particles is not known at compile time and can be changed by excitations.
 
 # Constructors
 
@@ -30,7 +30,7 @@ number of particles is not known at compile time.
 # Examples
 
 ```jldoctest
-julia> FermiFS{3,5}(0, 1, 1, 1, 0)
+julia> FermiFS(0, 1, 1, 1, 0)
 FermiFS{3,5}(0, 1, 1, 1, 0)
 
 julia> FermiFS([abs(i - 3) ≤ 1 for i in 1:5])
@@ -44,6 +44,9 @@ FermiFS{3,5}(0, 1, 1, 1, 0)
 
 julia> fs"|⋅↑↑↑⋅⟩" # \\uparrow(tab) -> ↑, \\cdot(tab) -> ⋅, \\rangle(tab) -> ⟩
 FermiFS{3,5}(0, 1, 1, 1, 0)
+
+julia> FermiFS{missing}(0, 1, 1, 1, 0) == fs"|⋅↑↑↑⋅⟩{}" # missing particle number
+true
 
 julia> fs"|f 5: 2 3 4⟩"
 FermiFS{3,5}(0, 1, 1, 1, 0)

@@ -5,7 +5,7 @@ Address type that represents a Fock state of `N` hardcore bosons in `M` modes, w
 occupancies restricted to 0 or 1 per mode, by wrapping a [`BitString`](@ref) or a
 [`SortedParticleList`](@ref). Which is wrapped is chosen automatically based on the
 properties of the address. Set `N` to `missing` if the number of particles is not known at
-compile time.
+compile time and can be changed by excitations.
 
 # Constructors
 
@@ -33,7 +33,7 @@ See the examples below.
 # Examples
 
 ```jldoctest
-julia> HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+julia> HardcoreBoseFS(1, 1, 1, 0, 0)
 HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS([abs(i - 2) ≤ 1 for i in 1:5])
@@ -47,6 +47,9 @@ HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
 
 julia> fs"|●●●∘∘⟩" # \\mdlgblkcircle(tab) -> ●, \\circ(tab) -> ∘, \\rangle(tab) -> ⟩
 HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+
+julia> HardcoreBoseFS{missing}(1, 1, 1, 0, 0) == fs"|●●●∘∘⟩{}" # missing particle number
+true
 
 julia> fs"|h 5: 1 2 3⟩"
 HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
