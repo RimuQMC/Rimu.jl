@@ -77,11 +77,11 @@ function dimension(::Type{<:OccupationNumberFS{M,T}}) where {M,T}
     n = typemax(T)
     return BigInt(n + 1)^BigInt(M)
 end
-function dimension(::Type{<:FermiFS{N,M}}) where {N,M}
+function dimension(::Type{<:FermiOrHardcoreBoseFS{N,M}}) where {N,M}
     return number_conserving_fermi_dimension(N, M)
 end
-function dimension(::Type{<:HardcoreBoseFS{N,M}}) where {N,M}
-    return number_conserving_fermi_dimension(N, M)
+function dimension(::Type{<:FermiOrHardcoreBoseFS{missing,M}}) where {M}
+    return BigInt(2)^BigInt(M)
 end
 function dimension(::Type{<:CompositeFS{<:Any,<:Any,<:Any,T}}) where {T}
     return prod(dimension, T.parameters)

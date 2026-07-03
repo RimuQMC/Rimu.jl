@@ -155,6 +155,24 @@ using SparseArrays
         bsr = BasisSetRepresentation(ham, add; cutoff)
         basis = build_basis(ham, add; cutoff)
         @test basis == bsr.basis
+
+        # build_basis for HardcoreBoseFS and FermiFS
+        hbas = build_basis(HardcoreBoseFS{2, 4})
+        @test length(hbas) == dimension(HardcoreBoseFS{2, 4})
+        fbas = build_basis(FermiFS{2, 4})
+        @test all(f.bs == h.bs for (f, h) in zip(fbas, hbas))
+
+
+        # build_basis with missing N for FermiFS and HardcoreBoseFS
+        fbasis = build_basis(FermiFS{missing}(1, 0, 1))
+        @test fbasis == build_basis(FermiFS{missing,3})
+        @test eltype(fbasis) <: FermiFS{missing,3}
+        @test length(fbasis) == 8 == dimension(FermiFS{missing}(1, 0, 1))
+        hbasis = build_basis(HardcoreBoseFS{missing}(1, 0, 1))
+        @test eltype(hbasis) <: HardcoreBoseFS{missing,3}
+        @test length(hbasis) == 8 == dimension(HardcoreBoseFS{missing}(1, 0, 1))
+        @test all(f.bs == h.bs for (f, h) in zip(fbasis, hbasis))
+        @test_throws ArgumentError build_basis(FermiFS{missing, 64})
     end
 
     @testset "fock build basis" begin
