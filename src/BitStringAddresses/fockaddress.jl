@@ -377,6 +377,14 @@ function LinearAlgebra.dot(map1::ModeMap, map2::ModeMap)
     return value
 end
 
+const UINT_TYPE_MAP = Dict(
+    "UInt8" => UInt8,
+    "UInt16" => UInt16,
+    "UInt32" => UInt32,
+    "UInt64" => UInt64,
+    "UInt128" => UInt128,
+    )
+
 """
     parse_address(str)
 
@@ -468,6 +476,7 @@ function parse_address(str)
         m2 = match(r"{([0-9]+)}", str)
         if isnothing(m2) # empty braces defaults to UInt8
             BITS = 8
+            return BoseFS{missing}(parse.(UInt8, split(m.captures[1], r" +")))
         else
             BITS = parse(Int, m2.captures[1])
         end
@@ -486,6 +495,18 @@ function parse_address(str)
         end
         t = Tuple(parse.(T, split(m.captures[1], r" +")))
         return OccupationNumberFS(SVector(t))
+    end
+    # BoseFS with missing particle number
+    m = match(r"\|([ 0-9]+)⟩{[a-zA-Z0-9]*}", str)
+    if !isnothing(m)
+        m2 = match(r"{([a-zA-Z0-9]+)}", str)
+        if isnothing(m2) # empty braces defaults to UInt8
+            TYPE = UInt8
+        else
+            TYPE = get(UINT_TYPE_MAP, m2.captures[1], Nothing)
+        end
+        TYPE <: Unsigned || throw(ArgumentError("invalid Fock state format \"$str\""))
+        return BoseFS{missing}(parse.(TYPE, split(m.captures[1], r" +")); type=TYPE)
     end
     m = match(r"\|([ 0-9]+)⟩{", str) # anything else that has a curly brace
     if !isnothing(m)

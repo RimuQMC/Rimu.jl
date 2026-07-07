@@ -795,4 +795,23 @@ end
     b = BoseFS(1, 1, 0, 0, 1, 1, 1, 1)
     i, j, k, l = find_mode(b, (3, 4, 2, 5))
     @test_throws ArgumentError excitation(b, (i,), (k, l)) # number non-conserving excitation
+
+    # BoseFS{missing} constructors
+    bm = BoseFS{missing}(1, 2, 3)
+    bm16 = BoseFS{missing}(1, 2, 3; type=UInt16)
+    @test bm == bm16
+    @test BoseFS{missing,3}(1,2,3) == bm == BoseFS{missing}(1, 2, 3; type=UInt8)
+    @test BoseFS{missing}(bm.bs) == bm == BoseFS{missing, 3}(bm.bs)
+    @test_throws ArgumentError BoseFS{missing}(1, 2, 3; type=Int16)
+    @test BoseFS{missing}(1, 2, 3; type=UInt16) === bm16
+    @test BoseFS{missing}(1, 2, 3; type=UInt16) !== bm
+    @test BoseFS{missing}((1,2,3)) === bm
+    @test bm == eval(Meta.parse(repr(bm))) === bm
+    @test bm16 ==eval(Meta.parse(repr(bm16))) === bm16
+    @test BoseFS{missing,3}(1 => 1, 2 => 2, 3 => 3) === bm
+    @test BoseFS{missing}(3, 1 => 1, 2 => 2, 3 => 3; type=UInt16) === bm16
+    # Check that compact string can be parsed.
+    @test parse_address(sprint(show, bm16; context=:compact => true)) == bm16
+
+    @test BoseFS(OccupationNumberFS(1, 2, 3)) == bm
 end
