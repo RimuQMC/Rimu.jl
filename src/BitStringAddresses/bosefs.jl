@@ -497,6 +497,7 @@ function BoseFS{missing}(arg; type=UInt8)
     return @inbounds BoseFS{missing}(onr)
 end
 BoseFS{missing}(args::Integer...; type=UInt8) = BoseFS{missing}(Tuple(args); type)
+BoseFS{missing}(arg::Integer; type=UInt8) = BoseFS{missing}((arg,); type) # single mode address
 function BoseFS{missing,M}(args::Integer...; type=UInt8) where {M}
     BoseFS{missing,M}(Tuple(args); type)
 end
@@ -539,7 +540,9 @@ function print_address(io::IO, b::BoseFS{missing,M,S}; compact=false) where {T,M
         if compact
             print(io, "|", join(onr(b), ' '), "⟩{", string(T), "}")
         else
-            print(io, "BoseFS{missing}(", Int.(tuple(onr(b)...)),"; type=",string(T),")")
+            print(io, "BoseFS{missing}(", Int(onr(b)[1]))
+            foreach(i -> print(io, ", ", Int(onr(b)[i])), 2:M)
+            print(io, "; type=", string(T), ")")
         end
     end
 end

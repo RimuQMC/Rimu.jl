@@ -812,6 +812,7 @@ end
     @test BoseFS{missing}(3, 1 => 1, 2 => 2, 3 => 3; type=UInt16) === bm16
     # Check that compact string can be parsed.
     @test parse_address(sprint(show, bm16; context=:compact => true)) == bm16
-
+    @test BoseFS{missing}(1, 1 => 3) == BoseFS{missing}(3,) # single mode
+    @test BoseFS{missing}(1, 1 => 3; type=UInt32) ==BoseFS{missing}(3; type=UInt32)
     @test BoseFS(OccupationNumberFS(1, 2, 3)) == bm
 end
