@@ -152,10 +152,12 @@ function near_uniform_onr(::Val{N}, ::Val{M}) where {N, M}
 end
 
 """
-    near_uniform(BoseFS{N,M}) -> BoseFS{N,M}
+    near_uniform(T::Type{<:SingleComponentFockAddress{N,M}}) → address::T
+    near_uniform(T::Type{<:SingleComponentFockAddress}, N::Integer, M::Integer) → address::T
+    near_uniform(address::SingleComponentFockAddress) → address::typeof(address)
 
-Create bosonic Fock state with near uniform occupation number of `M` modes with
-a total of `N` particles.
+Create a single component Fock state with `M` modes and `N` particles with near uniform
+occupation numbers.
 
 # Examples
 ```jldoctest
@@ -164,12 +166,29 @@ BoseFS{7,5}(2, 2, 1, 1, 1)
 
 julia> near_uniform(FermiFS{3,5})
 FermiFS{3,5}(1, 1, 1, 0, 0)
+
+julia> near_uniform(HardcoreBoseFS{missing}, 3, 5)
+HardcoreBoseFS{missing,5}(1, 1, 1, 0, 0)
+
+julia> near_uniform(BoseFS(10,0,0,0))
+BoseFS{10,4}(3, 3, 2, 2)
 ```
 """
-function near_uniform(::Type{<:BoseFS{N,M}}) where {N,M}
-    return BoseFS{N,M}(near_uniform_onr(Val(N),Val(M)))
+function near_uniform(T::Type{<:SingleComponentFockAddress{N,M}}) where {N,M}
+    return T(near_uniform_onr(Val(N), Val(M)))
 end
-near_uniform(b::AbstractFockAddress) = near_uniform(typeof(b))
+function near_uniform(T::Type{<:SingleComponentFockAddress}, N::Integer, M::Integer)
+    return near_uniform(T, Val(N), Val(M))
+end
+function near_uniform(T::Type{<:SingleComponentFockAddress}, ::Val{N}, ::Val{M}) where {N,M}
+    return T(near_uniform_onr(Val(N), Val(M)))
+end
+near_uniform(b::SingleComponentFockAddress) = near_uniform(typeof(b))
+function near_uniform(b::SingleComponentFockAddress{missing})
+    N = num_particles(b)
+    M = num_modes(b)
+    return near_uniform(typeof(b), Val(N), Val(M))
+end
 
 onr(b::BoseFS{<:Any,M}) where {M} = to_bose_onr(b.bs, Val(M))
 const occupation_number_representation = onr # resides here because `onr` has to be defined
@@ -277,9 +296,12 @@ end
 
 # find_occupied_mode provided by generic implementation
 
-function excitation(b::B, creations, destructions) where {B<:BoseFS}
+function excitation(b::B, creations::NTuple{C}, destructions::NTuple{C}) where {B<:BoseFS, C}
     new_bs, val = bose_excitation(b.bs, creations, destructions)
-    return B(new_bs), val
+    return B(new_bs), val # type doesn't change
+end
+function excitation(b::BoseFS, c::NTuple{C}, d::NTuple{D}) where {C, D}
+    throw(ArgumentError("number of creations and destructions must be equal, got $C and $D"))
 end
 
 """

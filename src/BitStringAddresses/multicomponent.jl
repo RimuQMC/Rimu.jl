@@ -27,6 +27,9 @@ function CompositeFS(adds::Vararg{SingleComponentFockAddress})
     end
     return CompositeFS{length(adds),N,M1,typeof(adds)}(adds)
 end
+function Interfaces.num_particles(cfs::CompositeFS{<:Any,missing})
+    sum(num_particles, cfs.components)
+end # only required for missing, as the fallback for others is defined in the abstract type
 
 Interfaces.num_components(::Type{<:CompositeFS{C}}) where {C} = C
 Base.hash(c::CompositeFS, u::UInt) = hash(c.components, u)
@@ -86,12 +89,17 @@ end
 """
     FermiFS2C <: AbstractFockAddress
     FermiFS2C(onr_a, onr_b)
+    FermiFS2C{missing}(onr_a, onr_b)
 
 Fock state address with two fermionic (spin) components. Alias for [`CompositeFS`](@ref)
-with two [`FermiFS`](@ref) components. Construct by specifying either two compatible
-[`FermiFS`](@ref)s, two [`onr`](@ref)s, or the number of modes followed by `mode =>
-occupation_number` pairs, where `occupation_number=1` will put a particle in the first
-component and `occupation_number=-1` will put a particle in the second component.
+with two [`FermiFS`](@ref) components. If the type parameter `missing` is specified, the
+number of particles is not known at compile time. This is useful for spinful fermionic
+systems where the number of particles in each spin channel may vary.
+
+Construct by specifying either two compatible [`FermiFS`](@ref)s, two [`onr`](@ref)s, or
+the number of modes followed by `mode => occupation_number` pairs, where
+`occupation_number = 1` will put a particle in the first
+component and `occupation_number = -1` will put a particle in the second component.
 See examples below.
 
 # Examples
@@ -109,16 +117,28 @@ CompositeFS(
   FermiFS{2,3}(0, 1, 1),
 )
 
-julia> FermiFS2C(3, 1 => 1, 2 => -1, 3 => -1)
+julia> FermiFS2C{missing}((1,0,0), (0,1,1)) # number non-conserving, spin flips allowed
 CompositeFS(
-  FermiFS{1,3}(1, 0, 0),
-  FermiFS{2,3}(0, 1, 1),
+  FermiFS{missing,3}(1, 0, 0),
+  FermiFS{missing,3}(0, 1, 1),
+)
+
+julia> FermiFS2C{missing}(3, 1 => 1, 2 => -1, 3 => -1)
+CompositeFS(
+  FermiFS{missing,3}(1, 0, 0),
+  FermiFS{missing,3}(0, 1, 1),
 )
 
 julia> fs"|↑↓↓⟩" # \\uparrow(tab) -> ↑, \\downarrow(tab) -> ↓, \\rangle(tab) -> ⟩
 CompositeFS(
   FermiFS{1,3}(1, 0, 0),
   FermiFS{2,3}(0, 1, 1),
+)
+
+julia> fs"|↑↓↓⇅⟩{}" # \\dblarrowupdown(tab) -> ⇅
+CompositeFS(
+  FermiFS{missing,4}(1, 0, 0, 1),
+  FermiFS{missing,4}(0, 1, 1, 1),
 )
 ```
 
@@ -129,11 +149,18 @@ const FermiFS2C{N1,N2,M,N,F1,F2} =
 
 FermiFS2C(f1::FermiFS{<:Any,M}, f2::FermiFS{<:Any,M}) where {M} = CompositeFS(f1, f2)
 FermiFS2C(onr_a, onr_b) = FermiFS2C(FermiFS(onr_a), FermiFS(onr_b))
+FermiFS2C{missing}(onr_a, onr_b) = FermiFS2C(FermiFS{missing}(onr_a), FermiFS{missing}(onr_b))
 FermiFS2C(M::Integer, pairs::Pair...) = FermiFS2C(M, pairs)
+FermiFS2C{missing}(M::Integer, pairs::Pair...) = FermiFS2C{missing}(M, pairs)
 function FermiFS2C(M::Integer, pairs)
     up_pairs = filter(p -> p[2] > 0, pairs)
     down_pairs = map(p -> p[1] => -p[2], filter(p -> p[2] < 0, pairs))
     return FermiFS2C(FermiFS(M, up_pairs), FermiFS(M, down_pairs))
+end
+function FermiFS2C{missing}(M::Integer, pairs)
+    up_pairs = filter(p -> p[2] > 0, pairs)
+    down_pairs = map(p -> p[1] => -p[2], filter(p -> p[2] < 0, pairs))
+    return FermiFS2C(FermiFS{missing}(M, up_pairs), FermiFS{missing}(M, down_pairs))
 end
 
 function print_address(io::IO, f::FermiFS2C; compact=false)
@@ -142,7 +169,11 @@ function print_address(io::IO, f::FermiFS2C; compact=false)
         str = join(
             [i && j ? '⇅' : i ? '↑' : j ? '↓' : '⋅' for (i, j) in zip(Bool.(o1), Bool.(o2))]
         )
-        print(io, "|", str, "⟩")
+        if ismissing(num_particles(typeof(f)))
+            print(io, "|", str, "⟩{}")
+        else
+            print(io, "|", str, "⟩")
+        end
     else
         # Show as normal CompositeFS
         invoke(print_address, Tuple{typeof(io),CompositeFS}, io, f)
