@@ -53,26 +53,30 @@ See also: [`SingleComponentFockAddress`](@ref), [`OccupationNumberFS`](@ref),
 """
 struct BoseFS{N,M,S} <: SingleComponentFockAddress{N,M}
     bs::S
+
+    function BoseFS{N,M,S}(bs::S) where {N,M,S}
+        new{N,M,S}(bs)
+    end
+    @inline function BoseFS{N,M,S}(onr::Union{SVector{M},MVector{M},NTuple{M}}) where {N,M,S}
+        @boundscheck begin
+            sum(onr) == N || throw(ArgumentError(
+                "invalid ONR: $N particles expected, $(sum(onr)) given"
+            ))
+            if S <: BitString
+                B = num_bits(S)
+                M + N - 1 == B || throw(ArgumentError(
+                    "invalid ONR: $B-bit BitString does not fit $N particles in $M modes"
+                ))
+            elseif S <: SortedParticleList
+                N == num_particles(S) && M == num_modes(S) || throw(ArgumentError(
+                    "invalid ONR: $S does not fit $N particles in $M modes"
+                ))
+            end
+        end
+        return new{N,M,S}(from_bose_onr(S, onr))
+    end
 end
 
-@inline function BoseFS{N,M,S}(onr::Union{SVector{M},MVector{M},NTuple{M}}) where {N,M,S}
-    @boundscheck begin
-        sum(onr) == N || throw(ArgumentError(
-            "invalid ONR: $N particles expected, $(sum(onr)) given"
-        ))
-        if S <: BitString
-            B = num_bits(S)
-            M + N - 1 == B || throw(ArgumentError(
-                "invalid ONR: $B-bit BitString does not fit $N particles in $M modes"
-            ))
-        elseif S <: SortedParticleList
-            N == num_particles(S) && M == num_modes(S) || throw(ArgumentError(
-                "invalid ONR: $S does not fit $N particles in $M modes"
-            ))
-        end
-    end
-    return BoseFS{N,M,S}(from_bose_onr(S, onr))
-end
 function BoseFS{N,M}(onr::Union{AbstractArray{<:Integer},NTuple{M,<:Integer}}) where {N,M}
     @boundscheck begin
         sum(onr) == N || throw(ArgumentError(
@@ -140,7 +144,7 @@ Create occupation number representation `onr` distributing `N` particles in `M`
 modes in a close-to-uniform fashion with each mode filled with at least
 `N ÷ M` particles and at most with `N ÷ M + 1` particles.
 """
-function near_uniform_onr(n::Number, m::Number)
+function near_uniform_onr(n::Integer, m::Integer)
     return near_uniform_onr(Val(n),Val(m))
 end
 function near_uniform_onr(::Val{N}, ::Val{M}) where {N, M}
@@ -475,4 +479,62 @@ end
         matrixelementint += bosonnumber * (bosonnumber - 1)
     end
     return matrixelementint
+end
+
+###
+### Variable particle number with N = missing
+###
+
+function BoseFS{missing,M}(onr::SVector{M,T}) where {M,T<:Unsigned}
+    return @inbounds BoseFS{missing,M,typeof(onr)}(onr)
+end
+function BoseFS{missing}(onr::SVector{M,T}) where {M,T<:Unsigned}
+    return @inbounds BoseFS{missing,M,typeof(onr)}(onr)
+end
+function BoseFS{missing}(arg; type=UInt8)
+    type <: Unsigned || throw(ArgumentError("type must be an unsigned integer type"))
+    onr = SVector{length(arg),type}(arg)
+    return @inbounds BoseFS{missing}(onr)
+end
+BoseFS{missing}(args::Integer...; type=UInt8) = BoseFS{missing}(Tuple(args); type)
+function BoseFS{missing,M}(args::Integer...; type=UInt8) where {M}
+    BoseFS{missing,M}(Tuple(args); type)
+end
+function BoseFS{missing,M}(t::NTuple{M,T}; type=UInt8) where {M,T<:Integer}
+    BoseFS{missing}(SVector{M}(t); type)
+end
+
+
+# sparse constructors
+function BoseFS{missing}(M::Integer, pairs::Pair...; type=UInt8)
+    BoseFS{missing}(M, pairs; type=type)
+end
+function BoseFS{missing}(M::Integer, pairs; type=UInt8)
+    BoseFS{missing,M}(pairs; type)
+end
+function BoseFS{missing,M}(pairs; type=UInt8) where {M}
+    BoseFS{missing}(sparse_to_onr(M, pairs); type)
+end
+BoseFS{missing}(pairs::Pair...; _...) = throw(ArgumentError("number of modes must be provided"))
+
+function from_bose_onr(::Type{S}, onr) where {M,T<:Unsigned,S<:SVector{M,T}}
+    return S(onr)
+end
+function to_bose_onr(onr::S, ::Val{M}) where {M, S <: SVector{M,<:Unsigned}}
+    return onr
+end
+function print_address(io::IO, b::BoseFS{missing,M,S}; compact=false) where {T,M,S<:SVector{M,T}}
+    if T === UInt8
+        if compact
+            print(io, "|", join(onr(b), ' '), "⟩{}")
+        else
+            print(io, "BoseFS{missing}", Int.(tuple(onr(b)...)))
+        end
+    else
+        if compact
+            print(io, "|", join(onr(b), ' '), "⟩{", string(T), "}")
+        else
+            print(io, "BoseFS{missing}(", Int.(tuple(onr(b)...)),"; type=",string(T),")")
+        end
+    end
 end
