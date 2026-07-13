@@ -518,11 +518,6 @@ function BoseFS{missing,M}(pairs; type=UInt8) where {M}
 end
 BoseFS{missing}(pairs::Pair...; _...) = throw(ArgumentError("number of modes must be provided"))
 
-# from OccupationNumberFS
-function BoseFS(ofs::OccupationNumberFS{M,T}) where {M,T<:Unsigned}
-    return BoseFS{missing,M}(SVector{M,T}(onr(ofs)))
-end
-
 function from_bose_onr(::Type{S}, onr) where {M,T<:Unsigned,S<:SVector{M,T}}
     return S(onr)
 end

@@ -84,6 +84,12 @@ function OccupationNumberFS(fs::BoseFS{N,M}) where {N,M}
     return OccupationNumberFS{M,select_int_type(N)}(onr(fs))
 end
 
+# from OccupationNumberFS to BoseFS
+function BoseFS(ofs::OccupationNumberFS{M,T}) where {M,T<:Unsigned}
+    return BoseFS{missing,M}(SVector{M,T}(onr(ofs)))
+end
+
+
 # convenience constructors for vacuum state
 function OccupationNumberFS{M,T}() where {M,T<:Unsigned}
     return OccupationNumberFS(SVector{M,T}(zero(T) for _ in 1:M))
