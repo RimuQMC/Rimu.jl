@@ -153,7 +153,7 @@ function AllOverlaps(
 end
 
 function replica_stats(
-    rs::AllOverlaps{N,<:Any,<:Any,B,S}, spectral_states::NTuple{N}
+    rs::AllOverlaps{N,<:Any,<:Any,B,S}, spectral_states::Tuple{Vararg{<:Any,N}}
 ) where {N,B,S}
     n_spectral = num_spectral_states(spectral_states[1])
     vecs = SMatrix{N,n_spectral}(
