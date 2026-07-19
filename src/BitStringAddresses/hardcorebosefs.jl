@@ -34,25 +34,25 @@ See the examples below.
 
 ```jldoctest
 julia> HardcoreBoseFS(1, 1, 1, 0, 0)
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS([abs(i - 2) ≤ 1 for i in 1:5])
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS(5, 1 => 1, 2 => 1, 3 => 1)
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS{3,5}(i => 1 for i in 1:3)
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 
 julia> fs"|●●●∘∘⟩" # \\mdlgblkcircle(tab) -> ●, \\circ(tab) -> ∘, \\rangle(tab) -> ⟩
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS{missing}(1, 1, 1, 0, 0) == fs"|●●●∘∘⟩{}" # missing particle number
 true
 
 julia> fs"|h 5: 1 2 3⟩"
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),

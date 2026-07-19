@@ -566,35 +566,35 @@ DVec{BoseFS{3, 4, BitString{6, 1, UInt8}},Int64} with 1 entry, style = IsStochas
   fs"|0 1 2 0⟩" => 1
 
 julia> fs"|0 1 2 0⟩" => 1 # Copied from above printout; \\rangle(tab) -> ⟩
-BoseFS{3,4}(0, 1, 2, 0) => 1
+BoseFS(0, 1, 2, 0) => 1
 
 julia> fs"|1 2 3⟩⊗|0 1 0⟩" # composite bosonic Fock state; \\otimes(tab) -> ⊗
 CompositeFS(
-  BoseFS{6,3}(1, 2, 3),
-  BoseFS{1,3}(0, 1, 0),
+  BoseFS(1, 2, 3),
+  BoseFS(0, 1, 0),
 )
 
 julia> fs"|↑↓↑⟩" # 2-component fermions; \\uparrow(tab) -> ↑, \\downarrow(tab) -> ↓
 CompositeFS(
-  FermiFS{2,3}(1, 0, 1),
-  FermiFS{1,3}(0, 1, 0),
+  FermiFS(1, 0, 1),
+  FermiFS(0, 1, 0),
 )
 
 julia> fs"|↑↓↑⇅⟩{}" # spinor fermions; \\dblarrowupdown(tab) -> ⇅
 CompositeFS(
-  FermiFS{missing,4}(1, 0, 1, 1),
-  FermiFS{missing,4}(0, 1, 0, 1),
+  FermiFS{missing}((1, 0, 1, 1)),
+  FermiFS{missing}((0, 1, 0, 1)),
 )
 
 julia> s = fs"|0 1 2 0⟩{}" # constructing OccupationNumberFS with default UInt8 container
-OccupationNumberFS{4, UInt8}(0, 1, 2, 0)
+BoseFS{missing}(0, 1, 2, 0)
 
 julia> [s] # prints out with the significant number of bits specified in braces
-1-element Vector{OccupationNumberFS{4, UInt8}}:
- fs"|0 1 2 0⟩{8}"
+1-element Vector{BoseFS{missing, 4, SVector{4, UInt8}}}:
+ fs"|0 1 2 0⟩{}"
 
 julia> fs"|●∘●⟩" # \\mdlgblkcircle(tab) -> ●, \\circ(tab) -> ∘
-HardcoreBoseFS{2,3}(1, 0, 1)
+HardcoreBoseFS(1, 0, 1)
 ```
 
 See also [`FermiFS`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref), [`FermiFS2C`](@ref),

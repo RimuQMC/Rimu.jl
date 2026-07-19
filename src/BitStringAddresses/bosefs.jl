@@ -1,15 +1,20 @@
 """
     BoseFS{N,M,S} <: SingleComponentFockAddress
 
-Address type that represents a Fock state of `N` spinless bosons in `M` modes by wrapping a
-[`BitString`](@ref), or a [`SortedParticleList`](@ref). Which is wrapped is chosen
-automatically based on the properties of the address.
+Address type that represents a Fock state of `N` spinless bosons in `M` modes. The
+particle number `N` can be set to `missing`. In the latter case the number of particles is
+not known at compile time and can be changed by excitations.
 
 # Constructors
 
 * `BoseFS{[N,M]}(val::Integer...)`: Create `BoseFS{N,M}` from occupation numbers. This is
   type-stable if the number of modes `M` and the number of particles `N` are provided.
   Otherwise, `M` and `N` are inferred from the arguments.
+
+* `BoseFS{missing}(arg; type=UInt8)`: Create `BoseFS{missing,M}` from occupation numbers.
+  The number of particles is not known at compile time and can be changed by excitations.
+  The keyword argument `type` can be used to specify the type of the occupation numbers. It
+  must be an unsigned integer type.
 
 * `BoseFS{[N,M]}(onr)`: Create `BoseFS{N,M}` from occupation number representation, see
   [`onr`](@ref). This is efficient if `N` and `M` are provided, and `onr` is a
@@ -29,27 +34,53 @@ automatically based on the properties of the address.
 # Examples
 
 ```jldoctest
-julia> BoseFS{6,5}(0, 1, 2, 3, 0)
-BoseFS{6,5}(0, 1, 2, 3, 0)
+julia> address = BoseFS(0, 1, 2, 3, 0)
+BoseFS(0, 1, 2, 3, 0)
+
+julia> num_modes(address), num_particles(address)
+(5, 6)
 
 julia> BoseFS(abs(i - 3) ≤ 1 ? i - 1 : 0 for i in 1:5)
-BoseFS{6,5}(0, 1, 2, 3, 0)
+BoseFS(0, 1, 2, 3, 0)
 
-julia> BoseFS(5, 2 => 1, 3 => 2, 4 => 3)
-BoseFS{6,5}(0, 1, 2, 3, 0)
+julia> BoseFS(5, 2 => 1, 3 => 2, 4 => 3) # sparse constructor
+BoseFS(0, 1, 2, 3, 0)
 
 julia> BoseFS{6,5}(i => i - 1 for i in 2:4)
-BoseFS{6,5}(0, 1, 2, 3, 0)
+BoseFS(0, 1, 2, 3, 0)
 
 julia> fs"|0 1 2 3 0⟩" # \\rangle(tab) -> ⟩
-BoseFS{6,5}(0, 1, 2, 3, 0)
+BoseFS(0, 1, 2, 3, 0)
 
-julia> fs"|b 5: 2 3 3 4 4 4⟩"
-BoseFS{6,5}(0, 1, 2, 3, 0)
+julia> fs"|b 5: 2 3 3 4 4 4⟩" # compact sparse constructor
+BoseFS(0, 1, 2, 3, 0)
+
+julia> BoseFS{missing}(0, 1, 2, 3, 0) === fs"|0 1 2 3 0⟩{}" # missing particle number
+true
+
+julia> BoseFS{missing}(0, 1, 2, 3, 0; type=UInt16) === fs"|0 1 2 3 0⟩{UInt16}"
+true
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`OccupationNumberFS`](@ref),
 [`FermiFS`](@ref), [`CompositeFS`](@ref), [`FermiFS2C`](@ref), [`@fs_str`](@ref).
+
+# Extended Help
+
+The particle number `N` is a type parameter of the address and will be inferred by default,
+unless it is specifically set to `missing`. Having the particle number as a type parameter
+allows for type-stable code and optimizations. It should be used by default for
+number-conserving Hamiltonians.
+
+Internally, there are three different storage types for `BoseFS`. The type `S` is
+chosen automatically based on the properties of the address. The storage types
+[`BitString`](@ref) and [`SortedParticleList`](@ref) are used for dense and sparse
+representations, respectively, when the number of particles is a type parameter and thus
+known at compile time.
+
+When the number of particles is set to `missing` and not known at compile time, the
+occupation numbers are stored in a statically-sized vector of type `SVector{M,T}` where
+`T` is an unsigned integer type.
 """
 struct BoseFS{N,M,S} <: SingleComponentFockAddress{N,M}
     bs::S

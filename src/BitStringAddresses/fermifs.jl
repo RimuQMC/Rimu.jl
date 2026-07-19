@@ -31,25 +31,25 @@ number of particles is not known at compile time and can be changed by excitatio
 
 ```jldoctest
 julia> FermiFS(0, 1, 1, 1, 0)
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 
 julia> FermiFS([abs(i - 3) ≤ 1 for i in 1:5])
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 
 julia> FermiFS(5, 2 => 1, 3 => 1, 4 => 1)
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 
 julia> FermiFS{3,5}(i => 1 for i in 2:4)
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 
 julia> fs"|⋅↑↑↑⋅⟩" # \\uparrow(tab) -> ↑, \\cdot(tab) -> ⋅, \\rangle(tab) -> ⟩
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 
 julia> FermiFS{missing}(0, 1, 1, 1, 0) == fs"|⋅↑↑↑⋅⟩{}" # missing particle number
 true
 
 julia> fs"|f 5: 2 3 4⟩"
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),
