@@ -111,6 +111,8 @@ function print_address(io::IO, ofs::OccupationNumberFS{M,T}; compact=false) wher
     if compact
         BITS = sizeof(T) * 8
         print(io, "|", join(ofs.onr, ' '), "⟩{", BITS, "}")
+    elseif T == UInt8
+        print(io, "OccupationNumberFS", Int.(tuple(ofs.onr...)))
     else
         print(io, "OccupationNumberFS{", M, ", ", T, "}", Int.(tuple(ofs.onr...)))
     end

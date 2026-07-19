@@ -127,7 +127,7 @@ function print_address(io::IO, b::BoseFS{N,M}; compact=false) where {N,M}
     elseif b.bs isa SortedParticleList
         print(io, "BoseFS{$N,$M}(", onr_sparse_string(onr(b)), ")")
     else
-        print(io, "BoseFS{$N,$M}", tuple(onr(b)...))
+        print(io, "BoseFS", tuple(onr(b)...))
     end
 end
 
