@@ -586,7 +586,7 @@ CompositeFS(
   FermiFS{missing}((0, 1, 0, 1)),
 )
 
-julia> s = fs"|0 1 2 0⟩{}" # constructing OccupationNumberFS with default UInt8 container
+julia> s = fs"|0 1 2 0⟩{}" # constructing BoseFS{missing} with default UInt8 container
 BoseFS{missing}(0, 1, 2, 0)
 
 julia> [s] # prints out with the significant number of bits specified in braces
