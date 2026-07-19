@@ -6,12 +6,12 @@ returns the number of particles in the Fock state. It works with any address typ
 is a subtype of [`AbstractFockAddress`](@ref).
 
 ```jldoctest; filter = r"(\\d*)\\.(\\d{4})\\d+" => s"\\1.\\2***"
-julia> p = ExactDiagonalizationProblem(FroehlichPolaron(fs"|0 0⟩{}"; mode_cutoff=5, v=3));
+julia> p = ExactDiagonalizationProblem(FroehlichPolaron(fs"|0 0⟩{8}"; mode_cutoff=5, v=3));
 
 julia> gs = solve(p).vectors[1]; # normalised ground state vector
 
 julia> dot(gs, ParticleNumberOperator(), gs) # particle number expectation value
-2.8823297252925917
+2.8823297252925766
 ```
 
 See also [`AbstractHamiltonian`](@ref).

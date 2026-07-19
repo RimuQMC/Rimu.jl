@@ -193,28 +193,28 @@ See examples below.
 
 ```jldoctest
 julia> f = FermiFS(1,1,0,0,1,1,1,1)
-FermiFS{6,8}(1, 1, 0, 0, 1, 1, 1, 1)
+FermiFS(1, 1, 0, 0, 1, 1, 1, 1)
 
 julia> i, j, k, l = find_mode(f, (3,4,2,5))
 (FermiFSIndex(occnum=0, mode=3, offset=2), FermiFSIndex(occnum=0, mode=4, offset=3), FermiFSIndex(occnum=1, mode=2, offset=1), FermiFSIndex(occnum=1, mode=5, offset=4))
 
 julia> excitation(f, (i,j), (k,l)) # number conserving excitation
-(FermiFS{6,8}(1, 0, 1, 1, 0, 1, 1, 1), -1.0)
+(FermiFS(1, 0, 1, 1, 0, 1, 1, 1), -1.0)
 
 julia> fm = FermiFS{missing}(1,1,0,0,1,1,1,1) # number non-conserving address
-FermiFS{missing,8}(1, 1, 0, 0, 1, 1, 1, 1)
+FermiFS{missing}((1, 1, 0, 0, 1, 1, 1, 1))
 
 julia> excitation(fm, (i,), (k,l)) # particle number changes, same address type
-(FermiFS{missing,8}(1, 0, 1, 0, 0, 1, 1, 1), 1.0)
+(FermiFS{missing}((1, 0, 1, 0, 0, 1, 1, 1)), 1.0)
 
 julia> s = fs"|1 2 3⟩{}"
-OccupationNumberFS{3, UInt8}(1, 2, 3)
+BoseFS{missing}(1, 2, 3)
 
 julia> num_particles(s)
 6
 
 julia> es, α = excitation(s, (1,1), (3,))
-(OccupationNumberFS{3, UInt8}(3, 2, 2), 4.242640687119285)
+(BoseFS{missing}(3, 2, 2), 4.242640687119285)
 
 julia> num_particles(es)
 7
@@ -263,7 +263,7 @@ This is useful because repeatedly looking for occupied modes with
 
 ```jldoctest
 julia> b = BoseFS(10, 0, 0, 0, 2, 0, 1)
-BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
+BoseFS(10, 0, 0, 0, 2, 0, 1)
 
 julia> mb = occupied_mode_map(b)
 3-element Rimu.BitStringAddresses.ModeMap{7, BoseFSIndex}:
@@ -272,7 +272,7 @@ julia> mb = occupied_mode_map(b)
  BoseFSIndex(occnum=1, mode=7, offset=18)
 
 julia> f = FermiFS(1,1,1,1,0,0,1,0,0)
-FermiFS{5,9}(1, 1, 1, 1, 0, 0, 1, 0, 0)
+FermiFS(1, 1, 1, 1, 0, 0, 1, 0, 0)
 
 julia> mf = occupied_mode_map(f)
 5-element Rimu.BitStringAddresses.ModeMap{5, FermiFSIndex}:
@@ -331,7 +331,7 @@ to [`onr`](@ref).
 
 ```jldoctest
 julia> b = BoseFS(10, 0, 0, 0, 2, 0, 1)
-BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
+BoseFS(10, 0, 0, 0, 2, 0, 1)
 
 julia> mb = occupied_mode_map(b)
 3-element Rimu.BitStringAddresses.ModeMap{7, BoseFSIndex}:
@@ -900,7 +900,7 @@ can be given to `excitation`
 
 ```jldoctest
 julia> addr = BoseFS(10, 0, 0, 0, 2, 0, 1)
-BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
+BoseFS(10, 0, 0, 0, 2, 0, 1)
 
 julia> pairs = OccupiedPairsMap(addr)
 5-element OccupiedPairsMap{78, Tuple{BoseFSIndex, BoseFSIndex}}:
@@ -911,7 +911,7 @@ julia> pairs = OccupiedPairsMap(addr)
  (BoseFSIndex(occnum=1, mode=7, offset=18), BoseFSIndex(occnum=2, mode=5, offset=14))
 
 julia> excitation(addr, pairs[2], pairs[4])
-(BoseFS{13,7}(9, 0, 0, 0, 4, 0, 0), 10.954451150103322)
+(BoseFS(9, 0, 0, 0, 4, 0, 0), 10.954451150103322)
 ```
 
 See also [`occupied_mode_map`](@ref).

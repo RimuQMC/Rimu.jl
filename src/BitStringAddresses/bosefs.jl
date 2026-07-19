@@ -57,24 +57,28 @@ struct BoseFS{N,M,S} <: SingleComponentFockAddress{N,M}
     function BoseFS{N,M,S}(bs::S) where {N,M,S}
         new{N,M,S}(bs)
     end
-    @inline function BoseFS{N,M,S}(onr::Union{SVector{M},MVector{M},NTuple{M}}) where {N,M,S}
-        @boundscheck begin
-            sum(onr) == N || throw(ArgumentError(
-                "invalid ONR: $N particles expected, $(sum(onr)) given"
+end
+
+@inline function BoseFS{N,M,S}(onr) where {N,M,S}
+    onr isa Union{SVector{M},MVector{M},NTuple{M}} || throw(ArgumentError(
+        "invalid occupation number representation: expected NTuple{$M}, got $(typeof(onr))"
+    ))
+    @boundscheck begin
+        sum(onr) == N || throw(ArgumentError(
+            "invalid ONR: $N particles expected, $(sum(onr)) given"
+        ))
+        if S <: BitString
+            B = num_bits(S)
+            M + N - 1 == B || throw(ArgumentError(
+                "invalid ONR: $B-bit BitString does not fit $N particles in $M modes"
             ))
-            if S <: BitString
-                B = num_bits(S)
-                M + N - 1 == B || throw(ArgumentError(
-                    "invalid ONR: $B-bit BitString does not fit $N particles in $M modes"
-                ))
-            elseif S <: SortedParticleList
-                N == num_particles(S) && M == num_modes(S) || throw(ArgumentError(
-                    "invalid ONR: $S does not fit $N particles in $M modes"
-                ))
-            end
+        elseif S <: SortedParticleList
+            N == num_particles(S) && M == num_modes(S) || throw(ArgumentError(
+                "invalid ONR: $S does not fit $N particles in $M modes"
+            ))
         end
-        return new{N,M,S}(from_bose_onr(S, onr))
     end
+    return BoseFS{N,M,S}(from_bose_onr(S, onr))
 end
 
 function BoseFS{N,M}(onr::Union{AbstractArray{<:Integer},NTuple{M,<:Integer}}) where {N,M}
@@ -166,16 +170,16 @@ occupation numbers.
 # Examples
 ```jldoctest
 julia> near_uniform(BoseFS{7,5})
-BoseFS{7,5}(2, 2, 1, 1, 1)
+BoseFS(2, 2, 1, 1, 1)
 
 julia> near_uniform(FermiFS{3,5})
-FermiFS{3,5}(1, 1, 1, 0, 0)
+FermiFS(1, 1, 1, 0, 0)
 
 julia> near_uniform(HardcoreBoseFS{missing}, 3, 5)
-HardcoreBoseFS{missing,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS{missing}(1, 1, 1, 0, 0)
 
 julia> near_uniform(BoseFS(10,0,0,0))
-BoseFS{10,4}(3, 3, 2, 2)
+BoseFS(3, 3, 2, 2)
 ```
 """
 function near_uniform(T::Type{<:SingleComponentFockAddress{N,M}}) where {N,M}
@@ -333,19 +337,19 @@ The off-diagonals are indexed as follows:
 julia> using Rimu.Hamiltonians: hopnextneighbour
 
 julia> hopnextneighbour(BoseFS(1, 0, 1), 3)
-(BoseFS{2,3}(2, 0, 0), 1.4142135623730951)
+(BoseFS(2, 0, 0), 1.4142135623730951)
 
 julia> hopnextneighbour(BoseFS(1, 0, 1), 4)
-(BoseFS{2,3}(1, 1, 0), 1.0)
+(BoseFS(1, 1, 0), 1.0)
 
 julia> hopnextneighbour(BoseFS(1, 0, 1), 3, :twisted)
-(BoseFS{2,3}(2, 0, 0), -1.4142135623730951)
+(BoseFS(2, 0, 0), -1.4142135623730951)
 
 julia> hopnextneighbour(BoseFS(1, 0, 1), 3, :hard_wall)
-(BoseFS{2,3}(2, 0, 0), 0.0)
+(BoseFS(2, 0, 0), 0.0)
 
 julia> hopnextneighbour(BoseFS(1, 0, 1), 3, π/4)
-(BoseFS{2,3}(2, 0, 0), 1.0000000000000002 + 1.0im)
+(BoseFS(2, 0, 0), 1.0000000000000002 + 1.0im)
 ```
 """
 function hopnextneighbour(b::BoseFS{N,M,A}, chosen) where {N,M,A<:BitString}
@@ -539,5 +543,73 @@ function print_address(io::IO, b::BoseFS{missing,M,S}; compact=false) where {T,M
             foreach(i -> print(io, ", ", Int(onr(b)[i])), 2:M)
             print(io, "; type=", string(T), ")")
         end
+    end
+end
+
+Interfaces.num_particles(a::BoseFS{missing}) = sum(Int, onr(a))
+
+@inline function _destroy(onr::SVector{M,T}, mode::Integer) where {M,T}
+    val = onr[mode]
+    @set! onr[mode] = val - one(T)
+    return onr, val
+end
+
+@inline function _create(onr::SVector{M,T}, mode::Integer) where {M,T}
+    val = onr[mode] + one(T)
+    @set! onr[mode] = val
+    return onr, val
+end
+
+function excitation(
+    fs::BoseFS{missing,M,S},
+    c::NTuple{<:Any,Int},
+    d::NTuple{<:Any,Int}
+) where {M,S<:SVector{M,<:Unsigned}}
+    onr = fs.bs
+    accumulator = one(eltype(S))
+    for i in d
+        onr, val = _destroy(onr, i)
+        accumulator *= val
+    end
+    for i in c
+        onr, val = _create(onr, i)
+        accumulator *= val
+    end
+    return typeof(fs)(onr), √accumulator
+end
+function excitation(
+    fs::BoseFS{missing},
+    c::NTuple{N1,BoseFSIndex},
+    d::NTuple{N2,BoseFSIndex}
+) where {N1,N2}
+    creations = ntuple(i -> c[i].mode, Val(N1)) # convert BoseFSIndex to mode number
+    destructions = ntuple(i -> d[i].mode, Val(N2))
+    return excitation(fs, creations, destructions)
+end
+
+# `SingleComponentFockAddress` interface for BoseFS{missing}
+
+find_mode(fs::BoseFS{missing}, n::Integer, occ=nothing) = BoseFSIndex(fs.bs[n], n, n)
+function find_mode(fs::BoseFS{missing}, ns::NTuple{N,Integer}, occ=nothing) where N
+    return ntuple(i -> find_mode(fs, ns[i]), Val(N))
+end
+
+num_occupied_modes(fs::BoseFS{missing}) = count(!iszero, fs.bs)
+
+# for the lazy iterator `occupied_modes` we adapt the `BoseOccupiedModes` type
+function occupied_modes(fs::BoseFS{missing,M}) where {M}
+    return BoseOccupiedModes{missing,M,typeof(fs)}(fs)
+end
+
+function Base.length(bom::BoseOccupiedModes{<:Any,<:Any,<:BoseFS{missing}})
+    return num_occupied_modes(bom.storage)
+end
+
+function Base.iterate(bom::BoseOccupiedModes{<:Any,<:Any,<:BoseFS{missing,M}}, i=1) where M
+    s = onr(bom.storage) # is an SVector with the onr
+    while true
+        i > length(s) && return nothing
+        iszero(s[i]) || return BoseFSIndex(s[i], i, i), i + 1
+        i += 1
     end
 end

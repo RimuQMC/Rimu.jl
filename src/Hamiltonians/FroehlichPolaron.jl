@@ -28,7 +28,7 @@ operator for the bosons.
 # Examples
 ```jldoctest
 julia> fs = OccupationNumberFS(0,0,0)
-OccupationNumberFS{3, UInt8}(0, 0, 0)
+OccupationNumberFS(0, 0, 0)
 
 julia> ham = FroehlichPolaron(fs; v=0.5)
 FroehlichPolaron(fs"|0 0 0⟩{8}"; v=0.5, mass=1.0, omega=1.0, l=1.0, p=0.0, mode_cutoff=255)

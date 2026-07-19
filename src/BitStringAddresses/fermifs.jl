@@ -217,7 +217,7 @@ Note that this function is only implemented for addresses of type [`FermiFS`](@r
 
 ```jldoctest
 julia> f = FermiFS(1,1,0,0)
-FermiFS{2,4}(1, 1, 0, 0)
+FermiFS(1, 1, 0, 0)
 
 julia> mf = unoccupied_mode_map(f)
 2-element Rimu.BitStringAddresses.ModeMap{2, FermiFSIndex}:

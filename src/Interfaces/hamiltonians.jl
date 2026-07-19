@@ -312,7 +312,7 @@ julia> addr = BoseFS(3, 2, 1);
 julia> H = HubbardMom1D(addr);
 
 julia> get_offdiagonal(H, addr, 3)
-(BoseFS{6,3}(2, 1, 3), 1.0)
+(BoseFS(2, 1, 3), 1.0)
 ```
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """

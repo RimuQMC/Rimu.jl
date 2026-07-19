@@ -152,7 +152,7 @@ Compute diagonal interaction energy term.
 
 ```jldoctest
 julia> a = BoseFS{6,5}(1,2,3,0,0)
-BoseFS{6,5}(1, 2, 3, 0, 0)
+BoseFS(1, 2, 3, 0, 0)
 
 julia> H = HubbardMom1D(a);
 
