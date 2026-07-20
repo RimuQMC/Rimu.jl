@@ -11,10 +11,11 @@ not known at compile time and can be changed by excitations.
   type-stable if the number of modes `M` and the number of particles `N` are provided.
   Otherwise, `M` and `N` are inferred from the arguments.
 
-* `BoseFS{missing}(arg; type=UInt8)`: Create `BoseFS{missing,M}` from occupation numbers.
+* `BoseFS{missing}(arg; type=nothing)`: Create `BoseFS{missing,M}` from occupation numbers.
   The number of particles is not known at compile time and can be changed by excitations.
   The keyword argument `type` can be used to specify the type of the occupation numbers. It
-  must be an unsigned integer type.
+  must be an unsigned integer type. If unspecified, the smallest unsigned integer type that
+  can hold the maximum occupation number is chosen automatically.
 
 * `BoseFS{[N,M]}(onr)`: Create `BoseFS{N,M}` from occupation number representation, see
   [`onr`](@ref). This is efficient if `N` and `M` are provided, and `onr` is a
@@ -55,7 +56,7 @@ BoseFS(0, 1, 2, 3, 0)
 julia> fs"|b 5: 2 3 3 4 4 4⟩" # compact sparse constructor
 BoseFS(0, 1, 2, 3, 0)
 
-julia> BoseFS{missing}(0, 1, 2, 3, 0) === fs"|0 1 2 3 0⟩{}" # missing particle number
+julia> BoseFS{missing}(0, 1, 2, 3, 0) === fs"|0 1 2 3 0⟩{}" # missing particle number UInt8
 true
 
 julia> BoseFS{missing}(0, 1, 2, 3, 0; type=UInt16) === fs"|0 1 2 3 0⟩{UInt16}"
@@ -80,7 +81,11 @@ known at compile time.
 
 When the number of particles is set to `missing` and not known at compile time, the
 occupation numbers are stored in a statically-sized vector of type `SVector{M,T}` where
-`T` is an unsigned integer type.
+`T` is an unsigned integer type. For a type-stable constructor with missing particle number,
+use
+```julia
+BoseFS{missing}(v::SVector{M,T}) where {M,T<:Unsigned}
+```
 """
 struct BoseFS{N,M,S} <: SingleComponentFockAddress{N,M}
     bs::S
@@ -519,6 +524,15 @@ end
 ###
 ### Variable particle number with N = missing
 ###
+smallest_uint_type(n::Integer) = begin
+    n < 0 && throw(ArgumentError("n must be nonnegative"))
+    n <= typemax(UInt8) && return UInt8
+    n <= typemax(UInt16) && return UInt16
+    n <= typemax(UInt32) && return UInt32
+    n <= typemax(UInt64) && return UInt64
+    n <= typemax(UInt128) && return UInt128
+    throw(OverflowError("n is too large for fixed-width unsigned integers"))
+end
 
 function BoseFS{missing,M}(onr::SVector{M,T}) where {M,T<:Unsigned}
     return @inbounds BoseFS{missing,M,typeof(onr)}(onr)
@@ -526,30 +540,61 @@ end
 function BoseFS{missing}(onr::SVector{M,T}) where {M,T<:Unsigned}
     return @inbounds BoseFS{missing,M,typeof(onr)}(onr)
 end
-function BoseFS{missing}(arg; type=UInt8)
+function BoseFS{missing}(arg; type=nothing) # single argument constructor
+    isnothing(type) && (type = smallest_uint_type(maximum(arg)))
     type <: Unsigned || throw(ArgumentError("type must be an unsigned integer type"))
     onr = SVector{length(arg),type}(arg)
     return @inbounds BoseFS{missing}(onr)
 end
-BoseFS{missing}(args::Integer...; type=UInt8) = BoseFS{missing}(Tuple(args); type)
-BoseFS{missing}(arg::Integer; type=UInt8) = BoseFS{missing}((arg,); type) # single mode address
-function BoseFS{missing,M}(args::Integer...; type=UInt8) where {M}
+BoseFS{missing}(args::Integer...; type=nothing) = BoseFS{missing}(Tuple(args); type)
+BoseFS{missing}(arg::Integer; type=nothing) = BoseFS{missing}((arg,); type) # single mode address
+function BoseFS{missing,M}(args::Integer...; type=nothing) where {M}
     BoseFS{missing,M}(Tuple(args); type)
 end
-function BoseFS{missing,M}(t::NTuple{M,T}; type=UInt8) where {M,T<:Integer}
+function BoseFS{missing,M}(t::NTuple{M,T}; type=nothing) where {M,T<:Integer}
     BoseFS{missing}(SVector{M}(t); type)
 end
 
+# BoseFS from BoseFS
+function BoseFS{N,M}(fs::BoseFS) where {N,M}
+    M === num_modes(fs) || throw(ArgumentError(
+        "number of modes must match: $M != $(num_modes(fs))"
+    ))
+    ons = occupation_number_representation(fs)
+    return BoseFS{N,M}(ons)
+end
+function BoseFS{N}(fs::BoseFS) where {N}
+    M = num_modes(fs)
+    ons = occupation_number_representation(fs)
+    return BoseFS{N,M}(ons)
+end
+function BoseFS{missing}(fs::BoseFS{N,M}; type=nothing) where {N,M}
+    type === nothing && (type = smallest_uint_type(N))
+    ons = occupation_number_representation(fs)
+    return BoseFS{missing,M}(ons...; type)
+end
+function BoseFS{missing,M}(fs::BoseFS) where {M}
+    M === num_modes(fs) || throw(ArgumentError(
+        "number of modes must match: $M != $(num_modes(fs))"
+    ))
+    BoseFS{missing}(fs)
+end
 
 # sparse constructors
-function BoseFS{missing}(M::Integer, pairs::Pair...; type=UInt8)
+function BoseFS{missing}(M::Integer, pairs::Pair...; type=nothing)
     BoseFS{missing}(M, pairs; type=type)
 end
-function BoseFS{missing}(M::Integer, pairs; type=UInt8)
+function BoseFS{missing}(M::Integer, pair::Pair; type=nothing)
+    BoseFS{missing}(M, (pair,); type=type)
+end
+function BoseFS{missing}(M::Integer, pairs; type=nothing)
     BoseFS{missing,M}(pairs; type)
 end
-function BoseFS{missing,M}(pairs; type=UInt8) where {M}
+function BoseFS{missing,M}(pairs; type=nothing) where {M}
     BoseFS{missing}(sparse_to_onr(M, pairs); type)
+end
+function BoseFS{missing,M}(pair::Pair; type=nothing) where {M}
+    BoseFS{missing}(sparse_to_onr(M, (pair,)); type)
 end
 BoseFS{missing}(pairs::Pair...; _...) = throw(ArgumentError("number of modes must be provided"))
 

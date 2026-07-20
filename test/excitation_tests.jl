@@ -118,7 +118,7 @@ end
     check_single_excitations(add, num=Inf)
 
 Check whether `excitation_svec` and `excitation_direct` give the same result for single
-interactions. If `num` is not given, all possible combinaions of destruction and creation
+interactions. If `num` is not given, all possible combinations of destruction and creation
 operators are used, otherwise `num` of each is used.
 """
 function check_single_excitations(add, num=Inf)
@@ -134,7 +134,7 @@ end
     check_double_excitations(add, num=Inf)
 
 Check whether `excitation_svec` and `excitation_direct` give the same result for double
-interactions. If `num` is not given, all possible combinaions of destruction and creation
+interactions. If `num` is not given, all possible combinations of destruction and creation
 operators are used, otherwise `num` of each is used.
 """
 function check_double_excitations(add, num=Inf)
@@ -152,7 +152,7 @@ end
     check_triple_excitations(add, num=Inf)
 
 Check whether `excitation_svec` and `excitation_direct` give the same result for triple
-interactions. If `num` is not given, all possible combinaions of destruction and creation
+interactions. If `num` is not given, all possible combinations of destruction and creation
 operators are used, otherwise `num` of each is used.
 """
 function check_triple_excitations(add, num=Inf)

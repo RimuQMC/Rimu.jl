@@ -1,3 +1,5 @@
+# This file contains deprecated code. This code will be removed in a future release.
+
 """
     OccupationNumberFS{M,T} <: SingleComponentFockAddress
 Address type that stores the occupation numbers of a single component bosonic Fock state
@@ -42,6 +44,8 @@ OccupationNumberFS{5, UInt8}(0, 4, 9, 16, 0)
 ```
 See also: [`BoseFS`](@ref), [`HardcoreBoseFS`](@ref), [`FermiFS`](@ref),
 [`SingleComponentFockAddress`](@ref), [`CompositeFS`](@ref), [`@fs_str`](@ref).
+!!! warning
+    The use of `OccupationNumberFS` is deprecated. Use [`BoseFS{missing}`](@ref) instead.
 """
 struct OccupationNumberFS{M,T<:Unsigned} <: SingleComponentFockAddress{missing,M}
     onr::SVector{M,T}

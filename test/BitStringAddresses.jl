@@ -5,6 +5,7 @@ using Rimu.BitStringAddresses: remove_ghost_bits, has_ghost_bits
 using Rimu.BitStringAddresses: occupied_modes, occupied_mode_map, unoccupied_modes, unoccupied_mode_map, update_component
 using Rimu.BitStringAddresses: parse_address
 using Rimu.BitStringAddresses: destroy, create
+using Rimu.BitStringAddresses: smallest_uint_type
 using Random
 using StaticArrays
 using Test
@@ -521,6 +522,71 @@ end
         @test num_particles(FermiFS2C(3, 1 => 1)) == 1
         @test num_particles(FermiFS2C(3, 1 => -1)) == 1
     end
+end
+
+@testset "smallest_uint_type" begin
+    @test smallest_uint_type(0) == UInt8
+    @test smallest_uint_type(255) == UInt8
+    @test smallest_uint_type(256) == UInt16
+    @test smallest_uint_type(65535) == UInt16
+    @test smallest_uint_type(65536) == UInt32
+    @test smallest_uint_type(4294967295) == UInt32
+    @test smallest_uint_type(4294967296) == UInt64
+    @test smallest_uint_type(18446744073709551615) == UInt64
+    @test smallest_uint_type(18446744073709551616) == UInt128
+    @test_throws OverflowError smallest_uint_type(340282366920938463463374607431768211456)
+    @test_throws ArgumentError smallest_uint_type(-1)
+end
+
+@testset "BoseFS{missing}" begin
+    bsm = BoseFS{missing}(1, 2, 3)
+    bs = BoseFS(1, 2, 3)
+    @test bsm != bs
+    @test bsm isa BoseFS{missing}
+    @test BoseFS{num_particles(bsm)}(bsm) == bs
+    @test BoseFS{missing}(bs) == bsm
+    @test BoseFS{num_particles(bsm),3}(bsm) == bs
+    @test BoseFS{missing,3}(bs) == bsm
+    @test num_particles(bsm) == num_particles(bs) == 6
+    @test_throws InexactError BoseFS{missing}(1, 2, -3)
+    @test_throws ArgumentError BoseFS{missing,4}(bs)
+    @test_throws ArgumentError BoseFS{6,4}(bsm)
+    @test_throws ArgumentError BoseFS{7,3}(bsm)
+
+    @test fs"|1 2 30⟩{}" == BoseFS{missing}(1, 2, 30)
+    # automatically choose the number type
+    @test eltype(BoseFS{missing}(1, 2, 300).bs) == UInt16
+
+    # type stable constructor
+    @inferred BoseFS{missing}(SVector{3,UInt8}(1, 2, 3))
+end
+
+@testset "BoseFS{missing} with sparse constructor" begin
+    @test BoseFS{missing}(2, 2 => 4) == BoseFS{missing}(0, 4)
+    @test BoseFS{missing,2}(2 => 4) == BoseFS{missing}(2, 2 => 4)
+    @test BoseFS{missing}(5, i => i + 1 for i in 1:3) ==
+          BoseFS{missing,5}(i => i + 1 for i in 1:3) ==
+          BoseFS{missing,5}(Tuple(i => i + 1 for i in 1:3)) ==
+          BoseFS{missing}(5, 1 => 2, 2 => 3, 3 => 4) ==
+          BoseFS{missing,5}(2, 3, 4, 0, 0, type=UInt8)
+    @test BoseFS{missing,5}(i => i^2 for i in 1:5) ==
+          BoseFS{missing}(5, i => i^2 for i in 1:5)
+end
+
+@testset "Printing and parsing BoseFS{missing}" begin
+    fs = BoseFS{missing}(1, 2, 3, 0, 1, 20, 3, 2, 5, 0, 1)
+    @test eval(Meta.parse(repr(fs))) == fs
+    @test parse_address(sprint(show, fs; context=:compact => true)) == fs
+
+    for T in [UInt8, UInt16, UInt32, UInt64, UInt128]
+        fs = BoseFS{missing,11}(1, 2, 3, 0, 1, 20, 3, 2, 5, 0, 1; type=T)
+        @test eval(Meta.parse(repr(fs))) == fs
+        @test parse_address(sprint(show, fs; context=:compact => true)) == fs
+    end
+
+    @test_throws ArgumentError parse_address("fs\"|1 2 3⟩{-8}\"")
+    @test_throws ArgumentError parse_address("fs\"|1 2 3⟩{129}\"")
+    @test_throws ArgumentError parse_address("fs\"|1 2 3⟩{Int}\"")
 end
 
 @testset "OccupationNumberFS functions" begin
