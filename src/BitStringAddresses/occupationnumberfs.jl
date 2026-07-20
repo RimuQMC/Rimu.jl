@@ -118,6 +118,9 @@ function print_address(io::IO, ofs::OccupationNumberFS{M,T}; compact=false) wher
     end
 end
 
+function Interfaces.maximum_mode_occupation(::Type{OccupationNumberFS{M,T}}) where {M,T}
+    typemax(T)
+end
 Base.reverse(ofs::OccupationNumberFS) = OccupationNumberFS(reverse(ofs.onr))
 
 onr(ofs::OccupationNumberFS) = ofs.onr

@@ -205,6 +205,8 @@ Optional additional methods to implement:
   dimension of address space
 * [`allows_address_type(h::AbstractHamiltonian, type)`](@ref): defaults to
   `type :< typeof(starting_address(h))`
+* [`maximum_mode_occupation(h::AbstractHamiltonian)`](@ref): defaults to
+  `maximum_mode_occupation(typeof(starting_address(h)))`
 * [`momentum(::AbstractHamiltonian)`](@ref Main.Hamiltonians.momentum): no default
 
 ## Alternative Interface (deprecated)
@@ -234,6 +236,10 @@ See also [`Hamiltonians`](@ref Main.Hamiltonians), [`Interfaces`](@ref),
 [`AbstractOperatorColumn`](@ref), [`AbstractOperator`](@ref), [`AbstractObservable`](@ref).
 """
 abstract type AbstractHamiltonian{T} <: AbstractOperator{T} end
+
+function maximum_mode_occupation(h::AbstractHamiltonian)
+    maximum_mode_occupation(typeof(starting_address(h)))
+end
 
 """
     allows_address_type(operator, addr_or_type)

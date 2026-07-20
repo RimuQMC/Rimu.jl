@@ -164,6 +164,7 @@ end
 
     @test_throws ArgumentError BoseFS{2,3}((1, 2, 3))
     @test_throws ArgumentError BoseFS{6,2}([1, 2, 3])
+    @test maximum_mode_occupation(typeof(middle_full)) == num_particles(middle_full)
 
     @testset "constructors" begin
         small_dense = BoseFS(ones(Int, 32))
@@ -325,6 +326,8 @@ end
         @test FermiFS{missing}(5, 1 => 0) == fs"|⋅⋅⋅⋅⋅⟩{}" # vacuum with 5 modes
     end
 
+    @test maximum_mode_occupation(FermiFS(5, 1 => 0)) == 1
+
     small = SVector(1, 0, 0, 0, 0, 1, 1, 1, 0, 0)
     big = [rand(0:1) for _ in 1:70]
     giant = [rand() < 0.1 for _ in 1:200]
@@ -463,6 +466,7 @@ end
         )
         @test num_particles(typeof(fs1)) === missing
         @test num_particles(fs1) == 10
+        @test maximum_mode_occupation(fs1) == map(maximum_mode_occupation, fs1.components)
         @test num_modes(fs1) == 6
         @test num_components(fs1) == 3
         @test fs1.components[1] == FermiFS((1,1,0,0,0,0))
@@ -546,8 +550,10 @@ end
     @testset "OccupationNumberFS with BoseFS input" begin
         fs = BoseFS(1, 2)
         @test isa(OccupationNumberFS(fs), OccupationNumberFS{2, UInt8})
+        @test maximum_mode_occupation(OccupationNumberFS(fs)) == 255
         fs = BoseFS(1, 333)
         @test isa(OccupationNumberFS(fs), OccupationNumberFS{2,UInt16})
+        @test maximum_mode_occupation(OccupationNumberFS(fs)) == 65535
         fs = BoseFS(0, 0)
         @test isa(OccupationNumberFS(fs), OccupationNumberFS{2,UInt8})
     end
@@ -661,6 +667,7 @@ end
     add_hb = HardcoreBoseFS(1, 0, 1, 0, 0)
     add_hb_m = HardcoreBoseFS{missing}(1, 0, 1, 0, 0)
     @test add_hb isa Rimu.BitStringAddresses.SingleComponentFockAddress
+    @test maximum_mode_occupation(add_hb) == 1 == maximum_mode_occupation(add_hb_m)
 
     add_f = FermiFS(1, 0, 1, 0, 0)
     add_f_m = FermiFS{missing}(1, 0, 1, 0, 0)

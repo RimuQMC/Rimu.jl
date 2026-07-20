@@ -38,3 +38,35 @@ num_modes(::Type{<:AbstractFockAddress{<:Any,M}}) where {M} = M
 Number of components in address.
 """
 num_components(b::AbstractFockAddress) = num_components(typeof(b))
+
+"""
+    maximum_mode_occupation(::Type{<:AbstractFockAddress})
+    maximum_mode_occupation(::AbstractFockAddress)
+    maximum_mode_occupation(::AbstractHamiltonian)
+
+Maximum number of particles that can occupy a single mode in the Fock space spanned by the
+address type. When called on an [`AbstractHamiltonian`](@ref) it may provide further
+information about the maximum mode occupation based on the Hamiltonian's structure.
+
+Returns an integer for [`SingleComponentFockAddress`](@ref)s, and a tuple for the
+multi-component [`CompositeFS`](@ref) Fock addresses.
+
+## Example
+```jldoctest
+julia> maximum_mode_occupation(FermiFS{2,4})
+1
+
+julia> maximum_mode_occupation(BoseFS(3, 10, 0))
+13
+
+julia> maximum_mode_occupation(BoseFS{missing}(3, 10, 0; type=UInt16)) |> Int
+65535
+
+julia> maximum_mode_occupation(CompositeFS(BoseFS(1,2,3), FermiFS(1,0,0)))
+(6, 1)
+```
+
+See also [`num_particles`](@ref), [`num_modes`](@ref), [`num_components`](@ref),
+[`BoseFS`](@ref), [`FermiFS`](@ref), [`HardcoreBoseFS`](@ref).
+"""
+maximum_mode_occupation(a::AbstractFockAddress) = maximum_mode_occupation(typeof(a))

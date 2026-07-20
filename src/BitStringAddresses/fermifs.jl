@@ -161,6 +161,7 @@ end
 # joint functions for FermiFS and HardcoreBoseFS
 const FermiOrHardcoreBoseFS{N,M,S} = Union{FermiFS{N,M,S}, HardcoreBoseFS{N,M,S}}
 
+Interfaces.maximum_mode_occupation(::Type{<:FermiOrHardcoreBoseFS}) = 1
 Interfaces.num_particles(a::FermiOrHardcoreBoseFS{missing}) = count_ones(a.bs)
 # only required for missing, as the fallback for other types is defined in the abstract type
 Base.bitstring(a::FermiOrHardcoreBoseFS) = bitstring(a.bs)

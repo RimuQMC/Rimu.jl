@@ -28,7 +28,8 @@ operator for the bosons.
     lattice.
 * `momentum_cutoff=nothing`: the maximum boson momentum allowed for an address.
 * `mode_cutoff`: the maximum number of bosons in each momentum mode. Defaults to the maximum
-    value supported by the address type [`OccupationNumberFS`](@ref).
+    value supported by the address type [`BoseFS{missing}`](@ref).
+    [`maximum_mode_occupation(hamiltonian)`](@ref) will return this value.
 
 # Examples
 ```jldoctest
@@ -43,9 +44,13 @@ julia> dimension(ham)
 
 julia> dimension(FroehlichPolaron(fs; v=0.5, mode_cutoff=5))
 216
+
+julia> maximum_mode_occupation(FroehlichPolaron(fs; v=0.5, mode_cutoff=5))
+5
 ```
 
-See also [`BoseFS`](@ref), [`dimension`](@ref), [`AbstractHamiltonian`](@ref).
+See also [`BoseFS`](@ref), [`dimension`](@ref), [`maximum_mode_occupation`](@ref),
+[`AbstractHamiltonian`](@ref).
 """
 struct FroehlichPolaron{
     T, # eltype
@@ -118,6 +123,9 @@ end
 
 function starting_address(h::FroehlichPolaron)
     return h.addr
+end
+function Interfaces.maximum_mode_occupation(h::FroehlichPolaron)
+    return h.mode_cutoff
 end
 
 LOStructure(::Type{<:FroehlichPolaron{<:Real}}) = IsHermitian()

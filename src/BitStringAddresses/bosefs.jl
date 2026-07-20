@@ -578,6 +578,10 @@ function print_address(io::IO, b::BoseFS{missing,M,S}; compact=false) where {T,M
 end
 
 Interfaces.num_particles(a::BoseFS{missing}) = sum(Int, onr(a))
+function Interfaces.maximum_mode_occupation(::Type{<:BoseFS{missing,M,S}}) where {T,M,S<:SVector{M,T}}
+    return typemax(T)
+end
+Interfaces.maximum_mode_occupation(::Type{<:BoseFS{N}}) where {N} = N
 
 @inline function _destroy(onr::SVector{M,T}, mode::Integer) where {M,T}
     val = onr[mode]
