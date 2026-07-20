@@ -6,7 +6,8 @@ Abstract type representing a Fock state with `N` particles and `M` modes.
 See also [`SingleComponentFockAddress`](@ref Main.SingleComponentFockAddress),
 [`CompositeFS`](@ref Main.CompositeFS), [`BoseFS`](@ref Main.BoseFS),
 [`FermiFS`](@ref Main.FermiFS), [`num_particles`](@ref num_particles),
-[`num_modes`](@ref num_modes), [`num_components`](@ref num_components).
+[`num_modes`](@ref num_modes), [`num_components`](@ref num_components),
+[`maximum_mode_occupation`](@ref maximum_mode_occupation).
 """
 abstract type AbstractFockAddress{N,M} end
 
