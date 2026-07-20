@@ -118,7 +118,9 @@ it should terminate.
 
 See also [`solve!`](@ref), [`step!`](@ref).
 """
-function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::SingleState)
+function advance!(
+    algorithm::FCIQMC, report, state::ReplicaState, s_state::SingleState{Nothing}
+)
 
     @unpack reporting_strategy = state
     @unpack hamiltonian, v, pv, wm, id, shift_parameters = s_state
@@ -158,6 +160,108 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
         end
 
         report!(reporting_strategy, step, report, (; len), id)
+        report!(reporting_strategy, step, report, shift_stats, id) # shift, norm, shift_mode
+
+        report!(reporting_strategy, step, report, step_stat_names, step_stat_values, id)
+        report!(reporting_strategy, step, report, post_step_stats, id)
+    end
+
+    if len == 0
+        @error "Population in state $(s_state.id) is dead. Aborting."
+        return false
+    end
+    if len > state.max_length[]
+        @error "`max_length` reached in state $(s_state.id). Aborting."
+        return false
+    end
+    return proceed # Bool
+end
+
+function steal_walkers!(vector, fixed)
+    #α = sum(keys(fixed)) do k
+    #    vector[k] / fixed[k]
+    #end
+
+    #denom = sum(abs2, values(fixed)) # vecrtor is normalised
+    α = dot(vector, fixed)
+    #α = sum(keys(fixed)) do k
+    #    vector[k] * fixed[k] #/ denom
+    #end
+    add!(vector, fixed, -α)
+    return α
+end
+function advance!(
+    algorithm::FCIQMC, report, state::ReplicaState, s_state::SingleState
+)
+    @unpack reporting_strategy = state
+    @unpack hamiltonian, v, pv, wm, α, f, Hf, id, shift_parameters = s_state
+    @unpack shift, pnorm, time_step = shift_parameters
+    @unpack shift_strategy, time_step_strategy = algorithm
+    step = state.step[]
+
+    ### PROPAGATOR ACTS
+    ### FROM HERE
+    transition_op = FirstOrderTransitionOperator(shift_parameters, hamiltonian)
+
+    # Subtract the fixed part
+    add!(v, f, -α)
+
+    # Step the stochastic part
+    app_stat_names, app_stat_values, wm, pv = apply_operator!(
+        NoCompression(), wm, pv, v, transition_op
+    )
+    v, pv = (pv, v)
+
+    s_norm, s_len = walkernumber_and_length(v)
+
+    # Add the fixed part
+    dτ = shift_parameters.time_step
+    add!(v, f, α * dτ * shift)
+    add!(v, Hf, -dτ * α)
+
+    s_norm2 = norm(v)
+
+    α += steal_walkers!(v, f)
+
+    # Compress
+    compression_strat = CompressionStrategy(v)
+    if compression_strat isa NoCompression
+        #step_stat_names = app_stat_names
+        #step_stat_values = app_stat_values
+    else
+        comp_names, _ = step_stats(compression_strat)
+        comp_values = compress!(compression_strat, v)
+        #step_stat_names = (app_stat_names..., comp_names)
+        #step_stat_values = (app_stat_values..., comp_values)
+        step_stat_names = (app_stat_names)#..., comp_names)
+        step_stat_values = (app_stat_values)#..., comp_values)
+    end
+    add!(v, f, α)
+
+    # Stats:
+    tnorm, len = walkernumber_and_length(v)
+
+
+    # Updates
+    time_step = update_time_step(time_step_strategy, time_step, tnorm)
+
+    shift_stats, proceed = update_shift_parameters!(
+        shift_strategy, shift_parameters, tnorm, v, pv, step, report
+    )
+
+    @pack! s_state = v, pv, wm, α
+    ### TO HERE
+
+    if step % reporting_interval(state.reporting_strategy) == 0
+        # Note: post_step_stats must be called after packing the values.
+        post_step_stats = post_step_action(state.post_step_strategy, s_state, step)
+
+        # Reporting
+        if !(time_step_strategy isa ConstantTimeStep) # report time_step unless it is constant
+            report!(reporting_strategy, step, report, (; time_step), id)
+        end
+
+        report!(reporting_strategy, step, report, (; len, s_len, s_norm, s_norm2, α), id)
         report!(reporting_strategy, step, report, shift_stats, id) # shift, norm, shift_mode
 
         report!(reporting_strategy, step, report, step_stat_names, step_stat_values, id)

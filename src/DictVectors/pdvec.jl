@@ -901,6 +901,13 @@ Parallel version of [`FrozenDVec`](@ref). See: [`freeze`](@ref), [`PDVec`](@ref)
 """
 struct FrozenPDVec{K,V,N} <: AbstractProjector
     segments::NTuple{N,Vector{Pair{K,V}}}
+
+    function FrozenPDVec{K,V,N}(segments::NTuple{N,Vector{Pair{K,V}}}) where {K,V,N}
+        return new{K,V,N}(segments)
+    end
+    function FrozenPDVec{K,V,N}() where {K,V,N}
+        return new{K,V,N}(ntuple(_ -> Pair{K,V}[], Val(N)))
+    end
 end
 Base.keytype(::FrozenPDVec{K}) where {K} = K
 Base.valtype(::FrozenPDVec{<:Any,V}) where {V} = V
@@ -910,6 +917,7 @@ Base.pairs(fd::FrozenPDVec) = Iterators.flatten(fd.segments)
 function freeze(dv::PDVec{K,V,N}) where {K,V,N}
     return FrozenPDVec{K,V,N}(map(collect, dv.segments))
 end
+
 
 function VectorInterface.inner(fd::FrozenPDVec, dv::AbstractDVec)
     T = promote_type(valtype(fd), valtype(dv))
@@ -928,4 +936,23 @@ function VectorInterface.inner(fd::FrozenPDVec, dv::PDVec)
         end
     end::T
     return merge_remote_reductions(dv.communicator, +, res)
+end
+
+function VectorInterface.add!(dv::PDVec, fd::FrozenPDVec, α::Number=true, β::Number=true)
+    map!(Base.Fix1(*, β), values(dv))
+    Folds.foreach(zip(dv.segments, fd.segments)) do (dst, src)
+        for (k, v) in src
+            new_val = get(dst, k, zero(valtype(dv))) + α * v
+            if iszero(new_val)
+                delete!(dst, k)
+            else
+                dst[k] = new_val
+            end
+        end
+    end
+    return dv
+end
+function VectorInterface.add(dv::PDVec, fd::FrozenPDVec, α::Number=true, β::Number=true)
+    dv = scale(dv, β)
+    return add!(dv, fd, α)
 end

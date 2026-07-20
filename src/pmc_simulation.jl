@@ -84,13 +84,18 @@ function _set_up_starting_vectors(
         default_starting_vector(start_at; style, initiator, threading) for _ in 1:n_replicas
     )
 end
+function _set_up_fixed_part(ham, fixed_part)
+    fixed_part = normalize(fixed_part)
+    freeze(fixed_part), freeze(ham * fixed_part)
+end
+_set_up_fixed_part(ham, ::Nothing) = nothing, nothing
 
 function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     # @unpack algorithm, hamiltonian, starting_vectors, style, threading, simulation_plan,
-    @unpack algorithm, hamiltonian, start_at, style, threading, simulation_plan,
+    @unpack algorithm, hamiltonian, start_at, fixed_part, style, threading, simulation_plan,
         replica_strategy, initial_shift_parameters,
         reporting_strategy, post_step_strategy,
-        max_length, metadata, initiator, random_seed, spectral_strategy, minimum_size = problem
+        max_length, metadata, initiator, random_seed, spectral_strategy, minimum_size, fixed_part = problem
 
     reporting_strategy = refine_reporting_strategy(reporting_strategy)
 
@@ -109,6 +114,8 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
         threading, copy_vectors, minimum_size
     )
     @assert vectors isa SMatrix{n_replicas, n_spectral}
+
+    fixed_part, fixed_part_step = _set_up_fixed_part(hamiltonian, fixed_part)
 
     # set up initial_shift_parameters
     shift, time_step = nothing, nothing
@@ -142,6 +149,9 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
                 SingleState(
                     hamiltonian, algorithm, v, zerovector(v),
                     wm isa PDWorkingMemory ? wm : working_memory(v), # reuse for PDVec
+                    50.0,
+                    fixed_part,
+                    fixed_part_step,
                     sp, replica_id * spectral_id
                 )
             end, spectral_strategy, replica_id)

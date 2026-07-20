@@ -17,13 +17,16 @@ See also [`SpectralStrategy`](@ref), [`ReplicaStrategy`](@ref),
 [`Rimu.SpectralState`](@ref), [`Rimu.ReplicaState`](@ref), [`Rimu.replica_stats`](@ref),
 [`Rimu.PMCSimulation`](@ref).
 """
-mutable struct SingleState{H,A,V,W,SP}
+mutable struct SingleState{F,H,A,V,W,SP}
     # Future TODO: rename these fields, add interface for accessing them.
     hamiltonian::H
     algorithm::A
     v::V       # vector
     pv::V      # previous vector.
     wm::W      # working memory. Maybe working memories could be shared among replicas?
+    α::Float64
+    f::F
+    Hf::F
     shift_parameters::SP # norm, shift, time_step; is mutable
     id::String # id is appended to column names
 end

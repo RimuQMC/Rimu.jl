@@ -172,6 +172,7 @@ struct ProjectorMonteCarloProblem{N,S} # is not type stable but does not matter
     algorithm::PMCAlgorithm
     hamiltonian::AbstractHamiltonian
     start_at  # starting_vectors
+    fixed_part
     style::StochasticStyle
     initiator::InitiatorRule
     threading::Bool
@@ -211,6 +212,7 @@ function ProjectorMonteCarloProblem(
     hamiltonian::AbstractHamiltonian;
     n_replicas = 1,
     start_at = starting_address(hamiltonian),
+    fixed_part = nothing,
     shift = nothing,
     style = IsDynamicSemistochastic{float(eltype(hamiltonian))}(),
     initiator = false,
@@ -358,6 +360,7 @@ function ProjectorMonteCarloProblem(
         algorithm,
         hamiltonian,
         start_at, # starting_vectors,
+        fixed_part,
         style,
         initiator,
         threading,
