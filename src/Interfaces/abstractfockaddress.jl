@@ -3,9 +3,9 @@
 
 Abstract type representing a Fock state with `N` particles and `M` modes.
 
-See also [`SingleComponentFockAddress`](@ref Main.SingleComponentFockAddress),
-[`CompositeFS`](@ref Main.CompositeFS), [`BoseFS`](@ref Main.BoseFS),
-[`FermiFS`](@ref Main.FermiFS), [`num_particles`](@ref num_particles),
+See also [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress),
+[`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS), [`BoseFS`](@ref Main.BitStringAddresses.BoseFS),
+[`FermiFS`](@ref Main.BitStringAddresses.FermiFS), [`num_particles`](@ref num_particles),
 [`num_modes`](@ref num_modes), [`num_components`](@ref num_components),
 [`maximum_mode_occupation`](@ref maximum_mode_occupation).
 """
@@ -49,8 +49,8 @@ Maximum number of particles that can occupy a single mode in the Fock space span
 address type. When called on an [`AbstractHamiltonian`](@ref) it may provide further
 information about the maximum mode occupation based on the Hamiltonian's structure.
 
-Returns an integer for [`SingleComponentFockAddress`](@ref)s, and a tuple for the
-multi-component [`CompositeFS`](@ref) Fock addresses.
+Returns an integer for [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress)s, and a tuple for the
+multi-component [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS) Fock addresses.
 
 ## Example
 ```jldoctest
@@ -68,6 +68,6 @@ julia> maximum_mode_occupation(CompositeFS(BoseFS(1,2,3), FermiFS(1,0,0)))
 ```
 
 See also [`num_particles`](@ref), [`num_modes`](@ref), [`num_components`](@ref),
-[`BoseFS`](@ref), [`FermiFS`](@ref), [`HardcoreBoseFS`](@ref).
+[`BoseFS`](@ref Main.BitStringAddresses.BoseFS), [`FermiFS`](@ref Main.BitStringAddresses.FermiFS), [`HardcoreBoseFS`](@ref Main.BitStringAddresses.HardcoreBoseFS).
 """
 maximum_mode_occupation(a::AbstractFockAddress) = maximum_mode_occupation(typeof(a))

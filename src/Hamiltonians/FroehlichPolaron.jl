@@ -29,7 +29,8 @@ operator for the bosons.
 * `momentum_cutoff=nothing`: the maximum boson momentum allowed for an address.
 * `mode_cutoff`: the maximum number of bosons in each momentum mode. Defaults to the maximum
     value supported by the address type [`BoseFS{missing}`](@ref).
-    [`maximum_mode_occupation(hamiltonian)`](@ref) will return this value.
+    [`maximum_mode_occupation(hamiltonian)`](@ref Main.Interfaces.maximum_mode_occupation)
+    will return this value.
 
 # Examples
 ```jldoctest

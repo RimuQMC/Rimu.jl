@@ -58,6 +58,7 @@ Follow the links for the definitions of the interfaces!
 * [`num_particles`](@ref)
 * [`num_modes`](@ref)
 * [`num_components`](@ref)
+* [`maximum_mode_occupation`](@ref)
 """
 module Interfaces
 

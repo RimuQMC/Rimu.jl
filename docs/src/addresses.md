@@ -14,11 +14,10 @@ type [`SingleComponentFockAddress`](@ref).
 
 Examples of Fock addresses are:
 
-- [`BoseFS`](@ref): Bosonic Fock state with fixed particle and mode number.
+- [`BoseFS`](@ref): Bosonic Fock state with fixed mode number and fixed or variable
+    particle number.
 - [`FermiFS`](@ref): Fermionic Fock state with fixed mode number and fixed or variable
     particle number.
-- [`OccupationNumberFS`](@ref): Bosonic Fock state with a fixed number of modes. The number
-    of particles is not part of the type and can be changed by operators.
 - [`HardcoreBoseFS`](@ref): Fock state for hardcore bosons with fixed mode number and fixed
     or variable particle number.
 - [`CompositeFS`](@ref) Multi-component Fock state composed of the above types.

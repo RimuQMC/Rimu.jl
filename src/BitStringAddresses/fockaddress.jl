@@ -24,8 +24,8 @@ Implemented subtypes:
 * [`occupied_mode_map`](@ref): `AbstractVector` with eager construction.
 * [`excitation`](@ref): Create a new address.
 * [`BoseFSIndex`](@ref) and [`FermiFSIndex`](@ref) for indexing.
-* [`maximum_mode_occupation`](@ref): Maximum number of particles that can occupy a single
-    mode.
+* [`maximum_mode_occupation`](@ref Main.Interfaces.maximum_mode_occupation): Maximum number
+    of particles that can occupy a single mode.
 
 See also [`CompositeFS`](@ref), [`AbstractFockAddress`](@ref).
 """
