@@ -46,8 +46,9 @@ num_components(b::AbstractFockAddress) = num_components(typeof(b))
     maximum_mode_occupation(::AbstractHamiltonian)
 
 Maximum number of particles that can occupy a single mode in the Fock space spanned by the
-address type. When called on an [`AbstractHamiltonian`](@ref) it may provide further
-information about the maximum mode occupation based on the Hamiltonian's structure.
+address type. The minimum is always zero. When called on an [`AbstractHamiltonian`](@ref) it
+may provide further information about the maximum mode occupation based on the Hamiltonian's
+structure.
 
 Returns an integer for [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress)s, and a tuple for the
 multi-component [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS) Fock addresses.
@@ -65,6 +66,9 @@ julia> maximum_mode_occupation(BoseFS{missing}(3, 10, 0; type=UInt16)) |> Int
 
 julia> maximum_mode_occupation(CompositeFS(BoseFS(1,2,3), FermiFS(1,0,0)))
 (6, 1)
+
+julia> maximum_mode_occupation(FroehlichPolaron(BoseFS{missing,20}(); mode_cutoff=5))
+5
 ```
 
 See also [`num_particles`](@ref), [`num_modes`](@ref), [`num_components`](@ref),
