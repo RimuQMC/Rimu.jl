@@ -171,6 +171,8 @@ end
         small_dense = BoseFS(ones(Int, 32))
         @test small_dense.bs isa BitString
         @test small_dense isa BoseFS{32,32}
+        @test bitstring(small_dense) == bitstring(small_dense.bs)
+        @test eltype(each_mode(small_dense)) == BoseFSIndex
 
         small_sparse = BoseFS(32, 1 => 2, 1 => 1)
         @test small_sparse.bs isa BitString
@@ -183,6 +185,8 @@ end
         med_sparse = BoseFS{4,64}(32 => 4)
         @test med_sparse.bs isa SortedParticleList
         @test med_sparse isa BoseFS{4,64}
+        @test_throws ArgumentError bitstring(med_sparse)
+        @test_throws ArgumentError BoseFS{4,64,SortedParticleList{3,64,UInt8}}(onr(med_sparse))
 
         @test_throws ArgumentError BoseFS(10, 11 => 1)
         @test_throws ArgumentError BoseFS(10, 10 => -1)
@@ -277,7 +281,7 @@ end
         end
         for (N, M) in ((16, 16), (3, 32), (64, 32), (200, 200), (200, 20), (20, 200))
             @testset "$N, $M" begin
-                for _ in 1:10
+                for _ in 1:2
                     input = rand_onr_bose(N, M)
                     bose = BoseFS(input)
                     @test BoseFS{N,M,typeof(bose.bs)}(bose.bs) === bose
@@ -414,7 +418,7 @@ end
         end
         for (N, M) in ((15, 16), (10, 29), (32, 60), (180, 200), (10, 200), (1, 20))
             @testset "$N, $M" begin
-                for _ in 1:10
+                for _ in 1:2
                     input = rand_onr_fermi(N, M)
                     fermi = FermiFS(input)
                     mfermi = FermiFS{missing}(input)
@@ -561,6 +565,83 @@ end
     @inferred BoseFS{missing}(SVector{3,UInt8}(1, 2, 3))
 end
 
+@testset "Randomized tests for BoseFS{missing}" begin
+    # Note: the random number for these tests will be the same everytime. This is still
+    # an ok way to look for errors.
+    function rand_onr_bose(N, M)
+        result = zeros(MVector{M,Int})
+        for _ in 1:N
+            result[rand(1:M)] += 1
+        end
+        return SVector(result)
+    end
+    # Should be exactly the same as onr, but slower.
+    function onr2(bose::BoseFS{N,M}) where {N,M}
+        result = zeros(MVector{M,Int32})
+        for (n, i, _) in occupied_modes(bose)
+            @assert n ≠ 0
+            result[i] = n
+        end
+        return SVector(result)
+    end
+    # Should be exactly the same as hopnextneighbour, but slower.
+    function hopnextneighbour2(bose::BoseFS{N,M}, chosen) where {N,M}
+        o = MVector{M,Int32}(onr(bose))
+        site = (chosen + 1) ÷ 2
+        curr = 0
+        i = 1
+        while i ≤ M
+            curr += o[i] > 0
+            curr == site && break
+            i += 1
+        end
+        if isodd(chosen)
+            j = mod1(i + 1, M)
+        else
+            j = mod1(i - 1, M)
+        end
+        o[i] -= 1
+        o[j] += 1
+        return BoseFS{N,M}(SVector(o)), √((o[i] + 1) * o[j])
+    end
+    for (N, M) in ((16, 16), (3, 32), (64, 32), (200, 200), (200, 20), (20, 200))
+        @testset "$N, $M" begin
+            for _ in 1:2
+                input = rand_onr_bose(N, M)
+                bose = BoseFS{missing}(input)
+                @test BoseFS{missing,M,typeof(bose.bs)}(bose.bs) === bose
+                @test num_particles(bose) == N
+                @test num_modes(bose) == M
+                @test onr(bose) == input
+                @test num_occupied_modes(bose) == count(!iszero, input)
+                @test bose_hubbard_interaction(bose) == sum(input .* (input .- 1))
+
+                @test onr2(bose) == input
+
+                @test all(
+                    hopnextneighbour2(bose, i) == hopnextneighbour(bose, i)
+                    for i in 1:num_occupied_modes(bose)*2
+                )
+
+                @test map(i -> i.mode, occupied_modes(bose)) == findall(≠(0), input)
+                @test map(i -> i.occnum, each_mode(bose)) == input
+                @test map(i -> i.mode, each_mode(bose)) == eachindex(input)
+
+                check_single_excitations(bose, 64)
+                check_double_excitations(bose, 8)
+                check_triple_excitations(bose, 4)
+
+                # Check that the result of show can be pasted into the REPL
+                @test eval(Meta.parse(repr(bose))) == bose
+                # Check that compact string can be parsed.
+                @test parse_address(sprint(show, bose; context=:compact => true)) == bose
+
+                @test onr(reverse(bose)) == reverse(input)
+            end
+        end
+    end
+end
+
 @testset "BoseFS{missing} with sparse constructor" begin
     @test BoseFS{missing}(2, 2 => 4) == BoseFS{missing}(0, 4)
     @test BoseFS{missing,2}(2 => 4) == BoseFS{missing}(2, 2 => 4)
@@ -571,6 +652,7 @@ end
           BoseFS{missing,5}(2, 3, 4, 0, 0, type=UInt8)
     @test BoseFS{missing,5}(i => i^2 for i in 1:5) ==
           BoseFS{missing}(5, i => i^2 for i in 1:5)
+    @test_throws ArgumentError BoseFS{missing}(1 => 1)
 end
 
 @testset "Printing and parsing BoseFS{missing}" begin

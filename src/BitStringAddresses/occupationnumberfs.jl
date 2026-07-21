@@ -192,7 +192,7 @@ function excitation(
     c::NTuple{<:Any,Int},
     d::NTuple{<:Any,Int}
 ) where {T}
-    accu = one(T)
+    accu = 1.0 # to avoid overflow
     for i in d
         fs, val = destroy(fs, i)
         accu *= val

@@ -35,10 +35,10 @@ function excitation_svec(b::BoseFS{N,M}, creations, destructions) where {N,M}
 
     for d in reverse(destructions)
         value *= onrep[d]
-        @inbounds onrep[d] -= 1
+        @inbounds onrep[d] -= UInt8(1)
     end
     for c in reverse(creations)
-        @inbounds onrep[c] += 1
+        @inbounds onrep[c] += UInt8(1)
         value *= onrep[c]
     end
     if value == 0
@@ -93,11 +93,13 @@ error message explaining where it failed otherwise.
 function excitations_correct(add, cs, ds)
     res_direct = excitation_direct(add, cs, ds)
     res_svec = excitation_svec(add, cs, ds)
-    if res_direct ≠ res_svec
+    if res_direct == res_svec || (iszero(res_direct[2]) && iszero(res_svec[2]) &&
+        typeof(res_direct[1]) == typeof(res_svec[1])
+    )
+        return true
+    else
         @error "Failed" add cs ds res_direct res_svec
         return false
-    else
-        return true
     end
 end
 

@@ -178,15 +178,12 @@ Base.hash(bba::BoseFS,  h::UInt) = hash(bba.bs, h)
 Base.:(==)(a::BoseFS, b::BoseFS) = a.bs == b.bs
 
 """
-    near_uniform_onr(N, M) -> onr::SVector{M,Int}
+    near_uniform_onr(::Val{N}, ::Val{M}) -> onr::SVector{M,Int}
 
 Create occupation number representation `onr` distributing `N` particles in `M`
 modes in a close-to-uniform fashion with each mode filled with at least
 `N ÷ M` particles and at most with `N ÷ M + 1` particles.
 """
-function near_uniform_onr(n::Integer, m::Integer)
-    return near_uniform_onr(Val(n),Val(m))
-end
 function near_uniform_onr(::Val{N}, ::Val{M}) where {N, M}
     fillingfactor, extras = divrem(N, M)
     # startonr = fill(fillingfactor,M)
@@ -540,6 +537,9 @@ end
 function BoseFS{missing}(onr::SVector{M,T}) where {M,T<:Unsigned}
     return @inbounds BoseFS{missing,M,typeof(onr)}(onr)
 end
+function BoseFS{missing,M}(v::AbstractVector{<:Integer}; type=nothing) where {M}
+    BoseFS{missing,M}(v...; type)
+end
 function BoseFS{missing}(arg; type=nothing) # single argument constructor
     isnothing(type) && (type = smallest_uint_type(maximum(arg)))
     type <: Unsigned || throw(ArgumentError("type must be an unsigned integer type"))
@@ -646,7 +646,7 @@ function excitation(
     d::NTuple{<:Any,Int}
 ) where {M,S<:SVector{M,<:Unsigned}}
     onr = fs.bs
-    accumulator = one(eltype(S))
+    accumulator = 1.0 # to avoid overflow
     for i in d
         onr, val = _destroy(onr, i)
         accumulator *= val
