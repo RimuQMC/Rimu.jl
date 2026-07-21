@@ -93,9 +93,7 @@ error message explaining where it failed otherwise.
 function excitations_correct(add, cs, ds)
     res_direct = excitation_direct(add, cs, ds)
     res_svec = excitation_svec(add, cs, ds)
-    if res_direct == res_svec || (iszero(res_direct[2]) && iszero(res_svec[2]) &&
-        typeof(res_direct[1]) == typeof(res_svec[1])
-    )
+    if res_direct == res_svec
         return true
     else
         @error "Failed" add cs ds res_direct res_svec

@@ -649,11 +649,13 @@ function excitation(
     accumulator = 1.0 # to avoid overflow
     for i in d
         onr, val = _destroy(onr, i)
+        iszero(val) && return fs, 0.0 # return early if invalid; efficient according to benchmarks
         accumulator *= val
     end
     for i in c
         onr, val = _create(onr, i)
         accumulator *= val
+        iszero(val) && return fs, 0.0
     end
     return typeof(fs)(onr), √accumulator
 end
