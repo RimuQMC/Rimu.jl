@@ -476,8 +476,7 @@ function parse_address(str)
     m = match(r"\|([ 0-9]+)⟩{[0-9]*}", str)
     if !isnothing(m)
         m2 = match(r"{([0-9]+)}", str)
-        if isnothing(m2) # empty braces defaults to UInt8
-            BITS = 8
+        if isnothing(m2) # empty braces defaults to UInt8 and indicates BoseFS{missing}
             return BoseFS{missing}(parse.(UInt8, split(m.captures[1], r" +")))
         else
             BITS = parse(Int, m2.captures[1])
