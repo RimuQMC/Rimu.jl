@@ -97,7 +97,7 @@ end
 
 @inline function BoseFS{N,M,S}(onr) where {N,M,S}
     onr isa Union{SVector{M},MVector{M},NTuple{M}} || throw(ArgumentError(
-        "invalid occupation number representation: expected NTuple{$M}, got $(typeof(onr))"
+        "invalid occupation number representation: expected SVector{$M}, MVector{$M}, or NTuple{$M}; got $(typeof(onr))"
     ))
     @boundscheck begin
         sum(onr) == N || throw(ArgumentError(
