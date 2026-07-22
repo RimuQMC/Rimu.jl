@@ -35,19 +35,20 @@ Rimu.Interfaces.num_components
 
 ```@autodocs
 Modules = [BitStringAddresses]
-Pages = ["BitStringAddresses.jl","fockaddress.jl","bosefs.jl","hardcorebosefs.jl","fermifs.jl","multicomponent.jl","occupationnumberfs.jl"]
+Pages = ["BitStringAddresses.jl","fockaddress.jl","bosefs.jl","hardcorebosefs.jl","fermifs.jl","multicomponent.jl"]
 Private = false
 ```
 
 ## Internal representations
 
-The addresses types [`BoseFS`](@ref), [`FermiFS`](@ref) and [`HardcoreBoseFS`](@ref) are 
+The addresses types [`BoseFS`](@ref), [`FermiFS`](@ref) and [`HardcoreBoseFS`](@ref), where the 
+particle number is either fixed (for fixed particle number `BoseFS`) or severely constrained, are 
 implemented as either bitstrings through [`BitString`](@ref), or sorted lists of particles 
 with [`SortedParticleList`](@ref). This allows for a space efficient representation.
 
-Therewhile, [`OccupationNumberFS`](@ref) internally uses the occupation number representation, 
-which allows it to handle excitation operations that change the particle number. This is fast
-but requires more storage space.
+Therewhile, [`BoseFS{missing}`](@ref), which allows for flexible and unconstrained particle number
+internally uses the occupation number representation, which allows it to handle excitation 
+operations that change the particle number. This is fast but requires more storage space.
 
 ### Internal APIs
 
