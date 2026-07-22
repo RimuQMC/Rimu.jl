@@ -4,7 +4,6 @@ using Rimu.BitStringAddresses: num_chunks, chunks
 using Rimu.BitStringAddresses: remove_ghost_bits, has_ghost_bits
 using Rimu.BitStringAddresses: occupied_modes, occupied_mode_map, unoccupied_modes, unoccupied_mode_map, update_component
 using Rimu.BitStringAddresses: parse_address
-using Rimu.BitStringAddresses: destroy, create
 using Rimu.BitStringAddresses: smallest_uint_type
 using Random
 using StaticArrays
@@ -671,39 +670,73 @@ end
     @test_throws ArgumentError parse_address("fs\"|1 2 3⟩{Int}\"")
 end
 
+@testset "Properties of BoseFS{missing}" begin
+    ofs = BoseFS{missing}(1, 2, 3)
+
+    @test num_modes(ofs) == 3
+    @test num_particles(ofs) == 6
+    @test num_particles(OccupationNumberFS(86, 84, 86)) == 256
+    @test num_occupied_modes(ofs) == 3
+    @test onr(ofs) == ofs.bs == SVector{3,UInt8}(1, 2, 3)
+    @test occupation_number_representation(ofs) == onr(ofs)
+    @test onr(reverse(ofs)) == reverse(onr(ofs))
+    lfs = BoseFS{missing}([1 0 0; 1 1 0])
+    @test onr(lfs, LadderBoundaries(2, 3)) == [1 0 0; 1 1 0]
+    @test num_occupied_modes(lfs) == length(occupied_modes(lfs)) == 3
+    @test occupied_mode_map(lfs) == collect(occupied_modes(lfs))
+    b1, b2 = BoseFS(1, 6), BoseFS(3, 4)
+    o1, o2 = BoseFS{missing}(b1), BoseFS{missing}(b2)
+    @test (o1 < o2) == (b1 < b2)
+end
+
+@testset "BoseFS{missing} in Hamiltonians" begin
+    bfs = BoseFS(1, 2, 3)
+    ofs = BoseFS{missing}(bfs)
+    for ham in (
+        HubbardMom1D,
+        HubbardMom1DEP,
+        HubbardReal1D,
+        HubbardReal1DEP,
+        HubbardRealSpace,
+        ExtendedHubbardReal1D,
+    )
+        @test sparse(ham(ofs); sort=true) == sparse(ham(bfs); sort=true)
+    end
+    oham = HubbardReal1D(BoseFS{missing}(0, 2, 1))
+    bham = HubbardReal1D(BoseFS(0, 2, 1))
+    @test sparse(ParitySymmetry(oham; odd=true); sort=true) ==
+          sparse(ParitySymmetry(bham; odd=true); sort=true)
+end
+
 @testset "OccupationNumberFS functions" begin
     @testset "OccupationNumberFS with SVector input" begin
-        @test OccupationNumberFS(SVector{3, UInt8}(1, 2, 3)) isa OccupationNumberFS{3, UInt8}
-        @test_throws ArgumentError OccupationNumberFS(SVector(-1, 2, 3))
-        @test_throws ArgumentError OccupationNumberFS(SVector(1, 2, 300))
-        @test OccupationNumberFS(SVector{3,UInt16}(1, 2, 300)) isa OccupationNumberFS{3,UInt16}
+        @test OccupationNumberFS(SVector{3,UInt8}(1, 2, 3)) isa BoseFS{missing}
+        @test_throws InexactError OccupationNumberFS(SVector(-1, 2, 3))
+        @test OccupationNumberFS(SVector(1, 2, 300)) isa BoseFS{missing}
+        @test OccupationNumberFS(SVector{3,UInt16}(1, 2, 300)) isa BoseFS{missing}
     end
 
     @testset "OccupationNumberFS with multiple arguments" begin
         @test OccupationNumberFS(i for i in 1:3) == OccupationNumberFS(1, 2, 3)
-        @test isa(OccupationNumberFS{3,UInt32}(i for i in 1:3), OccupationNumberFS{3,UInt32})
-        @test isa(OccupationNumberFS(1, 2, 3), OccupationNumberFS{3,UInt8})
-        @test_throws ArgumentError OccupationNumberFS(1.1, 2, 3)
-        @test_throws ArgumentError OccupationNumberFS(-1, 2, 3)
-        @test_throws ArgumentError OccupationNumberFS(1, 2, 300)
+        @test isa(OccupationNumberFS(1, 2, 3), BoseFS{missing})
+        @test_throws MethodError OccupationNumberFS(1.1, 2, 3)
+        @test_throws InexactError OccupationNumberFS(-1, 2, 3)
+        @test OccupationNumberFS(1, 2, 300) isa BoseFS{missing}
     end
 
     @testset "OccupationNumberFS with M and multiple arguments" begin
         @test OccupationNumberFS{3}([1, 2, 3]) == OccupationNumberFS{3,UInt8}(1, 2, 3)
-        @test_throws ArgumentError OccupationNumberFS{3}(1.1, 2, 3)
-        @test_throws ArgumentError OccupationNumberFS{3}(-1, 2, 3)
-        @test_throws ArgumentError OccupationNumberFS{3}(1, 2, 300)
     end
 
     @testset "OccupationNumberFS with BoseFS input" begin
         fs = BoseFS(1, 2)
-        @test isa(OccupationNumberFS(fs), OccupationNumberFS{2, UInt8})
+        @test isa(OccupationNumberFS(fs), BoseFS{missing})
         @test maximum_mode_occupation(OccupationNumberFS(fs)) == 255
         fs = BoseFS(1, 333)
-        @test isa(OccupationNumberFS(fs), OccupationNumberFS{2,UInt16})
+        @test isa(OccupationNumberFS(fs), BoseFS{missing})
         @test maximum_mode_occupation(OccupationNumberFS(fs)) == 65535
         fs = BoseFS(0, 0)
-        @test isa(OccupationNumberFS(fs), OccupationNumberFS{2,UInt8})
+        @test isa(OccupationNumberFS(fs), BoseFS{missing})
     end
 
     @testset "OccupationNumberFS with sparse constructor" begin
@@ -734,23 +767,11 @@ end
     end
 
     ofs = OccupationNumberFS{3,UInt8}(1, 2, 3)
-    @testset "Destroy function" begin
-        ofs_after_destroy, val_before_destroy = destroy(ofs, 2)
-        @test ofs_after_destroy.onr == SVector{3,UInt8}(1, 1, 3)
-        @test val_before_destroy == 2
-    end
-
-    @testset "Create function" begin
-        ofs_after_create, val_after_create = create(ofs, 2)
-        @test ofs_after_create.onr == SVector{3,UInt8}(1, 3, 3)
-        @test val_after_create == 3
-    end
-
     @testset "Excitation function" begin
         c = (1,)
         d = (2,)
         fs_after_excitation, sqrt_accu = excitation(ofs, c, d)
-        @test fs_after_excitation.onr == SVector{3,UInt8}(2, 1, 3)
+        @test fs_after_excitation.bs == SVector{3,UInt8}(2, 1, 3)
         @test sqrt_accu ≈ √4
 
         # indexing with BoseFSIndex
@@ -764,10 +785,10 @@ end
         @test num_particles(ofs) == 6
         @test num_particles(OccupationNumberFS(86, 84, 86)) == 256
         @test num_occupied_modes(ofs) == 3
-        @test onr(ofs) == ofs.onr == SVector{3,UInt8}(1, 2, 3)
+        @test onr(ofs) == ofs.bs == SVector{3,UInt8}(1, 2, 3)
         @test occupation_number_representation(ofs) == onr(ofs)
         @test onr(reverse(ofs)) == reverse(onr(ofs))
-        lfs = OccupationNumberFS{6}([1 0 0; 1 1 0])
+        lfs = OccupationNumberFS([1 0 0; 1 1 0])
         @test onr(lfs, LadderBoundaries(2, 3)) == [1 0 0; 1 1 0]
         @test num_occupied_modes(lfs) == length(occupied_modes(lfs)) == 3
         @test occupied_mode_map(lfs) == collect(occupied_modes(lfs))
@@ -934,7 +955,7 @@ end
     @test fs"|f 3: 1 2⟩{}" == FermiFS{missing}(1, 1, 0)
     @test near_uniform(FermiFS{missing}(1, 0, 0)) == FermiFS{missing}(1, 0, 0)
     @test near_uniform(HardcoreBoseFS{missing}(1, 0, 0)) == HardcoreBoseFS{missing}(1, 0, 0)
-    @test near_uniform(OccupationNumberFS(10, 0, 0)) == OccupationNumberFS(4, 3, 3)
+    @test near_uniform(BoseFS{missing}(10, 0, 0)) == BoseFS{missing}(4, 3, 3)
 
     fs = FermiFS{missing}(1, 0, 1, 1, 1, 0)
     @test ismissing(num_particles(typeof(fs)))
@@ -969,5 +990,7 @@ end
     @test parse_address(sprint(show, bm16; context=:compact => true)) == bm16
     @test BoseFS{missing}(1, 1 => 3) == BoseFS{missing}(3,) # single mode
     @test BoseFS{missing}(1, 1 => 3; type=UInt32) ==BoseFS{missing}(3; type=UInt32)
-    @test BoseFS(OccupationNumberFS(1, 2, 3)) == bm
+    @test BoseFS(bm) == bm
+    @test BoseFS(BoseFS(1, 2, 3)) == BoseFS(1, 2, 3)
+    @test BoseFS{missing}(BoseFS(1, 2, 3)) == bm
 end

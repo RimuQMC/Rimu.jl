@@ -108,9 +108,9 @@ representation.
 # Example
 
 ```jldoctest
-julia> num_occupied_modes(BoseFS((1, 0, 2)))
+julia> num_occupied_modes(BoseFS(1, 0, 2))
 2
-julia> num_occupied_modes(FermiFS((1, 1, 1, 0)))
+julia> num_occupied_modes(FermiFS(1, 1, 1, 0))
 3
 ```
 
@@ -128,7 +128,7 @@ Return a lazy iterator over all occupied modes in an address. Iterates over
 # Example
 
 ```jldoctest
-julia> b = BoseFS((1,5,0,4));
+julia> b = BoseFS(1,5,0,4);
 
 julia> foreach(println, occupied_modes(b))
 BoseFSIndex(occnum=1, mode=1, offset=0)
@@ -137,7 +137,7 @@ BoseFSIndex(occnum=4, mode=4, offset=9)
 ```
 
 ```jldoctest
-julia> f = FermiFS((1,1,0,1,0,0,1));
+julia> f = FermiFS(1,1,0,1,0,0,1);
 
 julia> foreach(println, occupied_modes(f))
 FermiFSIndex(occnum=1, mode=1, offset=0)
@@ -160,7 +160,7 @@ See [`unoccupied_mode_map`](@ref) for an eager version.
 # Example
 
 ```jldoctest
-julia> f = FermiFS((1,1,0,1,0,0,1));
+julia> f = FermiFS(1,1,0,1,0,0,1);
 
 julia> foreach(println, unoccupied_modes(f))
 FermiFSIndex(occnum=0, mode=3, offset=2)
@@ -204,10 +204,10 @@ julia> excitation(f, (i,j), (k,l)) # number conserving excitation
 (FermiFS(1, 0, 1, 1, 0, 1, 1, 1), -1.0)
 
 julia> fm = FermiFS{missing}(1,1,0,0,1,1,1,1) # number non-conserving address
-FermiFS{missing}((1, 1, 0, 0, 1, 1, 1, 1))
+FermiFS{missing}(1, 1, 0, 0, 1, 1, 1, 1)
 
 julia> excitation(fm, (i,), (k,l)) # particle number changes, same address type
-(FermiFS{missing}((1, 0, 1, 0, 0, 1, 1, 1)), 1.0)
+(FermiFS{missing}(1, 0, 1, 0, 0, 1, 1, 1), 1.0)
 
 julia> s = fs"|1 2 3⟩{}"
 BoseFS{missing}(1, 2, 3)
@@ -583,8 +583,8 @@ CompositeFS(
 
 julia> fs"|↑↓↑⇅⟩{}" # spinor fermions; \\dblarrowupdown(tab) -> ⇅
 CompositeFS(
-  FermiFS{missing}((1, 0, 1, 1)),
-  FermiFS{missing}((0, 1, 0, 1)),
+  FermiFS{missing}(1, 0, 1, 1),
+  FermiFS{missing}(0, 1, 0, 1),
 )
 
 julia> s = fs"|0 1 2 0⟩{}" # constructing BoseFS{missing} with default UInt8 container

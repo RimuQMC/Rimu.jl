@@ -111,7 +111,7 @@ function num_singly_doubly_occupied_sites(b::SingleComponentFockAddress)
 end
 
 # faster method for this special case
-function num_singly_doubly_occupied_sites(b::OccupationNumberFS)
+function num_singly_doubly_occupied_sites(b::BoseFS{missing})
     return num_singly_doubly_occupied_sites(onr(b))
 end
 

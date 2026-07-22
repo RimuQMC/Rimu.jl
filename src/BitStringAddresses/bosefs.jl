@@ -93,6 +93,9 @@ struct BoseFS{N,M,S} <: SingleComponentFockAddress{N,M}
     function BoseFS{N,M,S}(bs::S) where {N,M,S}
         new{N,M,S}(bs)
     end
+    function BoseFS{missing,M,S}(bs::S) where {M,S<:SVector{M,<:Unsigned}}
+        new{missing,M,S}(bs)
+    end
 end
 
 @inline function BoseFS{N,M,S}(onr) where {N,M,S}
@@ -174,6 +177,16 @@ end
 Base.bitstring(b::BoseFS) = bitstring(b.bs) # TODO rename?
 
 Base.isless(a::BoseFS, b::BoseFS) = isless(a.bs, b.bs)
+function Base.isless(a::BoseFS{missing,M}, b::BoseFS{missing,M}) where {M}
+    # equivalent to `isless(reverse(a.bs), reverse(b.bs))`
+    # reversing the order here to make it consistent with BoseFS
+    i = M
+    @inbounds while i > 1 && a.bs[i] == b.bs[i]
+        i -= 1
+    end
+    return isless(a.bs[i], b.bs[i])
+end
+
 Base.hash(bba::BoseFS,  h::UInt) = hash(bba.bs, h)
 Base.:(==)(a::BoseFS, b::BoseFS) = a.bs == b.bs
 
@@ -537,6 +550,12 @@ end
 function BoseFS{missing}(onr::SVector{M,T}) where {M,T<:Unsigned}
     return @inbounds BoseFS{missing,M,typeof(onr)}(onr)
 end
+function BoseFS{missing,M,S}(onr) where {M,S}
+    S <: SVector{M,<:Unsigned} || throw(ArgumentError(
+        "invalid container type: expected SVector{$M,<:Unsigned}; got $(S)"
+    ))
+    return BoseFS{missing,M,S}(S(onr))
+end
 function BoseFS{missing,M}(v::AbstractVector{<:Integer}; type=nothing) where {M}
     BoseFS{missing,M}(v...; type)
 end
@@ -579,6 +598,7 @@ function BoseFS{missing,M}(fs::BoseFS) where {M}
     ))
     BoseFS{missing}(fs)
 end
+BoseFS(fs::BoseFS) = fs
 
 # sparse constructors
 function BoseFS{missing}(M::Integer, pairs::Pair...; type=nothing)

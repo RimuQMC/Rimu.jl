@@ -124,14 +124,14 @@ CompositeFS(
 
 julia> FermiFS2C{missing}((1,0,0), (0,1,1)) # number non-conserving, spin flips allowed
 CompositeFS(
-  FermiFS{missing}((1, 0, 0)),
-  FermiFS{missing}((0, 1, 1)),
+  FermiFS{missing}(1, 0, 0),
+  FermiFS{missing}(0, 1, 1),
 )
 
 julia> FermiFS2C{missing}(3, 1 => 1, 2 => -1, 3 => -1)
 CompositeFS(
-  FermiFS{missing}((1, 0, 0)),
-  FermiFS{missing}((0, 1, 1)),
+  FermiFS{missing}(1, 0, 0),
+  FermiFS{missing}(0, 1, 1),
 )
 
 julia> fs"|↑↓↓⟩" # \\uparrow(tab) -> ↑, \\downarrow(tab) -> ↓, \\rangle(tab) -> ⟩
@@ -142,8 +142,8 @@ CompositeFS(
 
 julia> fs"|↑↓↓⇅⟩{}" # \\dblarrowupdown(tab) -> ⇅
 CompositeFS(
-  FermiFS{missing}((1, 0, 0, 1)),
-  FermiFS{missing}((0, 1, 1, 1)),
+  FermiFS{missing}(1, 0, 0, 1),
+  FermiFS{missing}(0, 1, 1, 1),
 )
 ```
 

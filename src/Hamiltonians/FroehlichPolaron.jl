@@ -1,8 +1,3 @@
-const NonConservedBoseFS{M,AT} = Union{
-    BoseFS{missing,M,SVector{M,AT}},
-    OccupationNumberFS{M,AT}
-}
-
 """
     FroehlichPolaron(address::BoseFS{missing,M}; kwargs...) <: AbstractHamiltonian
 
@@ -56,7 +51,7 @@ See also [`BoseFS`](@ref), [`dimension`](@ref), [`maximum_mode_occupation`](@ref
 struct FroehlichPolaron{
     T, # eltype
     M, # number of modes
-    A<:NonConservedBoseFS{M}, # address type
+    A<:BoseFS{missing,M}, # address type
     MC # momentum cutoff indicating type
 } <: AbstractHamiltonian{T}
     addr::A
@@ -71,7 +66,7 @@ struct FroehlichPolaron{
 end
 
 function FroehlichPolaron(
-    addr::NonConservedBoseFS{M,AT};
+    addr::BoseFS{missing,M,SVector{M,AT}};
     v=1.0,
     mass=1.0,
     omega=1.0,
@@ -131,22 +126,22 @@ end
 
 LOStructure(::Type{<:FroehlichPolaron{<:Real}}) = IsHermitian()
 
-function diagonal_element(h::FroehlichPolaron{<:Any,M}, addr::NonConservedBoseFS{M}) where {M}
+function diagonal_element(h::FroehlichPolaron{<:Any,M}, addr::BoseFS{missing,M}) where {M}
     map = onr(addr)
     p_f = dot(h.ks,map)
     return h.omega * num_particles(addr) + (h.p - p_f)^2 / h.mass
 end
 
-function num_offdiagonals(::FroehlichPolaron{<:Any,M}, ::NonConservedBoseFS{M}) where {M}
+function num_offdiagonals(::FroehlichPolaron{<:Any,M}, ::BoseFS{missing,M}) where {M}
     return 2M #num_occupied_modes
 end
 
-function get_offdiagonal(h::FroehlichPolaron{<:Any,M,<:Any,Nothing}, addr::NonConservedBoseFS{M},chosen) where {M}
+function get_offdiagonal(h::FroehlichPolaron{<:Any,M,<:Any,Nothing}, addr::BoseFS{missing,M},chosen) where {M}
     # branch that bypasses momentum cutoff
     return _froehlich_offdiag(h, addr, chosen)
 end
 
-function get_offdiagonal(h::FroehlichPolaron{T,M,<:Any,T}, addr::NonConservedBoseFS{M}, chosen) where {M,T}
+function get_offdiagonal(h::FroehlichPolaron{T,M,<:Any,T}, addr::BoseFS{missing,M}, chosen) where {M,T}
     # branch for checking momentum cutoff
     naddress, value = _froehlich_offdiag(h, addr, chosen)
 
@@ -158,7 +153,7 @@ function get_offdiagonal(h::FroehlichPolaron{T,M,<:Any,T}, addr::NonConservedBos
     end
 end
 
-function _froehlich_offdiag(h, addr::NonConservedBoseFS{M},chosen) where {M}
+function _froehlich_offdiag(h, addr::BoseFS{missing,M},chosen) where {M}
     if chosen ≤ M # assign first M indices to creations
         if onr(addr)[chosen] ≥ h.mode_cutoff # check whether occupation exceeds cutoff
             return addr, 0.0
@@ -173,7 +168,7 @@ function _froehlich_offdiag(h, addr::NonConservedBoseFS{M},chosen) where {M}
     end
 end
 
-function _exceed_mode_cutoff(mode_cutoff, addr::NonConservedBoseFS{M}) where {M}
+function _exceed_mode_cutoff(mode_cutoff, addr::BoseFS{missing,M}) where {M}
     return any(x -> x > mode_cutoff, onr(addr))
 end
 

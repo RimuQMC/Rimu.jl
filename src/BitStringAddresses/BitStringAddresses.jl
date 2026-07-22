@@ -17,7 +17,6 @@ using ..Interfaces: Interfaces, AbstractFockAddress, num_particles, num_modes,
 
 export SingleComponentFockAddress, BoseFS, FermiFS, HardcoreBoseFS
 export CompositeFS, FermiFS2C, time_reverse
-export OccupationNumberFS
 export BoseFSIndex, FermiFSIndex
 export BitString, SortedParticleList
 
@@ -37,6 +36,52 @@ include("bosefs.jl")
 include("hardcorebosefs.jl")
 include("fermifs.jl")
 include("multicomponent.jl")
-include("occupationnumberfs.jl")
+# include("occupationnumberfs.jl")
+
+# @deprecate OccupationNumberFS BoseFS{missing}
+export OccupationNumberFS
+
+"""
+    OccupationNumberFS{M,T} <: SingleComponentFockAddress
+Address type that stores the occupation numbers of a single component bosonic Fock state
+with `M` modes. The occupation numbers must fit into the type `T <: Unsigned`. The number of
+particles is runtime data, and can be retrieved with [`num_particles(address)`](@ref).
+
+This is a deprecated type, and will be removed in a future release. The
+type constructors currently return `BoseFS{missing}`. Use [`BoseFS{missing}`](@ref) instead.
+
+# Constructors
+- `OccupationNumberFS(val::Integer...)`: Construct from occupation numbers. Must be
+  < 256 to fit into `UInt8`.
+- `OccupationNumberFS(M, pairs::Pair...)`: Construct from a sparse representation with
+  `M` modes and pairs of mode index and occupation number.
+- `OccupationNumberFS{[M,T]}(onr)`: Construct from collection `onr` with `M` occupation
+  numbers with optional type `T`.  `onr` may be a tuple, an array, or a generator.
+- `OccupationNumberFS{M[,T]}()`: Construct a vacuum state with `M` modes. If `T` is
+  unspecified, `UInt8` is used.
+- `OccupationNumberFS(fs::BoseFS)`: Construct from [`BoseFS`](@ref).
+- With short form macro [`@fs_str`](@ref). Specify the number of
+  significant bits in braces. See example below.
+
+See also: [`BoseFS`](@ref), [`HardcoreBoseFS`](@ref), [`FermiFS`](@ref),
+[`SingleComponentFockAddress`](@ref), [`CompositeFS`](@ref), [`@fs_str`](@ref).
+!!! warning
+    The use of `OccupationNumberFS` is deprecated. Use [`BoseFS{missing}`](@ref) instead.
+"""
+struct OccupationNumberFS{M,T}
+    OccupationNumberFS{M,T}() where {M,T} = BoseFS{missing,M}(; type=T)
+end
+function OccupationNumberFS(args...)
+    Base.depwarn("OccupationNumberFS is deprecated, use BoseFS{missing} instead", :OccupationNumberFS)
+    BoseFS{missing}(args...)
+end
+function OccupationNumberFS{M}(args...) where {M}
+    Base.depwarn("OccupationNumberFS is deprecated, use BoseFS{missing} instead", :OccupationNumberFS)
+    BoseFS{missing,M}(args...)
+end
+function OccupationNumberFS{M,U}(args...) where {M,U}
+    Base.depwarn("OccupationNumberFS is deprecated, use BoseFS{missing} instead", :OccupationNumberFS)
+    BoseFS{missing,M}(args...; type=U)
+end
 
 end

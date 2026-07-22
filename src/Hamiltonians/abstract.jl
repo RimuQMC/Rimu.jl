@@ -37,10 +37,10 @@ dimension of the matrix representing the Hamiltonian is returned.
 # Examples
 
 ```jldoctest
-julia> dimension(OccupationNumberFS(1,2,3))
+julia> dimension(BoseFS{missing}(1,2,3))
 16777216
 
-julia> dimension(HubbardReal1D(OccupationNumberFS(1,2,3)))
+julia> dimension(HubbardReal1D(BoseFS{missing}(1,2,3)))
 28
 
 julia> dimension(BoseFS{200,100})
@@ -73,7 +73,7 @@ dimension(::T) where {T<:Number} = typemax(T) # e.g. integer addresses
 function dimension(::Type{<:BoseFS{N,M}}) where {N,M}
     return number_conserving_bose_dimension(N,M)
 end
-function dimension(::Type{<:OccupationNumberFS{M,T}}) where {M,T}
+function dimension(::Type{<:BoseFS{missing,M,SVector{M,T}}}) where {M,T}
     n = typemax(T)
     return BigInt(n + 1)^BigInt(M)
 end
@@ -130,7 +130,7 @@ conservation.
 See also [`number_conserving_bose_dimension`](@ref),
 [`number_conserving_fermi_dimension`](@ref), [`dimension`](@ref).
 """
-function number_conserving_dimension(address::Union{BoseFS,OccupationNumberFS})
+function number_conserving_dimension(address::BoseFS)
     m = num_modes(address)
     n = num_particles(address)
     return number_conserving_bose_dimension(n, m)

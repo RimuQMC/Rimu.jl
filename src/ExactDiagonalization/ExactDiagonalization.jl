@@ -35,7 +35,7 @@ using ..Interfaces: AbstractDVec, AbstractHamiltonian, AbstractOperator, Adjoint
     diagonal_element, offdiagonals, starting_address, LOStructure, IsHermitian,
     operator_column
 using ..BitStringAddresses: AbstractFockAddress, BoseFS, FermiFS, HardcoreBoseFS,
-    CompositeFS, OccupationNumberFS, near_uniform, BitString
+    CompositeFS, near_uniform, BitString
 using ..DictVectors: FrozenDVec, PDVec, DVec
 using ..Hamiltonians: allows_address_type, check_address_type, dimension,
     ParitySymmetry, TimeReversalSymmetry, AbstractOperator
