@@ -142,7 +142,7 @@ function print_address(io::IO, f::FermiFS{N,M}; compact=false) where {N,M}
     elseif f.bs isa SortedParticleList
         print(io, "FermiFS{$N,$M}(", onr_sparse_string(onr(f)), ")")
     elseif ismissing(N)
-        print(io, "FermiFS{missing}(", Int.(tuple(onr(f)...)), ")")
+        print(io, "FermiFS{missing}", Int.(tuple(onr(f)...)))
     else
         print(io, "FermiFS", tuple(onr(f)...))
     end
