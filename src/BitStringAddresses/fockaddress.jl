@@ -4,16 +4,14 @@
 """
     SingleComponentFockAddress{N,M} <: AbstractFockAddress{N,M}
 
-A type representing a single component Fock state with `N` particles and `M` modes.
+A type representing a single component Fock state with `N` particles and `M` modes. The
+particle number is part of the type but can be set to `missing` to allow for a variable
+particle number. The number of modes is always fixed.
 
 Implemented subtypes:
-- [`BoseFS`](@ref): Bosonic Fock state with fixed particle and mode number.
-- [`FermiFS`](@ref): Fermionic Fock state with fixed mode number and fixed or variable
-    particle number.
-- [`OccupationNumberFS`](@ref): Bosonic Fock state with a fixed number of modes. The number
-    of particles is not part of the type and can be changed by operators.
-- [`HardcoreBoseFS`](@ref): Fock state for hardcore bosons with fixed mode number and fixed
-    or variable particle number.
+- [`BoseFS`](@ref): Bosonic Fock state.
+- [`FermiFS`](@ref): Fermionic Fock state.
+- [`HardcoreBoseFS`](@ref): Fock state for hardcore bosons or spin or qubit systems.
 
 # Supported functionality
 
@@ -176,9 +174,8 @@ unoccupied_modes
 
 Generate an excitation on address `addr` by applying `creations` and `destructions`, which
 are tuples of the appropriate address indices (i.e. [`BoseFSIndex`](@ref) for
-[`BoseFS`](@ref) and [`OccupationNumberFS`](@ref), or
-[`FermiFSIndex`](@ref) for [`FermiFS`](@ref) and [`HardcoreBoseFS`](@ref);
- [`OccupationNumberFS`](@ref) also supports integer indices).
+[`BoseFS`](@ref), or [`FermiFSIndex`](@ref) for [`FermiFS`](@ref) and
+[`HardcoreBoseFS`](@ref); [`BoseFS{missing}`](@ref) also supports integer indices).
 
 ```math
 a^†_{c_1} a^†_{c_2} … a_{d_1} a_{d_2} … |f⟩ → α|f'⟩
@@ -427,14 +424,14 @@ function parse_address(str)
             return CompositeFS(f1, f2)
         end
     end
-    # Sparse OccupationNumberFS
+    # Sparse BoseFS{missing}
     m = match(r"\|b *([0-9]+): *([ 0-9]+)⟩{", str)
     if !isnothing(m)
         if isnothing(match(r"{}", str))
             throw(ArgumentError("invalid Fock state format \"$str\""))
         end
         particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
-        return OccupationNumberFS(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
+        return BoseFS{missing}(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
     end
     # Sparse BoseFS
     m = match(r"\|b *([0-9]+): *([ 0-9]+)⟩", str)
@@ -472,7 +469,7 @@ function parse_address(str)
         particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
         return FermiFS(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
     end
-    # OccupationNumberFS
+    # BoseFS{missing} specifying the number of bits in the type parameter
     m = match(r"\|([ 0-9]+)⟩{[0-9]*}", str)
     if !isnothing(m)
         m2 = match(r"{([0-9]+)}", str)
@@ -495,7 +492,7 @@ function parse_address(str)
             throw(ArgumentError("invalid Fock state format \"$str\""))
         end
         t = Tuple(parse.(T, split(m.captures[1], r" +")))
-        return OccupationNumberFS(SVector(t))
+        return BoseFS{missing}(SVector(t))
     end
     # BoseFS with missing particle number
     m = match(r"\|([ 0-9]+)⟩{[a-zA-Z0-9]*}", str)
@@ -590,7 +587,7 @@ CompositeFS(
 julia> s = fs"|0 1 2 0⟩{}" # constructing BoseFS{missing} with default UInt8 container
 BoseFS{missing}(0, 1, 2, 0)
 
-julia> [s] # prints out with the significant number of bits specified in braces
+julia> [s] # prints out with the container type specified in braces (empty for default UInt8)
 1-element Vector{BoseFS{missing, 4, SVector{4, UInt8}}}:
  fs"|0 1 2 0⟩{}"
 
@@ -599,7 +596,7 @@ HardcoreBoseFS(1, 0, 1)
 ```
 
 See also [`FermiFS`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref), [`FermiFS2C`](@ref),
-[`OccupationNumberFS`](@ref), [`HardcoreBoseFS`](@ref).
+[`HardcoreBoseFS`](@ref).
 """
 macro fs_str(str)
     return parse_address(str)
@@ -636,9 +633,8 @@ end
 """
     BoseFSIndex
 
-Struct used for indexing and performing [`excitation`](@ref)s on a [`BoseFS`](@ref) or
-[`OccupationNumberFS`](@ref). `BoseFSIndex` is returned by [`find_mode`](@ref) and
-[`find_occupied_mode`](@ref).
+Struct used for indexing and performing [`excitation`](@ref)s on a [`BoseFS`](@ref).
+`BoseFSIndex` is returned by [`find_mode`](@ref) and [`find_occupied_mode`](@ref).
 
 ## Fields:
 
