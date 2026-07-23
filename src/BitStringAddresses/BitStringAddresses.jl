@@ -36,9 +36,6 @@ include("bosefs.jl")
 include("hardcorebosefs.jl")
 include("fermifs.jl")
 include("multicomponent.jl")
-# include("occupationnumberfs.jl")
-
-# @deprecate OccupationNumberFS BoseFS{missing}
 export OccupationNumberFS
 
 """
