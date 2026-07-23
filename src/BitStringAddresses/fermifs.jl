@@ -31,25 +31,25 @@ number of particles is not known at compile time and can be changed by excitatio
 
 ```jldoctest
 julia> FermiFS(0, 1, 1, 1, 0)
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 
 julia> FermiFS([abs(i - 3) ≤ 1 for i in 1:5])
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 
 julia> FermiFS(5, 2 => 1, 3 => 1, 4 => 1)
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 
 julia> FermiFS{3,5}(i => 1 for i in 2:4)
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 
 julia> fs"|⋅↑↑↑⋅⟩" # \\uparrow(tab) -> ↑, \\cdot(tab) -> ⋅, \\rangle(tab) -> ⟩
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 
 julia> FermiFS{missing}(0, 1, 1, 1, 0) == fs"|⋅↑↑↑⋅⟩{}" # missing particle number
 true
 
 julia> fs"|f 5: 2 3 4⟩"
-FermiFS{3,5}(0, 1, 1, 1, 0)
+FermiFS(0, 1, 1, 1, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),
@@ -141,8 +141,10 @@ function print_address(io::IO, f::FermiFS{N,M}; compact=false) where {N,M}
         print(io, "|", join(map(o -> o == 0 ? '⋅' : '↑', onr(f))), "⟩")
     elseif f.bs isa SortedParticleList
         print(io, "FermiFS{$N,$M}(", onr_sparse_string(onr(f)), ")")
+    elseif ismissing(N)
+        print(io, "FermiFS{missing}", Int.(tuple(onr(f)...)))
     else
-        print(io, "FermiFS{$N,$M}", tuple(onr(f)...))
+        print(io, "FermiFS", tuple(onr(f)...))
     end
 end
 
@@ -159,6 +161,7 @@ end
 # joint functions for FermiFS and HardcoreBoseFS
 const FermiOrHardcoreBoseFS{N,M,S} = Union{FermiFS{N,M,S}, HardcoreBoseFS{N,M,S}}
 
+Interfaces.maximum_mode_occupation(::Type{<:FermiOrHardcoreBoseFS}) = 1
 Interfaces.num_particles(a::FermiOrHardcoreBoseFS{missing}) = count_ones(a.bs)
 # only required for missing, as the fallback for other types is defined in the abstract type
 Base.bitstring(a::FermiOrHardcoreBoseFS) = bitstring(a.bs)
@@ -215,7 +218,7 @@ Note that this function is only implemented for addresses of type [`FermiFS`](@r
 
 ```jldoctest
 julia> f = FermiFS(1,1,0,0)
-FermiFS{2,4}(1, 1, 0, 0)
+FermiFS(1, 1, 0, 0)
 
 julia> mf = unoccupied_mode_map(f)
 2-element Rimu.BitStringAddresses.ModeMap{2, FermiFSIndex}:

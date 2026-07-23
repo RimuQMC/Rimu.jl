@@ -4,16 +4,14 @@
 """
     SingleComponentFockAddress{N,M} <: AbstractFockAddress{N,M}
 
-A type representing a single component Fock state with `N` particles and `M` modes.
+A type representing a single component Fock state with `N` particles and `M` modes. The
+particle number is part of the type but can be set to `missing` to allow for a variable
+particle number. The number of modes is always fixed.
 
 Implemented subtypes:
-- [`BoseFS`](@ref): Bosonic Fock state with fixed particle and mode number.
-- [`FermiFS`](@ref): Fermionic Fock state with fixed mode number and fixed or variable
-    particle number.
-- [`OccupationNumberFS`](@ref): Bosonic Fock state with a fixed number of modes. The number
-    of particles is not part of the type and can be changed by operators.
-- [`HardcoreBoseFS`](@ref): Fock state for hardcore bosons with fixed mode number and fixed
-    or variable particle number.
+- [`BoseFS`](@ref): Bosonic Fock state.
+- [`FermiFS`](@ref): Fermionic Fock state.
+- [`HardcoreBoseFS`](@ref): Fock state for hardcore bosons or spin or qubit systems.
 
 # Supported functionality
 
@@ -24,6 +22,8 @@ Implemented subtypes:
 * [`occupied_mode_map`](@ref): `AbstractVector` with eager construction.
 * [`excitation`](@ref): Create a new address.
 * [`BoseFSIndex`](@ref) and [`FermiFSIndex`](@ref) for indexing.
+* [`maximum_mode_occupation`](@ref Main.Interfaces.maximum_mode_occupation): Maximum number
+    of particles that can occupy a single mode.
 
 See also [`CompositeFS`](@ref), [`AbstractFockAddress`](@ref).
 """
@@ -106,9 +106,9 @@ representation.
 # Example
 
 ```jldoctest
-julia> num_occupied_modes(BoseFS((1, 0, 2)))
+julia> num_occupied_modes(BoseFS(1, 0, 2))
 2
-julia> num_occupied_modes(FermiFS((1, 1, 1, 0)))
+julia> num_occupied_modes(FermiFS(1, 1, 1, 0))
 3
 ```
 
@@ -126,7 +126,7 @@ Return a lazy iterator over all occupied modes in an address. Iterates over
 # Example
 
 ```jldoctest
-julia> b = BoseFS((1,5,0,4));
+julia> b = BoseFS(1,5,0,4);
 
 julia> foreach(println, occupied_modes(b))
 BoseFSIndex(occnum=1, mode=1, offset=0)
@@ -135,7 +135,7 @@ BoseFSIndex(occnum=4, mode=4, offset=9)
 ```
 
 ```jldoctest
-julia> f = FermiFS((1,1,0,1,0,0,1));
+julia> f = FermiFS(1,1,0,1,0,0,1);
 
 julia> foreach(println, occupied_modes(f))
 FermiFSIndex(occnum=1, mode=1, offset=0)
@@ -158,7 +158,7 @@ See [`unoccupied_mode_map`](@ref) for an eager version.
 # Example
 
 ```jldoctest
-julia> f = FermiFS((1,1,0,1,0,0,1));
+julia> f = FermiFS(1,1,0,1,0,0,1);
 
 julia> foreach(println, unoccupied_modes(f))
 FermiFSIndex(occnum=0, mode=3, offset=2)
@@ -174,9 +174,8 @@ unoccupied_modes
 
 Generate an excitation on address `addr` by applying `creations` and `destructions`, which
 are tuples of the appropriate address indices (i.e. [`BoseFSIndex`](@ref) for
-[`BoseFS`](@ref) and [`OccupationNumberFS`](@ref), or
-[`FermiFSIndex`](@ref) for [`FermiFS`](@ref) and [`HardcoreBoseFS`](@ref);
- [`OccupationNumberFS`](@ref) also supports integer indices).
+[`BoseFS`](@ref), or [`FermiFSIndex`](@ref) for [`FermiFS`](@ref) and
+[`HardcoreBoseFS`](@ref); [`BoseFS{missing}`](@ref) also supports integer indices).
 
 ```math
 a^†_{c_1} a^†_{c_2} … a_{d_1} a_{d_2} … |f⟩ → α|f'⟩
@@ -193,28 +192,28 @@ See examples below.
 
 ```jldoctest
 julia> f = FermiFS(1,1,0,0,1,1,1,1)
-FermiFS{6,8}(1, 1, 0, 0, 1, 1, 1, 1)
+FermiFS(1, 1, 0, 0, 1, 1, 1, 1)
 
 julia> i, j, k, l = find_mode(f, (3,4,2,5))
 (FermiFSIndex(occnum=0, mode=3, offset=2), FermiFSIndex(occnum=0, mode=4, offset=3), FermiFSIndex(occnum=1, mode=2, offset=1), FermiFSIndex(occnum=1, mode=5, offset=4))
 
 julia> excitation(f, (i,j), (k,l)) # number conserving excitation
-(FermiFS{6,8}(1, 0, 1, 1, 0, 1, 1, 1), -1.0)
+(FermiFS(1, 0, 1, 1, 0, 1, 1, 1), -1.0)
 
 julia> fm = FermiFS{missing}(1,1,0,0,1,1,1,1) # number non-conserving address
-FermiFS{missing,8}(1, 1, 0, 0, 1, 1, 1, 1)
+FermiFS{missing}(1, 1, 0, 0, 1, 1, 1, 1)
 
 julia> excitation(fm, (i,), (k,l)) # particle number changes, same address type
-(FermiFS{missing,8}(1, 0, 1, 0, 0, 1, 1, 1), 1.0)
+(FermiFS{missing}(1, 0, 1, 0, 0, 1, 1, 1), 1.0)
 
 julia> s = fs"|1 2 3⟩{}"
-OccupationNumberFS{3, UInt8}(1, 2, 3)
+BoseFS{missing}(1, 2, 3)
 
 julia> num_particles(s)
 6
 
 julia> es, α = excitation(s, (1,1), (3,))
-(OccupationNumberFS{3, UInt8}(3, 2, 2), 4.242640687119285)
+(BoseFS{missing}(3, 2, 2), 4.242640687119285)
 
 julia> num_particles(es)
 7
@@ -263,7 +262,7 @@ This is useful because repeatedly looking for occupied modes with
 
 ```jldoctest
 julia> b = BoseFS(10, 0, 0, 0, 2, 0, 1)
-BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
+BoseFS(10, 0, 0, 0, 2, 0, 1)
 
 julia> mb = occupied_mode_map(b)
 3-element Rimu.BitStringAddresses.ModeMap{7, BoseFSIndex}:
@@ -272,7 +271,7 @@ julia> mb = occupied_mode_map(b)
  BoseFSIndex(occnum=1, mode=7, offset=18)
 
 julia> f = FermiFS(1,1,1,1,0,0,1,0,0)
-FermiFS{5,9}(1, 1, 1, 1, 0, 0, 1, 0, 0)
+FermiFS(1, 1, 1, 1, 0, 0, 1, 0, 0)
 
 julia> mf = occupied_mode_map(f)
 5-element Rimu.BitStringAddresses.ModeMap{5, FermiFSIndex}:
@@ -331,7 +330,7 @@ to [`onr`](@ref).
 
 ```jldoctest
 julia> b = BoseFS(10, 0, 0, 0, 2, 0, 1)
-BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
+BoseFS(10, 0, 0, 0, 2, 0, 1)
 
 julia> mb = occupied_mode_map(b)
 3-element Rimu.BitStringAddresses.ModeMap{7, BoseFSIndex}:
@@ -377,6 +376,14 @@ function LinearAlgebra.dot(map1::ModeMap, map2::ModeMap)
     return value
 end
 
+const UINT_TYPE_MAP = Dict(
+    "UInt8" => UInt8,
+    "UInt16" => UInt16,
+    "UInt32" => UInt32,
+    "UInt64" => UInt64,
+    "UInt128" => UInt128,
+    )
+
 """
     parse_address(str)
 
@@ -417,14 +424,14 @@ function parse_address(str)
             return CompositeFS(f1, f2)
         end
     end
-    # Sparse OccupationNumberFS
+    # Sparse BoseFS{missing}
     m = match(r"\|b *([0-9]+): *([ 0-9]+)⟩{", str)
     if !isnothing(m)
         if isnothing(match(r"{}", str))
             throw(ArgumentError("invalid Fock state format \"$str\""))
         end
         particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
-        return OccupationNumberFS(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
+        return BoseFS{missing}(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
     end
     # Sparse BoseFS
     m = match(r"\|b *([0-9]+): *([ 0-9]+)⟩", str)
@@ -462,12 +469,12 @@ function parse_address(str)
         particles = parse.(Int, filter(!isempty, split(m.captures[2], r" +")))
         return FermiFS(parse(Int, m.captures[1]), zip(particles, fill(1, length(particles))))
     end
-    # OccupationNumberFS
+    # BoseFS{missing} specifying the number of bits in the type parameter
     m = match(r"\|([ 0-9]+)⟩{[0-9]*}", str)
     if !isnothing(m)
         m2 = match(r"{([0-9]+)}", str)
-        if isnothing(m2) # empty braces defaults to UInt8
-            BITS = 8
+        if isnothing(m2) # empty braces defaults to UInt8 and indicates BoseFS{missing}
+            return BoseFS{missing}(parse.(UInt8, split(m.captures[1], r" +")))
         else
             BITS = parse(Int, m2.captures[1])
         end
@@ -485,7 +492,19 @@ function parse_address(str)
             throw(ArgumentError("invalid Fock state format \"$str\""))
         end
         t = Tuple(parse.(T, split(m.captures[1], r" +")))
-        return OccupationNumberFS(SVector(t))
+        return BoseFS{missing}(SVector(t))
+    end
+    # BoseFS with missing particle number
+    m = match(r"\|([ 0-9]+)⟩{[a-zA-Z0-9]*}", str)
+    if !isnothing(m)
+        m2 = match(r"{([a-zA-Z0-9]+)}", str)
+        if isnothing(m2) # empty braces defaults to UInt8
+            TYPE = UInt8
+        else
+            TYPE = get(UINT_TYPE_MAP, m2.captures[1], Nothing)
+        end
+        TYPE <: Unsigned || throw(ArgumentError("invalid Fock state format \"$str\""))
+        return BoseFS{missing}(parse.(TYPE, split(m.captures[1], r" +")); type=TYPE)
     end
     m = match(r"\|([ 0-9]+)⟩{", str) # anything else that has a curly brace
     if !isnothing(m)
@@ -545,39 +564,39 @@ DVec{BoseFS{3, 4, BitString{6, 1, UInt8}},Int64} with 1 entry, style = IsStochas
   fs"|0 1 2 0⟩" => 1
 
 julia> fs"|0 1 2 0⟩" => 1 # Copied from above printout; \\rangle(tab) -> ⟩
-BoseFS{3,4}(0, 1, 2, 0) => 1
+BoseFS(0, 1, 2, 0) => 1
 
 julia> fs"|1 2 3⟩⊗|0 1 0⟩" # composite bosonic Fock state; \\otimes(tab) -> ⊗
 CompositeFS(
-  BoseFS{6,3}(1, 2, 3),
-  BoseFS{1,3}(0, 1, 0),
+  BoseFS(1, 2, 3),
+  BoseFS(0, 1, 0),
 )
 
 julia> fs"|↑↓↑⟩" # 2-component fermions; \\uparrow(tab) -> ↑, \\downarrow(tab) -> ↓
 CompositeFS(
-  FermiFS{2,3}(1, 0, 1),
-  FermiFS{1,3}(0, 1, 0),
+  FermiFS(1, 0, 1),
+  FermiFS(0, 1, 0),
 )
 
 julia> fs"|↑↓↑⇅⟩{}" # spinor fermions; \\dblarrowupdown(tab) -> ⇅
 CompositeFS(
-  FermiFS{missing,4}(1, 0, 1, 1),
-  FermiFS{missing,4}(0, 1, 0, 1),
+  FermiFS{missing}(1, 0, 1, 1),
+  FermiFS{missing}(0, 1, 0, 1),
 )
 
-julia> s = fs"|0 1 2 0⟩{}" # constructing OccupationNumberFS with default UInt8 container
-OccupationNumberFS{4, UInt8}(0, 1, 2, 0)
+julia> s = fs"|0 1 2 0⟩{}" # constructing BoseFS{missing} with default UInt8 container
+BoseFS{missing}(0, 1, 2, 0)
 
-julia> [s] # prints out with the significant number of bits specified in braces
-1-element Vector{OccupationNumberFS{4, UInt8}}:
- fs"|0 1 2 0⟩{8}"
+julia> [s] # prints out with the container type specified in braces (empty for default UInt8)
+1-element Vector{BoseFS{missing, 4, SVector{4, UInt8}}}:
+ fs"|0 1 2 0⟩{}"
 
 julia> fs"|●∘●⟩" # \\mdlgblkcircle(tab) -> ●, \\circ(tab) -> ∘
-HardcoreBoseFS{2,3}(1, 0, 1)
+HardcoreBoseFS(1, 0, 1)
 ```
 
 See also [`FermiFS`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref), [`FermiFS2C`](@ref),
-[`OccupationNumberFS`](@ref), [`HardcoreBoseFS`](@ref).
+[`HardcoreBoseFS`](@ref).
 """
 macro fs_str(str)
     return parse_address(str)
@@ -614,9 +633,8 @@ end
 """
     BoseFSIndex
 
-Struct used for indexing and performing [`excitation`](@ref)s on a [`BoseFS`](@ref) or
-[`OccupationNumberFS`](@ref). `BoseFSIndex` is returned by [`find_mode`](@ref) and
-[`find_occupied_mode`](@ref).
+Struct used for indexing and performing [`excitation`](@ref)s on a [`BoseFS`](@ref).
+`BoseFSIndex` is returned by [`find_mode`](@ref) and [`find_occupied_mode`](@ref).
 
 ## Fields:
 
@@ -879,7 +897,7 @@ can be given to `excitation`
 
 ```jldoctest
 julia> addr = BoseFS(10, 0, 0, 0, 2, 0, 1)
-BoseFS{13,7}(10, 0, 0, 0, 2, 0, 1)
+BoseFS(10, 0, 0, 0, 2, 0, 1)
 
 julia> pairs = OccupiedPairsMap(addr)
 5-element OccupiedPairsMap{78, Tuple{BoseFSIndex, BoseFSIndex}}:
@@ -890,7 +908,7 @@ julia> pairs = OccupiedPairsMap(addr)
  (BoseFSIndex(occnum=1, mode=7, offset=18), BoseFSIndex(occnum=2, mode=5, offset=14))
 
 julia> excitation(addr, pairs[2], pairs[4])
-(BoseFS{13,7}(9, 0, 0, 0, 4, 0, 0), 10.954451150103322)
+(BoseFS(9, 0, 0, 0, 4, 0, 0), 10.954451150103322)
 ```
 
 See also [`occupied_mode_map`](@ref).

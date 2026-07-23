@@ -111,7 +111,7 @@ function num_singly_doubly_occupied_sites(b::SingleComponentFockAddress)
 end
 
 # faster method for this special case
-function num_singly_doubly_occupied_sites(b::OccupationNumberFS)
+function num_singly_doubly_occupied_sites(b::BoseFS{missing})
     return num_singly_doubly_occupied_sites(onr(b))
 end
 
@@ -152,7 +152,7 @@ Compute diagonal interaction energy term.
 
 ```jldoctest
 julia> a = BoseFS{6,5}(1,2,3,0,0)
-BoseFS{6,5}(1, 2, 3, 0, 0)
+BoseFS(1, 2, 3, 0, 0)
 
 julia> H = HubbardMom1D(a);
 

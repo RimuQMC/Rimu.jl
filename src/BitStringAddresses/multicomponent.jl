@@ -9,7 +9,8 @@ See also: [`BoseFS`](@ref), [`FermiFS`](@ref), [`SingleComponentFockAddress`](@r
 """
 struct CompositeFS{C,N,M,T} <: AbstractFockAddress{N,M}
     components::T
-    # C: components, N: total particles, M: modes in each component, T: tuple type with constituent address types
+    # C: components, N: total particles, M: modes in each component,
+    # T: tuple type with constituent address types
     function CompositeFS{C,N,M,T}(adds::T) where {C,N,M,T}
         return new{C,N,M,T}(adds)
     end
@@ -18,7 +19,7 @@ struct CompositeFS{C,N,M,T} <: AbstractFockAddress{N,M}
     end
 end
 
-# Slow constructor - not to be used internallly
+# Slow constructor - not to be used internally
 function CompositeFS(adds::Vararg{SingleComponentFockAddress})
     N = sum(a -> num_particles(typeof(a)), adds)
     M1, M2 = extrema(num_modes, adds)
@@ -30,6 +31,10 @@ end
 function Interfaces.num_particles(cfs::CompositeFS{<:Any,missing})
     sum(num_particles, cfs.components)
 end # only required for missing, as the fallback for others is defined in the abstract type
+
+function Interfaces.maximum_mode_occupation(::Type{<:CompositeFS{C,N,M,T}}) where {C,N,M,T}
+    Interfaces.maximum_mode_occupation.(fieldtypes(T))
+end
 
 Interfaces.num_components(::Type{<:CompositeFS{C}}) where {C} = C
 Base.hash(c::CompositeFS, u::UInt) = hash(c.components, u)
@@ -107,38 +112,38 @@ See examples below.
 ```jldoctest
 julia> FermiFS2C(FermiFS(1,0,0), FermiFS(0,1,1))
 CompositeFS(
-  FermiFS{1,3}(1, 0, 0),
-  FermiFS{2,3}(0, 1, 1),
+  FermiFS(1, 0, 0),
+  FermiFS(0, 1, 1),
 )
 
 julia> FermiFS2C((1,0,0), (0,1,1))
 CompositeFS(
-  FermiFS{1,3}(1, 0, 0),
-  FermiFS{2,3}(0, 1, 1),
+  FermiFS(1, 0, 0),
+  FermiFS(0, 1, 1),
 )
 
 julia> FermiFS2C{missing}((1,0,0), (0,1,1)) # number non-conserving, spin flips allowed
 CompositeFS(
-  FermiFS{missing,3}(1, 0, 0),
-  FermiFS{missing,3}(0, 1, 1),
+  FermiFS{missing}(1, 0, 0),
+  FermiFS{missing}(0, 1, 1),
 )
 
 julia> FermiFS2C{missing}(3, 1 => 1, 2 => -1, 3 => -1)
 CompositeFS(
-  FermiFS{missing,3}(1, 0, 0),
-  FermiFS{missing,3}(0, 1, 1),
+  FermiFS{missing}(1, 0, 0),
+  FermiFS{missing}(0, 1, 1),
 )
 
 julia> fs"|↑↓↓⟩" # \\uparrow(tab) -> ↑, \\downarrow(tab) -> ↓, \\rangle(tab) -> ⟩
 CompositeFS(
-  FermiFS{1,3}(1, 0, 0),
-  FermiFS{2,3}(0, 1, 1),
+  FermiFS(1, 0, 0),
+  FermiFS(0, 1, 1),
 )
 
 julia> fs"|↑↓↓⇅⟩{}" # \\dblarrowupdown(tab) -> ⇅
 CompositeFS(
-  FermiFS{missing,4}(1, 0, 0, 1),
-  FermiFS{missing,4}(0, 1, 1, 1),
+  FermiFS{missing}(1, 0, 0, 1),
+  FermiFS{missing}(0, 1, 1, 1),
 )
 ```
 

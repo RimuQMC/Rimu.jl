@@ -34,25 +34,25 @@ See the examples below.
 
 ```jldoctest
 julia> HardcoreBoseFS(1, 1, 1, 0, 0)
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS([abs(i - 2) ≤ 1 for i in 1:5])
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS(5, 1 => 1, 2 => 1, 3 => 1)
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS{3,5}(i => 1 for i in 1:3)
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 
 julia> fs"|●●●∘∘⟩" # \\mdlgblkcircle(tab) -> ●, \\circ(tab) -> ∘, \\rangle(tab) -> ⟩
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 
 julia> HardcoreBoseFS{missing}(1, 1, 1, 0, 0) == fs"|●●●∘∘⟩{}" # missing particle number
 true
 
 julia> fs"|h 5: 1 2 3⟩"
-HardcoreBoseFS{3,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS(1, 1, 1, 0, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),
@@ -135,8 +135,10 @@ function print_address(io::IO, f::HardcoreBoseFS{N,M}; compact=false) where {N,M
         print(io, "|", join(map(o -> o == 0 ? '∘' : '●', onr(f))), "⟩")
     elseif f.bs isa SortedParticleList
         print(io, "HardcoreBoseFS{$N,$M}(", onr_sparse_string(onr(f)), ")")
+    elseif ismissing(N)
+        print(io, "HardcoreBoseFS{missing}", Int.(tuple(onr(f)...)))
     else
-        print(io, "HardcoreBoseFS{$N,$M}", tuple(onr(f)...))
+        print(io, "HardcoreBoseFS", tuple(onr(f)...))
     end
 end
 

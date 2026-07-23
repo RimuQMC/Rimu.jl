@@ -46,6 +46,7 @@ makedocs(;
     ],
     format=Documenter.HTML(
         prettyurls = false,
+        edit_link = "develop",
         size_threshold=700_000, # 700 kB
         size_threshold_warn=200_000, # 200 kB
     ),

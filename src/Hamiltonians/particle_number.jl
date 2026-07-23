@@ -11,7 +11,7 @@ julia> p = ExactDiagonalizationProblem(FroehlichPolaron(fs"|0 0⟩{}"; mode_cuto
 julia> gs = solve(p).vectors[1]; # normalised ground state vector
 
 julia> dot(gs, ParticleNumberOperator(), gs) # particle number expectation value
-2.8823297252925917
+2.8823297252925766
 ```
 
 See also [`AbstractHamiltonian`](@ref).
