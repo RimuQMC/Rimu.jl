@@ -1,13 +1,14 @@
 """
     AbstractFockAddress{N,M}
 
-Abstract type representing a Fock state with `N` particles and `M` modes.
+Abstract type representing a Fock state with `N` particles and `M` modes. For
+multi-component Fock states, `M` is a tuple of the number of modes in each component.
 
 See also [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress),
 [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS), [`BoseFS`](@ref Main.BitStringAddresses.BoseFS),
 [`FermiFS`](@ref Main.BitStringAddresses.FermiFS), [`num_particles`](@ref num_particles),
-[`num_modes`](@ref num_modes), [`num_components`](@ref num_components),
-[`maximum_mode_occupation`](@ref maximum_mode_occupation).
+[`num_modes`](@ref), [`num_modes_check_equal`](@ref), [`num_components`](@ref),
+[`maximum_mode_occupation`](@ref).
 """
 abstract type AbstractFockAddress{N,M} end
 
@@ -19,6 +20,10 @@ Base.typeinfo_implicit(::Type{<:AbstractFockAddress}) = true
     num_particles(::AbstractFockAddress)
 
 Number of particles represented by address.
+
+See also [`num_modes`](@ref), [`num_modes_check_equal`](@ref), [`num_components`](@ref),
+[`maximum_mode_occupation`](@ref),
+[`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS).
 """
 num_particles(a::AbstractFockAddress) = num_particles(typeof(a))
 num_particles(::Type{<:AbstractFockAddress{N}}) where {N} = N
@@ -27,10 +32,38 @@ num_particles(::Type{<:AbstractFockAddress{N}}) where {N} = N
     num_modes(::Type{<:AbstractFockAddress})
     num_modes(::AbstractFockAddress)
 
-Number of modes represented by address.
+Number of modes represented by address. Returns a tuple for multi-component addresses, and
+an integer for single-component addresses.
+
+See also [`num_modes_check_equal`](@ref), [`num_particles`](@ref), [`num_components`](@ref),
+[`maximum_mode_occupation`](@ref), [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS).
 """
 num_modes(a::AbstractFockAddress) = num_modes(typeof(a))
 num_modes(::Type{<:AbstractFockAddress{<:Any,M}}) where {M} = M
+
+"""
+    num_modes_check_equal(::Type{<:AbstractFockAddress})::Int
+    num_modes_check_equal(address::AbstractFockAddress)::Int
+
+Check that all components of a multi-component address have the same number of modes, and
+return the number of modes. Throws an `ArgumentError` if the components have different
+numbers of modes. For a single-component address, simply returns the number of modes.
+
+See also [`num_modes`](@ref), [`num_components`](@ref), [`maximum_mode_occupation`](@ref),
+[`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS),
+[`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress).
+"""
+function num_modes_check_equal(::Type{<:AbstractFockAddress{<:Any,M}}) where {M}
+    if M isa Tuple
+        all(isequal(first(M)), M) || throw(
+            ArgumentError("All components of the multi-component address must have the " *
+                "same number of modes. Found $(M)."
+            )
+        )
+    end
+    return M isa Tuple ? first(M) : M
+end
+num_modes_check_equal(a::AbstractFockAddress) = num_modes_check_equal(typeof(a))
 
 """
     num_components(::Type{<:AbstractFockAddress})

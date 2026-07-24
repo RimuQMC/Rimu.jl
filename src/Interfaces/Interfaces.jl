@@ -69,7 +69,8 @@ using DataFrames: DataFrame, metadata
 import OrderedCollections: freeze
 
 export
-    AbstractFockAddress, num_particles, num_modes, num_components
+    AbstractFockAddress, num_particles, num_modes, num_components, num_modes_check_equal,
+    maximum_mode_occupation
 export
     StochasticStyle, default_style, StyleUnknown, apply_column!, step_stats,
     CompressionStrategy, NoCompression, compress!
@@ -82,7 +83,7 @@ export
     LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint,
     AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn,
     AbstractOperatorColumn, parent_operator,
-    has_random_offdiagonal, has_iterable_offdiagonals, maximum_mode_occupation
+    has_random_offdiagonal, has_iterable_offdiagonals
 export
     num_replicas, num_spectral_states, num_overlaps
 

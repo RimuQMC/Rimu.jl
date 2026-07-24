@@ -471,7 +471,7 @@ end
         @test num_particles(typeof(fs1)) === missing
         @test num_particles(fs1) == 10
         @test maximum_mode_occupation(fs1) == map(maximum_mode_occupation, fs1.components)
-        @test num_modes(fs1) == 6
+        @test num_modes(fs1) == (6, 6, 6)
         @test num_components(fs1) == 3
         @test fs1.components[1] == FermiFS((1,1,0,0,0,0))
         @test fs1.components[2] == FermiFS{missing}((1,1,1,0,0,0))
@@ -485,7 +485,7 @@ end
         )
         @test fs1 < fs2
 
-        @test_throws ArgumentError CompositeFS(BoseFS((1,1)), BoseFS((1,1,1)))
+        @test num_modes(CompositeFS(BoseFS((1, 1)), BoseFS((1, 1, 1)))) == (2, 3)
 
         @inferred update_component(fs1, FermiFS((0,0,0,1,1,0)), Val(1))
         @inferred update_component(fs1, FermiFS{missing}((0,0,1,1,1,0)), Val(2))
@@ -524,6 +524,8 @@ end
         @test_throws ArgumentError parse_address("|⋅↓⟩ ⊗ |2 3⟩")
         @test num_particles(FermiFS2C(3, 1 => 1)) == 1
         @test num_particles(FermiFS2C(3, 1 => -1)) == 1
+
+        @test_throws ArgumentError FermiFS2C((1, 0, 1), (1, 0))
     end
 end
 

@@ -76,28 +76,28 @@ end
 
 LOStructure(::Type{<:G2RealCorrelator}) = IsDiagonal()
 function Interfaces.allows_address_type(::G2RealCorrelator{D}, ::Type{A}) where {D,A}
-    return num_modes(A) > D
+    return num_modes_check_equal(A) > D
 end
 
 function diagonal_element(::G2RealCorrelator{0}, addr::SingleComponentFockAddress)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     v = onr(addr)
     return dot(v, v .- 1) / M
 end
 function diagonal_element(::G2RealCorrelator{D}, addr::SingleComponentFockAddress) where {D}
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     d = mod(D, M)
     v = onr(addr)
     return circshift_dot(v, v, (d,)) / M
 end
 
 function diagonal_element(::G2RealCorrelator{0}, addr::CompositeFS)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     v = sum(map(onr, addr.components))
     return dot(v, v .- 1) / M
 end
 function diagonal_element(::G2RealCorrelator{D}, addr::CompositeFS) where {D}
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     d = mod(D, M)
     v = sum(map(onr, addr.components))
     return circshift_dot(v, v, (d,)) / M
@@ -195,7 +195,7 @@ VectorInterface.scalartype(::G2RealSpace) = Float64 # needed because eltype is a
 function Interfaces.allows_address_type(
     g2::G2RealSpace{C1,C2}, A::Type{<:AbstractFockAddress}
 ) where {C1,C2}
-    result = prod(size(g2.geometry)) == num_modes(A)
+    result = prod(size(g2.geometry)) == num_modes_check_equal(A)
     return result && 0 ≤ C1 ≤ num_components(A) && 0 ≤ C2 ≤ num_components(A)
 end
 
@@ -267,7 +267,7 @@ function Base.show(io::IO, ::SuperfluidCorrelator{D}) where {D}
     print(io, "SuperfluidCorrelator($D)")
 end
 function Interfaces.allows_address_type(::SuperfluidCorrelator{D}, ::Type{A}) where {D,A}
-    return num_modes(A) > D
+    return num_modes_check_equal(A) > D
 end
 
 function num_offdiagonals(::SuperfluidCorrelator, addr::SingleComponentFockAddress)
@@ -328,7 +328,7 @@ function StringCorrelator(d::Int; address=nothing, type=nothing)
         elseif address === nothing
             type = ComplexF64
         else
-            M = num_modes(address)
+            M = num_modes_check_equal(address)
             N = num_particles(address)
             if !ismissing(N) && iszero(N % M)
                 type = Float64
@@ -380,7 +380,7 @@ function diagonal_element(
 end
 
 function _string_diagonal_complex(d, addr)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     N = num_particles(addr)
     n̄ = N/M
     v = onr(addr)
@@ -395,7 +395,7 @@ function _string_diagonal_complex(d, addr)
     return result / M
 end
 function _string_diagonal_real(d, addr)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     N = num_particles(addr)
     n̄ = N ÷ M
     v = onr(addr)

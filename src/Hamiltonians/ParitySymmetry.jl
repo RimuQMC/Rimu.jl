@@ -47,7 +47,7 @@ end
 
 function ParitySymmetry(hamiltonian; odd=false, even=!odd)
     address = starting_address(hamiltonian)
-    if !isodd(num_modes(address))
+    if !isodd(num_modes_check_equal(address))
         throw(ArgumentError("Starting address must have an odd number of modes"))
     end
     if !even && address == reverse(address)

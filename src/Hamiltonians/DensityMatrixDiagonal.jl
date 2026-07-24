@@ -22,7 +22,10 @@ end
 DensityMatrixDiagonal(mode; component=0) = DensityMatrixDiagonal{component}(mode)
 
 function allows_address_type(dmd::DensityMatrixDiagonal{C}, ::Type{A}) where {C, A}
-    return C ≤ num_components(A) && dmd.mode ≤ num_modes(A)
+    return C ≤ num_components(A) && dmd.mode ≤ num_modes(A)[C]
+end
+function allows_address_type(dmd::DensityMatrixDiagonal{0}, ::Type{A}) where {A}
+    return dmd.mode ≤ num_modes_check_equal(A)
 end
 
 function diagonal_element(dmd::DensityMatrixDiagonal{1}, add::SingleComponentFockAddress)

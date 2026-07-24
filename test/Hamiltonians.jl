@@ -64,6 +64,7 @@ end
         HubbardMom1DEP(CompositeFS(FermiFS((0, 1, 1, 0, 0)), FermiFS((0, 0, 1, 0, 0))), v_ho=5),
         ParitySymmetry(HubbardRealSpace(CompositeFS(BoseFS((1, 2, 0)), FermiFS((0, 1, 0))))),
         TimeReversalSymmetry(HubbardMom1D(FermiFS2C((1, 0, 1), (0, 1, 1)))),
+        TimeReversalSymmetry(HubbardMom1D(FermiFS2C{missing}((1, 0, 1), (0, 1, 1)))),
         Stoquastic(HubbardMom1D(BoseFS((0, 5, 0)))),
         momentum(HubbardMom1D(BoseFS((0, 5, 0)))),
         HOCartesianContactInteractions(BoseFS((2, 0, 0, 0))),
@@ -256,7 +257,7 @@ end
     HM2Cu0 =HubbardMom1D(bs2; u=0, t, dispersion=continuum_dispersion)
     HM2Hu0 =HubbardMom1D(bs2; u=0, t, dispersion=hubbard_dispersion)
     @test diagonal_element(HM2Cu0, bs2) > 2t*num_particles(bs2)+diagonal_element(HM2Hu0,bs2)
-    @test diagonal_element(HM2Cu0, bs2) ≈ 6*t*(2pi/num_modes(bs2))^2
+    @test diagonal_element(HM2Cu0, bs2) ≈ 6*t*(2pi/num_modes_check_equal(bs2))^2
 
     HM3Ct0 =HubbardMom1D(bs3; t=0, dispersion=continuum_dispersion)
     HM3Ht0 =HubbardMom1D(bs3; t=0, dispersion=hubbard_dispersion)
@@ -606,7 +607,7 @@ end
                 @test Ebare ≈ Egutz ≈ Etrans
 
                 # general operators
-                m = num_modes(address)
+                m = num_modes_check_equal(address)
                 g2vals = map(d -> dot(dv, G2RealCorrelator(d), dv)/dot(dv, dv), 0:m-1)
                 g2transformed = map(
                     d -> dot(dv, TransformUndoer(G,G2RealCorrelator(d)), dv)/dot(dv, fsq, dv),
@@ -686,7 +687,7 @@ end
                 @test Ebare ≈ Egutz ≈ Etrans
 
                 # general operators
-                m = num_modes(address)
+                m = num_modes_check_equal(address)
                 g2vals = map(d -> dot(dv, G2RealCorrelator(d), dv)/dot(dv, dv), 0:m-1)
                 g2transformed = map(d -> dot(dv, TransformUndoer(G,G2RealCorrelator(d)), dv)/dot(dv, fsq, dv), 0:m-1)
                 @test all(g2vals ≈ g2transformed)

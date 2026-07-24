@@ -165,7 +165,7 @@ function ArrowTypes.JuliaType(
     return CompositeFS{
         length(comps),
         sum(num_particles, comps),
-        num_modes(first(comps)),
+        Tuple(num_modes.(comps)),
         Tuple{comps...},
     }
 end

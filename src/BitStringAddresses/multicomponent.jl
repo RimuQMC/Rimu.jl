@@ -1,8 +1,7 @@
 """
     CompositeFS(addresses::SingleComponentFockAddress...) <: AbstractFockAddress
 
-Used to encode addresses for multi-component models. All component addresses
-are expected to have the same number of modes.
+Used to encode addresses for multi-component models.
 
 See also: [`BoseFS`](@ref), [`FermiFS`](@ref), [`SingleComponentFockAddress`](@ref),
 [`num_modes`](@ref), [`FermiFS2C`](@ref), [`AbstractFockAddress`](@ref).
@@ -22,10 +21,7 @@ end
 # Slow constructor - not to be used internally
 function CompositeFS(adds::Vararg{SingleComponentFockAddress})
     N = sum(a -> num_particles(typeof(a)), adds)
-    M1, M2 = extrema(num_modes, adds)
-    if M1 ≠ M2
-        throw(ArgumentError("all addresses must have the same number of modes"))
-    end
+    M1 = map(num_modes, adds)
     return CompositeFS{length(adds),N,M1,typeof(adds)}(adds)
 end
 function Interfaces.num_particles(cfs::CompositeFS{<:Any,missing})
@@ -149,10 +145,17 @@ CompositeFS(
 
 See also: [`CompositeFS`](@ref), [`FermiFS`](@ref), [`@fs_str`](@ref).
 """
-const FermiFS2C{N1,N2,M,N,F1,F2} =
-    CompositeFS{2,N,M,Tuple{F1,F2}} where {F1<:FermiFS{N1,M},F2<:FermiFS{N2,M}}
+const FermiFS2C{N,M,F1,F2} =
+    CompositeFS{2,N,<:Any,Tuple{F1,F2}} where {
+        F1<:FermiFS{<:Any,M},
+        F2<:FermiFS{<:Any,M}
+    }
 
-FermiFS2C(f1::FermiFS{<:Any,M}, f2::FermiFS{<:Any,M}) where {M} = CompositeFS(f1, f2)
+function FermiFS2C(f1::FermiFS, f2::FermiFS)
+    cfs = CompositeFS(f1, f2)
+    num_modes_check_equal(cfs) # ensure both components have the same number of modes
+    return cfs
+end
 FermiFS2C(onr_a, onr_b) = FermiFS2C(FermiFS(onr_a), FermiFS(onr_b))
 FermiFS2C{missing}(onr_a, onr_b) = FermiFS2C(FermiFS{missing}(onr_a), FermiFS{missing}(onr_b))
 FermiFS2C(M::Integer, pairs::Pair...) = FermiFS2C(M, pairs)

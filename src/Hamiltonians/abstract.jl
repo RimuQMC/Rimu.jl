@@ -21,6 +21,9 @@ end
 (h::AbstractObservable)(w, v) = mul!(w, h, v)
 
 BitStringAddresses.num_modes(h::AbstractHamiltonian) = num_modes(starting_address(h))
+function BitStringAddresses.num_modes_check_equal(h::AbstractHamiltonian)
+    return num_modes_check_equal(starting_address(h))
+end
 
 """
     dimension(h::AbstractHamiltonian, addr=starting_address(h))
