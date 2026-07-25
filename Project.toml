@@ -1,6 +1,6 @@
 name = "Rimu"
 uuid = "c53c40cc-bd84-11e9-2cf4-a9fde2b9386e"
-version = "0.16.2"
+version = "0.17.0"
 authors = ["Joachim Brand <j.brand@massey.ac.nz>"]
 
 [deps]

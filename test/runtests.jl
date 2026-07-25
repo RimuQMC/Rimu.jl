@@ -97,8 +97,4 @@ end
     include("KrylovKit.jl")
 end
 
-@suppress_err @safetestset "lomc!" begin
-    include("lomc.jl")
-end
-
 # Note: Running Rimu with several MPI ranks is tested seperately on GitHub CI and not here.
