@@ -63,7 +63,7 @@ julia> BoseFS{missing}(0, 1, 2, 3, 0; type=UInt16) === fs"|0 1 2 3 0⟩{UInt16}"
 true
 ```
 
-See also: [`SingleComponentFockAddress`](@ref), [`OccupationNumberFS`](@ref),
+See also: [`SingleComponentFockAddress`](@ref),
 [`FermiFS`](@ref), [`CompositeFS`](@ref), [`FermiFS2C`](@ref), [`@fs_str`](@ref).
 
 # Extended Help
