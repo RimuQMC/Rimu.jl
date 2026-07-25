@@ -1,8 +1,30 @@
 """
-    AbstractFockAddress{N,M}
+    AbstractFockAddress
 
-Abstract type representing a Fock state with `N` particles and `M` modes. For
-multi-component Fock states, `M` is a tuple of the number of modes in each component.
+Abstract type representing a Fock state.
+
+## Implementations
+* [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress)
+    is a supertype for single-component Fock states.
+* [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS) for multi-component Fock states,
+
+## Interface
+The following functions can be called on the type or an instance of a subtype of
+`AbstractFockAddress:
+* [`num_components()`](@ref): Returns the number of components in the Fock state.
+* [`num_modes()`](@ref): Returns the number of modes in the Fock state. This returns a tuple
+    for multi-component Fock states, and an integer for single-component Fock states.
+* [`num_modes_are_equal()`](@ref): Returns `true` if all components of a multi-component
+    Fock state have the same number of modes, and `false` otherwise. Returns `true` for
+    single-component Fock states.
+* [`num_modes_check_equal()`](@ref): Returns the number of modes in a Fock state as a single
+    integer, and throws an `ArgumentError` if the components of a multi-component Fock state
+    have different numbers of modes.
+* [`num_particles()`](@ref): Returns the number of particles in the Fock state. May return
+    `missing` if called on a type that allows for a variable number of particles.
+* [`maximum_mode_occupation()`](@ref): Returns the maximum number of particles that can occupy
+    a single mode in the Fock state. Returns an integer for single-component Fock states,
+    and a tuple for multi-component Fock states.
 
 See also [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress),
 [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS), [`BoseFS`](@ref Main.BitStringAddresses.BoseFS),
