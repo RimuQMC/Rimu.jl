@@ -30,6 +30,7 @@ The various address types make use efficient underlying data storage types like 
 Rimu.Interfaces.AbstractFockAddress
 Rimu.Interfaces.num_particles
 Rimu.Interfaces.num_modes
+Rimu.Interfaces.num_modes_check_equal
 Rimu.Interfaces.num_components
 ```
 
