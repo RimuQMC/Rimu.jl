@@ -1,8 +1,8 @@
 """
-    FroehlichPolaronND(address::OccupationNumberFS{M}; kwargs...) <: AbstractHamiltonian
+    FroehlichPolaronND(address::BoseFS{missing,M}; kwargs...) <: AbstractHamiltonian
 
 
-The Froehlich polaron Hamiltonian for a `D` dimensional lattice with `M ` momentum modes is given by
+The Froehlich polaron Hamiltonian for a `D` dimensional box of volume`l^D` with `M ` momentum modes is given by
 
 ```math
 H = \\frac{(\\hat{p}_f - \\mathbf{p})^2}{2m} + \\omega \\hbar \\sum_{\\mathbf{k}}\\hat{N}_{\\mathbf{k}} +  \\sum_{\\mathbf{k}}(v_{\\mathbf{k}}^{\\ast} \\hat{a}_{\\mathbf{k}}^\\dagger + v_{\\mathbf{k}} \\hat{a}_{\\mathbf{k}})
@@ -12,7 +12,7 @@ where ``p`` is the total momentum, ``p̂_f = Σ_k k âₖ^† âₖ`` is the m
 bosons, and ``k`` part of the momentum lattice with separation ``2π/l``. ``N̂`` is the number
 operator for the bosons.
 
-We have in N dimensions,
+We have in ``D`` dimensions,
 
 ```math
 V_k = (-1)\\sqrt{\\frac{(\\Gamma(\\frac{D-1}{2})  \\alpha  2^{D-1}  \\pi^{\\frac{D-1}{2}}  \\omega^2)} { (\\sqrt{m \\omega})}(\\frac{1}{k^{D-1}V})}
@@ -25,21 +25,21 @@ All of the components of ``V_k`` that are not dependent on ``\\mathbf{k}`` are s
 * `alpha=1.0`: the dimensionless coupling strength ``\\alpha``.
 * `mass=1.0`: the particle mass ``2m``.
 * `omega=1.0`: the oscillation frequency of the phonons ``ω``.
-* `l=[1.0,...]`: the N dimensional hypercube dimensions in real space ``l``. Provides scale parameter of the momentum
+* `l=[1.0,...]`: the ``D`` dimensional hypercube dimensions in real space ``l``. Provides scale parameter of the momentum
     lattice.
 * `momentum_cutoff=nothing`: the maximum boson momentum allowed for an address.
 * `mode_cutoff`: the maximum number of bosons in each momentum mode. Defaults to the maximum
-    value supported by the address type [`OccupationNumberFS`](@ref).
-* `twist`: supports twisted boundry conditons
+    value supported by the address type [`BoseFS{missing}`](@ref).
+* `twist=zeros(D)`: twist the boundary conditions in each dimension by the given value.
 
 # Examples
 ```jldoctest
-julia> fs = OccupationNumberFS(0,0,0,0)
-OccupationNumberFS{4, UInt8}(0, 0, 0, 0)
+julia> fs = BoseFS{missing}(0,0,0,0)
+BoseFS{missing}(0, 0, 0, 0)
 
 julia> ham = FroehlichPolaronND(fs; D = 2,alpha = 1)
 FroehlichPolaronND(
-  fs"|0 0 0 0⟩{8}",
+  fs"|0 0 0 0⟩{}",
   geometry = CubicGrid((2, 2), (true, true)),
   alpha = 1.0, D = 2, mass = 1.0, omega = 1.0,
   l = [1.0, 1.0], p = [0.0, 0.0],
@@ -53,13 +53,13 @@ julia> dimension(FroehlichPolaronND(fs; alpha = 1,D = 2, mode_cutoff=5))
 1296
 ```
 
-See also [`OccupationNumberFS`](@ref), [`dimension`](@ref), [`AbstractHamiltonian`](@ref).
-""" 
+See also [`BoseFS`](@ref), [`dimension`](@ref), [`AbstractHamiltonian`](@ref).
+"""
 struct FroehlichPolaronND{
         T,
         M, #num_modes
         D, #dimension
-        A<:OccupationNumberFS{M}, 
+        A<:BoseFS{missing,M},
         MC,
         G<:CubicGrid
     } <: AbstractHamiltonian{T}
@@ -79,7 +79,7 @@ end
 
 
 function FroehlichPolaronND(
-    address::OccupationNumberFS{M,AT};
+    address::BoseFS{missing,M,SVector{M,AT}};
     D::Int = 1,
     geometry::CubicGrid = PeriodicBoundaries(ntuple(Returns(round(Int, M^(1/D))), D)),
     alpha = 1,
@@ -90,22 +90,22 @@ function FroehlichPolaronND(
     momentum_cutoff = nothing,
     mode_cutoff = nothing,
     twist = zeros(D)
-    
+
 ) where {M, AT}
 
     if D != 1
         vk_constant = sqrt((gamma(((D-1)/2)) * alpha * 2^(D-1) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega)*prod(l)))
-    else 
+    else
         vk_constant = (2 * alpha /(l[1]))^0.5
     end
 
-    
+
     if length(l) != D || any(x -> x <= 0, l)
         throw(ArgumentError("`l` must be a positive-valued vector of length $D"))
     end
 
-    
-    if abs(M^(1/D) - round(M^(1/D))) > 0.01 
+
+    if abs(M^(1/D) - round(M^(1/D))) > 0.01
         throw(ArgumentError("num_modes(address)==$M is not an integer power with exponent $D"))
     end
 
@@ -115,16 +115,16 @@ function FroehlichPolaronND(
 
     ks_tmp = Vector{SVector{D,Float64}}(undef, M)
 
-    
+
     for idx_mode in 1:M
         idx = Tuple(geometry[idx_mode])
-        
+
         kv = ntuple(d -> begin
             if isodd(round(M^(1/D)))
-                
+
                 m = idx[d] - 1 - div(round(M^(1/D)), 2) + twist[d]
             else
-                
+
                 m = idx[d] - div(round(M^(1/D)) ,2) + twist[d]
             end
             (2π / l[d]) * m
@@ -153,7 +153,7 @@ function FroehlichPolaronND(
     end
 
 
-    
+
 
 
     return FroehlichPolaronND{typeof(alpha), M,D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
@@ -178,7 +178,7 @@ LOStructure(::Type{<:FroehlichPolaronND}) = IsHermitian()
 starting_address(h::FroehlichPolaronND) = h.address
 
 function dimension(h::FroehlichPolaronND, address)
-    
+
     M = num_modes(address)
     n = h.mode_cutoff
     return BigInt(n + 1)^BigInt(M)
@@ -251,25 +251,25 @@ The phonon_op function applies the creation and annihalation operators on a chos
         new_addr, val = excitation(addr, (chosen,), ())
         vk = calc_vk(h, chosen)
         amp = -vk * val
-        
+
     else
         k = chosen - M
         new_addr, val = excitation(addr, (), (k,))
         vk = calc_vk(h, k)
         amp = -vk * val
-        
+
     end
 
 
-    
+
 
     if !isnothing(h.momentum_cutoff)
         occ = onr(new_addr)
         phononmom = zero(h.ks[1])
         for m in 1:M
-            
+
             phononmom += h.ks[m] * occ[m]
-            
+
         end
         if norm(phononmom) ≤ h.momentum_cutoff
             return new_addr => amp
@@ -279,7 +279,7 @@ The phonon_op function applies the creation and annihalation operators on a chos
     else
         return new_addr => amp
     end
- 
+
 end
 
 
