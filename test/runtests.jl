@@ -12,8 +12,6 @@ using Rimu.StatsTools
 using ExplicitImports: check_no_implicit_imports
 
 
-@test Rimu.PACKAGE_VERSION == VersionNumber(TOML.parsefile(pkgdir(Rimu, "Project.toml"))["version"])
-
 @safetestset "ExplicitImports" begin
     using Rimu
     using ExplicitImports

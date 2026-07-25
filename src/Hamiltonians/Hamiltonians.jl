@@ -117,6 +117,8 @@ if VERSION < v"1.10"
     end
 end
 
+const FermiOrHardcoreBoseFS{N,M,S} = Union{FermiFS{N,M,S},HardcoreBoseFS{N,M,S}}
+
 include("abstract.jl")
 include("offdiagonals.jl")
 include("geometry.jl")

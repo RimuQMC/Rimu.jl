@@ -1734,10 +1734,22 @@ end
 end
 
 @testset "dimension and multi-component addresses" begin
-    addresses = [CompositeFS(FermiFS((1,0,1)), FermiFS((0,1,0))), BoseFS((1,0,1)),
-                FermiFS2C((1,0,1), (0,1,0))
+    addresses = [
+        CompositeFS(FermiFS((1,0,1)), FermiFS((0,1,0))), BoseFS((1,0,1)),
+        FermiFS2C((1,0,1), (0,1,0)), OccupationNumberFS(3, 0, 1), HardcoreBoseFS(1,0,1),
+        HardcoreBoseFS{missing}(1, 0, 1), FermiFS{missing}(1, 0, 1),
+        FermiFS2C{missing}((1, 0, 1), (0, 1, 0))
     ]
     [@test dimension(addr) == dimension(typeof(addr)) for addr in addresses]
+    @test dimension(CompositeFS(FermiFS((1,0,1)), FermiFS((0,1,0)))) == 9
+    @test dimension(CompositeFS(FermiFS((1,0,1)), FermiFS((0,1,0)), BoseFS((1,0,0)))) == 27
+    @test dimension(FermiFS2C{missing}((1, 0, 1), (0, 1, 0))) == 64
+    @test dimension(HardcoreBoseFS{missing}(1, 0, 1)) == 8
+    @test dimension(FermiFS{missing}(1, 0, 1)) == 8
+
+    h = ExtendedHubbardReal1D(HardcoreBoseFS{missing}(1, 1, 0))
+    @test dimension(h) == 3
+    @test dimension(starting_address(h)) == 8
 end
 
 @testset "ExtendedHubbardReal1D" begin
@@ -1871,11 +1883,11 @@ end
     rdm = ReducedDensityMatrix{ComplexF64}(1)
     m = dot(gs, rdm, gs)
     @test all(x -> abs(x) < √eps(Float64), m - m') # hermitian up to floating point noise
-    
+
     # a global relative phase in the vectors results in a global phase in the RDM
     m_phase = dot(im * gs, rdm, gs)
     @test all(x -> abs(x) < √eps(Float64), m_phase + im * m)
-    
+
     # complex non-hermitian Hamiltonian still produces approx hermitian RDM
     Hc = HubbardReal1D(BoseFS(0,1,2,0); u = 1+im)
     resc = solve(ExactDiagonalizationProblem(Hc))

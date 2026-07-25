@@ -33,33 +33,33 @@ julia> v = DVec(starting_address(H) => 10);
 
 julia> G = GuidingVectorSampling(H, v, 0.1);
 
-julia> Matrix(H; sort=true)
+julia> Matrix(H; sort=true) .|> (x -> round(x;digits=4))
 4×4 Matrix{Float64}:
- 9.0      0.0       4.89898  0.0
- 0.0      0.0       4.89898  0.0
- 4.89898  4.89898  12.0      4.89898
- 0.0      0.0       4.89898  9.0
+ 9.0    0.0     4.899  0.0
+ 0.0    0.0     4.899  0.0
+ 4.899  4.899  12.0    4.899
+ 0.0    0.0     4.899  9.0
 
-julia> Matrix(G; sort=true)
+julia> Matrix(G; sort=true) .|> (x -> round(x;digits=4))
 4×4 Matrix{Float64}:
-   9.0      0.0     0.0489898    0.0
-   0.0      0.0     0.0489898    0.0
- 489.898  489.898  12.0        489.898
-   0.0      0.0     0.0489898    9.0
+   9.0      0.0     0.049    0.0
+   0.0      0.0     0.049    0.0
+ 489.898  489.898  12.0    489.898
+   0.0      0.0     0.049    9.0
 
-julia> eigen(Matrix(H)).values
+julia> eigen(Matrix(H)).values .|> (x -> round(x;digits=4))
 4-element Vector{Float64}:
- -2.3661456273236645
-  4.9594958589580465
-  8.999999999999996
- 18.406649768365643
+ -2.3661
+  4.9595
+  9.0
+ 18.4066
 
-julia> eigen(Matrix(G)).values
+julia> eigen(Matrix(G)).values .|> (x -> round(x;digits=4))
 4-element Vector{Float64}:
- -2.366145627323689
-  4.9594958589580465
-  8.999999999999998
- 18.406649768365643
+ -2.3661
+  4.9595
+  9.0
+ 18.4066
 ```
 
 # Observables

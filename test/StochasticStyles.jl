@@ -185,6 +185,21 @@ end
     end
 end
 
+@testset "deposit! column fallback" begin
+    add = BoseFS((1,1,1))
+    H = HubbardReal1D(add)
+    col = operator_column(H, add)
+    
+    # column => value should fall back to same result as add => value
+    dv1 = DVec(add => 1.0)
+    dv2 = DVec(add => 1.0)
+    
+    deposit!(dv1, add, 2.0, add => 1.0)   # default address => value
+    deposit!(dv2, add, 2.0, col => 1.0)   # column => value 
+    
+    @test dv1 == dv2
+end
+
 @testset "spawn!" begin
     dss_r = DynamicSemistochastic(WithReplacement(), 1.0, Inf)
     dss_w = DynamicSemistochastic(WithoutReplacement(), 1.0, Inf)

@@ -85,6 +85,9 @@ function DontUpdate(; targetwalkers = nothing, target_walkers = 1_000)
     return DontUpdate(target_walkers)
 end
 
+function Base.show(io::IO, s::DontUpdate)
+    print(io, "DontUpdate(target_walkers=$(s.target_walkers))")
+end
 
 function update_shift_parameters!(s::DontUpdate, sp, tnorm, _...)
     return (; shift=sp.shift, norm=tnorm), tnorm < s.target_walkers
@@ -107,6 +110,10 @@ function LogUpdateAfterTargetWalkers(; targetwalkers=nothing, target_walkers = 1
         target_walkers = targetwalkers
     end
     return LogUpdateAfterTargetWalkers(target_walkers, ζ)
+end
+
+function Base.show(io::IO, s::LogUpdateAfterTargetWalkers)
+    print(io, "LogUpdateAfterTargetWalkers(target_walkers=$(s.target_walkers), ζ=$(s.ζ))")
 end
 
 function update_shift_parameters!(s::LogUpdateAfterTargetWalkers, sp, tnorm, _...)
@@ -134,6 +141,10 @@ See [`ShiftStrategy`](@ref), [`ProjectorMonteCarloProblem`](@ref).
 """
 Base.@kwdef struct LogUpdate <: ShiftStrategy
     ζ::Float64 = 0.08 # damping parameter, best left at value of 0.3
+end
+
+function Base.show(io::IO, s::LogUpdate)
+    print(io, "LogUpdate(ζ=$(s.ζ))")
 end
 
 function update_shift_parameters!(s::LogUpdate, sp, tnorm, _...)
@@ -170,6 +181,9 @@ function DoubleLogUpdate(;targetwalkers = nothing, target_walkers = 1_000,  ζ =
     end
     return DoubleLogUpdate(target_walkers, ζ, ξ)
 end
+function Base.show(io::IO, s::DoubleLogUpdate)
+    print(io, "DoubleLogUpdate(target_walkers=$(s.target_walkers), ζ=$(s.ζ), ξ=$(s.ξ))")
+end
 
 function update_shift_parameters!(s::DoubleLogUpdate, sp, tnorm, _...)
     @unpack shift, pnorm, time_step = sp
@@ -200,6 +214,12 @@ function DoubleLogUpdateAfterTargetWalkers(;
         target_walkers = targetwalkers
     end
     return DoubleLogUpdateAfterTargetWalkers(target_walkers, ζ, ξ)
+end
+
+function Base.show(io::IO, s::DoubleLogUpdateAfterTargetWalkers)
+    print(io, "DoubleLogUpdateAfterTargetWalkers(target_walkers=$(s.target_walkers), "*
+        "ζ=$(s.ζ), ξ=$(s.ξ))"
+    )
 end
 
 function update_shift_parameters!(s::DoubleLogUpdateAfterTargetWalkers, sp, tnorm, _...)
@@ -246,6 +266,12 @@ function DoubleLogSumUpdate(;
         target_walkers = targetwalkers
     end
     DoubleLogSumUpdate(target_walkers,  ζ, ξ, α)
+end
+
+function Base.show(io::IO, s::DoubleLogSumUpdate)
+    print(io, "DoubleLogSumUpdate(target_walkers=$(s.target_walkers), "*
+        "ζ=$(s.ζ), ξ=$(s.ξ), α=$(s.α))"
+    )
 end
 
 function update_shift_parameters!(s::DoubleLogSumUpdate, sp, tnorm, v_new, v_old, _...)

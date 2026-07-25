@@ -128,7 +128,7 @@ julia> g2 = G2RealSpace(geom)
 G2RealSpace(CubicGrid((2, 2), (true, true)), 1,1)
 
 julia> diagonal_element(g2, BoseFS(2,0,1,1))
-2×2 StaticArraysCore.SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
+2×2 SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
  0.5  1.0
  0.5  1.0
 
@@ -139,17 +139,17 @@ julia> g2_sum = G2RealSpace(geom, sum_components=true)
 G2RealSpace(CubicGrid((2, 2), (true, true)); sum_components=true)
 
 julia> diagonal_element(g2, fs"|⇅⋅↓↑⟩")
-2×2 StaticArraysCore.SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
+2×2 SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
  0.0  0.0
  0.0  0.5
 
 julia> diagonal_element(g2_cross, fs"|⇅⋅↓↑⟩")
-2×2 StaticArraysCore.SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
+2×2 SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
  0.25  0.25
  0.25  0.25
 
 julia> diagonal_element(g2_sum, fs"|⇅⋅↓↑⟩")
-2×2 StaticArraysCore.SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
+2×2 SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
  0.5  1.0
  0.5  1.0
 ```

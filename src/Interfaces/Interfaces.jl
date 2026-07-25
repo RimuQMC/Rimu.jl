@@ -34,6 +34,7 @@ Follow the links for the definitions of the interfaces!
 * [`undo_transform`](@ref)
 * [`has_random_offdiagonal`](@ref)
 * [`has_iterable_offdiagonals`](@ref)
+* [`maximum_mode_occupation`](@ref)
 
 ## working with  [`AbstractDVec`](@ref)s and [`StochasticStyle`](@ref)
 * [`deposit!`](@ref)
@@ -57,6 +58,7 @@ Follow the links for the definitions of the interfaces!
 * [`num_particles`](@ref)
 * [`num_modes`](@ref)
 * [`num_components`](@ref)
+* [`maximum_mode_occupation`](@ref)
 """
 module Interfaces
 
@@ -80,14 +82,14 @@ export
     LOStructure, IsDiagonal, IsHermitian, AdjointKnown, AdjointUnknown, has_adjoint,
     AbstractOperator, AbstractObservable, operator_column, OffdiagonalsOperatorColumn,
     AbstractOperatorColumn, parent_operator,
-    has_random_offdiagonal, has_iterable_offdiagonals
+    has_random_offdiagonal, has_iterable_offdiagonals, maximum_mode_occupation
 export
     num_replicas, num_spectral_states, num_overlaps
 
 include("abstractfockaddress.jl")
 include("stochasticstyles.jl")
-include("dictvectors.jl")
 include("hamiltonians.jl")
+include("dictvectors.jl")
 include("dataframes.jl")
 
 end

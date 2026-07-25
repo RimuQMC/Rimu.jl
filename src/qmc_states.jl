@@ -124,8 +124,8 @@ num_spectral_states(::ReplicaState{<:Any, S}) where {S} = S
 """
     num_overlaps(state_or_DataFrame)
 
-Return the number of overlaps between replicas that are being reported. Only counts 
-overlaps between replicas of the same spectral state, even if `AllOverlaps` is used with 
+Return the number of overlaps between replicas that are being reported. Only counts
+overlaps between replicas of the same spectral state, even if `AllOverlaps` is used with
 `mixed_spectral_overlaps=true`.
 
 The return value is `0` if no overlaps are being reported, and `N*(N-1)÷2` otherwise, where `N` is the value returned by [`num_replicas`](@ref).
@@ -192,27 +192,27 @@ function state_vectors(state::R) where {R<:ReplicaState}
 end
 
 function report_default_metadata!(report::Report, state::ReplicaState)
-    report_metadata!(report, "Rimu.PACKAGE_VERSION", Rimu.PACKAGE_VERSION)
+    metadata!(report, "Rimu.PACKAGE_VERSION", pkgversion(Rimu))
     # add metadata from state
     s_state = first(state)
     algorithm = s_state.algorithm
     shift_parameters = s_state.shift_parameters
-    report_metadata!(report, "algorithm", algorithm)
-    report_metadata!(report, "laststep", state.simulation_plan.last_step)
-    report_metadata!(report, "num_replicas", num_replicas(state))
-    report_metadata!(report, "num_spectral_states", num_spectral_states(state))
-    report_metadata!(report, "num_overlaps", num_overlaps(state))
-    report_metadata!(report, "hamiltonian", s_state.hamiltonian)
-    report_metadata!(report, "reporting_strategy", state.reporting_strategy)
-    report_metadata!(report, "shift_strategy", algorithm.shift_strategy)
-    report_metadata!(report, "time_step_strategy", algorithm.time_step_strategy)
-    report_metadata!(report, "time_step", shift_parameters.time_step)
-    report_metadata!(report, "step", state.step[])
-    report_metadata!(report, "shift", shift_parameters.shift)
-    report_metadata!(report, "max_length", state.max_length[])
-    report_metadata!(report, "post_step_strategy", state.post_step_strategy)
-    report_metadata!(report, "v_summary", summary(s_state.v))
-    report_metadata!(report, "v_type", typeof(s_state.v))
+    metadata!(report, "algorithm", algorithm)
+    metadata!(report, "laststep", state.simulation_plan.last_step)
+    metadata!(report, "num_replicas", num_replicas(state))
+    metadata!(report, "num_spectral_states", num_spectral_states(state))
+    metadata!(report, "num_overlaps", num_overlaps(state))
+    metadata!(report, "hamiltonian", s_state.hamiltonian)
+    metadata!(report, "reporting_strategy", state.reporting_strategy)
+    metadata!(report, "shift_strategy", algorithm.shift_strategy)
+    metadata!(report, "time_step_strategy", algorithm.time_step_strategy)
+    metadata!(report, "time_step", shift_parameters.time_step)
+    metadata!(report, "step", state.step[])
+    metadata!(report, "shift", shift_parameters.shift)
+    metadata!(report, "max_length", state.max_length[])
+    metadata!(report, "post_step_strategy", state.post_step_strategy)
+    metadata!(report, "v_summary", summary(s_state.v))
+    metadata!(report, "v_type", typeof(s_state.v))
     return report
 end
 

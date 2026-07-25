@@ -1,7 +1,10 @@
 module Rimu
 
 using Arrow: Arrow
-using DataFrames: DataFrames, DataFrame, metadata
+using DataAPI: DataAPI, metadata, metadata!
+import DataAPI: metadata, metadatasupport, metadatakeys, metadata!, deletemetadata!,
+    emptymetadata!
+using DataFrames: DataFrames, DataFrame
 using DataStructures: DataStructures
 using LinearAlgebra: LinearAlgebra, dot, isdiag, eigvecs, norm, ⋅
 using OrderedCollections: OrderedCollections, LittleDict, freeze
@@ -16,6 +19,7 @@ using Logging: ConsoleLogger
 using OrderedCollections: freeze
 using Random: Random, RandomDevice, seed!
 using NamedTupleTools: NamedTupleTools, namedtuple, delete
+using Base: delete!
 import Tables
 import ConsoleProgressMonitor
 import TOML
@@ -26,17 +30,11 @@ import MPI
 @reexport using CommonSolve: CommonSolve, init, step!, solve, solve!
 @reexport using DataFrames
 
-"""
-    Rimu.PACKAGE_VERSION
-Constant that contains the current `VersionNumber` of `Rimu`.
-"""
-const PACKAGE_VERSION = VersionNumber(TOML.parsefile(pkgdir(Rimu, "Project.toml"))["version"])
-
 @doc """
     Rimu
 **Random integrators for many-body quantum systems**
 
-Welcome to `Rimu` version $PACKAGE_VERSION.
+Welcome to `Rimu` version $(pkgversion(Rimu)).
 Read the documentation [online](https://RimuQMC.github.io/Rimu.jl/).
 """
 Rimu
@@ -55,7 +53,7 @@ include("StochasticStyles/StochasticStyles.jl")
 @reexport using .StochasticStyles
 include("DictVectors/DictVectors.jl")
 @reexport using .DictVectors
-using .DictVectors: FrozenDVec
+using .DictVectors: FrozenDVec, PDWorkingMemory
 include("ExactDiagonalization/ExactDiagonalization.jl")
 @reexport using .ExactDiagonalization
 include("RimuIO/RimuIO.jl")

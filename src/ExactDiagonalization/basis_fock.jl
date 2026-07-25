@@ -90,15 +90,15 @@ end
 end
 
 ###
-### FermiFS
+### FermiFS or HardcoreBoseFS
 ###
 # The algorithm is similar to the BoseFS one.
 
 # this is equivalent to `dimension(FermiFS{n,m})`, but does not return a `BigInt`.
 _fermi_dimension(n, m) = binomial(m, n)
 
-function build_basis(::Type{<:FermiFS{N,M}}) where {N,M}
-    T = typeof(near_uniform(FermiFS{N,M}))
+function build_basis(::Type{AT}) where {N, M, AT<:FermiOrHardcoreBoseFS{N,M}}
+    T = typeof(near_uniform(AT))
     result = Vector{T}(undef, _fermi_dimension(N, M))
     _fermi_basis!(result, (), 1, N, Val(M), 2 * Threads.nthreads())
     return result
@@ -141,6 +141,15 @@ end
         _fermi_basis!(result, (1, postfix...), index, remaining_n - 1, Val(M - 1))
     end
     return nothing
+end
+
+###
+### FermiFS or HardcoreBoseFS with missing N
+###
+function build_basis(::Type{AT}) where {M, AT<:FermiOrHardcoreBoseFS{missing,M}}
+    M > 63 && throw(ArgumentError("Cannot build basis for type $AT with M=$M > 63"))
+    T = typeof(near_uniform(AT, 0, M))
+    return [T(BitString{M}(i)) for i in 0 : (UInt(1) << M) - 1]
 end
 
 ###
