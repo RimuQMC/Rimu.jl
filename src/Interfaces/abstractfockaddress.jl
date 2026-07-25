@@ -111,6 +111,10 @@ num_modes_check_equal(a::AbstractFockAddress) = num_modes_check_equal(typeof(a))
     num_components(::AbstractFockAddress)
 
 Number of components in address.
+
+See also [`num_modes`](@ref), [`num_modes_check_equal`](@ref), [`num_particles`](@ref),
+[`maximum_mode_occupation`](@ref),
+[`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS).
 """
 num_components(b::AbstractFockAddress) = num_components(typeof(b))
 
