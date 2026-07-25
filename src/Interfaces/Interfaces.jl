@@ -16,7 +16,7 @@ Follow the links for the definitions of the interfaces!
     [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem) as implemented in
     [`StochasticStyles`](@ref Main.StochasticStyles)
 * [`AbstractFockAddress`](@ref) for defining Fock states, see also
-    [`BitStringAddresses`](@ref Main.BitStringAddresses).
+    [`BitStringAddresses`](@ref Rimu.BitStringAddresses).
 
 # Additional exports
 
