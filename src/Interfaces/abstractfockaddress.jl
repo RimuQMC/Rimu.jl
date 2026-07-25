@@ -35,11 +35,29 @@ num_particles(::Type{<:AbstractFockAddress{N}}) where {N} = N
 Number of modes represented by address. Returns a tuple for multi-component addresses, and
 an integer for single-component addresses.
 
-See also [`num_modes_check_equal`](@ref), [`num_particles`](@ref), [`num_components`](@ref),
-[`maximum_mode_occupation`](@ref), [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS).
+See also [`num_modes_check_equal`](@ref), [`num_modes_are_equal`](@ref),
+[`num_particles`](@ref), [`num_components`](@ref), [`maximum_mode_occupation`](@ref),
+[`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS).
 """
 num_modes(a::AbstractFockAddress) = num_modes(typeof(a))
 num_modes(::Type{<:AbstractFockAddress{<:Any,M}}) where {M} = M
+
+"""
+    num_modes_are_equal(::Type{<:AbstractFockAddress)::Bool
+    num_modes_are_equal(address::AbstractFockAddress)::Bool
+
+Check if all components of a multi-component address have the same number of modes. Returns
+`true` for single-component addresses. For multi-component addresses, returns `true` if all
+components have the same number of modes, and `false` otherwise.
+
+See also [`num_modes_check_equal`](@ref), [`num_modes`](@ref), [`num_particles`](@ref),
+[`num_components`](@ref), [`maximum_mode_occupation`](@ref),
+[`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS).
+"""
+function num_modes_are_equal(::Type{<:AbstractFockAddress{<:Any,M}}) where {M}
+    return M isa Tuple ? all(isequal(first(M)), M) : true
+end
+num_modes_are_equal(a::AbstractFockAddress) = num_modes_are_equal(typeof(a))
 
 """
     num_modes_check_equal(::Type{<:AbstractFockAddress})::Int
@@ -49,7 +67,8 @@ Check that all components of a multi-component address have the same number of m
 return the number of modes. Throws an `ArgumentError` if the components have different
 numbers of modes. For a single-component address, simply returns the number of modes.
 
-See also [`num_modes`](@ref), [`num_components`](@ref), [`maximum_mode_occupation`](@ref),
+See also [`num_modes_are_equal`](@ref), [`num_modes`](@ref), [`num_components`](@ref),
+[`maximum_mode_occupation`](@ref),
 [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS),
 [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress).
 """

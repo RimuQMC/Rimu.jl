@@ -76,6 +76,7 @@ end
 
 LOStructure(::Type{<:G2RealCorrelator}) = IsDiagonal()
 function Interfaces.allows_address_type(::G2RealCorrelator{D}, ::Type{A}) where {D,A}
+    num_modes_are_equal(A) || return false
     return num_modes_check_equal(A) > D
 end
 
@@ -195,8 +196,9 @@ VectorInterface.scalartype(::G2RealSpace) = Float64 # needed because eltype is a
 function Interfaces.allows_address_type(
     g2::G2RealSpace{C1,C2}, A::Type{<:AbstractFockAddress}
 ) where {C1,C2}
-    result = prod(size(g2.geometry)) == num_modes_check_equal(A)
-    return result && 0 ≤ C1 ≤ num_components(A) && 0 ≤ C2 ≤ num_components(A)
+    num_modes_are_equal(A) || return false
+    prod(size(g2.geometry)) == num_modes_check_equal(A) || return false
+    return 0 ≤ C1 ≤ num_components(A) && 0 ≤ C2 ≤ num_components(A)
 end
 
 num_offdiagonals(g2::G2RealSpace, _) = 0
@@ -267,7 +269,7 @@ function Base.show(io::IO, ::SuperfluidCorrelator{D}) where {D}
     print(io, "SuperfluidCorrelator($D)")
 end
 function Interfaces.allows_address_type(::SuperfluidCorrelator{D}, ::Type{A}) where {D,A}
-    return num_modes_check_equal(A) > D
+    return A <: SingleComponentFockAddress && num_modes_check_equal(A) > D
 end
 
 function num_offdiagonals(::SuperfluidCorrelator, addr::SingleComponentFockAddress)
@@ -344,7 +346,7 @@ function Base.show(io::IO, ::StringCorrelator{D,T}) where {D,T}
     print(io, "StringCorrelator($D; type=$T)")
 end
 function Interfaces.allows_address_type(::StringCorrelator{D}, ::Type{A}) where {D,A}
-    return num_modes(A) > D && A <: SingleComponentFockAddress
+    return A <: SingleComponentFockAddress && num_modes_check_equal(A) > D
 end
 
 LOStructure(::Type{<:StringCorrelator}) = IsDiagonal()

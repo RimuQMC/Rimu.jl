@@ -70,7 +70,7 @@ import OrderedCollections: freeze
 
 export
     AbstractFockAddress, num_particles, num_modes, num_components, num_modes_check_equal,
-    maximum_mode_occupation
+    maximum_mode_occupation, num_modes_are_equal
 export
     StochasticStyle, default_style, StyleUnknown, apply_column!, step_stats,
     CompressionStrategy, NoCompression, compress!
