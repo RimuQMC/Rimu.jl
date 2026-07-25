@@ -84,6 +84,10 @@ end
     include("doctests.jl")
 end
 
+@safetestset "strategies" begin
+    include("strategies.jl")
+end
+
 @safetestset "DictVectors" begin
     include("DictVectors.jl")
 end
