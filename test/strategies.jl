@@ -188,7 +188,6 @@ end
             start_at=dv, post_step_strategy
         )
         df = DataFrame(solve(p))
-        # df, _ = lomc!(H, copy(dv); post_step_strategy)
         @test df.vproj == df.vproj2 == df.p2
         @test df.norm ≈ df.p1
         @test df.norm ≥ df.vproj3
@@ -210,7 +209,7 @@ end
         @test all(-1.0 .≤ df.coherence .≤ 1.0)
         @test all(in.(df.single_coherence, Ref((-1, 0, 1))))
 
-        cdv = DVec(address => 1 + im)
+        cdv = DVec(address => 1 + im; style=StochasticStyles.IsStochastic2Pop())
         shift = float(valtype(cdv))(diagonal_element(H*address)) # need complex shift
         df = solve(ProjectorMonteCarloProblem(H; start_at=cdv, shift, post_step_strategy)).df
         @test df.coherence isa Vector{ComplexF64}
@@ -224,7 +223,7 @@ end
         @test df.loneliness[1] == 1
         @test all(1 .≥ df.loneliness .≥ 0)
 
-        cdv = DVec(address => 1 + im)
+        cdv = DVec(address => 1 + im; style=StochasticStyles.IsStochastic2Pop())
         shift = float(valtype(cdv))(diagonal_element(H*address)) # need complex shift
         df = solve(ProjectorMonteCarloProblem(H; start_at=cdv, shift, post_step_strategy)).df
         @test df.loneliness isa Vector{ComplexF64}
@@ -247,7 +246,6 @@ end
         sim = solve(ProjectorMonteCarloProblem(H; start_at=dv, post_step_strategy))
         df = sim.df
         st = sim.state
-        # df, st = lomc!(H, copy(dv); post_step_strategy)
         @test all(==(ntuple(_ -> 0, num_modes(address))), df.single_particle_density[1:2:end])
         @test all(≈(3), sum.(df.single_particle_density[2:2:end]))
 
