@@ -1069,6 +1069,14 @@ using Rimu.Hamiltonians: circshift_dot
         @test num_offdiagonals(DensityMatrixDiagonal(1), BoseFS((0,1,0))) == 0
         @test LOStructure(DensityMatrixDiagonal(2)) == IsDiagonal()
         @test DensityMatrixDiagonal(15)' === DensityMatrixDiagonal(15)
+
+        @test allows_address_type(DensityMatrixDiagonal(1), BoseFS(0,1,0))
+        @test allows_address_type(DensityMatrixDiagonal(2; component=1), BoseFS(0, 1, 0))
+        @test allows_address_type(DensityMatrixDiagonal(2; component=2), BoseFS(0, 1, 0)) == false
+        @test allows_address_type(DensityMatrixDiagonal(2), CompositeFS(BoseFS(0, 1, 0), BoseFS(0, 1, 0)))
+        csf = CompositeFS(BoseFS(0, 1, 0), BoseFS(0, 1))
+        @test allows_address_type(DensityMatrixDiagonal(2; component=2), csf) == true
+        @test allows_address_type(DensityMatrixDiagonal(2), csf) == false
     end
 
     @testset "Reduced Density Matrix" begin
