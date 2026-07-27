@@ -159,6 +159,7 @@ BoseFS(M::Integer, pairs::Pair...) = BoseFS(M, pairs)
 BoseFS(M::Integer, pairs) = BoseFS(sparse_to_onr(M, pairs))
 BoseFS{N,M}(pairs::Pair...) where {N,M} = BoseFS{N,M}(pairs)
 BoseFS{N,M}(pairs) where {N,M} = BoseFS{N,M}(sparse_to_onr(M, pairs))
+BoseFS{N,M}() where {N,M} = BoseFS{N,M}(sparse_to_onr(M, ())) # vacuum state
 BoseFS(pairs::Pair...) = throw(ArgumentError("number of modes must be provided"))
 
 

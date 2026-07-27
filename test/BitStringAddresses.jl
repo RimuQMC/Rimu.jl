@@ -166,6 +166,12 @@ end
     @test_throws ArgumentError BoseFS{6,2}([1, 2, 3])
     @test maximum_mode_occupation(typeof(middle_full)) == num_particles(middle_full)
 
+    single_mode_vaccum = BoseFS(0)
+    # Check that the result of show can be pasted into the REPL
+    @test eval(Meta.parse(repr(single_mode_vaccum))) == single_mode_vaccum
+    # Check that compact string can be parsed.
+    @test parse_address(sprint(show, single_mode_vaccum; context=:compact => true)) == single_mode_vaccum
+
     @testset "constructors" begin
         small_dense = BoseFS(ones(Int, 32))
         @test small_dense.bs isa BitString
@@ -240,7 +246,7 @@ end
         end
     end
     @testset "Randomized tests" begin
-        # Note: the random number for these tests will be the same everytime. This is still
+        # Note: the random number for these tests will be the same every time. This is still
         # an ok way to look for errors.
         function rand_onr_bose(N, M)
             result = zeros(MVector{M,Int})
