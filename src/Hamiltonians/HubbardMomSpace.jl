@@ -366,7 +366,7 @@ function HubbardMomSpace(
     w_mat = _u_or_w_to_matrix(:w, w, C)
 
     warn_fermi_interaction(address, u_mat)
-    ks_mat = Array{Float64}[]
+    ks_vec_of_vecs = Array{Float64}[]
     for i in eachindex(S)
         step = 2π/S[i]
         if isodd(S[i])
