@@ -332,8 +332,8 @@ struct HubbardMomSpace{
     W<:Union{SMatrix{C,C,Float64},Nothing},
 } <: AbstractHamiltonian{Float64}
     address::A
-    ks::KS # k values
-    kes::KES # kinetic energy values
+    ks_mat::KS # k values
+    kes_mat::KES # kinetic energy values
     t::T
     u::U # interactions
     w::W # nearest neighbour interactions
