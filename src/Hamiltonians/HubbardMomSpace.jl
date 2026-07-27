@@ -8,7 +8,7 @@ defined in `geometry`. The dispersion relation is calculated using the provided 
 function, which takes in the hopping strength and the `ks` value as arguments. By default, it
 uses the `hubbard_dispersion` function, which corresponds to the standard Hubbard model. 
 """
-function _mom_space_energies_and_ks(ks::Vector, geometry::CubicGrid{D, S}, t::SMatrix, 
+function _mom_space_energies_and_ks(ks_vec_of_vecs::Vector, geometry::CubicGrid{D, S}, t::SMatrix, 
         dispersion::Function) where {D, S}
     # Calculate the dispersion relation for a given set of k values and hopping strength t.
     C,_ = size(t)
