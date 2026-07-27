@@ -16,7 +16,7 @@ function _mom_space_energies_and_ks(ks_vec_of_vecs::Vector, geometry::CubicGrid{
     kes_mat = zeros(Float64,C,M)
     ks_mat = zeros(Float64,D,M)
     for i in 1:M
-        mom_val = value_of_mom_mode(M-i+1, ks, geometry)
+        mom_val = _grid_column_of_momenta(M-i+1, ks_vec_of_vecs, geometry)
         ks_mat[:,i] = mom_val
         for j in 1:C
             kes_mat[j,i] = convert(Float64,sum(dispersion.(t[j,:], mom_val)))
@@ -376,16 +376,16 @@ function HubbardMomSpace(
         end
         kr = range(start; step = step, length = S[i])
         if isodd(S[i])
-            push!(ks_mat,[j for j in kr])
+            push!(ks_vec_of_vecs,[j for j in kr])
         else
-            push!(ks_mat,reverse([j for j in kr]))
+            push!(ks_vec_of_vecs,reverse([j for j in kr]))
         end
     end
-    kes, ks = _mom_space_energies_and_ks(ks_mat, geometry, t_mat, dispersion)
+    kes_mat, ks_mat = _mom_space_energies_and_ks(ks_vec_of_vecs, geometry, t_mat, dispersion)
 
-    return HubbardMomSpace{C,D,typeof(address),typeof(geometry),typeof(ks),typeof(kes),
+    return HubbardMomSpace{C,D,typeof(address),typeof(geometry),typeof(ks_mat),typeof(kes_mat),
     typeof(t_mat),typeof(u_mat),typeof(w_mat)}(
-        address, ks, kes, t_mat, u_mat, w_mat, geometry,
+        address, ks_mat, kes_mat, t_mat, u_mat, w_mat, geometry,
     )
 end
 
@@ -532,7 +532,7 @@ parent_operator(column::HubbardMomSpaceColumn) = column.hamiltonian
 starting_address(column::HubbardMomSpaceColumn) = column.address
 
 function diagonal_element(col::HubbardMomSpaceColumn)
-    return _mom_hopping(col.hamiltonian.kes, col.address) + 
+    return _mom_hopping(col.hamiltonian.kes_mat, col.address) + 
         mom_transfer_diagonal(col.components, col.geometry)/num_modes(col.address)
 end
 
