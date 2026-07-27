@@ -80,10 +80,13 @@ num_modes_are_equal(a::AbstractFockAddress) = num_modes_are_equal(typeof(a))
 """
     num_modes_check_equal(::Type{<:AbstractFockAddress})::Int
     num_modes_check_equal(address::AbstractFockAddress)::Int
+    num_modes_check_equal(address1, address2)::Int
 
 Check that all components of a multi-component address have the same number of modes, and
 return the number of modes. Throws an `ArgumentError` if the components have different
 numbers of modes. For a single-component address, simply returns the number of modes.
+When called with two addresses, checks that both addresses have the same number of modes,
+and throws an `ArgumentError` if they do not.
 
 See also [`num_modes_are_equal`](@ref), [`num_modes`](@ref), [`num_components`](@ref),
 [`maximum_mode_occupation`](@ref),
@@ -91,6 +94,17 @@ See also [`num_modes_are_equal`](@ref), [`num_modes`](@ref), [`num_components`](
 [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress).
 """
 num_modes_check_equal(a::AbstractFockAddress) = num_modes_check_equal(typeof(a))
+function num_modes_check_equal(a::AbstractFockAddress, b::AbstractFockAddress)
+    num_modes_check_equal(typeof(a), typeof(b))
+end
+function num_modes_check_equal(A::Type{<:AbstractFockAddress}, B::Type{<:AbstractFockAddress})
+    MA = num_modes_check_equal(A)
+    MB = num_modes_check_equal(B)
+    if MA != MB
+        throw(ArgumentError("Address types $A and $B have different numbers of modes: $MA and $MB"))
+    end
+    return MA
+end
 
 """
     num_components(::Type{<:AbstractFockAddress})

@@ -83,8 +83,7 @@ end
     add_a::SingleComponentFockAddress, add_b::SingleComponentFockAddress,
     chosen, map_a, map_b; fold=true
 )
-    M = num_modes(add_a)
-    M == num_modes(add_b) || throw(ArgumentError("Addresses must have the same number of modes"))
+    M = num_modes_check_equal(add_a, add_b)
 
     src_a, remainder = fldmod1(chosen, (M - 1) * length(map_b))
     dst_a, src_b = fldmod1(remainder, length(map_b))
@@ -202,8 +201,7 @@ function transcorrelated_three_body_excitation(
 )
     N1 = length(map_a)
     N2 = length(map_b)
-    M = num_modes(add_a)
-    M == num_modes(add_b) || throw(ArgumentError("Addresses must have the same number of modes"))
+    M = num_modes_check_equal(add_a, add_b)
 
     if add_a isa FermiFS # TODO: this is better done in the same way as momentum transfer
         p, q, s, p_k, q_l = Tuple(CartesianIndices((N1, N1 - 1, N2, M, M))[i])

@@ -1,7 +1,8 @@
 """
     CompositeFS(addresses::SingleComponentFockAddress...) <: AbstractFockAddress
 
-Used to encode addresses for multi-component models.
+Address type used to encode addresses for multi-component models or spinor quantum
+particles.
 
 ## Examples
 ```jldoctest
@@ -21,16 +22,17 @@ julia> num_modes(c1)
 julia> fs"|↑⋅⋅⟩ ⊗ |↑↑⋅⟩ ⊗ |0 0⟩{}" == c1 # compact representation for printing
 true
 
-julia> FermiFS2C((1,1,0), (1,0,1)) # special case for spin-1/2 fermions
+julia> FermiFS2C{missing}((1,1,0), (1,0,1)) # special case for spin-1/2 fermions
 CompositeFS(
-  FermiFS(1, 1, 0),
-  FermiFS(1, 0, 1),
+  FermiFS{missing}(1, 1, 0),
+  FermiFS{missing}(1, 0, 1),
 )
 ```
 See also: [`FermiFS2C`](@ref), [`BoseFS`](@ref), [`FermiFS`](@ref),
-[`num_components`](@ref), [`num_modes`](@ref), [`num_modes_are_equal`](@ref),
+[`num_components`](@ref), [`num_modes`](@ref),
+[`num_modes_are_equal`](@ref Rimu.Interfaces.num_modes_are_equal),
 [`num_modes_check_equal`](@ref), [`num_particles`](@ref),
-[`maximum_mode_occupation`](@ref), [`@fs_str`](@ref),
+[`maximum_mode_occupation`](@ref Rimu.Interfaces.maximum_mode_occupation), [`@fs_str`](@ref),
 [`SingleComponentFockAddress`](@ref), [`AbstractFockAddress`](@ref).
 """
 struct CompositeFS{C,N,T} <: AbstractFockAddress{N}
@@ -66,7 +68,7 @@ end
 function Interfaces.num_modes_check_equal(A::Type{<:CompositeFS})
     t = num_modes(A)::Tuple
     if !all(isequal(first(t)), t)
-        throw(ArgumentError("Components of CompositeFS must have the same number of modes."))
+        throw(ArgumentError("Components of CompositeFS must have the same number of modes. Got: $t"))
     end
     return first(t)
 end
