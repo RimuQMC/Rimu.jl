@@ -24,9 +24,9 @@ function _mom_space_energies_and_ks(ks_vec_of_vecs::Vector, geometry::CubicGrid{
     end
     return SMatrix{C,M,Float64}(kes_mat), SMatrix{D,M,Float64}(ks_mat)
 end
-function value_of_mom_mode(add_index::Int, ks::Vector, geometry::CubicGrid)
-    mom_mode = geometry[add_index]
-    return [ks[i][mode] for (i, mode) in enumerate(mom_mode)]
+function _grid_column_of_momenta(linear_mode_index::Int, ks::Vector, geometry::CubicGrid)
+    mode_coordinates = geometry[linear_mode_index]
+    return [ks[dim][index_per_dim] for (dim, index_per_dim) in enumerate(mode_coordinates)]
 end
 
 """
