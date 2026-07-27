@@ -154,8 +154,8 @@ end
 ###
 ### CompositeFS
 ###
-function build_basis(::Type{C}) where {T,C<:CompositeFS{<:Any,<:Any,<:Any,T}}
-    sub_results = map(build_basis, reverse(Tuple(T.parameters)))
+function build_basis(::Type{C}) where {T,C<:CompositeFS{<:Any,<:Any,T}}
+    sub_results = map(build_basis, reverse(Tuple(fieldtypes(T))))
     result = Vector{C}(undef, prod(length, sub_results))
     Threads.@threads for i in eachindex(result)
         @inbounds result[i] = C(_collect_addrs(sub_results, i))

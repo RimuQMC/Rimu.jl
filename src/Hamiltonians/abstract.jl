@@ -86,10 +86,8 @@ end
 function dimension(::Type{<:FermiOrHardcoreBoseFS{missing,M}}) where {M}
     return BigInt(2)^BigInt(M)
 end
-function dimension(::Type{<:CompositeFS{<:Any,<:Any,<:Any,T}}) where {T}
-    return prod(dimension, T.parameters)
-    # This relies on an implementation detail of the Tuple type and may break in future
-    # julia versions.
+function dimension(::Type{<:CompositeFS{<:Any,<:Any,T}}) where {T}
+    return prod(dimension, fieldtypes(T))
 end
 
 # for backward compatibility

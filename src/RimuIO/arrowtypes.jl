@@ -130,15 +130,14 @@ end
 ###
 const COMPOSITEFS = Symbol("Rimu.CompositeFS")
 ArrowTypes.arrowname(::Type{<:CompositeFS}) = COMPOSITEFS
-function ArrowTypes.ArrowType(::Type{<:CompositeFS{<:Any,<:Any,<:Any,T}}) where {T}
-    # Going over T.parameters is ugly.
-    return Tuple{map(ArrowTypes.ArrowType, T.parameters)...}
+function ArrowTypes.ArrowType(::Type{<:CompositeFS{<:Any,<:Any,T}}) where {T}
+    return Tuple{map(ArrowTypes.ArrowType, fieldtypes(T))...}
 end
 function ArrowTypes.toarrow(c::CompositeFS)
     return map(ArrowTypes.toarrow, c.components)
 end
-function ArrowTypes.arrowmetadata(::Type{<:CompositeFS{<:Any,<:Any,<:Any,T}}) where {T}
-    metas = map(T.parameters) do X
+function ArrowTypes.arrowmetadata(::Type{<:CompositeFS{<:Any,<:Any,T}}) where {T}
+    metas = map(fieldtypes(T)) do X
         string(ArrowTypes.arrowname(X), ':', ArrowTypes.arrowmetadata(X))
     end
     return join(metas, ';')
@@ -157,7 +156,7 @@ function ArrowTypes.JuliaType(
 ) where {T<:Tuple}
     metas = split(meta, ';')
 
-    comps = map(Tuple(T.parameters), metas) do X, m
+    comps = map(fieldtypes(T), metas) do X, m
         arrow_name, rest = split(m, ':')
         ArrowTypes.JuliaType(Val(Symbol(arrow_name)), X, rest)
     end
@@ -165,7 +164,6 @@ function ArrowTypes.JuliaType(
     return CompositeFS{
         length(comps),
         sum(num_particles, comps),
-        Tuple(num_modes.(comps)),
         Tuple{comps...},
     }
 end
@@ -174,8 +172,8 @@ function ArrowTypes.fromarrow(::Type{C}, chunks...) where {C<:CompositeFS}
 end
 function ArrowTypes.fromarrow(
     ::Type{C}, chunks::Tuple
-) where {T,C<:CompositeFS{<:Any,<:Any,<:Any,T}}
-    comps = map(ArrowTypes.fromarrow, Tuple(T.parameters), chunks)
+) where {T,C<:CompositeFS{<:Any,<:Any,T}}
+    comps = map(ArrowTypes.fromarrow, Tuple(fieldtypes(T)), chunks)
 
     return C(comps)
 end

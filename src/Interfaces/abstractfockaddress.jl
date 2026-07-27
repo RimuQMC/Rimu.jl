@@ -32,7 +32,7 @@ See also [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleCompo
 [`num_modes`](@ref), [`num_modes_check_equal`](@ref), [`num_components`](@ref),
 [`maximum_mode_occupation`](@ref).
 """
-abstract type AbstractFockAddress{N,M} end
+abstract type AbstractFockAddress{N} end
 
 # `AbstractFockAddress`es can be reconstructed from their printout.
 Base.typeinfo_implicit(::Type{<:AbstractFockAddress}) = true
@@ -62,7 +62,6 @@ See also [`num_modes_check_equal`](@ref), [`num_modes_are_equal`](@ref),
 [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS).
 """
 num_modes(a::AbstractFockAddress) = num_modes(typeof(a))
-num_modes(::Type{<:AbstractFockAddress{<:Any,M}}) where {M} = M
 
 """
     num_modes_are_equal(::Type{<:AbstractFockAddress)::Bool
@@ -76,9 +75,6 @@ See also [`num_modes_check_equal`](@ref), [`num_modes`](@ref), [`num_particles`]
 [`num_components`](@ref), [`maximum_mode_occupation`](@ref),
 [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS).
 """
-function num_modes_are_equal(::Type{<:AbstractFockAddress{<:Any,M}}) where {M}
-    return M isa Tuple ? all(isequal(first(M)), M) : true
-end
 num_modes_are_equal(a::AbstractFockAddress) = num_modes_are_equal(typeof(a))
 
 """
@@ -94,16 +90,6 @@ See also [`num_modes_are_equal`](@ref), [`num_modes`](@ref), [`num_components`](
 [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS),
 [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress).
 """
-function num_modes_check_equal(::Type{<:AbstractFockAddress{<:Any,M}}) where {M}
-    if M isa Tuple
-        all(isequal(first(M)), M) || throw(
-            ArgumentError("All components of the multi-component address must have the " *
-                "same number of modes. Found $(M)."
-            )
-        )
-    end
-    return M isa Tuple ? first(M) : M
-end
 num_modes_check_equal(a::AbstractFockAddress) = num_modes_check_equal(typeof(a))
 
 """
