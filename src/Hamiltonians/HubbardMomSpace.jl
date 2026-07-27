@@ -1,12 +1,12 @@
 """
-    _mom_space_energies_and_ks(ks, geometry, t; dispersion::Function = hubbard_dispersion_mom_space)
+    _mom_space_energies_and_ks(ks_vec_of_vecs, geometry, t; dispersion::Function = hubbard_dispersion_mom_space)
 
-This function returns a tuple of the kinetic energy values and the k values for each mode for a 
-given set of `ks` values, lattice `geometry`, and hopping strengths `t`. `ks` should pass a 
-vector of single particle allowed momentum values along each of the dimensions of the grid as 
-defined in `geometry`. The dispersion relation is calculated using the provided `dispersion` 
-function, which takes in the hopping strength and the `ks` value as arguments. By default, it
-uses the `hubbard_dispersion` function, which corresponds to the standard Hubbard model. 
+This function returns a tuple of the kinetic energy values and the momentum vector for each mode for a 
+given set of `ks_vec_of_vecs` values, lattice `geometry`, and hopping strengths `t`. `ks_vec_of_vecs` 
+should pass a vector of single particle allowed momentum values along each of the dimensions of the 
+grid as defined in `geometry`. The dispersion relation is calculated using the provided `dispersion` 
+function, which takes in the hopping strength and the `ks_vec_of_vecs` value as arguments. By default,
+it uses the `hubbard_dispersion` function, which corresponds to the standard Hubbard model. 
 """
 function _mom_space_energies_and_ks(ks_vec_of_vecs::Vector, geometry::CubicGrid{D, S}, t::SMatrix, 
         dispersion::Function) where {D, S}
