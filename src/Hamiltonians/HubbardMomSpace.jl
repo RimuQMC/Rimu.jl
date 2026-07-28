@@ -145,7 +145,7 @@ either `u` or `w` is `nothing`, the corresponding interaction term is ignored.
 """
 @inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D, S}
 
-    onproduct = 0
+    onproduct = 0.0
     for i in 1:length(map)
         occ_i = map[i].occnum
         onproduct += occ_i * (occ_i - 1) * (u/2 + w*D)
