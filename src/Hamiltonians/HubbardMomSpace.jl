@@ -699,10 +699,10 @@ end
 LOStructure(::Type{<:MomentumMomSpace}) = IsDiagonal()
 num_offdiagonals(ham::MomentumMomSpace, _) = 0
 function diagonal_element(mom::MomentumMomSpace{<:Any,1,D}, address::SingleComponentFockAddress) where D
-    return [dot(mom.ham.ks[i,:], occupied_mode_map(address)) for i in 1:D]
+    return [dot(mom.ham.ks_mat[i, :], occupied_mode_map(address)) for i in 1:D]
 end
 function diagonal_element(mom::MomentumMomSpace{<:Any,C,D}, address::CompositeFS) where {C,D}
-    return [sum(dot(mom.ham.ks[i,:], occupied_mode_map(c)) for c in address.components) for i in 1:D]
+    return [sum(dot(mom.ham.ks_mat[i, :], occupied_mode_map(c)) for c in address.components) for i in 1:D]
 end
 # fold into (-π, π]
 starting_address(mom::MomentumMomSpace) = starting_address(mom.ham)
