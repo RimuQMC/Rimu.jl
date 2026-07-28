@@ -94,16 +94,15 @@ See also [`num_modes_are_equal`](@ref), [`num_modes`](@ref), [`num_components`](
 [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress).
 """
 num_modes_check_equal(a::AbstractFockAddress) = num_modes_check_equal(typeof(a))
-function num_modes_check_equal(a::AbstractFockAddress, b::AbstractFockAddress)
-    num_modes_check_equal(typeof(a), typeof(b))
+function num_modes_check_equal(addrs::Vararg{AbstractFockAddress})
+    return num_modes_check_equal(map(typeof, addrs)...)
 end
-function num_modes_check_equal(A::Type{<:AbstractFockAddress}, B::Type{<:AbstractFockAddress})
-    MA = num_modes_check_equal(A)
-    MB = num_modes_check_equal(B)
-    if MA != MB
-        throw(ArgumentError("Address types $A and $B have different numbers of modes: $MA and $MB"))
+function num_modes_check_equal(As::Vararg{Type{<:AbstractFockAddress}})
+    Ms = map(num_modes_check_equal, As)
+    if !allequal(Ms)
+        throw(ArgumentError("Address types $As have different numbers of modes: $Ms"))
     end
-    return MA
+    return first(Ms)
 end
 
 """
