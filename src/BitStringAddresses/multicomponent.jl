@@ -63,11 +63,11 @@ Interfaces.num_components(::Type{<:CompositeFS{C}}) where {C} = C
 Interfaces.num_modes(::Type{<:CompositeFS{C,N,T}}) where {C,N,T} = num_modes.(fieldtypes(T))
 function Interfaces.num_modes_are_equal(A::Type{<:CompositeFS})
     t = num_modes(A)::Tuple
-    return all(isequal(first(t)), t)
+    return allequal(t)
 end
 function Interfaces.num_modes_check_equal(A::Type{<:CompositeFS})
     t = num_modes(A)::Tuple
-    if !all(isequal(first(t)), t)
+    if !allequal(t)
         throw(ArgumentError("Components of CompositeFS must have the same number of modes. Got: $t"))
     end
     return first(t)

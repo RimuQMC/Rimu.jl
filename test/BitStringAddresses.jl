@@ -246,7 +246,7 @@ end
         end
     end
     @testset "Randomized tests" begin
-        # Note: the random number for these tests will be the same every time. This is still
+        # Note: the random numbers for these tests will be the same every time. This is still
         # an ok way to look for errors.
         function rand_onr_bose(N, M)
             result = zeros(MVector{M,Int})
