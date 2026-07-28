@@ -35,7 +35,7 @@ See also: [`FermiFS2C`](@ref), [`BoseFS`](@ref), [`FermiFS`](@ref),
 [`maximum_mode_occupation`](@ref Rimu.Interfaces.maximum_mode_occupation), [`@fs_str`](@ref),
 [`SingleComponentFockAddress`](@ref), [`AbstractFockAddress`](@ref).
 """
-struct CompositeFS{C,N,T} <: AbstractFockAddress{N}
+struct CompositeFS{C,N,T} <: AbstractFockAddress
     components::T
     # C: components, N: total particles, T: tuple type with constituent address types
     function CompositeFS{C,N,T}(adds::T) where {C,N,T}
@@ -51,6 +51,7 @@ function CompositeFS(adds::Vararg{SingleComponentFockAddress})
     N = sum(a -> num_particles(typeof(a)), adds)
     return CompositeFS{length(adds),N,typeof(adds)}(adds)
 end
+Interfaces.num_particles(::Type{<:CompositeFS{<:Any,N}}) where {N} = N
 function Interfaces.num_particles(cfs::CompositeFS{<:Any,missing})
     sum(num_particles, cfs.components)
 end # only required for missing, as the fallback for others is defined in the abstract type

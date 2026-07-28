@@ -26,7 +26,9 @@ particle number. The number of modes is always fixed.
 
 See also [`CompositeFS`](@ref), [`AbstractFockAddress`](@ref).
 """
-abstract type SingleComponentFockAddress{N,M} <: AbstractFockAddress{N} end
+abstract type SingleComponentFockAddress{N,M} <: AbstractFockAddress end
+
+Interfaces.num_particles(::Type{<:SingleComponentFockAddress{N}}) where {N} = N
 
 Interfaces.num_components(::Type{<:SingleComponentFockAddress}) = 1
 Interfaces.num_modes(::Type{<:SingleComponentFockAddress{<:Any,M}}) where {M} = M
