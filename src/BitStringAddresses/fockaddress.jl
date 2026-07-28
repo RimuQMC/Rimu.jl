@@ -14,14 +14,14 @@ particle number. The number of modes is always fixed.
 - [`HardcoreBoseFS`](@ref): Fock state for hardcore bosons or spin or qubit systems.
 
 ## Supported functionality
-* [`find_mode()`](@ref)
-* [`find_occupied_mode()`](@ref)
-* [`num_occupied_modes()`](@ref)
-* [`occupied_modes()`](@ref): Lazy iterator.
-* [`occupied_mode_map()`](@ref): `AbstractVector` with eager construction.
-* [`excitation()`](@ref): Create a new address.
+* [`find_mode`](@ref)
+* [`find_occupied_mode`](@ref)
+* [`num_occupied_modes`](@ref)
+* [`occupied_modes`](@ref): Lazy iterator.
+* [`occupied_mode_map`](@ref): `AbstractVector` with eager construction.
+* [`excitation`](@ref): Create a new address.
 * [`BoseFSIndex`](@ref) and [`FermiFSIndex`](@ref) for indexing.
-* [`maximum_mode_occupation()`](@ref Main.Interfaces.maximum_mode_occupation): Maximum number
+* [`maximum_mode_occupation`](@ref Main.Interfaces.maximum_mode_occupation): Maximum number
     of particles that can occupy a single mode.
 
 See also [`CompositeFS`](@ref), [`AbstractFockAddress`](@ref).
