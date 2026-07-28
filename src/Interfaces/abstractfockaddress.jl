@@ -80,12 +80,12 @@ num_modes_are_equal(a::AbstractFockAddress) = num_modes_are_equal(typeof(a))
 """
     num_modes_check_equal(::Type{<:AbstractFockAddress})::Int
     num_modes_check_equal(address::AbstractFockAddress)::Int
-    num_modes_check_equal(address1, address2)::Int
+    num_modes_check_equal(addrs::Vararg{AbstractFockAddress})::Int
 
 Check that all components of a multi-component address have the same number of modes, and
 return the number of modes. Throws an `ArgumentError` if the components have different
 numbers of modes. For a single-component address, simply returns the number of modes.
-When called with two addresses, checks that both addresses have the same number of modes,
+When called with multiple addresses, checks that all addresses have the same number of modes,
 and throws an `ArgumentError` if they do not.
 
 See also [`num_modes_are_equal`](@ref), [`num_modes`](@ref), [`num_components`](@ref),

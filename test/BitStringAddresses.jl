@@ -513,9 +513,12 @@ end
             [1 0 0; 1 0 0], [0 1 1; 0 1 0], [5 0 0; 0 0 0]
         )
 
-
         fermi = FermiFS2C((0,0,1,1,0,0), (0,1,0,0,1,0))
         @test parse_address(sprint(show, fermi; context=:compact => true)) == fermi
+
+        c = FermiFS2C(FermiFS{missing}(1, 0, 0), FermiFS(1, 1, 0))
+        @test c isa FermiFS2C{missing}
+        @test parse_address(sprint(show, c; context=:compact => true)) == c
 
         @test fs"|↑⋅⇅⋅↓⟩" == CompositeFS(FermiFS((1,0,1,0,0)), FermiFS((0,0,1,0,1)))
         @test fs"|↑⋅⟩ ⊗ |0 2⟩ ⊗ |b 2: 1 1⟩ ⊗ |f 2: 1 2⟩" == CompositeFS(

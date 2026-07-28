@@ -217,7 +217,11 @@ function print_address(io::IO, f::FermiFS2C; compact=false)
             [i && j ? '⇅' : i ? '↑' : j ? '↓' : '⋅' for (i, j) in zip(Bool.(o1), Bool.(o2))]
         )
         if ismissing(num_particles(typeof(f)))
-            print(io, "|", str, "⟩{}")
+            if ismissing(num_particles(typeof(f.components[1]))) && ismissing(num_particles(typeof(f.components[2])))
+                print(io, "|", str, "⟩{}")
+            else
+                invoke(print_address, Tuple{typeof(io),CompositeFS}, io, f; compact=true)
+            end
         else
             print(io, "|", str, "⟩")
         end
