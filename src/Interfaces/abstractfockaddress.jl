@@ -1,18 +1,21 @@
 """
     AbstractFockAddress
 
-Abstract type representing a Fock state. Instances of subtypes of `AbstractFockAddress`
-represent basis states that are used as the computational basis for representing vectors
-and operators.
+Abstract type representing a Fock state, i.e. a state with a definite particle number.
+Instances of subtypes of `AbstractFockAddress` represent basis states that are used as the
+computational basis for representing vectors and operators.
 
 ## Implementations
 * [`SingleComponentFockAddress`](@ref Main.BitStringAddresses.SingleComponentFockAddress)
     is a supertype for single-component Fock states.
-* [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS) for multi-component Fock states,
+* [`CompositeFS`](@ref Main.BitStringAddresses.CompositeFS) is a container type for
+    multi-component Fock states,
 
 ## Interface
 The following functions can be called on the type or an instance of a subtype of
 `AbstractFockAddress:
+* [`num_particles`](@ref): Returns the number of particles in the Fock state. May return
+    `missing` if called on a type that allows for a variable number of particles.
 * [`num_components`](@ref): Returns the number of components in the Fock state.
 * [`num_modes`](@ref): Returns the number of modes in the Fock state. This returns a tuple
     for multi-component Fock states, and an integer for single-component Fock states.
@@ -22,8 +25,6 @@ The following functions can be called on the type or an instance of a subtype of
 * [`num_modes_check_equal`](@ref): Returns the number of modes in a Fock state as a single
     integer, and throws an `ArgumentError` if the components of a multi-component Fock state
     have different numbers of modes.
-* [`num_particles`](@ref): Returns the number of particles in the Fock state. May return
-    `missing` if called on a type that allows for a variable number of particles.
 * [`maximum_mode_occupation`](@ref): Returns the maximum number of particles that can occupy
     a single mode in the Fock state. Returns an integer for single-component Fock states,
     and a tuple for multi-component Fock states.
