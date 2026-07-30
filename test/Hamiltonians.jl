@@ -743,8 +743,8 @@ end
                 geometry=PeriodicBoundaries(3, 3),
             )
             
-            eig1 = eigsolve(BasisSetRep(H4; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
-            eig2 = eigsolve(BasisSetRep(H5; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
+            eig1 = eigsolve(BasisSetRepresentation(H4; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
+            eig2 = eigsolve(BasisSetRepresentation(H5; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
             @test round(real(eig1); digits=10) == round(eig2; digits=10)
 
             address = BoseFS(2,2,2,2)
@@ -778,8 +778,8 @@ end
         addr = BoseFS(0,0,0, 0,2,0, 0,0,0)
         H1 = HubbardMomSpace(addr; geometry=PeriodicBoundaries(3, 3), w=[2])
         H2 = HubbardRealSpace(addr; geometry=PeriodicBoundaries(3, 3), w=[2])
-        eig1 = eigsolve(BasisSetRep(H1; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
-        eig2 = eigsolve(BasisSetRep(H2; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
+        eig1 = eigsolve(BasisSetRepresentation(H1; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
+        eig2 = eigsolve(BasisSetRepresentation(H2; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
         @test round(real(eig1); digits=10) == round(eig2; digits=10)
     end
 end
