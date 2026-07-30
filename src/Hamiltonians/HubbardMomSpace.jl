@@ -423,8 +423,8 @@ dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
 This holds the off-diagonals for a single- and multi-component two-body on-site and 
 nearest-neighbour interaction terms. It is structured where the index `chosen` 
 determines the sources and destinations momentum modes of a two-body excitation 
-operation between particles of single-component fock addresses `address1` and 
-`address2` of the multi-component fock address `parent`. It also determines 
+operation between particles of single-component Fock addresses `address1` and 
+`address2` of the multi-component Fock address `parent`. It also determines 
 the momentum transfer `k` involved in the excitation. At last, `k` is used with the 
 interaction strengths `u` and `w` to calculate the coefficient of the respective 
 new address after the excitation and returns it as a pair of the new address and 
