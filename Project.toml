@@ -1,7 +1,7 @@
 name = "Rimu"
 uuid = "c53c40cc-bd84-11e9-2cf4-a9fde2b9386e"
-authors = ["Joachim Brand <j.brand@massey.ac.nz>"]
 version = "0.15.0"
+authors = ["Joachim Brand <j.brand@massey.ac.nz>"]
 
 [deps]
 Arrow = "69666777-d1a9-59fb-9406-91d4454c9d45"
@@ -28,6 +28,7 @@ Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 ProgressLogging = "33c8b6b6-d38a-422a-b730-caa89a2f386c"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
@@ -36,6 +37,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StrFormat = "b5087856-efa9-5a6d-8e6f-97303a7af894"
 StrLiterals = "68059f60-971f-57ff-a2d0-18e7de9ccc84"
+Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 TerminalLoggers = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
@@ -45,15 +47,15 @@ VectorInterface = "409d34a3-91d5-4945-b6ec-7529ddf182d8"
 
 [weakdeps]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
+ElemCo = "094d408e-8508-40f4-9646-a254980d91ac"
 IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
-ElemCo = "094d408e-8508-40f4-9646-a254980d91ac"
 
 [extensions]
 ArpackExt = "Arpack"
+ElemCoExt = "ElemCo"
 IterativeSolversExt = "IterativeSolvers"
 KrylovKitExt = "KrylovKit"
-ElemCoExt = "ElemCo"
 
 [compat]
 Arpack = "0.5"
@@ -80,6 +82,7 @@ OrderedCollections = "1"
 Parameters = "0.12"
 ProgressLogging = "0.1.3"
 Reexport = "1"
+Revise = "3.16.2"
 Setfield = "0.7, 0.8, 1"
 SpecialFunctions = "1, 2"
 StaticArrays = "1"
@@ -87,6 +90,7 @@ Statistics = "1"
 StatsBase = "0.33, 0.34"
 StrFormat = "1"
 StrLiterals = "1"
+Suppressor = "0.2.8"
 TOML = "1"
 Tables = "1.9"
 TerminalLoggers = "0.1.4"
@@ -96,9 +100,9 @@ julia = "1.9"
 
 [extras]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
+ElemCo = "094d408e-8508-40f4-9646-a254980d91ac"
 IterativeSolvers = "42fd0dbc-a981-5370-80f2-aaf504508153"
 KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
-ElemCo = "094d408e-8508-40f4-9646-a254980d91ac"
 
 [targets]
 test = ["Test"]
