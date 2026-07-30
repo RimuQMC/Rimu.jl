@@ -136,6 +136,12 @@ end
             @test load_state(PDVec, file)[1] == pdvec
             @test load_state(DVec, file)[1] isa DVec
             @test load_state(DVec, file)[1] == pdvec
+
+            # Regression test: loading from Arrow-backed columns should be stable
+            # across repeated calls (no intermittent TaskFailed exceptions).
+            for _ in 1:20
+                @test load_state(PDVec, file)[1] == pdvec
+            end
             rm(file)
         end
 

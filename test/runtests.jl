@@ -84,6 +84,10 @@ end
     include("doctests.jl")
 end
 
+@safetestset "strategies" begin
+    include("strategies.jl")
+end
+
 @safetestset "DictVectors" begin
     include("DictVectors.jl")
 end
@@ -95,10 +99,6 @@ end
 
 @safetestset "KrylovKit" begin
     include("KrylovKit.jl")
-end
-
-@suppress_err @safetestset "lomc!" begin
-    include("lomc.jl")
 end
 
 # Note: Running Rimu with several MPI ranks is tested seperately on GitHub CI and not here.

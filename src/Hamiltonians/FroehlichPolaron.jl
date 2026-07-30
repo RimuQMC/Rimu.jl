@@ -174,7 +174,7 @@ end
 
 function dimension(h::FroehlichPolaron, address)
     # takes into account `mode_cutoff` but not `momentum_cutoff`
-    M = num_modes(address)
+    M = num_modes_check_equal(address)
     n = h.mode_cutoff
     return BigInt(n + 1)^BigInt(M)
 end

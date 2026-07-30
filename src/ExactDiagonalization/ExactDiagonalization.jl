@@ -59,6 +59,4 @@ include("exact_diagonalization_problem.jl")
 include("init_and_solvers.jl")
 include("solve.jl")
 
-include("deprecated.jl")
-
 end # module

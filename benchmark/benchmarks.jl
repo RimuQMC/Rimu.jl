@@ -60,7 +60,12 @@ const SUITE = @benchmarkset "Rimu" begin
             post_step = ProjectedEnergy(ham, dv)
             s_strat = DoubleLogUpdate(target_walkers=40_000)
 
-            lomc!(ham, dv; s_strat, post_step, dτ=1e-4, laststep=8000)
+            p = ProjectorMonteCarloProblem(
+                ham;
+                start_at=dv, post_step_strategy=post_step, shift_strategy=s_strat,
+                time_step=1e-4, last_step=8000
+            )
+            solve(p)
         end seconds=150
 
         @case "(50, 50) Real space" begin
@@ -69,7 +74,12 @@ const SUITE = @benchmarkset "Rimu" begin
             dv = PDVec(addr => 1.0; style=IsDynamicSemistochastic())
             s_strat = DoubleLogUpdate(target_walkers=50_000)
 
-            lomc!(ham, dv; s_strat, dτ=1e-4, laststep=1000)
+            p = ProjectorMonteCarloProblem(
+                ham;
+                start_at=dv, shift_strategy=s_strat,
+                time_step=1e-4, last_step=1000
+            )
+            solve(p)
         end seconds=150
     end
 end

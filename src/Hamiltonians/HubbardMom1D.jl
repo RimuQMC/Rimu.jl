@@ -50,7 +50,7 @@ function HubbardMom1D(
     address::Union{SingleComponentFockAddress,FermiFS2C};
     u=1.0, t=1.0, dispersion = hubbard_dispersion,
 )
-    M = num_modes(address)
+    M = num_modes_check_equal(address)
     U, T = promote(float(u), float(t))
     step = 2π/M
     if isodd(M)
@@ -135,11 +135,13 @@ end
 num_offdiagonals(ham::HubbardMom1D, address::FermiFS) = 0
 # 4-argument version
 @inline function num_offdiagonals(ham::HubbardMom1D, ::SingleComponentFockAddress, singlies, doublies)
-    M = num_modes(ham)
+    M = num_modes_check_equal(ham)
     return singlies * (singlies - 1) * (M - 2) + doublies * (M - 1)
 end
-@inline function num_offdiagonals(ham::HubbardMom1D, ::FermiFS2C{N1,N2}) where {N1,N2}
-    M = num_modes(ham)
+@inline function num_offdiagonals(ham::HubbardMom1D, f2c::FermiFS2C)
+    N1 = num_particles(f2c.components[1])
+    N2 = num_particles(f2c.components[2])
+    M = num_modes_check_equal(ham)
     return N1 * N2 * (M - 1)
 end
 
