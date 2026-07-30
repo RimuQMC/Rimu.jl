@@ -287,7 +287,7 @@ the coefficients of a two-body interaction with onsite (``u_{σσ'}``) and neare
 
 * [`BoseFS`](@ref): Single-component Bose-Hubbard model.
 * [`FermiFS`](@ref): Single-component Fermi-Hubbard model.
-* [`CompositeFS`](@ref): For multi-component models.
+* [`CompositeFS`](@ref): For multi-component models (must have equal number of modes).
 
 Note that a single component of fermions cannot interact with itself. A warning
 is produced if `address`is incompatible with the interaction parameters `u`.
