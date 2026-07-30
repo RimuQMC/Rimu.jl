@@ -245,7 +245,6 @@ where `V_{σσ}' is the interaction coefficient that depends on  `u_{σσ'}' and
 `w_{σσ'}'. `g` is the geometry of the lattice.
 
 """
-
 function mom_transfer_diagonal(component::Tuple, g::CubicGrid)
     onproduct = 0
     for data in component
