@@ -339,7 +339,7 @@ end
 
 function HubbardMomSpace(
     address::AbstractFockAddress;
-    geometry::CubicGrid=PeriodicBoundaries((num_modes(address),)),
+    geometry::CubicGrid=PeriodicBoundaries((num_modes_check_equal(address),)),
     t=ones(num_components(address), num_dimensions(geometry)),
     u=ones(num_components(address), num_components(address)),
     w=zeros(num_components(address), num_components(address)),
@@ -350,7 +350,7 @@ function HubbardMomSpace(
     S = size(geometry)
 
     # Sanity checks
-    if prod(size(geometry)) ≠ num_modes(address)
+    if prod(size(geometry)) ≠ num_modes_check_equal(address)
         throw(ArgumentError("`geometry` does not have the correct number of sites"))
     elseif !(address isa SingleComponentFockAddress || address isa CompositeFS)
         throw(ArgumentError(
@@ -462,7 +462,7 @@ function Base.size(data::HubbardMomSpaceComponentData{<:Any,I,I}) where {I}
     if isnothing(data.u) && isnothing(data.w)
         return (0,)
     else
-        M = num_modes(data.address1)
+        M = num_modes_check_equal(data.address1)
         s1, d1 = num_singly_doubly_occupied_sites(data.address1)
         return  (s1 * (s1 - 1) * (M - 2) + d1 * (M - 1),)
     end
@@ -472,7 +472,7 @@ function Base.size(data::HubbardMomSpaceComponentData)
     if isnothing(data.u) && isnothing(data.w)
         return (0,)
     else
-        M = num_modes(data.address1)
+        M = num_modes_check_equal(data.address1)
         s1 = length(data.occmap1)
         s2 = length(data.occmap2)
         return (s1 * s2 * (M - 1),)
@@ -530,7 +530,7 @@ starting_address(column::HubbardMomSpaceColumn) = column.address
 
 function diagonal_element(col::HubbardMomSpaceColumn)
     return _mom_hopping(col.hamiltonian.kes_mat, col.address) + 
-        mom_transfer_diagonal(col.components, col.geometry)/num_modes(col.address)
+        mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address)
 end
 
 function operator_column(h::HubbardMomSpace{<:Any,<:Any,A,G}, address) where {A,G}
