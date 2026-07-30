@@ -416,8 +416,9 @@ dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
 
 # offdiagonals =========================================================================== #
 """
-    HubbardMomSpaceComponentData(geometry,parant::A,address1,address2,
-        u,w) <: AbstractMatrix{Pair{A,Float64}}
+    HubbardMomSpaceComponentData(
+        geometry, parent::A, address1, address2, u, w
+    ) <: AbstractMatrix{Pair{A,Float64}}
 
 This holds the off-diagonals for a single- and multi-component two-body on-site and 
 nearest-neighbour interaction terms. It is structured where the index `chosen` 
