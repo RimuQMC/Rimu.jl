@@ -271,7 +271,7 @@ end
 
 Hubbard model in momentum space. Supports single or multi-component Fock state
 addresses (with `C` components) and various (rectangular) lattice geometries
-in `D` dimensions and of `M` volume.
+in `D` dimensions and with a total of `M` momentum modes.
 
 ```math
   \\hat{H} = -\\sum_{k,σ} ϵ_{kσ} n_{kσ} +
