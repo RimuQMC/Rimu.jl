@@ -76,28 +76,29 @@ end
 
 LOStructure(::Type{<:G2RealCorrelator}) = IsDiagonal()
 function Interfaces.allows_address_type(::G2RealCorrelator{D}, ::Type{A}) where {D,A}
-    return num_modes(A) > D
+    num_modes_are_equal(A) || return false
+    return num_modes_check_equal(A) > D
 end
 
 function diagonal_element(::G2RealCorrelator{0}, addr::SingleComponentFockAddress)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     v = onr(addr)
     return dot(v, v .- 1) / M
 end
 function diagonal_element(::G2RealCorrelator{D}, addr::SingleComponentFockAddress) where {D}
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     d = mod(D, M)
     v = onr(addr)
     return circshift_dot(v, v, (d,)) / M
 end
 
 function diagonal_element(::G2RealCorrelator{0}, addr::CompositeFS)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     v = sum(map(onr, addr.components))
     return dot(v, v .- 1) / M
 end
 function diagonal_element(::G2RealCorrelator{D}, addr::CompositeFS) where {D}
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     d = mod(D, M)
     v = sum(map(onr, addr.components))
     return circshift_dot(v, v, (d,)) / M
@@ -128,7 +129,7 @@ julia> g2 = G2RealSpace(geom)
 G2RealSpace(CubicGrid((2, 2), (true, true)), 1,1)
 
 julia> diagonal_element(g2, BoseFS(2,0,1,1))
-2×2 StaticArraysCore.SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
+2×2 SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
  0.5  1.0
  0.5  1.0
 
@@ -139,17 +140,17 @@ julia> g2_sum = G2RealSpace(geom, sum_components=true)
 G2RealSpace(CubicGrid((2, 2), (true, true)); sum_components=true)
 
 julia> diagonal_element(g2, fs"|⇅⋅↓↑⟩")
-2×2 StaticArraysCore.SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
+2×2 SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
  0.0  0.0
  0.0  0.5
 
 julia> diagonal_element(g2_cross, fs"|⇅⋅↓↑⟩")
-2×2 StaticArraysCore.SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
+2×2 SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
  0.25  0.25
  0.25  0.25
 
 julia> diagonal_element(g2_sum, fs"|⇅⋅↓↑⟩")
-2×2 StaticArraysCore.SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
+2×2 SMatrix{2, 2, Float64, 4} with indices SOneTo(2)×SOneTo(2):
  0.5  1.0
  0.5  1.0
 ```
@@ -195,8 +196,9 @@ VectorInterface.scalartype(::G2RealSpace) = Float64 # needed because eltype is a
 function Interfaces.allows_address_type(
     g2::G2RealSpace{C1,C2}, A::Type{<:AbstractFockAddress}
 ) where {C1,C2}
-    result = prod(size(g2.geometry)) == num_modes(A)
-    return result && 0 ≤ C1 ≤ num_components(A) && 0 ≤ C2 ≤ num_components(A)
+    num_modes_are_equal(A) || return false
+    prod(size(g2.geometry)) == num_modes_check_equal(A) || return false
+    return 0 ≤ C1 ≤ num_components(A) && 0 ≤ C2 ≤ num_components(A)
 end
 
 num_offdiagonals(g2::G2RealSpace, _) = 0
@@ -267,7 +269,7 @@ function Base.show(io::IO, ::SuperfluidCorrelator{D}) where {D}
     print(io, "SuperfluidCorrelator($D)")
 end
 function Interfaces.allows_address_type(::SuperfluidCorrelator{D}, ::Type{A}) where {D,A}
-    return num_modes(A) > D
+    return A <: SingleComponentFockAddress && num_modes_check_equal(A) > D
 end
 
 function num_offdiagonals(::SuperfluidCorrelator, addr::SingleComponentFockAddress)
@@ -328,7 +330,7 @@ function StringCorrelator(d::Int; address=nothing, type=nothing)
         elseif address === nothing
             type = ComplexF64
         else
-            M = num_modes(address)
+            M = num_modes_check_equal(address)
             N = num_particles(address)
             if !ismissing(N) && iszero(N % M)
                 type = Float64
@@ -344,7 +346,7 @@ function Base.show(io::IO, ::StringCorrelator{D,T}) where {D,T}
     print(io, "StringCorrelator($D; type=$T)")
 end
 function Interfaces.allows_address_type(::StringCorrelator{D}, ::Type{A}) where {D,A}
-    return num_modes(A) > D && A <: SingleComponentFockAddress
+    return A <: SingleComponentFockAddress && num_modes_check_equal(A) > D
 end
 
 LOStructure(::Type{<:StringCorrelator}) = IsDiagonal()
@@ -380,7 +382,7 @@ function diagonal_element(
 end
 
 function _string_diagonal_complex(d, addr)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     N = num_particles(addr)
     n̄ = N/M
     v = onr(addr)
@@ -395,7 +397,7 @@ function _string_diagonal_complex(d, addr)
     return result / M
 end
 function _string_diagonal_real(d, addr)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     N = num_particles(addr)
     n̄ = N ÷ M
     v = onr(addr)

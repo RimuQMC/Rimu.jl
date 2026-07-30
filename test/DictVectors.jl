@@ -2,6 +2,7 @@ using LinearAlgebra
 using Random
 using Rimu
 using Rimu.DictVectors
+using Rimu.DictVectors: PDWorkingMemory
 using Rimu.StochasticStyles: IsStochastic2Pop, StochasticStyle
 using StaticArrays
 using Suppressor
@@ -269,7 +270,7 @@ function test_dvec_interface(type; kwargs...)
         @testset "StochasticStyle" begin
             @test StochasticStyle(type(:a => 1; kwargs...)) isa IsStochasticInteger{Int}
             @test StochasticStyle(type(:a => 1.5; kwargs...)) isa IsDeterministic
-            @test StochasticStyle(type(:a => 1 + 2im; kwargs...)) isa IsStochastic2Pop
+            @test StochasticStyle(type(:a => 1 + 2im; kwargs...)) isa StyleUnknown
             if type ≠ InitiatorDVec # matrix as val doesn't make sense
                 @test StochasticStyle(type(:a => SA[1 1; 1 1]; kwargs...)) isa StyleUnknown
             end

@@ -27,7 +27,7 @@ end
         HubbardReal1DEP(BoseFS(1, 2, 3, 4); t=1.0im),
         HubbardReal1DEP(BoseFS(1, 2, 3, 4); u=1.0im),
         HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
-        HubbardMom1D(OccupationNumberFS(6, 0, 0, 4); t=1.0, u=0.5),
+        HubbardMom1D(BoseFS{missing}(6, 0, 0, 4); t=1.0, u=0.5),
         HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5 + im),
         ExtendedHubbardReal1D(BoseFS((1, 0, 0, 0, 1)); u=1.0, v=2.0, t=3.0),
         ExtendedHubbardReal1D(BoseFS(1, 0, 2, 1); u=1 + 0.5im),
@@ -37,7 +37,7 @@ end
         ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); u=1 + 0.5im),
         ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); v=1 + 0.5im),
         ExtendedHubbardMom1D(BoseFS(1, 0, 2, 1); t=1 + 0.5im),
-        ExtendedHubbardMom1D(OccupationNumberFS(1,2,0,0); u=1.0, v=2.0, t=3.0),
+        ExtendedHubbardMom1D(BoseFS{missing}(1,2,0,0); u=1.0, v=2.0, t=3.0),
         ExtendedHubbardMom1D(FermiFS(1,1,0,0); u=1.0, v=2.0, t=3.0),
         HubbardRealSpace(BoseFS((1, 2, 3)); u=[1], t=[3], w=[1]),
         HubbardRealSpace(FermiFS((1, 1, 1, 1, 1, 0, 0, 0)); u=[0], t=[3]),
@@ -74,13 +74,14 @@ end
         HubbardMom1DEP(CompositeFS(FermiFS((0, 1, 1, 0, 0)), FermiFS((0, 0, 1, 0, 0))), v_ho=5),
         ParitySymmetry(HubbardRealSpace(CompositeFS(BoseFS((1, 2, 0)), FermiFS((0, 1, 0))))),
         TimeReversalSymmetry(HubbardMom1D(FermiFS2C((1, 0, 1), (0, 1, 1)))),
+        TimeReversalSymmetry(HubbardMom1D(FermiFS2C{missing}((1, 0, 1), (0, 1, 1)))),
         Stoquastic(HubbardMom1D(BoseFS((0, 5, 0)))),
         momentum(HubbardMom1D(BoseFS((0, 5, 0)))),
         HOCartesianContactInteractions(BoseFS((2, 0, 0, 0))),
         HOCartesianEnergyConservedPerDim(BoseFS((2, 0, 0, 0))),
         HOCartesianCentralImpurity(BoseFS((1, 0, 0, 0, 0))),
-        FroehlichPolaron(OccupationNumberFS(1, 1, 1)),
-        FroehlichPolaron(OccupationNumberFS(1, 1, 1); momentum_cutoff=10.0),
+        FroehlichPolaron(BoseFS{missing}(1, 1, 1)),
+        FroehlichPolaron(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
@@ -266,7 +267,7 @@ end
     HM2Cu0 =HubbardMom1D(bs2; u=0, t, dispersion=continuum_dispersion)
     HM2Hu0 =HubbardMom1D(bs2; u=0, t, dispersion=hubbard_dispersion)
     @test diagonal_element(HM2Cu0, bs2) > 2t*num_particles(bs2)+diagonal_element(HM2Hu0,bs2)
-    @test diagonal_element(HM2Cu0, bs2) ≈ 6*t*(2pi/num_modes(bs2))^2
+    @test diagonal_element(HM2Cu0, bs2) ≈ 6*t*(2pi/num_modes_check_equal(bs2))^2
 
     HM3Ct0 =HubbardMom1D(bs3; t=0, dispersion=continuum_dispersion)
     HM3Ht0 =HubbardMom1D(bs3; t=0, dispersion=hubbard_dispersion)
@@ -836,7 +837,7 @@ end
                 @test Ebare ≈ Egutz ≈ Etrans
 
                 # general operators
-                m = num_modes(address)
+                m = num_modes_check_equal(address)
                 g2vals = map(d -> dot(dv, G2RealCorrelator(d), dv)/dot(dv, dv), 0:m-1)
                 g2transformed = map(
                     d -> dot(dv, TransformUndoer(G,G2RealCorrelator(d)), dv)/dot(dv, fsq, dv),
@@ -916,7 +917,7 @@ end
                 @test Ebare ≈ Egutz ≈ Etrans
 
                 # general operators
-                m = num_modes(address)
+                m = num_modes_check_equal(address)
                 g2vals = map(d -> dot(dv, G2RealCorrelator(d), dv)/dot(dv, dv), 0:m-1)
                 g2transformed = map(d -> dot(dv, TransformUndoer(G,G2RealCorrelator(d)), dv)/dot(dv, fsq, dv), 0:m-1)
                 @test all(g2vals ≈ g2transformed)
@@ -1298,6 +1299,14 @@ using Rimu.Hamiltonians: circshift_dot
         @test num_offdiagonals(DensityMatrixDiagonal(1), BoseFS((0,1,0))) == 0
         @test LOStructure(DensityMatrixDiagonal(2)) == IsDiagonal()
         @test DensityMatrixDiagonal(15)' === DensityMatrixDiagonal(15)
+
+        @test allows_address_type(DensityMatrixDiagonal(1), BoseFS(0,1,0))
+        @test allows_address_type(DensityMatrixDiagonal(2; component=1), BoseFS(0, 1, 0))
+        @test allows_address_type(DensityMatrixDiagonal(2; component=2), BoseFS(0, 1, 0)) == false
+        @test allows_address_type(DensityMatrixDiagonal(2), CompositeFS(BoseFS(0, 1, 0), BoseFS(0, 1, 0)))
+        csf = CompositeFS(BoseFS(0, 1, 0), BoseFS(0, 1))
+        @test allows_address_type(DensityMatrixDiagonal(2; component=2), csf) == true
+        @test allows_address_type(DensityMatrixDiagonal(2), csf) == false
     end
 
     @testset "Reduced Density Matrix" begin
@@ -1405,15 +1414,15 @@ end
 end
 
 @testset "FroehlichPolaron" begin
-    addr1 = OccupationNumberFS(1,1,1)
+    addr1 = BoseFS{missing}(1,1,1)
 
     # test momentum_cutoff and mode_cutoff when initialising
-    addr2 = OccupationNumberFS(1,2,3)
+    addr2 = BoseFS{missing}(1,2,3)
     @test_throws ArgumentError FroehlichPolaron(addr2; mode_cutoff=1.0)
     @test_throws ArgumentError FroehlichPolaron(addr2; momentum_cutoff=10.0)
-    @test_throws ArgumentError FroehlichPolaron(OccupationNumberFS(3,2,1); momentum_cutoff=10.0)
+    @test_throws ArgumentError FroehlichPolaron(BoseFS{missing}(3,2,1); momentum_cutoff=10.0)
 
-    addr3 = OccupationNumberFS(1,2,3,4)
+    addr3 = BoseFS{missing}(1,2,3,4)
     f2 = FroehlichPolaron(addr2)
     f3 = FroehlichPolaron(addr3; mode_cutoff=20.0)
 
@@ -1435,24 +1444,24 @@ end
     @test diagonal_element(f2, addr2) == f2_diag
 
     # test offdiagonal element
-    f2_offdiag = (OccupationNumberFS(1,3,3), -f2.v*sqrt(3))
+    f2_offdiag = (BoseFS{missing}(1,3,3), -f2.v*sqrt(3))
     @test get_offdiagonal(f2, addr2, 2) == f2_offdiag
 
-    f3_offdiag = (OccupationNumberFS(1,2,3,3), -f3.v*sqrt(4))
+    f3_offdiag = (BoseFS{missing}(1,2,3,3), -f3.v*sqrt(4))
     @test get_offdiagonal(f3, addr3, 8) == f3_offdiag
 
     # test mode_cutoff
-    @test get_offdiagonal(f2, OccupationNumberFS(10,3,4), 1)[2] ≠ 0.0
-    @test get_offdiagonal(f3, OccupationNumberFS(1,3,20,10), 3)[2] == 0.0
+    @test get_offdiagonal(f2, BoseFS{missing}(10,3,4), 1)[2] ≠ 0.0
+    @test get_offdiagonal(f3, BoseFS{missing}(1,3,20,10), 3)[2] == 0.0
 
     # test momentum_cutoff
     # addr2 has momentum 12.56
-    addr4 = OccupationNumberFS(1,2,1)
+    addr4 = BoseFS{missing}(1,2,1)
     f4 = FroehlichPolaron(addr4; momentum_cutoff=10.0)
     @test get_offdiagonal(f4, addr2, 3)[2] == 0.0
 
     m = 5; l = 6
-    addr5 = OccupationNumberFS{5}()
+    addr5 = BoseFS{missing,5}()
     mom_unit = 2π/l
     momentum_cutoff = 1.5 * mom_unit
     f5 = FroehlichPolaron(addr5; l, mode_cutoff=1, momentum_cutoff)
@@ -1886,10 +1895,22 @@ end
 end
 
 @testset "dimension and multi-component addresses" begin
-    addresses = [CompositeFS(FermiFS((1,0,1)), FermiFS((0,1,0))), BoseFS((1,0,1)),
-                FermiFS2C((1,0,1), (0,1,0))
+    addresses = [
+        CompositeFS(FermiFS((1,0,1)), FermiFS((0,1,0))), BoseFS((1,0,1)),
+        FermiFS2C((1,0,1), (0,1,0)), BoseFS{missing}(3, 0, 1), HardcoreBoseFS(1,0,1),
+        HardcoreBoseFS{missing}(1, 0, 1), FermiFS{missing}(1, 0, 1),
+        FermiFS2C{missing}((1, 0, 1), (0, 1, 0))
     ]
     [@test dimension(addr) == dimension(typeof(addr)) for addr in addresses]
+    @test dimension(CompositeFS(FermiFS((1,0,1)), FermiFS((0,1,0)))) == 9
+    @test dimension(CompositeFS(FermiFS((1,0,1)), FermiFS((0,1,0)), BoseFS((1,0,0)))) == 27
+    @test dimension(FermiFS2C{missing}((1, 0, 1), (0, 1, 0))) == 64
+    @test dimension(HardcoreBoseFS{missing}(1, 0, 1)) == 8
+    @test dimension(FermiFS{missing}(1, 0, 1)) == 8
+
+    h = ExtendedHubbardReal1D(HardcoreBoseFS{missing}(1, 1, 0))
+    @test dimension(h) == 3
+    @test dimension(starting_address(h)) == 8
 end
 
 @testset "ExtendedHubbardReal1D" begin
@@ -1942,9 +1963,9 @@ end
         ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), t=2.0+3im, power=3), # Hermitian
         ExtendedHubbardReal1D(BoseFS(1, 0, 1, 0), v=6, t=2.0+3im), # Hermitian
         ExtendedHubbardReal1D(FermiFS(1, 0, 1, 0), v=6 + 0.5im, t=2.0), # non-Hermitian
-        ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), u=6 + 3im, t=2.0), # non-Hermitian
-        ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), u=6 + 3im, t=0), # diagonal and non-Hermitian
-        ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1), t=0), # diagonal and Hermitian
+        ExtendedHubbardReal1D(BoseFS{missing}(3, 0, 1), u=6 + 3im, t=2.0), # non-Hermitian
+        ExtendedHubbardReal1D(BoseFS{missing}(3, 0, 1), u=6 + 3im, t=0), # diagonal and non-Hermitian
+        ExtendedHubbardReal1D(BoseFS{missing}(3, 0, 1), t=0), # diagonal and Hermitian
         HubbardReal1D(BoseFS(1,1,1),t=1.0im),
         HubbardReal1D(BoseFS(1,1,1),u=1.0im),
         ExtendedHubbardReal1D(BoseFS(1,1,1),t=1.0im),
@@ -1952,17 +1973,17 @@ end
     )
         test_hamiltonian_structure(H)
     end
-    h = ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1); t=0) # diagonal and Hermitian
+    h = ExtendedHubbardReal1D(BoseFS{missing}(3, 0, 1); t=0) # diagonal and Hermitian
     @test LOStructure(h) isa IsDiagonal
     @test adjoint(h) == h
-    h2 = ExtendedHubbardReal1D(OccupationNumberFS(3, 0, 1); u=6 + 3im, t=0)
+    h2 = ExtendedHubbardReal1D(BoseFS{missing}(3, 0, 1); u=6 + 3im, t=0)
     # diagonal and non-Hermitian
     @test LOStructure(h2) isa IsDiagonal
     @test h2'.u == conj(h2.u)
-    @test diagonal_element(h2, OccupationNumberFS(3,0,1)) == 21 + 9im
-    start_at = DVec(OccupationNumberFS(3,0,1) => 1)
+    @test diagonal_element(h2, BoseFS{missing}(3,0,1)) == 21 + 9im
+    start_at = DVec(BoseFS{missing}(3,0,1) => 1)
     @test_throws ArgumentError ProjectorMonteCarloProblem(h2; start_at)
-    start_at = [DVec(OccupationNumberFS(3,0,1) => 1) DVec(OccupationNumberFS(3,0,1) => 1)]
+    start_at = [DVec(BoseFS{missing}(3,0,1) => 1) DVec(BoseFS{missing}(3,0,1) => 1)]
     @test_throws ArgumentError ProjectorMonteCarloProblem(h2; start_at, n_spectral=2)
     h3 = HubbardReal1D(BoseFS(1,1,1),u=1.0im)
     @test LOStructure(h3) isa AdjointKnown
@@ -2017,6 +2038,24 @@ end
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(r))) == r
     end
+    # complex hermitian Hamiltonian still produces approx hermitian RDM
+    H = HubbardReal1D(BoseFS(0,1,2,0); t = 1+im)
+    res = solve(ExactDiagonalizationProblem(H))
+    gs = res.vectors[1]
+    rdm = ReducedDensityMatrix{ComplexF64}(1)
+    m = dot(gs, rdm, gs)
+    @test all(x -> abs(x) < √eps(Float64), m - m') # hermitian up to floating point noise
+
+    # a global relative phase in the vectors results in a global phase in the RDM
+    m_phase = dot(im * gs, rdm, gs)
+    @test all(x -> abs(x) < √eps(Float64), m_phase + im * m)
+
+    # complex non-hermitian Hamiltonian still produces approx hermitian RDM
+    Hc = HubbardReal1D(BoseFS(0,1,2,0); u = 1+im)
+    resc = solve(ExactDiagonalizationProblem(Hc))
+    gsc = resc.vectors[1]
+    mc = dot(gsc, rdm, gsc)
+    @test all(x -> abs(x) < √eps(Float64), mc - mc') # hermitian up to floating point noise
 end
 
 @testset "HamiltonianProduct" begin

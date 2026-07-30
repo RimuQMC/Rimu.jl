@@ -32,9 +32,10 @@ import Folds
 using Rimu: Rimu, DictVectors, Hamiltonians, Interfaces, BitStringAddresses, replace_keys,
     clean_and_warn_if_others_present, split_keys, HubbardMomSpace, ExtendedHubbardMom1D
 using ..Interfaces: AbstractDVec, AbstractHamiltonian, AbstractOperator, AdjointUnknown,
-    diagonal_element, offdiagonals, starting_address, LOStructure, IsHermitian, operator_column
-using ..BitStringAddresses: AbstractFockAddress, BoseFS, FermiFS, CompositeFS,
-    OccupationNumberFS, near_uniform
+    diagonal_element, offdiagonals, starting_address, LOStructure, IsHermitian,
+    operator_column
+using ..BitStringAddresses: AbstractFockAddress, BoseFS, FermiFS, HardcoreBoseFS,
+    CompositeFS, near_uniform, BitString
 using ..DictVectors: FrozenDVec, PDVec, DVec
 using ..Hamiltonians: allows_address_type, check_address_type, dimension,
     ParitySymmetry, TimeReversalSymmetry, AbstractOperator
@@ -47,6 +48,7 @@ export LinearMap
 
 export sparse # from SparseArrays
 
+const FermiOrHardcoreBoseFS{N,M,S} = Union{FermiFS{N,M,S},HardcoreBoseFS{N,M,S}}
 
 include("basis_breadth_first_search.jl")
 include("basis_fock.jl")
@@ -56,7 +58,5 @@ include("algorithms.jl")
 include("exact_diagonalization_problem.jl")
 include("init_and_solvers.jl")
 include("solve.jl")
-
-include("deprecated.jl")
 
 end # module

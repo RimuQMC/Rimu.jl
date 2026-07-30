@@ -1,14 +1,14 @@
 module ElemCoExt
 
-import Rimu: MolecularHamiltonian, FermiFS, FermiFS2C, near_uniform, num_modes
-import ElemCo.FciDumps: FDump, QFDump, read_fcidump, headvar, fd_exists
+import Rimu: MolecularHamiltonian, FermiFS, FermiFS2C, near_uniform, num_modes_check_equal
+import ElemCo.FciDumps: FDump, QFDump, read_fcidump, headvar
 
 function MolecularHamiltonian(
     fd::QFDump;
     starting_address::Union{Nothing,FermiFS2C}=nothing,
     specifier::String="",
 )
-    if !fd_exists(fd)
+    if isempty(fd)
         throw(ArgumentError("invalid input FCIDUMP file"))
     end
     n_orb = headvar(fd, "NORB", Int)
@@ -33,7 +33,7 @@ function MolecularHamiltonian(
         )
     end
 
-    if num_modes(starting_address) != n_orb
+    if num_modes_check_equal(starting_address) != n_orb
         throw(
             ArgumentError(
                 "starting_address must have the same number of orbital as the FCIDUMP."

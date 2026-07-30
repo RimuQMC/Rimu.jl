@@ -35,10 +35,10 @@ function excitation_svec(b::BoseFS{N,M}, creations, destructions) where {N,M}
 
     for d in reverse(destructions)
         value *= onrep[d]
-        @inbounds onrep[d] -= 1
+        @inbounds onrep[d] -= UInt8(1)
     end
     for c in reverse(creations)
-        @inbounds onrep[c] += 1
+        @inbounds onrep[c] += UInt8(1)
         value *= onrep[c]
     end
     if value == 0
@@ -47,7 +47,7 @@ function excitation_svec(b::BoseFS{N,M}, creations, destructions) where {N,M}
         return BoseFS{N,M}(Tuple(onrep)), √value
     end
 end
-function excitation_svec(f::FermiFS{N,M}, creations, destructions) where {N,M}
+function excitation_svec(f::Union{FermiFS{N,M},HardcoreBoseFS{N,M}}, creations, destructions) where {N,M}
     onrep = MVector(onr(f))
     num = 0
 
@@ -65,7 +65,11 @@ function excitation_svec(f::FermiFS{N,M}, creations, destructions) where {N,M}
         end
         @inbounds onrep[c] += 1
     end
-    return FermiFS{N,M}(Tuple(onrep)), ifelse(iseven(num), 1.0, -1.0)
+    if f isa FermiFS
+        return FermiFS{N,M}(Tuple(onrep)), ifelse(iseven(num), 1.0, -1.0)
+    elseif f isa HardcoreBoseFS
+        return HardcoreBoseFS{N,M}(Tuple(onrep)), ifelse(iseven(num), 1.0, 1.0)
+    end
 end
 
 """
@@ -89,11 +93,11 @@ error message explaining where it failed otherwise.
 function excitations_correct(add, cs, ds)
     res_direct = excitation_direct(add, cs, ds)
     res_svec = excitation_svec(add, cs, ds)
-    if res_direct ≠ res_svec
+    if res_direct == res_svec
+        return true
+    else
         @error "Failed" add cs ds res_direct res_svec
         return false
-    else
-        return true
     end
 end
 
@@ -114,7 +118,7 @@ end
     check_single_excitations(add, num=Inf)
 
 Check whether `excitation_svec` and `excitation_direct` give the same result for single
-interactions. If `num` is not given, all possible combinaions of destruction and creation
+interactions. If `num` is not given, all possible combinations of destruction and creation
 operators are used, otherwise `num` of each is used.
 """
 function check_single_excitations(add, num=Inf)
@@ -130,7 +134,7 @@ end
     check_double_excitations(add, num=Inf)
 
 Check whether `excitation_svec` and `excitation_direct` give the same result for double
-interactions. If `num` is not given, all possible combinaions of destruction and creation
+interactions. If `num` is not given, all possible combinations of destruction and creation
 operators are used, otherwise `num` of each is used.
 """
 function check_double_excitations(add, num=Inf)
@@ -148,7 +152,7 @@ end
     check_triple_excitations(add, num=Inf)
 
 Check whether `excitation_svec` and `excitation_direct` give the same result for triple
-interactions. If `num` is not given, all possible combinaions of destruction and creation
+interactions. If `num` is not given, all possible combinations of destruction and creation
 operators are used, otherwise `num` of each is used.
 """
 function check_triple_excitations(add, num=Inf)

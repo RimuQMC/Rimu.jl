@@ -1,7 +1,5 @@
 using Documenter
 using Rimu
-using Rimu.BitStringAddresses
-using Rimu.StatsTools
 using Literate
 
 EXAMPLES_INPUT = joinpath(@__DIR__, "../scripts")
@@ -48,6 +46,7 @@ makedocs(;
     ],
     format=Documenter.HTML(
         prettyurls = false,
+        edit_link = "develop",
         size_threshold=700_000, # 700 kB
         size_threshold_warn=200_000, # 200 kB
     ),

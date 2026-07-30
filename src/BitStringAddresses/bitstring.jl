@@ -771,17 +771,17 @@ end
 end
 
 function fermi_excitation(
-    bs::BitString, creations::NTuple{N}, destructions::NTuple{N}
-) where {N}
+    bs::BitString, creations::NTuple{NC}, destructions::NTuple{ND}
+) where {NC, ND}
     orig_bs = bs
     count = 0
-    for i in N:-1:1
+    for i in ND:-1:1
         d = destructions[i].mode
         bs, x, val = _flip_and_count(bs, UInt(d - 0x1))
         val && return orig_bs, 0.0
         count += x
     end
-    for i in N:-1:1
+    for i in NC:-1:1
         c = creations[i].mode
         bs, x, val = _flip_and_count(bs, UInt(c - 0x1))
         !val && return orig_bs, 0.0

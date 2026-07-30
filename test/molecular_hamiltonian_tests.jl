@@ -51,7 +51,7 @@ using ElemCo
             h = MolecularHamiltonian(fcidump)
             a = starting_address(h)
             c = operator_column(h, a)
-            @test diagonal_element(c) ≈ ref_hf_ground_energy atol = error
+            @test diagonal_element(c) ≈ ref_hf_ground_energy["E"] atol = error
         end
     end
 

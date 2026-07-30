@@ -5,16 +5,24 @@ using Rimu.StochasticStyles
 using Rimu.StochasticStyles: projected_deposit!, diagonal_step!, spawn!
 using Rimu.StochasticStyles:
     Exact, SingleSpawn, WithReplacement, WithoutReplacement, Bernoulli,
-    DynamicSemistochastic, IsStochastic2Pop
+    DynamicSemistochastic
 
 @testset "default_style" begin
     default_style_of_typeof(x) = default_style(typeof(x))
     @test default_style_of_typeof(1) == IsStochasticInteger{Int}()
     @test default_style_of_typeof(1.0) == IsDeterministic{Float64}()
     @test default_style_of_typeof(1.0f0) == IsDeterministic{Float32}()
-    @test default_style_of_typeof(1im) == IsStochastic2Pop{Complex{Int}}()
+    @test default_style_of_typeof(1im) isa StyleUnknown
     @test default_style_of_typeof(1.0 + 1im) == IsDeterministic{ComplexF64}()
     @test default_style_of_typeof([1.0f0 + 1im, 1.0f0 + 1im]) isa StyleUnknown
+end
+@testset "StochasticStyles interface defaults" begin
+    address = BoseFS(1,2,3)
+    dv = DVec(address => 1 + im)
+    @test StochasticStyle(dv) isa StyleUnknown
+    @test_throws ArgumentError step_stats(dv)
+    h = HubbardReal1D(address)
+    @test_throws ArgumentError apply_column!(dv, operator_column(h, address), 1)
 end
 @testset "Generic Hamiltonian-free functions" begin
     matrix = [1 2 3; 4 5 6; 7 8 9]
@@ -183,6 +191,21 @@ end
         @test st[3] == 4.5
         @test dv[BoseFS((2,0,1))] == -4.5
     end
+end
+
+@testset "deposit! column fallback" begin
+    add = BoseFS((1,1,1))
+    H = HubbardReal1D(add)
+    col = operator_column(H, add)
+
+    # column => value should fall back to same result as add => value
+    dv1 = DVec(add => 1.0)
+    dv2 = DVec(add => 1.0)
+
+    deposit!(dv1, add, 2.0, add => 1.0)   # default address => value
+    deposit!(dv2, add, 2.0, col => 1.0)   # column => value
+
+    @test dv1 == dv2
 end
 
 @testset "spawn!" begin

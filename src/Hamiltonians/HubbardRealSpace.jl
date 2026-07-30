@@ -63,8 +63,8 @@ end
     nearest_neighbor_interaction(add1::SingleComponentFockAddress, add2::SingleComponentFockAddress,
         w, geometry::CubicGrid, map1::ModeMap)
 
-Calculate the nearest neighbour interaction ``w \\sum_{⟨i,j⟩} n_{↑, i} n_{↓, j}`` within 
-the single-component Fock address `add`. When two single-component Fock states 
+Calculate the nearest neighbour interaction ``w \\sum_{⟨i,j⟩} n_{↑, i} n_{↓, j}`` within
+the single-component Fock address `add`. When two single-component Fock states
 `add1` and `add2` are passed, return the eigenvalue of
 
 ```math
@@ -127,8 +127,8 @@ end
         a, bs::Tuple, us::Tuple, ws::Tuple, occ::ModeMap, occs::Tuple, geometry::CubicGrid
     )
 
-Sum of the interactions between the occupied sites in the Fock state `a` with the occupied sites in all 
-states in `bs` using the onsite and nearest neighbour interaction parameters in `us` and `ws`. This is used 
+Sum of the interactions between the occupied sites in the Fock state `a` with the occupied sites in all
+states in `bs` using the onsite and nearest neighbour interaction parameters in `us` and `ws`. This is used
 to compute all interactions in the respective column of the interaction matrices. Here, `occ` is the modemap of
 `a` and `occs` is a collection of modemaps of states in `bs`.
 """
@@ -330,7 +330,7 @@ number of sites `M` inferred from the number of modes in `address`.
   The (`i`, `j`)-th element of the matrix corresponds to the hopping strength of the
   `i`-th component and `j`-th direction.
 * `u`: the on-site interaction parameters. Must be a symmetric matrix of size
-  `C × C`. `u[i, j]` corresponds to the interaction between the `i`-th and `j`-th 
+  `C × C`. `u[i, j]` corresponds to the interaction between the `i`-th and `j`-th
   component. `u[i, i]` corresponds to the interaction of a component with itself.
   Note that the self interaction will have no effect on fermionic components.
 * `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix of size
@@ -363,7 +363,7 @@ end
 
 function HubbardRealSpace(
     address::AbstractFockAddress;
-    geometry::CubicGrid=CubicGrid(num_modes(address)),
+    geometry::CubicGrid=CubicGrid(num_modes_check_equal(address)),
     t=1.0,
     u=1.0,
     w=0.0,
@@ -375,7 +375,7 @@ function HubbardRealSpace(
     TT = float(eltype(t))
 
     # Sanity checks
-    if prod(size(geometry)) ≠ num_modes(address)
+    if prod(size(geometry)) ≠ num_modes_check_equal(address)
         throw(ArgumentError("`geometry` does not have the correct number of sites"))
     elseif !(address isa SingleComponentFockAddress || address isa CompositeFS)
         throw(
@@ -469,7 +469,7 @@ Warn if interaction matrix `u` does not make sense for `address`.
 function warn_fermi_interaction(address::CompositeFS, u)
     C = num_components(address)
     for c in 1:C
-        if address.components[c] isa FermiFS && u ≠ ones(C,C) && u[c, c] ≠ 0 
+        if address.components[c] isa FermiFS && u ≠ ones(C,C) && u[c, c] ≠ 0
             @warn "component $(c) is fermionic, but was given a self-interaction " *
                 "strength of $(u[c,c])" maxlog=1
         end
