@@ -85,7 +85,7 @@ julia> size(DataFrame(simulation))
 - `time_step_strategy = ConstantTimeStep()`: Adjust time step or not, see
     `TimeStepStrategy`.
 - `algorithm = FCIQMC(; shift_strategy, time_step_strategy)`: The algorithm to use.
-    Currenlty only [`FCIQMC`](@ref) is implemented.
+    Currently only [`FCIQMC`](@ref) is implemented.
 - `shift`: Initial shift value or collection of shift values. Determined by default from the
     Hamiltonian and the starting vectors.
 - `initial_shift_parameters`: Initial shift parameters or collection of initial shift

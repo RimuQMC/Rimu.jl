@@ -709,7 +709,7 @@ end
     from_bose_onr(::Type{B}, onr::AbstractArray) -> B
 
 Convert array `onr` to type `B`. It is safe to assume `onr` contains a valid
-occupation-number representation array. The checks are preformed in the [`BoseFS`](@ref)
+occupation-number representation array. The checks are performed in the [`BoseFS`](@ref)
 constructor.
 
 This function is a part of the interface for an underlying storage format used by
@@ -813,7 +813,7 @@ Base.eltype(::FermiUnoccupiedModes) = FermiFSIndex
     from_fermi_onr(::Type{B}, onr) -> B
 
 Convert array `onr` to type `B`. It is safe to assume `onr` contains a valid
-occupation-number representation array. The checks are preformed in the [`FermiFS`](@ref)
+occupation-number representation array. The checks are performed in the [`FermiFS`](@ref)
 constructor.
 
 This function is a part of the interface for an underlying storage format used by
