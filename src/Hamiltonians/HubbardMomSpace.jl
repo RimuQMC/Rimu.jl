@@ -263,27 +263,26 @@ end
 end
 
 """
-    mom_transfer_diagonal(component, g)
-This function does the excitation operation on the given addresses in the `component`, which 
+    mom_transfer_diagonal(components, g)
+This function does the excitation operation on the given addresses in the `components`, which 
 represents a multi-component Fock state address, respectively. This returns a diagonal element
 of the Hamiltonian. The excitation is carried out to get the reponse similar to the 
 nearest neighbour interaction and on-site interaction operation in real space.
 
 '''math
-    \\hat{H}_\\text{int} = \\frac{1}{2}\\sum_{p,q,σ,σ'} V_{σσ'} 
-        \\hat{b}^†_{pσ} \\hat{b}^†_{qσ'} \\hat{b}^†_{qσ'} \\hat{b}_{pσ}
+    Ĥ_\\text{int} = ½\\sum_{p,q,σ,σ'} V_{σσ'} b̂^†_{pσ} b̂^†_{qσ'} b̂_{qσ'} b̂_{pσ}
 '''
 
 where `V_{σσ}' is the interaction coefficient that depends on  `u_{σσ'}' and 
 `w_{σσ'}'. `g` is the geometry of the lattice.
 
 """
-@inline _mom_transfer_diagonal(component::Tuple{}, g::CubicGrid) = 0.0
+@inline _mom_transfer_diagonal(components::Tuple{}, g::CubicGrid) = 0.0
 
-@inline function _mom_transfer_diagonal(component::Tuple, g::CubicGrid)
+@inline function _mom_transfer_diagonal(components::Tuple, g::CubicGrid)
     # Extract the first item, and keep the remaining items as a smaller tuple
-    data = first(component)
-    tail_components = Base.tail(component)
+    data = first(components)
+    tail_components = Base.tail(components)
 
     # Compile-time evaluation path for nothing checks
     if isnothing(data.u) && isnothing(data.w)
@@ -466,13 +465,13 @@ dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
 
 This holds the off-diagonals for a single- and multi-component two-body on-site and 
 nearest-neighbour interaction terms. It is structured where the index of this vector
-`chosen` determines the sources and destinations momentum modes of a two-body excitation 
-operation between particles of single-component Fock addresses `address1` and 
-`address2` of the multi-component Fock address `parent`. `u` and `w` represents the 
-interaction coefficient coresponding to on-site and nearest-neighbour interactions, 
-respectively, and are used to calculate the coefficient of the respective new address 
-after the excitation and returns it as an element of this vector as a pair of the new 
-address and the coefficient.
+determines `p`, `q`, `σ`, `σ'` and `k` in the two particle operator given by 
+$$ a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}$$ and creates a new address and its coefficient. 
+The operator is operated on a single-component(where `address1`=`address2`=`parents`) or 
+multi-component Fock address `parent` where  `address1` and `address2` are the single-component 
+Fock addresses representing `σ` and `σ'` component respectively. `u` and `w` represents the
+interaction coefficient coresponding to on-site and nearest-neighbour interactions, respectively, 
+and are used to calculate the coefficient of the respective new address.
 """
 struct HubbardMomSpaceComponentData{
     TT,C,I1,I2,D,G,A,A1,A2,U<:Union{Float64,Nothing},W<:Union{Float64,Nothing},O1,O2
