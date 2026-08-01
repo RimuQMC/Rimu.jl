@@ -346,7 +346,7 @@ number of sites `M` inferred from the number of modes in `address`.
 
 ## Other parameters
 
-* `t`: the hopping strengths. Must be a matrix of length `C × D `. The `i`-th and `j`-th element of the
+* `t`: the hopping strengths. Must be a matrix of size `C × D`. The `i`-th and `j`-th element of the
   matrix corresponds to the hopping strength of the `i`-th component and `j`-th direction.
 * `u`: the on-site interaction parameters. Must be a symmetric matrix. `u[i, j].`
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
