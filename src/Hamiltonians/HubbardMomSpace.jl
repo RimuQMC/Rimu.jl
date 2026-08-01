@@ -319,7 +319,7 @@ in `D` dimensions and with a total of `M` momentum modes.
   \\hat{H} = -\\sum_{k,σ} ϵ_{kσ} n_{kσ} +
   \\sum_{p,q,k,σ,σ'} V_{σσ'} a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}
 ```
-where ``ϵ_{kσ} = -2 (\\sum_{d=1}^{D} \\Re(t_{σ,d}) \\cos(k_d) + \\Im(t_{σ,d}) \\sin(k_d))`` is 
+where ``ϵ_{kσ} = -2 ( Σ_{d=1}^{D} \\Re(t_{σ,d}) \\cos(k_d) + \\Im(t_{σ,d}) \\sin(k_d))`` is 
 the single-particle `dispersion` and
 ``V_{σσ'} = (u_{σσ'}(1- \\frac{δ_{σσ'}}{2}) + w_{σσ'} \\sum_{d=1}^{D} \\cos(q_d))/M``
 the coefficients of a two-body interaction with onsite (``u_{σσ'}``) and nearest-neighbour 
@@ -345,15 +345,15 @@ number of sites `M` inferred from the number of modes in `address`.
 
 ## Other parameters
 
-* `t`: the hopping strengths. Must be a matrix of length `C × D `. The `i`-th and `j`-th element of the
+* `t`: the hopping strengths. Must be a matrix of size `C × D `. The `i`-th and `j`-th element of the
   matrix corresponds to the hopping strength of the `i`-th component and `j`-th direction.
-* `u`: the on-site interaction parameters. Must be a symmetric matrix. `u[i, j].`
+* `u`: the on-site interaction parameters. Must be a symmetric matrix of size `C × C`. `u[i, j].`
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
   corresponds to the interaction of a component with itself.
-* `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
+* `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix of size `C × C`.
   `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
 * `dispersion`: the function used to calculate the dispersion relation. Default is 
-    `hubbard_dispersion` which corresponds to the standard Hubbard model. 
+    [`hubbard_dispersion`](@ref) which corresponds to the standard tight binding model.  
   
   See also [`HubbardRealSpace`](@ref), [`HubbardMom1D`](@ref), [`ExtendedHubbardReal1D`](@ref).
 """
@@ -466,12 +466,14 @@ dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
 This holds the off-diagonals for a single- and multi-component two-body on-site and 
 nearest-neighbour interaction terms. It is structured where the index of this vector
 determines `p`, `q`, `σ`, `σ'` and `k` in the two particle operator given by 
-$$ a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}$$ and creates a new address and its coefficient. 
-The operator is operated on a single-component(where `address1`=`address2`=`parents`) or 
-multi-component Fock address `parent` where  `address1` and `address2` are the single-component 
-Fock addresses representing `σ` and `σ'` component respectively. `u` and `w` represents the
-interaction coefficient coresponding to on-site and nearest-neighbour interactions, respectively, 
-and are used to calculate the coefficient of the respective new address.
+```math a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}```. The operator is operated on a 
+`parent` which is a single-component (where `address1`=`address2`=`parents`) or 
+multi-component Fock address where `address1` and `address2` are the single-component 
+Fock addresses representing  `σ` and `σ'` component respectively. The operation 
+creates a new address and the corresponding coefficient which is stored as a pair. 
+`u` and `w` represents the interaction coefficient coresponding to on-site and 
+nearest-neighbour interactions, respectively, and are used to calculate the 
+coefficient of the respective new address.
 """
 struct HubbardMomSpaceComponentData{
     TT,C,I1,I2,D,G,A,A1,A2,U<:Union{Float64,Nothing},W<:Union{Float64,Nothing},O1,O2
