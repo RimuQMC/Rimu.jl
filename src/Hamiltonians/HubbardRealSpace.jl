@@ -171,7 +171,7 @@ end
 
 Compute all pairwise interactions in a tuple of `addresses`. The `onsite_int_matrix` and
 `nearest_neighbour_int_matrix` sets the intraction strengths of the onsite interaction and
-the nearest neighbour interaction. Moreover, `occs` holds the occupied modes of the adresses.
+the nearest neighbour interaction. Moreover, `occs` holds the occupied modes of the addresses.
 
 The code is equivalent to the following.
 
