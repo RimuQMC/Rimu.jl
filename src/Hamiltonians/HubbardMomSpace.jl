@@ -257,7 +257,7 @@ end
 @inline function _cosin_sum(q::SVector{D}, S::NTuple{D}) where {D}
     onproduct = 0.0
     for i in 1:D
-        onproduct += cospi(q[i] * 2 / S[i])
+        onproduct += cos(q[i] * 2π / S[i])
     end
     return onproduct
 end
@@ -431,7 +431,7 @@ end
 
 LOStructure(::Type{<:HubbardMomSpace}) = IsHermitian()
 
-function Base.show(io::IO, h::HubbardMomSpace{C}) where {C}
+function Base.show(io::IO, h::HubbardMomSpace{<:Any,C}) where {C}
     io = IOContext(io, :compact => true)
     println(io, "HubbardMomSpace(")
     println(io, "  ", starting_address(h), ",")
