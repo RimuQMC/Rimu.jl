@@ -308,7 +308,7 @@ number of sites `M` inferred from the number of modes in `address`.
 * `u`: the on-site interaction parameters. Must be a symmetric matrix of size `C × C`. `u[i, j]`
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
   corresponds to the interaction of a component with itself.
-* `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
+* `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix of size `C × C`.
   `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
 * `dispersion`: the function used to calculate the dispersion relation. Default is 
     [`hubbard_dispersion`](@ref) which corresponds to the standard tight binding model. 
