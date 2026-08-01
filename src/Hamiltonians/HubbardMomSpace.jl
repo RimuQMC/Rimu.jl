@@ -85,9 +85,7 @@ See also [`mom_transfer_diagonal`](@ref).
     g::CubicGrid{D,S}) where {M, D, S}
     # Get the momentum transfer for a given excitation.
     singlies = length(map) # number of at least singly occupied modes
-
     double = chosen - singlies * (singlies - 1) * (M - 2)
-
     if double > 0
         # Both moves from the same mode.
         double, mom_change = fldmod1(double, M - 1)
@@ -133,9 +131,7 @@ end
     chosen::Int, map1::ModeMap, map2::ModeMap, g::CubicGrid{D,S}) where {M, D, S}
     # Get the momentum transfer for a given excitation.
     singlies = length(map2)
-
     pair, mom_change = fldmod1(chosen, M - 1)
-
     f_hole, s_hole = fldmod1(pair, singlies) # where the holes are to be made
     src_indices = (map1[f_hole], map2[s_hole])
     src_modes = (src_indices[1].mode, src_indices[2].mode)
@@ -163,10 +159,8 @@ either `u` or `w` is `nothing`, the corresponding interaction term is ignored.
 
 """
 @inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D, S}
-
     onproduct = 0.0
     u_scaled = u / 2.0 + w * D
-    
     for i in 1:length(map)
         occ_i = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0) * u_scaled
@@ -198,7 +192,6 @@ end
 end
 
 @inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, ::CubicGrid, u, ::Nothing)
-
     onproduct = 0.0
     for i in 1:length(map)
         occ_i = Float64(map[i].occnum)
@@ -212,23 +205,17 @@ end
 end
 
 @inline function _mom_transfer_diagonal(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D, S}
-
     onproduct = 0.0
     for i in 1:length(map)
         # 2. Add type assertions or unpack concrete objects if `map` holds abstract types
         mode_i = map[i].mode
         occ_i  = Float64(map[i].occnum)
-        
         onproduct += occ_i * (occ_i - 1.0)
-        
         # Pull the grid lookup outside the inner loop to save i-index computations
         g_i = g[mode_i] 
-        
         for j in 1:i-1
             occ_j = Float64(map[j].occnum)
-            
             q = g_i - g[map[j].mode] 
-            
             onproduct += 2.0 * occ_i * occ_j * (D - _cosin_sum(q, S))
         end
     end
