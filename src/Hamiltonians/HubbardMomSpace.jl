@@ -740,7 +740,7 @@ end
 # Momentum operator in momentum space
 ########################################################################################################
 
-struct MomentumMomSpace{T,C,D,H<:AbstractHamiltonian{T}} <: AbstractHamiltonian{SVector{T}}
+struct MomentumMomSpace{T,C,D,H<:AbstractHamiltonian{T}} <: AbstractHamiltonian{SVector{D,T}}
     ham::H
 end
 LOStructure(::Type{<:MomentumMomSpace}) = IsDiagonal()
