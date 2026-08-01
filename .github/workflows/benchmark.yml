@@ -5,15 +5,22 @@ on:
     branches-ignore:
     - 'doc/**'
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   run:
+    if: ${{ !startsWith(github.head_ref, 'compathelper/') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
         with:
-          version: 1
-      - uses: julia-actions/cache@v2
+          version: 1.11
+          # fails with newer versions; probably related to BenchmarkCI not supporting them yet
+      - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - name: Install dependencies
         run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkTools BenchmarkCI@0.1"'
@@ -39,7 +46,7 @@ jobs:
           echo ::set-output name=body::$body
       # check if the previous comment exists
       - name: find comment
-        uses: peter-evans/find-comment@v3
+        uses: peter-evans/find-comment@v4
         id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -49,13 +56,13 @@ jobs:
       # create/update comment
       - name: create comment
         if: ${{ steps.fc.outputs.comment-id == 0 && github.actor != 'dependabot[bot]' }}
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@v5
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: ${{ steps.generate-result-markdown.outputs.body }}
       - name: update comment
         if: ${{ steps.fc.outputs.comment-id != 0 && github.actor != 'dependabot[bot]' }}
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@v5
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           body: ${{ steps.generate-result-markdown.outputs.body }}

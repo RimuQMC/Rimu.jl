@@ -205,6 +205,8 @@ Optional additional methods to implement:
   dimension of address space
 * [`allows_address_type(h::AbstractHamiltonian, type)`](@ref): defaults to
   `type :< typeof(starting_address(h))`
+* [`maximum_mode_occupation(h::AbstractHamiltonian)`](@ref Main.Interfaces.maximum_mode_occupation):
+  defaults to `maximum_mode_occupation(typeof(starting_address(h)))`
 * [`momentum(::AbstractHamiltonian)`](@ref Main.Hamiltonians.momentum): no default
 
 ## Alternative Interface (deprecated)
@@ -234,6 +236,10 @@ See also [`Hamiltonians`](@ref Main.Hamiltonians), [`Interfaces`](@ref),
 [`AbstractOperatorColumn`](@ref), [`AbstractOperator`](@ref), [`AbstractObservable`](@ref).
 """
 abstract type AbstractHamiltonian{T} <: AbstractOperator{T} end
+
+function Interfaces.maximum_mode_occupation(h::AbstractHamiltonian)
+    maximum_mode_occupation(typeof(starting_address(h)))
+end
 
 """
     allows_address_type(operator, addr_or_type)
@@ -312,7 +318,7 @@ julia> addr = BoseFS(3, 2, 1);
 julia> H = HubbardMom1D(addr);
 
 julia> get_offdiagonal(H, addr, 3)
-(BoseFS{6,3}(2, 1, 3), 1.0)
+(BoseFS(2, 1, 3), 1.0)
 ```
 Part of the [`AbstractHamiltonian`](@ref) interface.
 """
@@ -390,7 +396,7 @@ end
     LOStructure(typeof(op))
 
 Return information about the structure of the linear operator `op`.
-`LOStructure` is used as a trait to speficy symmetries or other properties of the linear
+`LOStructure` is used as a trait to specify symmetries or other properties of the linear
 operator `op` that may simplify or speed up calculations. Implemented instances are:
 
 * `IsDiagonal()`: The operator is diagonal.
@@ -554,7 +560,13 @@ operator_column(o, a) = OffdiagonalsOperatorColumn(o, a, offdiagonals(o,a),
 
 @doc (@doc operator_column) Base.:*
 function Base.:*(o::AbstractObservable, a::A) where {A<:Union{AbstractFockAddress,Integer}}
-    return operator_column(o, a)
+    if allows_address_type(o, A)
+        return operator_column(o, a)
+    elseif A <: Number
+        throw(ArgumentError("`$A` is not a valid address type for `$o`. To scale the operator, use `$a * $o`."))
+    else
+        throw(ArgumentError("`$A` is not a valid address type for `$o`."))
+    end
 end
 
 starting_address(c::OffdiagonalsOperatorColumn) = c.address
@@ -641,10 +653,10 @@ Part of the [`AbstractHamiltonian`](@ref) interface. See also
 offdiagonals
 
 # Iteration interface for AbstractOperatorColumn
-function Base.iterate(col::AbstractOperatorColumn)
+@inline function Base.iterate(col::AbstractOperatorColumn)
     return starting_address(col) => diagonal_element(col), nothing
 end
-function Base.iterate(col::AbstractOperatorColumn, state)
+@inline function Base.iterate(col::AbstractOperatorColumn, state)
     result = if state === nothing
         iterate(offdiagonals(col))
     else

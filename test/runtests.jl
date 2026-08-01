@@ -12,8 +12,6 @@ using Rimu.StatsTools
 using ExplicitImports: check_no_implicit_imports
 
 
-@test Rimu.PACKAGE_VERSION == VersionNumber(TOML.parsefile(pkgdir(Rimu, "Project.toml"))["version"])
-
 @safetestset "ExplicitImports" begin
     using Rimu
     using ExplicitImports
@@ -45,6 +43,7 @@ end
 @safetestset "projector_monte_carlo_problem" begin
     include("projector_monte_carlo_problem.jl")
 end
+
 @testset "Logging" begin
     default_logger()
     l = Base.global_logger()
@@ -85,20 +84,21 @@ end
     include("doctests.jl")
 end
 
+@safetestset "strategies" begin
+    include("strategies.jl")
+end
+
 @safetestset "DictVectors" begin
     include("DictVectors.jl")
 end
 
 @testset "Hamiltonians" begin
     include("Hamiltonians.jl")
+    include("molecular_hamiltonian_tests.jl")
 end
 
 @safetestset "KrylovKit" begin
     include("KrylovKit.jl")
-end
-
-@suppress_err @safetestset "lomc!" begin
-    include("lomc.jl")
 end
 
 # Note: Running Rimu with several MPI ranks is tested seperately on GitHub CI and not here.

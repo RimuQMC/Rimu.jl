@@ -150,7 +150,7 @@ mpi_rank(lp::LocalPart) = mpi_rank(lp.communicator)
 mpi_size(lp::LocalPart) = mpi_size(lp.communicator)
 
 function synchronize_remote!(::LocalPart, _)
-    throw(CommunicatorError("attemted to synchronize localpart"))
+    throw(CommunicatorError("attempted to synchronize localpart"))
 end
 
 merge_remote_reductions(::LocalPart, _, x) = x

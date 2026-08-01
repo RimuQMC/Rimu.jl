@@ -1,5 +1,5 @@
 """
-    FroehlichPolaron(address::OccupationNumberFS{M}; kwargs...) <: AbstractHamiltonian
+    FroehlichPolaron(address::BoseFS{missing,M}; kwargs...) <: AbstractHamiltonian
 
 
 The Froehlich polaron Hamiltonian for a 1D lattice with `M` momentum modes is given by
@@ -23,29 +23,35 @@ operator for the bosons.
     lattice.
 * `momentum_cutoff=nothing`: the maximum boson momentum allowed for an address.
 * `mode_cutoff`: the maximum number of bosons in each momentum mode. Defaults to the maximum
-    value supported by the address type [`OccupationNumberFS`](@ref).
+    value supported by the address type [`BoseFS{missing}`](@ref).
+    [`maximum_mode_occupation(hamiltonian)`](@ref Main.Interfaces.maximum_mode_occupation)
+    will return this value.
 
 # Examples
 ```jldoctest
-julia> fs = OccupationNumberFS(0,0,0)
-OccupationNumberFS{3, UInt8}(0, 0, 0)
+julia> fs = BoseFS{missing}(0,0,0)
+BoseFS{missing}(0, 0, 0)
 
 julia> ham = FroehlichPolaron(fs; v=0.5)
-FroehlichPolaron(fs"|0 0 0⟩{8}"; v=0.5, mass=1.0, omega=1.0, l=1.0, p=0.0, mode_cutoff=255)
+FroehlichPolaron(fs"|0 0 0⟩{}"; v=0.5, mass=1.0, omega=1.0, l=1.0, p=0.0, mode_cutoff=255)
 
 julia> dimension(ham)
 16777216
 
 julia> dimension(FroehlichPolaron(fs; v=0.5, mode_cutoff=5))
 216
+
+julia> maximum_mode_occupation(FroehlichPolaron(fs; v=0.5, mode_cutoff=5))
+5
 ```
 
-See also [`OccupationNumberFS`](@ref), [`dimension`](@ref), [`AbstractHamiltonian`](@ref).
+See also [`BoseFS`](@ref), [`dimension`](@ref), [`maximum_mode_occupation`](@ref),
+[`AbstractHamiltonian`](@ref).
 """
 struct FroehlichPolaron{
     T, # eltype
     M, # number of modes
-    A<:OccupationNumberFS{M}, # address type
+    A<:BoseFS{missing,M}, # address type
     MC # momentum cutoff indicating type
 } <: AbstractHamiltonian{T}
     addr::A
@@ -60,7 +66,7 @@ struct FroehlichPolaron{
 end
 
 function FroehlichPolaron(
-    addr::OccupationNumberFS{M,AT};
+    addr::BoseFS{missing,M,SVector{M,AT}};
     v=1.0,
     mass=1.0,
     omega=1.0,
@@ -114,25 +120,28 @@ end
 function starting_address(h::FroehlichPolaron)
     return h.addr
 end
+function Interfaces.maximum_mode_occupation(h::FroehlichPolaron)
+    return h.mode_cutoff
+end
 
 LOStructure(::Type{<:FroehlichPolaron{<:Real}}) = IsHermitian()
 
-function diagonal_element(h::FroehlichPolaron{<:Any,M}, addr::OccupationNumberFS{M}) where {M}
+function diagonal_element(h::FroehlichPolaron{<:Any,M}, addr::BoseFS{missing,M}) where {M}
     map = onr(addr)
     p_f = dot(h.ks,map)
     return h.omega * num_particles(addr) + (h.p - p_f)^2 / h.mass
 end
 
-function num_offdiagonals(::FroehlichPolaron{<:Any,M}, ::OccupationNumberFS{M}) where {M}
+function num_offdiagonals(::FroehlichPolaron{<:Any,M}, ::BoseFS{missing,M}) where {M}
     return 2M #num_occupied_modes
 end
 
-function get_offdiagonal(h::FroehlichPolaron{<:Any,M,<:Any,Nothing}, addr::OccupationNumberFS{M},chosen) where {M}
+function get_offdiagonal(h::FroehlichPolaron{<:Any,M,<:Any,Nothing}, addr::BoseFS{missing,M},chosen) where {M}
     # branch that bypasses momentum cutoff
     return _froehlich_offdiag(h, addr, chosen)
 end
 
-function get_offdiagonal(h::FroehlichPolaron{T,M,<:Any,T}, addr::OccupationNumberFS{M}, chosen) where {M,T}
+function get_offdiagonal(h::FroehlichPolaron{T,M,<:Any,T}, addr::BoseFS{missing,M}, chosen) where {M,T}
     # branch for checking momentum cutoff
     naddress, value = _froehlich_offdiag(h, addr, chosen)
 
@@ -144,7 +153,7 @@ function get_offdiagonal(h::FroehlichPolaron{T,M,<:Any,T}, addr::OccupationNumbe
     end
 end
 
-function _froehlich_offdiag(h, addr::OccupationNumberFS{M},chosen) where {M}
+function _froehlich_offdiag(h, addr::BoseFS{missing,M},chosen) where {M}
     if chosen ≤ M # assign first M indices to creations
         if onr(addr)[chosen] ≥ h.mode_cutoff # check whether occupation exceeds cutoff
             return addr, 0.0
@@ -159,13 +168,13 @@ function _froehlich_offdiag(h, addr::OccupationNumberFS{M},chosen) where {M}
     end
 end
 
-function _exceed_mode_cutoff(mode_cutoff, addr::OccupationNumberFS{M}) where {M}
+function _exceed_mode_cutoff(mode_cutoff, addr::BoseFS{missing,M}) where {M}
     return any(x -> x > mode_cutoff, onr(addr))
 end
 
 function dimension(h::FroehlichPolaron, address)
     # takes into account `mode_cutoff` but not `momentum_cutoff`
-    M = num_modes(address)
+    M = num_modes_check_equal(address)
     n = h.mode_cutoff
     return BigInt(n + 1)^BigInt(M)
 end

@@ -23,7 +23,7 @@ Other
 - [`FroehlichPolaron`](@ref)
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
-- [`HamiltonianProduct`](@ref)
+- [`MolecularHamiltonian`](@ref)
 
 ## [Wrappers](#Hamiltonian-wrappers)
 - [`GutzwillerSampling`](@ref)
@@ -31,6 +31,9 @@ Other
 - [`ParitySymmetry`](@ref)
 - [`TimeReversalSymmetry`](@ref)
 - [`Stoquastic`](@ref)
+- [`HamiltonianProduct`](@ref)
+- [`ScaledHamiltonian`](@ref)
+- [`HamiltonianSum`](@ref)
 
 ## [Observables](#Observables)
 - [`ParticleNumberOperator`](@ref)
@@ -59,13 +62,14 @@ using Parameters: Parameters, @unpack
 using Setfield: Setfield
 using SparseArrays: SparseArrays, rowvals, nzrange, nonzeros
 using SpecialFunctions: SpecialFunctions, gamma
-using StaticArrays: StaticArrays, SA, SMatrix, SVector, SArray, setindex
+using StaticArrays: StaticArrays, SA, SMatrix, SVector, SArray, MVector, setindex
 using TupleTools: TupleTools
+using VectorInterface: add, scale
 
 using ..BitStringAddresses
-import ..BitStringAddresses: ModeMap
+import ..BitStringAddresses: ModeMap, FermiFS2CModes, full_mode_maps
 using ..Interfaces
-using ..Interfaces: sum_mutating!
+using ..Interfaces: sum_mutating!, num_modes_check_equal, num_modes
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
     offdiagonals, random_offdiagonal, LOStructure, allows_address_type, operator_column,
     undo_transform, has_random_offdiagonal, has_iterable_offdiagonals, parent_operator
@@ -86,6 +90,8 @@ export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron
 export ParticleNumberOperator
 
+export MolecularHamiltonian
+
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
 export StringCorrelator, G2MomCorrelator
@@ -96,7 +102,8 @@ export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCarte
 export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
-export HamiltonianProduct
+export HamiltonianProduct, ScaledHamiltonian
+export HamiltonianSum
 
 if VERSION < v"1.10"
     # used for ReducedDensityMatrix
@@ -105,6 +112,8 @@ if VERSION < v"1.10"
         return Hermitian(A)
     end
 end
+
+const FermiOrHardcoreBoseFS{N,M,S} = Union{FermiFS{N,M,S},HardcoreBoseFS{N,M,S}}
 
 include("abstract.jl")
 include("offdiagonals.jl")
@@ -124,6 +133,8 @@ include("ExtendedHubbardReal1D.jl")
 include("FroehlichPolaron.jl")
 
 include("Transcorrelated1D.jl")
+
+include("Molecular.jl")
 
 include("ModifiedHamiltonian.jl")
 include("TransformUndoer.jl")
@@ -148,4 +159,5 @@ include("ho-cart-tools.jl")
 include("angular_momentum.jl")
 
 include("Product.jl")
+include("Sum.jl")
 end

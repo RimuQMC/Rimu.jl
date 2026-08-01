@@ -10,19 +10,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        julia-version: [1, 'nightly']
+        julia-version: ['1', 'pre']
         julia-arch: [x64]
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
-      - name: "Set up Julia"
-        uses: julia-actions/setup-julia@v2
+      - name: "Checkout"
+        uses: actions/checkout@v7
+      - name: "Setup Julia"
+        uses: julia-actions/setup-julia@v3
         with:
           version: ${{ matrix.julia-version }}
-          arch: ${{ matrix.julia-arch }}
-      - uses: julia-actions/cache@v2
+      - name: "Load cache"
+        uses: julia-actions/cache@v3
+      - name: "Build"
+        uses: julia-actions/julia-buildpkg@v1
       - name: "Run test"
         run: |
-          julia --project=@. -e "using Pkg; Pkg.instantiate(); Pkg.build()"
+          julia --project=@. -e "using Pkg; Pkg.add(\"BenchmarkTools\")"
           julia -O3 --project=@. test/allocation_tests.jl

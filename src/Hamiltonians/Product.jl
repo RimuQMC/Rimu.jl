@@ -4,6 +4,8 @@
 
 The product of two [`AbstractHamiltonian`](@ref)s, acting from right to left. The two Hamiltonians
 must act on the same address space. Set `commuting` to `true` if `A` and `B` commute.
+
+See also [`ScaledHamiltonian`](@ref), [`HamiltonianSum`](@ref), [`AbstractHamiltonian`](@ref).
 """
 struct HamiltonianProduct{T, O1<:AbstractHamiltonian, O2<:AbstractHamiltonian, C} <: AbstractHamiltonian{T}
     op1::O1
@@ -47,6 +49,14 @@ function LinearAlgebra.adjoint(op::HamiltonianProduct{<:Any,<:Any,<:Any,C}) wher
     return HamiltonianProduct(op.op2',op.op1'; commuting=C)
 end
 
+function has_iterable_offdiagonals(::Type{<:HamiltonianProduct{<:Any,H1,H2}}) where {H1,H2}
+    return has_iterable_offdiagonals(H1) && has_iterable_offdiagonals(H2)
+end
+
+function has_random_offdiagonal(::Type{<:HamiltonianProduct{<:Any,H1,H2}}) where {H1, H2}
+    return has_random_offdiagonal(H1) && has_random_offdiagonal(H2)
+end
+
 struct ProductColumn{A,T,O<:HamiltonianProduct{T},C1,C2} <: AbstractOperatorColumn{A,T,O}
     operator::O
     address::A
@@ -86,18 +96,38 @@ function random_offdiagonal(c::ProductColumn)
     end
 end
 
-struct ProductOffdiagonals{A,T,O<:HamiltonianProduct{T},C,OD1,OD2}
+struct ProductOffdiagonals{A,T,O<:HamiltonianProduct{T},OD1,OD2,S2}
     operator::O
     address::A
-    col2::C
+    diag2::T
     ods1::OD1
     ods2::OD2
+    state2::S2
 end
-offdiagonals(c::ProductColumn) = ProductOffdiagonals(c.operator, c.address, c.col2, offdiagonals(c.col1), offdiagonals(c.col2))
+function offdiagonals(c::ProductColumn{<:Any,T}) where {T}
+    ods2 = offdiagonals(c.col2)
+    first2 = iterate(ods2)
+    return ProductOffdiagonals(
+        c.operator,
+        c.address,
+        T(diagonal_element(c.col2)),
+        offdiagonals(c.col1),
+        ods2,
+        isnothing(first2) ? nothing : last(first2)
+    )
+end
+
 Base.IteratorSize(::ProductOffdiagonals) = Base.SizeUnknown()
 Base.eltype(::ProductOffdiagonals{A,T}) where {A,T} = Pair{A,T}
 
-function Base.iterate(o::ProductOffdiagonals)
+struct ProductIterState{S1,S2,O,T}
+    state1::Union{Nothing,S1}
+    state2::Union{Nothing,S2}
+    ods1::Union{Nothing,O}
+    val2::T
+end
+
+function Base.iterate(o::ProductOffdiagonals{<:Any,T,<:Any,OD1,<:Any,S2}) where {T,OD1,S2}
     #start with diagonal of op2, offdiagonals of op1
     first1 = iterate(o.ods1)
     if isnothing(first1)# no offdiagonals for op1, go to offdiagonals of op2
@@ -107,20 +137,19 @@ function Base.iterate(o::ProductOffdiagonals)
         end
         (add2, val2), state2 = first2
         col1 = operator_column(o.operator.op1, add2)
-        val1 = diagonal_element(col1)
-        state = (state2, col1, val2)
-        return add2 => val1*val2, state
+        state = ProductIterState{Nothing,S2,OD1,T}(nothing, state2, offdiagonals(col1), val2)
+        return add2 => diagonal_element(col1)*val2, state
     else
         (add1, val1), state1 = first1
-        state = (o.ods1, state1)
-        return add1 => val1*diagonal_element(o.col2), state
+        state = ProductIterState{typeof(state1),S2,OD1,T}(state1, nothing, nothing, o.diag2)
+        return add1 => val1*o.diag2, state
     end
 end
 
-function Base.iterate(o::ProductOffdiagonals, state)
-    if length(state) == 2# diagonal of op2, iterating op1
-        ods1, state1 = state
-        next1 = iterate(ods1, state1)
+function Base.iterate(o::ProductOffdiagonals, state::ProductIterState{S1,S2,OD1,T}) where {S1,S2,OD1,T}
+    (;state1, state2, ods1, val2) = state
+    if isnothing(state2)# diagonal of op2, iterating op1
+        next1 = iterate(o.ods1, state1)
         if isnothing(next1)
             first2 = iterate(o.ods2)
             if isnothing(first2)
@@ -128,17 +157,14 @@ function Base.iterate(o::ProductOffdiagonals, state)
             end
             (add2, val2), state2 = first2
             col1 = operator_column(o.operator.op1, add2)
-            val1 = diagonal_element(col1)
-            state = (state2, col1, val2)
-            return add2 => val1*val2, state
+            state = ProductIterState{S1,S2,OD1,T}(nothing, state2, offdiagonals(col1), val2)
+            return add2 => diagonal_element(col1)*val2, state
         else
             (add1, val1), state1 = next1
-            state = (ods1, state1)
-            return add1 => val1*diagonal_element(o.col2), state
+            state = ProductIterState{S1,S2,OD1,T}(state1, nothing, nothing, o.diag2)
+            return add1 => val1*o.diag2, state
         end
-    elseif length(state) == 3# just did diagonal element of op1, we have the column
-        state2, col1, val2 = state
-        ods1 = offdiagonals(col1)
+    elseif isnothing(state1)# just did diagonal element of op1
         first1 = iterate(ods1)
         if isnothing(first1)# no offdiagonals for op1, go back to op2
             next2 = iterate(o.ods2, state2)
@@ -147,16 +173,14 @@ function Base.iterate(o::ProductOffdiagonals, state)
             end
             (add2, val2), state2 = next2
             col1 = operator_column(o.operator.op1, add2)
-            val1 = diagonal_element(col1)
-            state = (state2, col1, val2)
-            return add2 => val1*val2, state
+            state = ProductIterState{S1,S2,OD1,T}(nothing, state2, offdiagonals(col1), val2)
+            return add2 => diagonal_element(col1)*val2, state
         else
             (add1, val1), state1 = first1
-            state = (state1, state2, ods1, val2)
+            state = ProductIterState{typeof(state1),S2,OD1,T}(state1, state2, ods1, val2)
             return add1 => val1*val2, state
         end
     else# we have op1 offdiagonals and its state
-        state1, state2, ods1, val2 = state
         next1 = iterate(ods1, state1)
         if isnothing(next1)# reached the end of op1 column, go back to op2
             next2 = iterate(o.ods2, state2)
@@ -165,13 +189,73 @@ function Base.iterate(o::ProductOffdiagonals, state)
             end
             (add2, val2), state2 = next2
             col1 = operator_column(o.operator.op1, add2)
-            val1 = diagonal_element(col1)
-            state = (state2, col1, val2)
-            return add2 => val1*val2, state
+            state = ProductIterState{S1,S2,OD1,T}(nothing, state2, offdiagonals(col1), val2)
+            return add2 => diagonal_element(col1)*val2, state
         else
             (add1, val1), state1 = next1
-            state = (state1, state2, ods1, val2)
+            state = ProductIterState{S1,S2,OD1,T}(state1, state2, ods1, val2)
             return add1 => val1*val2, state
         end
     end
 end
+
+"""
+    ScaledHamiltonian(H::AbstractHamiltonian, α) <: AbstractHamiltonian
+    scale(H, α)
+    α * H
+
+The product of the Hamiltonian `H` with the scalar `α`.
+
+See also [`HamiltonianSum`](@ref), [`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref).
+"""
+struct ScaledHamiltonian{T,H} <: ModifiedHamiltonian{T}
+    hamiltonian::H
+    α::T
+end
+
+function ScaledHamiltonian(h::AbstractHamiltonian{T1}, α::T2) where {T1,T2}
+    T = promote_type(T1,T2)
+    ScaledHamiltonian{T, typeof(h)}(h, T(α))
+end
+
+function ScaledHamiltonian(h::ScaledHamiltonian, β::Number)
+    return ScaledHamiltonian(h.hamiltonian, h.α*β)
+end
+
+function Base.show(io::IO, h::ScaledHamiltonian{T}) where {T}
+    if T <: Real
+        print(io, h.α, " * ", h.hamiltonian)
+    else
+        print(io, "(", h.α, ") * ", h.hamiltonian)
+    end
+end
+
+function LOStructure(::Type{<:ScaledHamiltonian{T,H}}) where {T,H}
+    if LOStructure(H) == IsHermitian()
+        if T <: Real
+            return IsHermitian()
+        else
+            return AdjointKnown()
+        end
+    else
+        return LOStructure(H)
+    end
+end
+
+function LinearAlgebra.adjoint(h::ScaledHamiltonian)
+    return ScaledHamiltonian(h.hamiltonian', conj(h.α))
+end
+
+parent_operator(h::ScaledHamiltonian) = h.hamiltonian
+modify_diagonal(h::ScaledHamiltonian, _, value) = value*h.α
+modify_offdiagonal(h::ScaledHamiltonian, _, addr, value) = addr => value*h.α
+
+@doc (@doc ScaledHamiltonian)
+function VectorInterface.scale(h::AbstractHamiltonian, α::T) where {T<:Number}
+    if α == 1
+        return h
+    end
+    return ScaledHamiltonian(h, α)
+end
+
+Base.:*(α::Number, h::AbstractHamiltonian) = scale(h, α)

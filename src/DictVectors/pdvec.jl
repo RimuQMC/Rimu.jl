@@ -401,16 +401,29 @@ function Base.copyto!(dst::PDVec, src::PDVec)
     return dst
 end
 function Base.copyto!(dst::PDVec, keys, vals)
+    # Arrow/Sentinel-backed columns may lazily mutate internal state during
+    # iteration (e.g. cleanup!), which is unsafe when iterated concurrently.
+    # Materialize only for those container families.
+    keys_iter = _needs_threadsafe_materialization(keys) ? collect(keys) : keys
+    vals_iter = _needs_threadsafe_materialization(vals) ? collect(vals) : vals
+    length(keys_iter) == length(vals_iter) || throw(ArgumentError("keys and vals must have same length"))
+
     Folds.foreach(eachindex(dst.segments)) do seg_id
         seg = dst.segments[seg_id]
-        sizehint!(seg, length(keys) ÷ length(dst.segments))
-        for (k, v) in zip(keys, vals)
+        sizehint!(seg, length(keys_iter) ÷ length(dst.segments))
+        for (k, v) in zip(keys_iter, vals_iter)
             if target_segment(dst, k) == (seg_id, true)
                 seg[k] = v
             end
         end
     end
     return dst
+end
+
+@inline function _needs_threadsafe_materialization(x)
+    mod = Base.typename(typeof(x)).module
+    modname = nameof(mod)
+    return modname === :Arrow || modname === :SentinelArrays
 end
 function Base.copy!(dst::PDVec, src::PDVec)
     return copyto!(dst, src)

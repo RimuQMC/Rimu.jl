@@ -128,16 +128,16 @@ function AllOverlaps(
     mixed_spectral_overlaps=false
 )
     if transform ≠ nothing
-        Base.depwarn("Passing `transform` to `AllOverlaps` is deprected. Transformation undoing is handled automatically.", :AllOverlaps)
+        Base.depwarn("Passing `transform` to `AllOverlaps` is deprecated. Transformation undoing is handled automatically.", :AllOverlaps)
     end
 
     n_replicas isa Integer || throw(ArgumentError("n_replicas must be an integer"))
     if isnothing(operator)
         operators = ()
     elseif operator isa TupleOrVector
-        if !(eltype(operator) <: AbstractOperator)
-            throw(ArgumentError("operator must be an AbstractOperator or a Tuple or "*
-                "Vector of AbstractHamiltonians"))
+        if !(eltype(operator) <: AbstractObservable)
+            throw(ArgumentError("operator must be an AbstractObservable or a Tuple or "*
+                "Vector of AbstractObservables"))
         end
         operators = operator
     else
@@ -153,7 +153,7 @@ function AllOverlaps(
 end
 
 function replica_stats(
-    rs::AllOverlaps{N,<:Any,<:Any,B,S}, spectral_states::NTuple{N}
+    rs::AllOverlaps{N,<:Any,<:Any,B,S}, spectral_states::Tuple{Vararg{Any,N}}
 ) where {N,B,S}
     n_spectral = num_spectral_states(spectral_states[1])
     vecs = SMatrix{N,n_spectral}(

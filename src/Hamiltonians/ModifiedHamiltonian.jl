@@ -11,7 +11,7 @@ The `ModifiedHamiltonian` can only be used to implement wrappers that modify the
 elements to the Hamiltonian.
 
 The following need to be implemented
-* [`parent_operator`](@ref Main.Hamiltonians.parent_operator(::Main.Hamiltonians.ModifiedHamiltonian)
+* [`parent_operator`](@ref Main.Hamiltonians.parent_operator(::Main.Hamiltonians.ModifiedHamiltonian))
 * [`modify_diagonal`](@ref Main.Hamiltonians.modify_diagonal)
 * [`modify_offdiagonal`](@ref Main.Hamiltonians.modify_offdiagonal)
 * [`LOStructure(p)`](@ref) and `Base.adjoint` if known, defaults to `AdjointUnknown`.
@@ -131,7 +131,18 @@ function Base.show(io::IO, ods::ModifiedHamiltonianOffdiagonals)
     print(IOContext(io, :compact=>true), ods.address, "))")
 end
 
-function Base.iterate(ods::ModifiedHamiltonianOffdiagonals, args...)
+function Base.IteratorSize(ods::ModifiedHamiltonianOffdiagonals)
+    return Base.IteratorSize(ods.offdiagonals)
+end
+function Base.length(ods::ModifiedHamiltonianOffdiagonals)
+    return length(ods.offdiagonals)
+end
+Base.eltype(::ModifiedHamiltonianOffdiagonals{A,T}) where {A,T} = Pair{A,T}
+
+function Base.iterate(
+    ods::Union{ModifiedHamiltonianOffdiagonals,ModifiedHamiltonianVectorOffdiagonals},
+    args...
+)
     it = iterate(ods.offdiagonals, args...)
     if isnothing(it)
         return nothing
@@ -140,10 +151,3 @@ function Base.iterate(ods::ModifiedHamiltonianOffdiagonals, args...)
         return modify_offdiagonal(ods.hamiltonian, ods.address, result...), state
     end
 end
-function Base.IteratorSize(ods::ModifiedHamiltonianOffdiagonals)
-    return Base.IteratorSize(ods.offdiagonals)
-end
-function Base.length(ods::ModifiedHamiltonianOffdiagonals)
-    return length(ods.offdiagonals)
-end
-Base.eltype(::ModifiedHamiltonianOffdiagonals{A,T}) where {A,T} = Pair{A,T}
