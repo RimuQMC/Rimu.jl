@@ -252,12 +252,13 @@ end
 """
     mom_transfer_diagonal(components, g)
 This function does the excitation operation on the given addresses in the `components`, which 
-represents a multi-component Fock state address, respectively. This returns a diagonal element
-of the Hamiltonian. The excitation is carried out to get the reponse similar to the 
-nearest neighbour interaction and on-site interaction operation in real space.
+represents a multi-component Fock state address, respectively. This dreturns a diagonal element
+of the Hamiltonian coresponding to the given address stored in `components`. Here, `components` 
+is a tuple of [`HubbardMomSpaceComponentData`](@ref) for each pair combination of component of the
+multi-component Fock state address.
 
 '''math
-    Ĥ_\\text{int} = ½\\sum_{p,q,σ,σ'} V_{σσ'} b̂^†_{pσ} b̂^†_{qσ'} b̂_{qσ'} b̂_{pσ}
+    Ĥ_\\text{int} = ½\\sum_{p,q,σ,σ'} V_{σσ'} b̂^†_{pσ} b̂^†_{qσ'} b̂_{qσ'} b̂_{pσ}
 '''
 
 where `V_{σσ}' is the interaction coefficient that depends on  `u_{σσ'}' and 
