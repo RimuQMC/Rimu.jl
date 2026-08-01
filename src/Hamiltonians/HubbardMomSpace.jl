@@ -31,9 +31,9 @@ end
 
     Calculate the hopping term for a single-component or multi-component Fock state address in momentum space.
 """
-@inline function _mom_hopping(kes::SMatrix{C, <:Any, T}, comps::Tuple) where {C, T}
+@inline function _mom_hopping(kes::SMatrix{C, <:Any, T}, address::CompositeFS) where {C, T}
     # Direct the calculation to a type-stable unrolled accumulator
-    return _mom_hopping_unrolled(kes, comps, Val(C))
+    return _mom_hopping_unrolled(kes, address.components, Val(C))
 end
 
 # Base case: When the static counter reaches 0, stop and return the accumulated product
@@ -41,11 +41,11 @@ end
 
 # Recursive case: Processes component 'I' at compile time, then moves to 'I-1'
 @inline function _mom_hopping_unrolled(
-    kes::SMatrix{C, <:Any, T}, comps::Tuple, ::Val{I}
-) where {C, T, I}
+    kes::SMatrix{<:Any, <:Any, T}, comps::Tuple, ::Val{I}
+) where {T, I}
     # 1. Zero Allocations: comps[I] uses a compile-time constant literal index
-    occ = comps[I].occmap2 # This is a ModeMap for the I-th component
-    onproduct = zero(eltype(kes))
+    occ = occupied_mode_map(comps[I]) # This is a ModeMap for the I-th component
+    onproduct = zero(T)
     # 2. This inner loop compiles perfectly to flat machine instructions
     for x in occ
         onproduct += kes[I, x.mode] * x.occnum
@@ -54,8 +54,8 @@ end
     # 3. Recurse down to the next component index
     return onproduct + _mom_hopping_unrolled(kes, comps, Val(I - 1))
 end
-@inline function _mom_hopping(kes::SMatrix{1}, comps::Tuple) 
-    occ = comps[1].occmap2
+@inline function _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress) 
+    occ = occupied_mode_map(address)
     onproduct = zero(eltype(kes))
     # 2. This inner loop compiles perfectly to flat machine instructions
     @inbounds for x in occ
@@ -320,8 +320,8 @@ in `D` dimensions and with a total of `M` momentum modes.
   \\hat{H} = -\\sum_{k,σ} ϵ_{kσ} n_{kσ} +
   \\sum_{p,q,k,σ,σ'} V_{σσ'} a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}
 ```
-where ``ϵ_{kσ} = Σ_{d=1}^{D} ε(k_d)`` and ``ε(k)`` is a one-dimensional single particle `dispersion` 
-(with default [`hubbard_dispersion`](@ref))  and
+where ``ϵ_{kσ} = -2 (\\sum_{d=1}^{D} \\Re(t_{σ,d}) \\cos(k_d) + \\Im(t_{σ,d}) \\sin(k_d))`` is 
+the single-particle `dispersion` and
 ``V_{σσ'} = (u_{σσ'}(1- \\frac{δ_{σσ'}}{2}) + w_{σσ'} \\sum_{d=1}^{D} \\cos(q_d))/M``
 the coefficients of a two-body interaction with onsite (``u_{σσ'}``) and nearest-neighbour 
 (``w_{σσ'}``) interaction terms.
@@ -346,15 +346,15 @@ number of sites `M` inferred from the number of modes in `address`.
 
 ## Other parameters
 
-* `t`: the hopping strengths. Must be a matrix of size `C × D`. The `i`-th and `j`-th element of the
+* `t`: the hopping strengths. Must be a matrix of length `C × D `. The `i`-th and `j`-th element of the
   matrix corresponds to the hopping strength of the `i`-th component and `j`-th direction.
-* `u`: the on-site interaction parameters. Must be a symmetric matrix of size `C × C`. `u[i, j]`
+* `u`: the on-site interaction parameters. Must be a symmetric matrix. `u[i, j].`
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
   corresponds to the interaction of a component with itself.
-* `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix of size `C × C`.
+* `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
   `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
 * `dispersion`: the function used to calculate the dispersion relation. Default is 
-    [`hubbard_dispersion`](@ref) which corresponds to the standard tight binding model. 
+    `hubbard_dispersion` which corresponds to the standard Hubbard model. 
   
   See also [`HubbardRealSpace`](@ref), [`HubbardMom1D`](@ref), [`ExtendedHubbardReal1D`](@ref).
 """
@@ -573,7 +573,7 @@ parent_operator(column::HubbardMomSpaceColumn) = column.hamiltonian
 starting_address(column::HubbardMomSpaceColumn) = column.address
 
 function diagonal_element(col::HubbardMomSpaceColumn{TT}) where {TT}
-    ke = _mom_hopping(col.hamiltonian.kes_mat, col.components)
+    ke = _mom_hopping(col.hamiltonian.kes_mat, col.address)
     diag = _mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address)
     return convert(TT, ke + diag)
     # return convert(TT, _mom_hopping(col.hamiltonian.kes_mat, col.address) + 
