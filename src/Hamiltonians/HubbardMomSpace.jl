@@ -576,8 +576,6 @@ function diagonal_element(col::HubbardMomSpaceColumn{TT}) where {TT}
     ke = _mom_hopping(col.hamiltonian.kes_mat, col.address)
     diag = _mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address)
     return convert(TT, ke + diag)
-    # return convert(TT, _mom_hopping(col.hamiltonian.kes_mat, col.address) + 
-    #     _mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address))
 end
 
 function operator_column(h::HubbardMomSpace{TT,<:Any,<:Any,A,G}, address) where {TT,A,G}
@@ -743,15 +741,16 @@ end
 struct MomentumMomSpace{T,C,D,H<:AbstractHamiltonian{T}} <: AbstractHamiltonian{SVector{D,T}}
     ham::H
 end
-LOStructure(::Type{<:MomentumMomSpace}) = IsDiagonal()
-num_offdiagonals(ham::MomentumMomSpace, _) = 0
-function diagonal_element(mom::MomentumMomSpace{<:Any,1,D}, address::SingleComponentFockAddress) where D
-    return SVector{D}(dot(mom.ham.ks_mat[i, :], occupied_mode_map(address)) for i in 1:D)
+LOStructure(::Type{MomentumMomSpace}) = IsDiagonal()
+num_offdiagonals(::MomentumMomSpace, _) = 0
+function diagonal_element(mom::MomentumMomSpace{T,1,D}, address::SingleComponentFockAddress) where {T,D}
+    return SVector{D,T}(dot(mom.ham.ks_mat[i, :], occupied_mode_map(address)) for i in 1:D)
 end
-function diagonal_element(mom::MomentumMomSpace{<:Any,C,D}, address::CompositeFS) where {C,D}
-    return SVector{D}(sum(dot(mom.ham.ks_mat[i, :], occupied_mode_map(c)) for c in address.components) for i in 1:D)
+function diagonal_element(mom::MomentumMomSpace{T,C,D}, address::CompositeFS) where {T,C,D}
+    return SVector{D,T}(sum(dot(mom.ham.ks_mat[i, :], occupied_mode_map(c)) for c in address.components) for i in 1:D)
 end
 # fold into (-π, π]
 starting_address(mom::MomentumMomSpace) = starting_address(mom.ham)
+dimension(mom::MomentumMomSpace, _) = 1
 
-momentum(ham::HubbardMomSpace{C,D}) where {C,D} = MomentumMomSpace{Float64,C,D,typeof(ham)}(ham)
+momentum(ham::HubbardMomSpace{T,C,D}) where {T,C,D} = MomentumMomSpace{T,C,D,typeof(ham)}(ham)

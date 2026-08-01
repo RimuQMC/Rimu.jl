@@ -782,6 +782,41 @@ end
         eig2 = eigsolve(BasisSetRepresentation(H2; sizelim=1e12).sparse_matrix, 1, :SR)[1][1]
         @test round(real(eig1); digits=10) == round(eig2; digits=10)
     end
+    @testset "momentum" begin
+        #One-dimensional system
+        addr = FermiFS(0,1,1,1,0,0)
+        H = HubbardMomSpace(addr)
+        m = momentum(H)
+        @test Matrix(m)[1] isa SVector
+        @test Matrix(m)[1][1] ≈ 0.0
+        c_addr = CompositeFS(addr, BoseFS(0,0,2,0,0,0))
+        Hc = HubbardMomSpace(c_addr)
+        mc = momentum(Hc)
+        @test Matrix(mc)[1] isa SVector
+        @test Matrix(mc)[1][1] ≈ 0.0
+        c_addr = CompositeFS(addr, BoseFS(0,0,1,1,0,0))
+        Hc = HubbardMomSpace(c_addr)
+        mc = momentum(Hc)
+        @test Matrix(mc)[1] isa SVector
+        @test Matrix(mc)[1][1] ≈ 2π/num_modes(c_addr)[2]
+
+        #Two-dimensional system
+        addr = FermiFS(0,1,0,1,1,1,0,1,0)
+        H = HubbardMomSpace(addr; geometry=PeriodicBoundaries(3,3))
+        m = momentum(H)
+        @test Matrix(m)[1] isa SVector
+        @test Matrix(m)[1] ≈ SVector(0.0, 0.0)
+        c_addr = CompositeFS(addr, BoseFS(0,0,0,0,5,0,0,0,0))
+        Hc = HubbardMomSpace(c_addr; geometry=PeriodicBoundaries(3,3))
+        mc = momentum(Hc)
+        @test Matrix(mc)[1] isa SVector
+        @test Matrix(mc)[1] ≈ SVector(0.0, 0.0)
+        c_addr = CompositeFS(addr, BoseFS(0,0,0,0,1,1,0,0,0))
+        Hc = HubbardMomSpace(c_addr; geometry=PeriodicBoundaries(3,3))
+        mc = momentum(Hc)
+        @test Matrix(mc)[1] isa SVector
+        @test Matrix(mc)[1] ≈ SVector(-2π/size(Hc.geometry)[2], 0.0)
+    end
 end
 
 @testset "Importance sampling" begin
