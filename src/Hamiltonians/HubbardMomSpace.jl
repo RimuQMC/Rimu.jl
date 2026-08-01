@@ -251,18 +251,16 @@ end
 
 """
     mom_transfer_diagonal(components, g)
-This function does the excitation operation on the given addresses in the `components`, which 
-represents a multi-component Fock state address, respectively. This dreturns a diagonal element
-of the Hamiltonian coresponding to the given address stored in `components`. Here, `components` 
-is a tuple of [`HubbardMomSpaceComponentData`](@ref) for each pair combination of component of the
-multi-component Fock state address.
+This function returns a diagonal element of the Hamiltonian coresponding to the given address 
+stored in `components`. Here, `components` is a tuple of [`HubbardMomSpaceComponentData`](@ref) 
+for each pair combination of component of the multi-component Fock state address.
 
 '''math
     Ĥ_\\text{int} = ½\\sum_{p,q,σ,σ'} V_{σσ'} b̂^†_{pσ} b̂^†_{qσ'} b̂_{qσ'} b̂_{pσ}
 '''
 
-where `V_{σσ}' is the interaction coefficient that depends on  `u_{σσ'}' and 
-`w_{σσ'}'. `g` is the geometry of the lattice.
+where `V_{σσ}' is the interaction coefficient that depends on interaction parameters that are 
+stored in `components` and `g` is the geometry of the lattice.
 
 """
 @inline _mom_transfer_diagonal(components::Tuple{}, g::CubicGrid) = 0.0
