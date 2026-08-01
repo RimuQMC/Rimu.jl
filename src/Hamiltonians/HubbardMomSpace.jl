@@ -31,18 +31,37 @@ end
 
     Calculate the hopping term for a single-component or multi-component Fock state address in momentum space.
 """
-@inline function _mom_hopping(kes::SMatrix{C}, address::CompositeFS{C}) where {C}
-    # Calculate the hopping term for a single component.
-    comp = address.components
-    onproduct = 0.0
-    @inbounds for i in 1:C
-        onproduct += dot(kes[i,:], occupied_mode_map(comp[i]))
-    end
-    return onproduct
+@inline function _mom_hopping(kes::SMatrix{C, <:Any, T}, comps::Tuple) where {C, T}
+    # Direct the calculation to a type-stable unrolled accumulator
+    return _mom_hopping_unrolled(kes, comps, Val(C))
 end
 
-@inline function _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress) 
-    return dot(kes[1,:], occupied_mode_map(address))
+# Base case: When the static counter reaches 0, stop and return the accumulated product
+@inline _mom_hopping_unrolled(::SMatrix, ::Tuple, ::Val{0}) = 0.0
+
+# Recursive case: Processes component 'I' at compile time, then moves to 'I-1'
+@inline function _mom_hopping_unrolled(
+    kes::SMatrix{C, <:Any, T}, comps::Tuple, ::Val{I}
+) where {C, T, I}
+    # 1. Zero Allocations: comps[I] uses a compile-time constant literal index
+    occ = comps[I].occmap2 # This is a ModeMap for the I-th component
+    onproduct = zero(eltype(kes))
+    # 2. This inner loop compiles perfectly to flat machine instructions
+    for x in occ
+        onproduct += kes[I, x.mode] * x.occnum
+    end
+    
+    # 3. Recurse down to the next component index
+    return onproduct + _mom_hopping_unrolled(kes, comps, Val(I - 1))
+end
+@inline function _mom_hopping(kes::SMatrix{1}, comps::Tuple) 
+    occ = comps[1].occmap2
+    onproduct = zero(eltype(kes))
+    # 2. This inner loop compiles perfectly to flat machine instructions
+    @inbounds for x in occ
+        onproduct += kes[1, x.mode] * x.occnum
+    end
+    return onproduct
 end
 
 """
@@ -146,28 +165,33 @@ either `u` or `w` is `nothing`, the corresponding interaction term is ignored.
 @inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D, S}
 
     onproduct = 0.0
+    u_scaled = u / 2.0 + w * D
+    
     for i in 1:length(map)
-        occ_i = map[i].occnum
-        onproduct += occ_i * (occ_i - 1) * (u/2 + w*D)
+        occ_i = Float64(map[i].occnum)
+        onproduct += occ_i * (occ_i - 1.0) * u_scaled
+        g_i = g[map[i].mode] # Hoisted from inner loop
+        
         for j in 1:i-1
-            occ_j = map[j].occnum
-            q = g[map[i].mode] - g[map[j].mode]
-            onproduct += 2 * occ_i * occ_j * (u + w * (D + _cosin_sum(q, S)))
+            occ_j = Float64(map[j].occnum)
+            q = g_i - g[map[j].mode]
+            onproduct += 2.0 * occ_i * occ_j * (u + w * (D + _cosin_sum(q, S)))
         end
     end
     return onproduct
 end
 
 @inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, ::Nothing, w) where {D, S}
-    
-    onproduct = 0
+    onproduct = 0.0
     for i in 1:length(map)
-        occ_i = map[i].occnum
-        onproduct += occ_i * (occ_i - 1) * D
+        occ_i = Float64(map[i].occnum)
+        onproduct += occ_i * (occ_i - 1.0) * D
+        g_i = g[map[i].mode] # Hoisted from inner loop
+        
         for j in 1:i-1
-            occ_j = map[j].occnum
-            q = g[map[i].mode] - g[map[j].mode]
-            onproduct += 2 * occ_i * occ_j * (D + _cosin_sum(q, S))
+            occ_j = Float64(map[j].occnum)
+            q = g_i - g[map[j].mode]
+            onproduct += 2.0 * occ_i * occ_j * (D + _cosin_sum(q, S))
         end
     end
     return onproduct * w
@@ -175,13 +199,13 @@ end
 
 @inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, ::CubicGrid, u, ::Nothing)
 
-    onproduct = 0
+    onproduct = 0.0
     for i in 1:length(map)
-        occ_i = map[i].occnum
-        onproduct += occ_i * (occ_i - 1) / 2
+        occ_i = Float64(map[i].occnum)
+        onproduct += occ_i * (occ_i - 1.0) / 2.0
         for j in 1:i-1
-            occ_j = map[j].occnum
-            onproduct += 2 * occ_i * occ_j
+            occ_j = Float64(map[j].occnum)
+            onproduct += 2.0 * occ_i * occ_j
         end
     end
     return onproduct * u
@@ -189,27 +213,36 @@ end
 
 @inline function _mom_transfer_diagonal(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D, S}
 
-    onproduct = 0
+    onproduct = 0.0
     for i in 1:length(map)
-        occ_i = map[i].occnum
-        onproduct += occ_i * (occ_i - 1)
+        # 2. Add type assertions or unpack concrete objects if `map` holds abstract types
+        mode_i = map[i].mode
+        occ_i  = Float64(map[i].occnum)
+        
+        onproduct += occ_i * (occ_i - 1.0)
+        
+        # Pull the grid lookup outside the inner loop to save i-index computations
+        g_i = g[mode_i] 
+        
         for j in 1:i-1
-            occ_j = map[j].occnum
-            q = g[map[i].mode] - g[map[j].mode]
-            onproduct += 2 * occ_i * occ_j * (D - _cosin_sum(q, S))
+            occ_j = Float64(map[j].occnum)
+            
+            q = g_i - g[map[j].mode] 
+            
+            onproduct += 2.0 * occ_i * occ_j * (D - _cosin_sum(q, S))
         end
     end
-    return onproduct*w
+    return onproduct * w
 end
 
 @inline _mom_transfer_diagonal(::FermiOccupiedModeMap, ::CubicGrid, _, ::Nothing) = 0
 
 @inline function _mom_transfer_diagonal(map1::ModeMap, map2::ModeMap, ::CubicGrid{D}, u, w) where D
-    onproduct = 0
+    onproduct = 0.0
     for i in map1
-        occ_i = i.occnum
+        occ_i = Float64(i.occnum)
         for j in map2
-            occ_j = j.occnum
+            occ_j = Float64(j.occnum)
             onproduct += occ_i * occ_j
         end
     end
@@ -221,10 +254,10 @@ end
     return length(map1) * length(map2) * _interaction_parameter_diag(u, w, D)
 end
 
-function _cosin_sum(q::SVector{D}, S::NTuple{D}) where {D}
+@inline function _cosin_sum(q::SVector{D}, S::NTuple{D}) where {D}
     onproduct = 0.0
     for i in 1:D
-        onproduct += cos(q[i] * 2π / S[i])
+        onproduct += cospi(q[i] * 2 / S[i])
     end
     return onproduct
 end
@@ -245,20 +278,30 @@ where `V_{σσ}' is the interaction coefficient that depends on  `u_{σσ'}' and
 `w_{σσ'}'. `g` is the geometry of the lattice.
 
 """
-function mom_transfer_diagonal(component::Tuple, g::CubicGrid)
-    onproduct = 0
-    for data in component
-        if !(isnothing(data.u) && isnothing(data.w)) 
-            if component_index(data)[3]
-                # If the occupied modes are the same, we can use the extended mom transfer.
-                onproduct += _mom_transfer_diagonal(data.occmap1, g, data.u, data.w)
-            else
-                # Otherwise, we need to calculate the interaction between two different occupied modes.
-                onproduct += _mom_transfer_diagonal(data.occmap1, data.occmap2, g, data.u, data.w)
-            end
+@inline _mom_transfer_diagonal(component::Tuple{}, g::CubicGrid) = 0.0
+
+@inline function _mom_transfer_diagonal(component::Tuple, g::CubicGrid)
+    # Extract the first item, and keep the remaining items as a smaller tuple
+    data = first(component)
+    tail_components = Base.tail(component)
+
+    # Compile-time evaluation path for nothing checks
+    if isnothing(data.u) && isnothing(data.w)
+        # Skip processing this element and pass directly to the rest of the tuple
+        current_product = 0.0
+    else
+        # Determine type path statically
+        idx1, idx2 = component_index(data)
+        
+        current_product = if idx1 == idx2
+            _mom_transfer_diagonal(data.occmap1, g, data.u, data.w)
+        else
+            _mom_transfer_diagonal(data.occmap1, data.occmap2, g, data.u, data.w)
         end
     end
-    return onproduct
+
+    # Sum up the current step with the rest of the unrolled tuple
+    return current_product + _mom_transfer_diagonal(tail_components, g)
 end
 
 @inline _interaction_parameter_diag(u::Float64, w::Float64, D::Int) = u + 2 * w * D
@@ -316,6 +359,7 @@ number of sites `M` inferred from the number of modes in `address`.
   See also [`HubbardRealSpace`](@ref), [`HubbardMom1D`](@ref), [`ExtendedHubbardReal1D`](@ref).
 """
 struct HubbardMomSpace{
+    TT,
     C, # components    
     D, # dimension
     A<:AbstractFockAddress,
@@ -326,7 +370,7 @@ struct HubbardMomSpace{
     T<:SMatrix{C,D,<:Any}, # hopping strengths
     U<:Union{SMatrix{C,C,Float64},Nothing},
     W<:Union{SMatrix{C,C,Float64},Nothing},
-} <: AbstractHamiltonian{Float64}
+} <: AbstractHamiltonian{TT}
     address::A
     ks_mat::KS # k values
     kes_mat::KES # kinetic energy values
@@ -379,7 +423,7 @@ function HubbardMomSpace(
     end
     kes_mat, ks_mat = _mom_space_energies_and_ks(ks_vec_of_vecs, geometry, t_mat, dispersion)
 
-    return HubbardMomSpace{C,D,typeof(address),typeof(geometry),typeof(ks_mat),typeof(kes_mat),
+    return HubbardMomSpace{eltype(t_mat),C,D,typeof(address),typeof(geometry),typeof(ks_mat),typeof(kes_mat),
     typeof(t_mat),typeof(u_mat),typeof(w_mat)}(
         address, ks_mat, kes_mat, t_mat, u_mat, w_mat, geometry,
     )
@@ -418,21 +462,21 @@ dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
 """
     HubbardMomSpaceComponentData(
         geometry, parent::A, address1, address2, u, w
-    ) <: AbstractMatrix{Pair{A,Float64}}
+    ) <: AbstractVector{Pair{A,TT}}
 
 This holds the off-diagonals for a single- and multi-component two-body on-site and 
-nearest-neighbour interaction terms. It is structured where the index `chosen` 
-determines the sources and destinations momentum modes of a two-body excitation 
+nearest-neighbour interaction terms. It is structured where the index of this vector
+`chosen` determines the sources and destinations momentum modes of a two-body excitation 
 operation between particles of single-component Fock addresses `address1` and 
-`address2` of the multi-component Fock address `parent`. It also determines 
-the momentum transfer `k` involved in the excitation. At last, `k` is used with the 
-interaction strengths `u` and `w` to calculate the coefficient of the respective 
-new address after the excitation and returns it as a pair of the new address and 
-the coefficient.
+`address2` of the multi-component Fock address `parent`. `u` and `w` represents the 
+interaction coefficient coresponding to on-site and nearest-neighbour interactions, 
+respectively, and are used to calculate the coefficient of the respective new address 
+after the excitation and returns it as an element of this vector as a pair of the new 
+address and the coefficient.
 """
 struct HubbardMomSpaceComponentData{
-    C,I1,I2,D,G,A,A1,A2,U<:Union{Float64,Nothing},W<:Union{Float64,Nothing},O1,O2
-} <: AbstractMatrix{Pair{A,Float64}}
+    TT,C,I1,I2,D,G,A,A1,A2,U<:Union{Float64,Nothing},W<:Union{Float64,Nothing},O1,O2
+} <: AbstractVector{Pair{A,TT}}
     geometry::G
     parent_address::A
     address1::A1
@@ -441,7 +485,7 @@ struct HubbardMomSpaceComponentData{
     w::W # nearest neighbour interaction strength
     occmap1::O1
     occmap2::O2
-    function HubbardMomSpaceComponentData{C,I1,I2,D}(
+    function HubbardMomSpaceComponentData{TT,C,I1,I2,D}(
         geometry::G,
         parent::A,
         address1::A1,
@@ -450,15 +494,15 @@ struct HubbardMomSpaceComponentData{
         w::W,
         occmap1::O1=occupied_mode_map(address1),
         occmap2::O2=occupied_mode_map(address2),
-    ) where {C,I1,I2,D,G,A,A1,A2,U,W,O1,O2}
-        return new{C,I1,I2,D,G,A,A1,A2,U,W,O1,O2}(
+    ) where {TT,C,I1,I2,D,G,A,A1,A2,U,W,O1,O2}
+        return new{TT,C,I1,I2,D,G,A,A1,A2,U,W,O1,O2}(
             geometry, parent, address1, address2, u, w, occmap1, occmap2
         )
     end
 end
 
 
-function Base.size(data::HubbardMomSpaceComponentData{<:Any,I,I}) where {I}
+function Base.size(data::HubbardMomSpaceComponentData{<:Any,<:Any,I,I}) where {I}
     if isnothing(data.u) && isnothing(data.w)
         return (0,)
     else
@@ -479,9 +523,9 @@ function Base.size(data::HubbardMomSpaceComponentData)
     end
 end
 
-component_index(::HubbardMomSpaceComponentData{<:Any,I1,I2}) where {I1,I2} = (I1, I2, I1 == I2)
+component_index(::HubbardMomSpaceComponentData{<:Any,<:Any,I1,I2}) where {I1,I2} = (I1, I2)
 
-function Base.getindex(data::HubbardMomSpaceComponentData{C,I,I,D}, chosen::Int) where {C,I,D}
+function Base.getindex(data::HubbardMomSpaceComponentData{TT,C,I,I,D}, chosen::Int) where {TT,C,I,D}
     geometry = data.geometry
     S = size(geometry)
     M = prod(S)
@@ -494,10 +538,10 @@ function Base.getindex(data::HubbardMomSpaceComponentData{C,I,I,D}, chosen::Int)
     else
         new_parent = new_add
     end
-    return new_parent => _interaction_parameter(data.u, data.w, q, S) * onproduct / M
+    return new_parent => convert(TT, _interaction_parameter(data.u, data.w, q, S) * onproduct / M)
 end
 
-function Base.getindex(data::HubbardMomSpaceComponentData{C,I1,I2,D}, chosen::Int) where {C,I1,I2,D}
+function Base.getindex(data::HubbardMomSpaceComponentData{TT,C,I1,I2,D}, chosen::Int) where {TT,C,I1,I2,D}
     geometry = data.geometry
     S = size(geometry)
     M = prod(S)
@@ -509,7 +553,7 @@ function Base.getindex(data::HubbardMomSpaceComponentData{C,I1,I2,D}, chosen::In
     new_parent = BitStringAddresses.update_component(
         new_parent, new_add2, Val(I2)
     )
-    return new_parent =>  2 * _interaction_parameter(data.u, data.w, q, S) * onproduct1 * onproduct2 / M
+    return new_parent => convert(TT, 2 * _interaction_parameter(data.u, data.w, q, S) * onproduct1 * onproduct2 / M)
 end
 
 @inline _interaction_parameter(u::Float64, w::Float64, q::SVector, S::NTuple) = u/2 + w * _cosin_sum(q, S)
@@ -517,7 +561,7 @@ end
 @inline _interaction_parameter(u::Float64, ::Nothing, ::SVector, ::NTuple) = u/2
 
 # column ================================================================================= #
-struct HubbardMomSpaceColumn{H,G,A,C<:Tuple} <: AbstractOperatorColumn{A,Float64,H}
+struct HubbardMomSpaceColumn{TT,H,G,A,C<:Tuple} <: AbstractOperatorColumn{A,TT,H}
     hamiltonian::H
     geometry::G
     address::A
@@ -528,58 +572,61 @@ end
 parent_operator(column::HubbardMomSpaceColumn) = column.hamiltonian
 starting_address(column::HubbardMomSpaceColumn) = column.address
 
-function diagonal_element(col::HubbardMomSpaceColumn)
-    return _mom_hopping(col.hamiltonian.kes_mat, col.address) + 
-        mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address)
+function diagonal_element(col::HubbardMomSpaceColumn{TT}) where {TT}
+    ke = _mom_hopping(col.hamiltonian.kes_mat, col.components)
+    diag = _mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address)
+    return convert(TT, ke + diag)
+    # return convert(TT, _mom_hopping(col.hamiltonian.kes_mat, col.address) + 
+    #     _mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address))
 end
 
-function operator_column(h::HubbardMomSpace{<:Any,<:Any,A,G}, address) where {A,G}
+function operator_column(h::HubbardMomSpace{TT,<:Any,<:Any,A,G}, address) where {TT,A,G}
     components = _column_components(h, address)
-    return HubbardMomSpaceColumn{typeof(h),G,A,typeof(components)}(
+    return HubbardMomSpaceColumn{TT,typeof(h),G,A,typeof(components)}(
         h, h.geometry, address, components, sum(length, components)
     )
 end
 
 # Collect HubbardMomSpaceComponentData for each component of the address.
-@inline function _column_components(h::HubbardMomSpace{1,D}, 
-        address::SingleComponentFockAddress) where {D}
+@inline function _column_components(h::HubbardMomSpace{TT,1,D}, 
+        address::SingleComponentFockAddress) where {TT,D}
     if isnothing(h.w) && isnothing(h.u)
-        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, 
+        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
             address, nothing, nothing),)
     elseif isnothing(h.w) && !isnothing(h.u)
-        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, 
+        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
             address, h.u[1], nothing),)
     elseif !isnothing(h.w) && isnothing(h.u)
-        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, 
+        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
             address, nothing, h.w[1]),)
     else
-        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, 
+        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
             address, h.u[1], h.w[1]),)
     end
 end
 
-@inline function _column_components(h::HubbardMomSpace{1,D}, address::FermiFS) where {D}
+@inline function _column_components(h::HubbardMomSpace{TT,1,D}, address::FermiFS) where {TT,D}
     if !isnothing(h.w)
-        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, 
+        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
             address, nothing, h.w[1,1]),)
     else
-        return (HubbardMomSpaceComponentData{1,1,1,D}(h.geometry, address, address, 
+        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
             address, nothing, nothing),)
     end
 end
 
-@inline function _column_components(h::HubbardMomSpace, address::CompositeFS)
+@inline function _column_components(h::HubbardMomSpace{TT,<:Any,D}, address::CompositeFS) where {TT,D}
     return _column_components(h, address, address.components, h.u, h.w, Val(1))
 end
 
-@inline function _column_components(::HubbardMomSpace, _, ::Tuple{}, ::Union{SMatrix{0,0},Nothing}, 
-    ::Union{SMatrix{0,0},Nothing}, ::Val)
+@inline function _column_components(::HubbardMomSpace{TT,<:Any,D}, _, ::Tuple{}, ::Union{SMatrix{0,0},Nothing}, 
+    ::Union{SMatrix{0,0},Nothing}, ::Val) where {TT,D}
     return ()
 end
 @inline function _column_components(
-    h::HubbardMomSpace{C,D}, address, (a, as...),
+    h::HubbardMomSpace{TT,C,D}, address, (a, as...),
     m::Union{SMatrix{N,N},Nothing}, σ::Union{SMatrix{N,N},Nothing},
-    ::Val{I1}) where {C,D,N,I1}
+    ::Val{I1}) where {TT,C,D,N,I1}
     # Split the matrix into the column we need now, and the rest.
     (u, u_column...) = isnothing(m) ? (nothing, nothing) : Tuple(m[:, 1])
     (w, w_column...) = isnothing(σ) ? (nothing, nothing) : Tuple(σ[:, 1])
@@ -587,44 +634,35 @@ end
     m_rest = isnothing(m) ? nothing : SMatrix{N-1,N-1}(view(m, 2:N, 2:N))
     σ_rest = isnothing(σ) ? nothing : SMatrix{N-1,N-1}(view(σ, 2:N, 2:N))
     
-    return (HubbardMomSpaceComponentData{C,I1,I1,D}(h.geometry, address, a, a, u, w), 
+    return (HubbardMomSpaceComponentData{TT,C,I1,I1,D}(h.geometry, address, a, a, u, w), 
         _mom_interactions_col(h,address,a,as,u_column,w_column,Val(I1),Val(I1+1))...,
         _column_components(h, address, as, m_rest, σ_rest, Val(I1+1) )...,)
 end
 
 @inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress,
     ::Tuple{}, ::Tuple{}, ::Tuple{}, ::Val, ::Val) = ()
-@inline function _mom_interactions_col(h::HubbardMomSpace{C,D}, address::AbstractFockAddress, 
+@inline function _mom_interactions_col(h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, 
     a::SingleComponentFockAddress, (b,as...)::NTuple{N}, (u, us...)::NTuple{N}, (w, ws...)::NTuple{N}, 
-    ::Val{I1}, ::Val{I2}) where {C,D,N,I1,I2}
-    return (HubbardMomSpaceComponentData{C,I1,I2,D}(h.geometry, address, a, b, u, w), 
+    ::Val{I1}, ::Val{I2}) where {TT,C,D,N,I1,I2}
+    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, u, w), 
             _mom_interactions_col(h, address, a, as, us, ws, Val(I1), Val(I2+1))...)
 end
 
 @inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, 
-    ::Tuple{}, ::Tuple{}, ::Tuple{Nothing}, ::Val, ::Val) = ()
-@inline function _mom_interactions_col(h::HubbardMomSpace{C,D}, address::AbstractFockAddress, 
-    a::SingleComponentFockAddress, (b,as...)::NTuple{N}, m::NTuple{N}, σ::Tuple{Nothing}, ::Val{I1}, 
-    ::Val{I2}) where {C,D,N,I1,I2}
-    return (HubbardMomSpaceComponentData{C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
-            _mom_interactions_col(h, address, a, as, m[2:N], σ, Val(I1), Val(I2+1))...)
-end
-
-@inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, 
     ::Tuple{},::Tuple{Nothing}, ::Tuple{}, ::Val, ::Val) = ()
-@inline function _mom_interactions_col(h::HubbardMomSpace{C,D}, address::AbstractFockAddress, 
+@inline function _mom_interactions_col(h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, 
     a::SingleComponentFockAddress, (b,as...)::NTuple{N}, m::Tuple{Nothing}, σ::NTuple{N}, ::Val{I1}, 
-    ::Val{I2}) where {C,D,N,I1,I2}
-    return (HubbardMomSpaceComponentData{C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
+    ::Val{I2}) where {TT,C,D,N,I1,I2}
+    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
             _mom_interactions_col(h, address, a, as, m, σ[2:N], Val(I1), Val(I2+1))...)
 end
 
 @inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, 
     ::Tuple{},::Tuple{Nothing}, ::Tuple{Nothing}, ::Val, ::Val) = ()
-@inline function _mom_interactions_col(h::HubbardMomSpace{C,D}, address::AbstractFockAddress, 
+@inline function _mom_interactions_col(h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, 
     a::SingleComponentFockAddress, (b,as...)::NTuple{N}, m::Tuple{Nothing}, σ::Tuple{Nothing}, ::Val{I1}, 
-    ::Val{I2}) where {C,D,N,I1,I2}
-    return (HubbardMomSpaceComponentData{C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
+    ::Val{I2}) where {TT,C,D,N,I1,I2}
+    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
             _mom_interactions_col(h, address, a, as, m, σ, Val(I1), Val(I2+1))...)
 end
 
@@ -640,15 +678,15 @@ function random_offdiagonal(column::HubbardMomSpaceColumn)
     return addr, 1/column.num_offdiagonals, val
 end
 
-struct HubbardMomSpaceColumnOffdiagonals{A,G,C<:Tuple} <: AbstractVector{Pair{A,Float64}}
+struct HubbardMomSpaceColumnOffdiagonals{TT,A,G,C<:Tuple} <: AbstractVector{Pair{A,TT}}
     address::A
     geometry::G
     components::C
     num_offdiagonals::Int
 end
 
-function offdiagonals(column::HubbardMomSpaceColumn{<:Any,G,A,C}) where {G,A,C}
-    return HubbardMomSpaceColumnOffdiagonals{A,G,C}(
+function offdiagonals(column::HubbardMomSpaceColumn{TT,<:Any,G,A,C}) where {TT,G,A,C}
+    return HubbardMomSpaceColumnOffdiagonals{TT,A,G,C}(
         column.address,
         column.hamiltonian.geometry,
         column.components,
@@ -682,7 +720,7 @@ end
 end
 
 Base.size(ods::HubbardMomSpaceColumnOffdiagonals) = (ods.num_offdiagonals,)
-Base.eltype(::HubbardMomSpaceColumnOffdiagonals{A}) where {A} = Pair{A,Float64}
+Base.eltype(::HubbardMomSpaceColumnOffdiagonals{TT,A}) where {TT,A} = Pair{A,TT}
 
 function Base.getindex(column::HubbardMomSpaceColumnOffdiagonals, index)
     component_index, inner_index = _split_component_from_index(column, index)
@@ -693,16 +731,16 @@ end
 # Momentum operator in momentum space
 ########################################################################################################
 
-struct MomentumMomSpace{T,C,D,H<:AbstractHamiltonian{T}} <: AbstractHamiltonian{Vector{T}}
+struct MomentumMomSpace{T,C,D,H<:AbstractHamiltonian{T}} <: AbstractHamiltonian{SVector{T}}
     ham::H
 end
 LOStructure(::Type{<:MomentumMomSpace}) = IsDiagonal()
 num_offdiagonals(ham::MomentumMomSpace, _) = 0
 function diagonal_element(mom::MomentumMomSpace{<:Any,1,D}, address::SingleComponentFockAddress) where D
-    return [dot(mom.ham.ks_mat[i, :], occupied_mode_map(address)) for i in 1:D]
+    return SVector{D}(dot(mom.ham.ks_mat[i, :], occupied_mode_map(address)) for i in 1:D)
 end
 function diagonal_element(mom::MomentumMomSpace{<:Any,C,D}, address::CompositeFS) where {C,D}
-    return [sum(dot(mom.ham.ks_mat[i, :], occupied_mode_map(c)) for c in address.components) for i in 1:D]
+    return SVector{D}(sum(dot(mom.ham.ks_mat[i, :], occupied_mode_map(c)) for c in address.components) for i in 1:D)
 end
 # fold into (-π, π]
 starting_address(mom::MomentumMomSpace) = starting_address(mom.ham)
