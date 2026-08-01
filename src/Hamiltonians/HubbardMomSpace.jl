@@ -423,7 +423,7 @@ function HubbardMomSpace(
     end
     kes_mat, ks_mat = _mom_space_energies_and_ks(ks_vec_of_vecs, geometry, t_mat, dispersion)
 
-    return HubbardMomSpace{eltype(t_mat),C,D,typeof(address),typeof(geometry),typeof(ks_mat),typeof(kes_mat),
+    return HubbardMomSpace{eltype(kes_mat),C,D,typeof(address),typeof(geometry),typeof(ks_mat),typeof(kes_mat),
     typeof(t_mat),typeof(u_mat),typeof(w_mat)}(
         address, ks_mat, kes_mat, t_mat, u_mat, w_mat, geometry,
     )
@@ -655,6 +655,15 @@ end
     ::Val{I2}) where {TT,C,D,N,I1,I2}
     return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
             _mom_interactions_col(h, address, a, as, m, σ[2:N], Val(I1), Val(I2+1))...)
+end
+
+@inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, 
+    ::Tuple{},::Tuple{}, ::Tuple{Nothing}, ::Val, ::Val) = ()
+@inline function _mom_interactions_col(h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, 
+    a::SingleComponentFockAddress, (b,as...)::NTuple{N}, m::Tuple{N}, σ::Tuple{Nothing}, ::Val{I1}, 
+    ::Val{I2}) where {TT,C,D,N,I1,I2}
+    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
+            _mom_interactions_col(h, address, a, as, m[2:N], σ, Val(I1), Val(I2+1))...)
 end
 
 @inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, 
