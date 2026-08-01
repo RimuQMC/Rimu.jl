@@ -319,8 +319,8 @@ in `D` dimensions and with a total of `M` momentum modes.
   \\hat{H} = -\\sum_{k,σ} ϵ_{kσ} n_{kσ} +
   \\sum_{p,q,k,σ,σ'} V_{σσ'} a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}
 ```
-where ``ϵ_{kσ} = -2 ( Σ_{d=1}^{D} \\Re(t_{σ,d}) \\cos(k_d) + \\Im(t_{σ,d}) \\sin(k_d))`` is 
-the single-particle `dispersion` and
+where ``ϵ_{kσ} = Σ_{d=1}^{D} ε(k_d)`` and ``ε(k)`` is a one-dimensional single particle `dispersion` 
+(with default [`hubbard_dispersion`](@ref))  and
 ``V_{σσ'} = (u_{σσ'}(1- \\frac{δ_{σσ'}}{2}) + w_{σσ'} \\sum_{d=1}^{D} \\cos(q_d))/M``
 the coefficients of a two-body interaction with onsite (``u_{σσ'}``) and nearest-neighbour 
 (``w_{σσ'}``) interaction terms.
@@ -344,8 +344,7 @@ Default is `geometry=PeriodicBoundaries(M,)`, i.e., a one-dimensional lattice wi
 number of sites `M` inferred from the number of modes in `address`.
 
 ## Other parameters
-
-* `t`: the hopping strengths. Must be a matrix of size `C × D `. The `i`-th and `j`-th element of the
+* `t`: the hopping strengths. Must be a matrix of size `C × D`. The `i`-th and `j`-th element of the
   matrix corresponds to the hopping strength of the `i`-th component and `j`-th direction.
 * `u`: the on-site interaction parameters. Must be a symmetric matrix of size `C × C`. `u[i, j].`
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
