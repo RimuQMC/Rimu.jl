@@ -93,10 +93,12 @@ end
         allocs, allocs_detected, check_op_result = quick_check_operator_interface_allocs(H)
         if allocs ≠ 0 || !isempty(allocs_detected)
             @warn """
-            Operator interface test for $(nameof(typeof(H))) detected allocations: $allocs\n
-                $H\n
-                `check_operator_interface_consistency` result: $check_op_result\n
-                Allocations detected: $allocs_detected
+            Operator interface test for $(nameof(typeof(H))) detected allocations:
+            $allocs (expected 0)\n
+            $H\n
+            `check_operator_interface_consistency` result: $check_op_result (expected > 0)\n
+            Allocations detected by `AllocCheck.check_allocs`: $(length(allocs_detected))
+            (expected 0)
             """
         end
         # @testset "Allocation benchmark (measured) $(nameof(typeof(H)))" begin
@@ -142,10 +144,12 @@ end
         allocs, allocs_detected, check_op_result = quick_check_operator_interface_allocs(op, addr)
         if allocs ≠ 0 || !isempty(allocs_detected)
             @warn """
-            Operator interface test for $(nameof(typeof(H))) detected allocations: $allocs\n
-                $H\n
-                `check_operator_interface_consistency` result: $check_op_result\n
-                Allocations detected: $allocs_detected
+            Operator interface test for $(nameof(typeof(op))) detected allocations:
+                $allocs (expected0)\n
+                $op\n
+                `check_operator_interface_consistency` result: $check_op_result (expected > 0)\n
+                Allocations detected by `AllocCheck.check_allocs`:
+                $(length(allocs_detected)) (expected 0)
             """
         end
     end
@@ -806,6 +810,7 @@ end
 
     # wrap sparse matrix as MatrixHamiltonian
     mh =  MatrixHamiltonian(sparse_matrix)
+    @test default_starting_vector(mh) isa AbstractDVec
     # adjoint IsHermitian
     @test LOStructure(mh) == IsHermitian()
     @test mh' == mh
@@ -821,7 +826,7 @@ end
     @test d.shift ≈ a.shift
     # integer walkernumber triggers IsStochasticInteger algorithm
     sim = solve(
-        ProjectorMonteCarloProblem(mh; start_at=DVec(pairs(ones(Int, dim))), random_seed=18)
+        ProjectorMonteCarloProblem(mh; start_at=DVec(pairs(ones(Int, dim))), random_seed=17)
     )
     @test StochasticStyle(only(state_vectors(sim))) == IsStochasticInteger()
     e = DataFrame(sim)
@@ -834,6 +839,14 @@ end
     @test StochasticStyle(only(state_vectors(sim))) == IsDeterministic()
     f = DataFrame(sim)
     @test f.shift ≈ a.shift
+    # default_starting_vector triggers IsDynamicSemistochastic algorithm
+    sim = solve(
+        ProjectorMonteCarloProblem(mh; random_seed=17)
+    )
+    @test StochasticStyle(only(state_vectors(sim))) isa IsDynamicSemistochastic
+    g = DataFrame(sim)
+    @test ≈(g.shift[end], a.shift[end], atol=0.3)
+
 end
 
 using Rimu.Hamiltonians: circshift_dot
