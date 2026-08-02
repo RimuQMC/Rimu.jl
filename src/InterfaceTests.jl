@@ -20,7 +20,7 @@ using Rimu: Rimu, DVec, Interfaces, LOStructure, IsHermitian, IsDiagonal, Adjoin
     has_random_offdiagonal, has_iterable_offdiagonals, parent_operator
 using Rimu.Hamiltonians: AbstractHamiltonian, AbstractOperator, AbstractObservable,
     AbstractOffdiagonals
-using LinearAlgebra: dot, mul!, isdiag, ishermitian
+using LinearAlgebra: dot, mul!, isdiag, ishermitian, norm
 
 export test_observable_interface, test_operator_interface, test_hamiltonian_interface,
     test_hamiltonian_structure, check_operator_interface_consistency,
@@ -361,7 +361,7 @@ See also [`test_operator_interface_allocs`](@ref) for a more detailed allocation
 """
 function check_operator_interface_consistency(h, address=starting_address(h))
     column = operator_column(h, address)
-    result = abs(diagonal_element(column))
+    result = norm(diagonal_element(column))
     if has_iterable_offdiagonals(h)
         ods = offdiagonals(column)
         for (addr, val) in ods

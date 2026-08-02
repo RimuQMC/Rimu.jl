@@ -42,7 +42,7 @@ function _set_up_starting_vectors(
             end
         else
             return SMatrix{n_replicas, n_spectral}(
-                default_starting_vector(sa; style, initiator, threading) for sa in start_at
+                default_starting_vector(ham; address=sa, style, initiator, threading) for sa in start_at
             )
         end
     elseif n_spectral > 1
@@ -70,7 +70,7 @@ function _set_up_starting_vectors(
             end
         else
             return SMatrix{n_replicas, n_spectral}(
-                default_starting_vector(sa; style, initiator, threading) for sa in start_at
+                default_starting_vector(ham; address=sa, style, initiator, threading) for sa in start_at
             )
         end
     elseif start_at isa AbstractDVec
@@ -81,12 +81,11 @@ function _set_up_starting_vectors(
         end
     end
     return SMatrix{n_replicas, n_spectral}(
-        default_starting_vector(start_at; style, initiator, threading) for _ in 1:n_replicas
+        default_starting_vector(ham; address=start_at, style, initiator, threading) for _ in 1:n_replicas
     )
 end
 
 function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
-    # @unpack algorithm, hamiltonian, starting_vectors, style, threading, simulation_plan,
     @unpack algorithm, hamiltonian, start_at, style, threading, simulation_plan,
         replica_strategy, initial_shift_parameters,
         reporting_strategy, post_step_strategy,
@@ -109,6 +108,23 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
         threading, copy_vectors, minimum_size
     )
     @assert vectors isa SMatrix{n_replicas, n_spectral}
+    v = first(vectors)
+    address = first(keys(localpart(first(vectors))))
+    allocs, allocs_detected, check_op_result = quick_check_operator_interface_allocs(hamiltonian, address)
+    if allocs ≠ 0 || !isempty(allocs_detected)
+        @warn """
+        Allocation testing with `quick_check_operator_interface_allocs` detected a possible
+        issue with allocations for $(nameof(typeof(hamiltonian))):\n
+        `@allocations` estimate: $allocs (expected 0)\n
+        Compiler-level issues detected by `AllocCheck.check_allocs`:
+        $(length(allocs_detected)) (expected 0)\n
+        This may indicate that the operator interface is not fully allocation-free and
+        increase the runtime of the simulation. To obtain more information, run
+        `quick_check_operator_interface_allocs(hamiltonian, address)`
+        or `test_operator_interface_allocs(hamiltonian, address)` in the REPL.
+        """
+    end
+
 
     # set up initial_shift_parameters
     shift, time_step = nothing, nothing

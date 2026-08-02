@@ -60,7 +60,7 @@ using LinearAlgebra: LinearAlgebra, I, diag, dot, ishermitian, issymmetric,
     mul!, norm
 using Parameters: Parameters, @unpack
 using Setfield: Setfield
-using SparseArrays: SparseArrays, rowvals, nzrange, nonzeros
+using SparseArrays: SparseArrays, rowvals, nzrange, nonzeros, nnz
 using SpecialFunctions: SpecialFunctions, gamma
 using StaticArrays: StaticArrays, SA, SMatrix, SVector, SArray, MVector, setindex
 using TupleTools: TupleTools
