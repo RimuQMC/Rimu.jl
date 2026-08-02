@@ -116,12 +116,11 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
         Allocation testing with `quick_check_operator_interface_allocs` detected a possible
         issue with allocations for $(nameof(typeof(hamiltonian))):\n
         `@allocations` estimate: $allocs (expected 0)\n
-        Compiler-level issues detected by `AllocCheck.check_allocs`:
-        $(length(allocs_detected)) (expected 0)\n
+        Compiler-level issues detected by `AllocCheck.check_allocs`: $(length(allocs_detected)) (expected 0)\n
         This may indicate that the operator interface is not fully allocation-free and
         increase the runtime of the simulation. To obtain more information, run
-        `quick_check_operator_interface_allocs(hamiltonian, address)`
-        or `test_operator_interface_allocs(hamiltonian, address)` in the REPL.
+        `InterfaceTests.quick_check_operator_interface_allocs(hamiltonian, address)`
+        or `InterfaceTests.test_operator_interface_allocs(hamiltonian, address)` in the REPL.
         """
     end
 
