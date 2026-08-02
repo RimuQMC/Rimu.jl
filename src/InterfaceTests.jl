@@ -23,8 +23,8 @@ using Rimu.Hamiltonians: AbstractHamiltonian, AbstractOperator, AbstractObservab
 using LinearAlgebra: dot, mul!, isdiag, ishermitian
 
 export test_observable_interface, test_operator_interface, test_hamiltonian_interface,
-    test_hamiltonian_structure, checking_operator_interface,
-    checking_operator_interface_allocs
+    test_hamiltonian_structure, check_operator_interface_consistency,
+    check_operator_interface_allocs, quick_check_operator_interface_allocs
 
 """
     test_observable_interface(obs, addr)
@@ -323,14 +323,21 @@ function test_hamiltonian_structure(h::AbstractHamiltonian; sizelim=20)
 end
 
 """
-    checking_operator_interface(h::AbstractOperator, address=starting_address(h))
+    check_operator_interface_consistency(h::AbstractOperator, address=starting_address(h))
+    -> Int
 
 This function checks the consistency of an operator `h` with the [`AbstractOperator`](@ref)
 interface (and the [`AbstractHamiltonian`](@ref) interface if the second argument is not
 specified) by calling all interface functions at least once. The return value should be
 greater than zero if the operator column is nonzero.
 
-This function should be non-allocating. If allocations are detected, this indicates that
+If this function errors, it indicates that the operator is not implemented correctly. The
+stack trace will indicate which function is not implemented correctly.
+
+This function can be used for detecting allocation issues with the operator implementation.
+The operator interface functions called by this function will be called in hot loops when
+solving a [`ProjectorMonteCarloProblem`](@ref) or an [`ExactDiagonalizationProblem`](@ref)
+and should ideally be non-allocating. If allocations are detected, this indicates that
 the interface is not implemented correctly. Allocations can be checked with the extenal
 packages `AllocCheck.jl` or `BenchmarkTools.jl`.
 
@@ -338,21 +345,21 @@ packages `AllocCheck.jl` or `BenchmarkTools.jl`.
 ```julia-doctest
 julia> using BenchmarkTools, AllocCheck
 
-julia> using Rimu.InterfaceTests: checking_operator_interface
+julia> using Rimu.InterfaceTests: check_operator_interface_consistency
 
-julia> checking_operator_interface(HubbardReal1D(BoseFS(2,0,1))) > 0
+julia> check_operator_interface_consistency(HubbardReal1D(BoseFS(2,0,1))) > 0
 true
 
-julia> @ballocations checking_operator_interface(HubbardReal1D(BoseFS(2,0,1)))
+julia> @ballocations check_operator_interface_consistency(HubbardReal1D(BoseFS(2,0,1)))
 0
 
-julia> check_allocs(checking_operator_interface, (typeof(HubbardReal1D(BoseFS(2,0,1))),))
+julia> check_allocs(check_operator_interface_consistency, (typeof(HubbardReal1D(BoseFS(2,0,1))),))
 Any[]
 ```
 
-See also [`checking_operator_interface_allocs`](@ref) for a more detailed allocation test.
+See also [`test_operator_interface_allocs`](@ref) for a more detailed allocation test.
 """
-function checking_operator_interface(h, address=starting_address(h))
+function check_operator_interface_consistency(h, address=starting_address(h))
     column = operator_column(h, address)
     result = abs(diagonal_element(column))
     if has_iterable_offdiagonals(h)
@@ -375,7 +382,37 @@ function checking_operator_interface(h, address=starting_address(h))
 end
 
 """
-    checking_operator_interface_allocs(h::AbstractOperator, address=starting_address(h))
+    quick_check_operator_interface_allocs(h, address=starting_address(h))
+    -> (allocs, allocs_detected, check_op_result)
+
+This function checks the allocations of the operator interface functions for an operator `h`
+at address `address` by calling [`check_operator_interface_consistency`](@ref) and
+measuring the allocations with `@allocated` and `AllocCheck.check_allocs`. The return value
+is a tuple of
+- `allocs`: the number of bytes allocated as returned by
+  `@allocated check_operator_interface_consistency(h, address)`,
+- `allocs_detected`: a vector containing the messages and stack traces of any allocations
+  detected by `AllocCheck.check_allocs`,
+- `check_op_result`: the result of `check_operator_interface_consistency(h, address)`. It
+  should be greater than zero if the operator column is nonzero.
+
+If the operator interface is implemented correctly with non-allocating functions,
+the result should be `allocs ==  0`, `allocs_detected == Any[]`, and `check_op_result > 0`.
+If not, it is recommended to use [`test_operator_interface_allocs`](@ref) for a more
+detailed allocation test.
+
+See also [`check_operator_interface_consistency`](@ref) and
+[`test_operator_interface_allocs`](@ref).
+"""
+function quick_check_operator_interface_allocs(h, address=starting_address(h))
+    check_op_result = check_operator_interface_consistency(h, address)
+    allocs = @allocated check_operator_interface_consistency(h, address)
+    allocs_detected = check_allocs(check_operator_interface_consistency, (typeof(h), typeof(address)))
+    return allocs, allocs_detected, check_op_result
+end
+
+"""
+    test_operator_interface_allocs(h::AbstractOperator, address=starting_address(h))
 
 This function checks the allocations of the operator interface functions for an operator `h`
 at address `address`. All functions in the [`AbstractOperator`](@ref) interface are
@@ -384,9 +421,9 @@ tested to be non-allocating with `AllocCheck.check_allocs`.
 If allocations are detected, an error is thrown and a message is printed indicating
 which function is allocating. This is useful for debugging the interface implementation.
 
-See also [`checking_operator_interface`](@ref).
+See also [`check_operator_interface_consistency`](@ref).
 """
-function checking_operator_interface_allocs(h, address = starting_address(h))
+function test_operator_interface_allocs(h, address = starting_address(h))
     @testset "Operator interface allocs: $(nameof(typeof(h)))" begin
         column = operator_column(h, address)
         @test Any[] == check_allocs(operator_column, (typeof(h), typeof(address)))
