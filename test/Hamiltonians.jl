@@ -13,7 +13,7 @@ using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure,
     test_operator_interface_allocs, check_operator_interface_consistency,
-    quick_check_operator_interface_allocs, check_operator_interface_allocs
+    check_operator_interface_allocs
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     AdjointUnknown
 
