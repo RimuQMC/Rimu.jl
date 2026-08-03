@@ -110,8 +110,8 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     @assert vectors isa SMatrix{n_replicas, n_spectral}
     v = first(vectors)
     address = first(keys(localpart(first(vectors))))
-    allocs, allocs_detected, check_op_result = quick_check_operator_interface_allocs(hamiltonian, address)
-    if allocs ≠ 0 || !isempty(allocs_detected)
+    allocs, allocs_detected, _ = quick_check_operator_interface_allocs(hamiltonian, address)
+    if !isempty(allocs_detected)
         @warn """
         Allocation testing with `quick_check_operator_interface_allocs` detected a possible
         issue with allocations for $(nameof(typeof(hamiltonian))):\n

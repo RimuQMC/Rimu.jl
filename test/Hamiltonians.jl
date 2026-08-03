@@ -91,25 +91,17 @@ end
         end
 
         allocs, allocs_detected, check_op_result = quick_check_operator_interface_allocs(H)
-        if allocs ≠ 0 || !isempty(allocs_detected)
+        if !isempty(allocs_detected)
             @warn """
-            Operator interface test for $(nameof(typeof(H))) detected allocations:
-            $allocs (expected 0)\n
+            Operator interface test for $(nameof(typeof(H))) detected allocations: $allocs (expected 0)\n
             $H\n
             `check_operator_interface_consistency` result: $check_op_result (expected > 0)\n
             Allocations detected by `AllocCheck.check_allocs`: $(length(allocs_detected))
             (expected 0)
             """
         end
-        # @testset "Allocation benchmark (measured) $(nameof(typeof(H)))" begin
-        #     @test 0 == @ballocations check_operator_interface_consistency($H)
-        # end
         # @testset "Compiler-flagged for possible allocation $(nameof(typeof(H)))" begin
-        #     @test Any[] == check_allocs(check_operator_interface_consistency, (typeof(H),))
-        #     check_operator_interface_consistency(H)
-        # end
-        # @testset "Consistent operator column $(nameof(typeof(H)))" begin
-        #     @test 0 < check_operator_interface_consistency(H)
+        #     test_operator_interface_allocs(H)
         # end
     end
 end
@@ -142,14 +134,13 @@ end
         @test eval(Meta.parse(repr(op))) == op
 
         allocs, allocs_detected, check_op_result = quick_check_operator_interface_allocs(op, addr)
-        if allocs ≠ 0 || !isempty(allocs_detected)
+        if !isempty(allocs_detected)
             @warn """
-            Operator interface test for $(nameof(typeof(op))) detected allocations:
-                $allocs (expected0)\n
-                $op\n
-                `check_operator_interface_consistency` result: $check_op_result (expected > 0)\n
-                Allocations detected by `AllocCheck.check_allocs`:
-                $(length(allocs_detected)) (expected 0)
+            Operator interface test for $(nameof(typeof(op))) detected allocations: $allocs (expected0)\n
+            $op\n
+            `check_operator_interface_consistency` result: $check_op_result (expected > 0)\n
+            Allocations detected by `AllocCheck.check_allocs`:
+            $(length(allocs_detected)) (expected 0)
             """
         end
     end
