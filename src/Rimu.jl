@@ -84,6 +84,9 @@ function __init__()
 
     # Initialise the MPI library once at runtime.
     MPI.Initialized() || MPI.Init(threadlevel=:funneled)
+
+    # force compilation to avoid problems later
+    InterfaceTests.quick_check_operator_interface_allocs(HubbardReal1D(BoseFS(42)))
 end
 
 include("strategies_and_params/poststepstrategy.jl")
