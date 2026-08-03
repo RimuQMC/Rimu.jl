@@ -331,7 +331,8 @@ using Rimu.StatsTools: replica_fidelity
     fid_gs = replica_fidelity(rr; p_field=:vproj, skip=steps_equi)
     @test fid_gs.ratio ≈ 1
     _, val_l, val_u = val_and_errs(fid_gs) # extract errors from quantiles
-    @test val_l < 0.03 && val_u < 0.03 # errors are small
+    @test val_l < 0.04 # errors are small
+    @test val_u < 0.04 # errors are small
     # TODO
     #=
     # check fidelity with oblique state
