@@ -9,6 +9,14 @@ Optionally, a valid index can be provided as the [`starting_address`](@ref).
 
 Specialised methods are implemented for sparse matrices of type `AbstractSparseMatrixCSC`.
 One based indexing is required for the matrix `mat`.
+
+Instead of indexing with `AbstractFockAddress` objects, this Hamiltonian is indexed with
+integers. The [`starting_address`](@ref) is hence an index into the matrix, not a Fock
+address.
+
+!!! warning
+    This Hamiltonian is provided for testing purposes only. It is not recommended to use it
+    in production code as the implementation is not efficient.
 """
 struct MatrixHamiltonian{T,AM,H} <: AbstractHamiltonian{T}
     m::AM

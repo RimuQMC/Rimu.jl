@@ -106,7 +106,7 @@ Rimu.InterfaceTests.test_observable_interface
 Rimu.InterfaceTests.test_operator_interface
 Rimu.InterfaceTests.check_operator_interface_consistency
 Rimu.InterfaceTests.test_operator_interface_allocs
-Rimu.InterfaceTests.quick_check_operator_interface_allocs
+Rimu.InterfaceTests.check_operator_interface_allocs
 ```
 
 ## Utilities for harmonic oscillator models

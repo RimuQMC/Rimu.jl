@@ -61,7 +61,7 @@ include("RimuIO/RimuIO.jl")
 include("StatsTools/StatsTools.jl")
 @reexport using .StatsTools
 include("InterfaceTests.jl")
-import .InterfaceTests: quick_check_operator_interface_allocs
+import .InterfaceTests: check_operator_interface_consistency
 
 export mpi_rank, is_mpi_root, @mpi_root, mpi_barrier
 export mpi_comm, mpi_root, mpi_size, mpi_seed!, mpi_allprintln

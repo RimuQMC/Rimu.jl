@@ -108,22 +108,6 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
         threading, copy_vectors, minimum_size
     )
     @assert vectors isa SMatrix{n_replicas, n_spectral}
-    v = first(vectors)
-    address = first(keys(localpart(first(vectors))))
-    allocs, allocs_detected, _ = quick_check_operator_interface_allocs(hamiltonian, address)
-    if !isempty(allocs_detected)
-        @warn """
-        Allocation testing with `quick_check_operator_interface_allocs` detected a possible
-        issue with allocations for $(nameof(typeof(hamiltonian))):\n
-        `@allocations` estimate: $allocs (expected 0)\n
-        Compiler-level issues detected by `AllocCheck.check_allocs`: $(length(allocs_detected)) (expected 0)\n
-        This may indicate that the operator interface is not fully allocation-free and
-        increase the runtime of the simulation. To obtain more information, run
-        `InterfaceTests.quick_check_operator_interface_allocs(hamiltonian, address)`
-        or `InterfaceTests.test_operator_interface_allocs(hamiltonian, address)` in the REPL.
-        """
-    end
-
 
     # set up initial_shift_parameters
     shift, time_step = nothing, nothing

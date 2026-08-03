@@ -13,7 +13,7 @@ using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure,
     test_operator_interface_allocs, check_operator_interface_consistency,
-    quick_check_operator_interface_allocs
+    quick_check_operator_interface_allocs, check_operator_interface_allocs
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     AdjointUnknown
 
@@ -90,19 +90,18 @@ end
             @test eval(Meta.parse(repr(H))) == H
         end
 
-        allocs, allocs_detected, check_op_result = quick_check_operator_interface_allocs(H)
-        if !isempty(allocs_detected)
+        no_allocs = check_operator_interface_allocs(H)
+
+        if !no_allocs
             @warn """
-            Operator interface test for $(nameof(typeof(H))) detected allocations: $allocs (expected 0)\n
+            Operator interface test for $(nameof(typeof(H))) detected a potential issue with allocations:\n
             $H\n
-            `check_operator_interface_consistency` result: $check_op_result (expected > 0)\n
-            Allocations detected by `AllocCheck.check_allocs`: $(length(allocs_detected))
-            (expected 0)
+            Use `InterfaceTests.check_operator_interface_consistency` for a more accurate
+            test of allocations and/or
+            `InterfaceTests.test_operator_interface_allocs` to get more information
+            about the allocations.
             """
         end
-        # @testset "Compiler-flagged for possible allocation $(nameof(typeof(H)))" begin
-        #     test_operator_interface_allocs(H)
-        # end
     end
 end
 
@@ -133,14 +132,15 @@ end
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(op))) == op
 
-        allocs, allocs_detected, check_op_result = quick_check_operator_interface_allocs(op, addr)
-        if !isempty(allocs_detected)
+        no_allocs = check_operator_interface_allocs(op, addr)
+        if !no_allocs
             @warn """
-            Operator interface test for $(nameof(typeof(op))) detected allocations: $allocs (expected0)\n
+            Operator interface test for $(nameof(typeof(op))) detected a potential issue with allocations:\n
             $op\n
-            `check_operator_interface_consistency` result: $check_op_result (expected > 0)\n
-            Allocations detected by `AllocCheck.check_allocs`:
-            $(length(allocs_detected)) (expected 0)
+            Use `InterfaceTests.check_operator_interface_consistency` for a more accurate
+            test of allocations and/or
+            `InterfaceTests.test_operator_interface_allocs` to get more information
+            about the allocations.
             """
         end
     end
@@ -817,7 +817,9 @@ end
     @test d.shift ≈ a.shift
     # integer walkernumber triggers IsStochasticInteger algorithm
     sim = solve(
-        ProjectorMonteCarloProblem(mh; start_at=DVec(pairs(ones(Int, dim))), random_seed=17)
+        ProjectorMonteCarloProblem(mh; start_at=DVec(pairs(ones(Int, dim))),
+            random_seed=17, check_allocations=false
+        )
     )
     @test StochasticStyle(only(state_vectors(sim))) == IsStochasticInteger()
     e = DataFrame(sim)
@@ -825,14 +827,16 @@ end
     # wrap full matrix as MatrixHamiltonian
     fmh =  MatrixHamiltonian(Matrix(sparse_matrix))
     sim = solve(
-        ProjectorMonteCarloProblem(fmh; start_at=DVec(pairs(ones(dim))), random_seed=15)
+        ProjectorMonteCarloProblem(fmh; start_at=DVec(pairs(ones(dim))),
+            random_seed=15, check_allocations=false
+        )
     )
     @test StochasticStyle(only(state_vectors(sim))) == IsDeterministic()
     f = DataFrame(sim)
     @test f.shift ≈ a.shift
     # default_starting_vector triggers IsDynamicSemistochastic algorithm
     sim = solve(
-        ProjectorMonteCarloProblem(mh; random_seed=17)
+        ProjectorMonteCarloProblem(mh; random_seed=17, check_allocations=false)
     )
     @test StochasticStyle(only(state_vectors(sim))) isa IsDynamicSemistochastic
     g = DataFrame(sim)
