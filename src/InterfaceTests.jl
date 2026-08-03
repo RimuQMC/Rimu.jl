@@ -9,7 +9,7 @@ The module exports the following functions:
 - [`test_hamiltonian_interface`](@ref Rimu.InterfaceTests.test_hamiltonian_interface)
 - [`test_hamiltonian_structure`](@ref Rimu.InterfaceTests.test_hamiltonian_structure)
 - [`check_operator_interface_consistency`](@ref Rimu.InterfaceTests.check_operator_interface_consistency)
-- [`check_operator_interface_allocs`](@ref Rimu.InterfaceTests.check_operator_interface_allocs)
+- [`check_operator_interface_consistency`](@ref Rimu.InterfaceTests.check_operator_interface_consistency)
 - [`quick_check_operator_interface_allocs`](@ref Rimu.InterfaceTests.quick_check_operator_interface_allocs)
 - [`test_operator_interface_allocs`](@ref Rimu.InterfaceTests.test_operator_interface_allocs)
 """
@@ -28,7 +28,7 @@ using LinearAlgebra: dot, mul!, isdiag, ishermitian, norm
 
 export test_observable_interface, test_operator_interface, test_hamiltonian_interface,
     test_hamiltonian_structure, check_operator_interface_consistency,
-    check_operator_interface_allocs, quick_check_operator_interface_allocs,
+    check_operator_interface_consistency, quick_check_operator_interface_allocs,
     test_operator_interface_allocs
 
 """
