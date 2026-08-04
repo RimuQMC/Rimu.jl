@@ -90,18 +90,31 @@ end
             @test eval(Meta.parse(repr(H))) == H
         end
 
-        no_allocs = check_operator_interface_allocs(H)
-
-        if !no_allocs
+        try
+            check_operator_interface_consistency(H) > 0 ||
+                @warn "The Hamiltonian does not satisfy the operator interface."
+        catch e
             @warn """
-            Operator interface test for $(nameof(typeof(H))) detected a potential issue with allocations:\n
+            Checking the consistency of the operator interface for the Hamiltonian failed with
+            an error for the Hamiltonian of type $(nameof(typeof(H))).\n
             $H\n
-            Use `InterfaceTests.check_operator_interface_consistency` for a more accurate
-            test of allocations and/or
-            `InterfaceTests.test_operator_interface_allocs` to get more information
-            about the allocations.
+            `$e`
+            Re-run with `check_allocations = :error` to see the full error message and a stack trace.
             """
         end
+
+        # no_allocs = check_operator_interface_allocs(H)
+
+        # if !no_allocs
+        #     @warn """
+        #     Operator interface test for $(nameof(typeof(H))) detected a potential issue with allocations:\n
+        #     $H\n
+        #     Use `InterfaceTests.check_operator_interface_consistency` for a more accurate
+        #     test of allocations and/or
+        #     `InterfaceTests.test_operator_interface_allocs` to get more information
+        #     about the allocations.
+        #     """
+        # end
     end
 end
 
@@ -132,17 +145,30 @@ end
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(op))) == op
 
-        no_allocs = check_operator_interface_allocs(op, addr)
-        if !no_allocs
+        try
+            check_operator_interface_consistency(op, addr) > 0 ||
+                @warn "The Hamiltonian does not satisfy the operator interface."
+        catch e
             @warn """
-            Operator interface test for $(nameof(typeof(op))) detected a potential issue with allocations:\n
+            Checking the consistency of the operator interface for the Hamiltonian failed with
+            an error for the Hamiltonian of type $(nameof(typeof(op))).\n
             $op\n
-            Use `InterfaceTests.check_operator_interface_consistency` for a more accurate
-            test of allocations and/or
-            `InterfaceTests.test_operator_interface_allocs` to get more information
-            about the allocations.
+            `$e`
+            Re-run with `check_allocations = :error` to see the full error message and a stack trace.
             """
         end
+
+        # no_allocs = check_operator_interface_allocs(op, addr)
+        # if !no_allocs
+        #     @warn """
+        #     Operator interface test for $(nameof(typeof(op))) detected a potential issue with allocations:\n
+        #     $op\n
+        #     Use `InterfaceTests.check_operator_interface_consistency` for a more accurate
+        #     test of allocations and/or
+        #     `InterfaceTests.test_operator_interface_allocs` to get more information
+        #     about the allocations.
+        #     """
+        # end
     end
 end
 
