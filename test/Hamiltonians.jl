@@ -6,9 +6,14 @@ using Test
 using DataFrames
 using Suppressor
 using StaticArrays
+using BenchmarkTools
+using AllocCheck: AllocCheck, check_allocs
+
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
-    test_hamiltonian_interface, test_hamiltonian_structure
+    test_hamiltonian_interface, test_hamiltonian_structure,
+    test_operator_interface_allocs, check_operator_interface_consistency,
+    check_operator_interface_allocs
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     AdjointUnknown
 
@@ -72,7 +77,7 @@ end
         HOCartesianCentralImpurity(BoseFS((1, 0, 0, 0, 0))),
         FroehlichPolaron(BoseFS{missing}(1, 1, 1)),
         FroehlichPolaron(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
-        momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
+        momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))), # choose a nonzero momentum
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
@@ -84,9 +89,39 @@ end
         if !(H isa GuidingVectorSampling)
             @test eval(Meta.parse(repr(H))) == H
         end
+
+        try
+            check_operator_interface_consistency(H) > 0 ||
+                @warn "The Hamiltonian does not satisfy the operator interface."
+        catch e
+            @warn """
+            Checking the consistency of the operator interface for the Hamiltonian failed with
+            an error for the Hamiltonian of type $(nameof(typeof(H))).\n
+            $H\n
+            `$e`
+            Re-run with `check_allocations = :error` to see the full error message and a stack trace.
+            """
+        end
+
+        # no_allocs = check_operator_interface_allocs(H)
+
+        # if !no_allocs
+        #     @warn """
+        #     Operator interface test for $(nameof(typeof(H))) detected a potential issue with allocations:\n
+        #     $H\n
+        #     Use `InterfaceTests.check_operator_interface_consistency` for a more accurate
+        #     test of allocations and/or
+        #     `InterfaceTests.test_operator_interface_allocs` to get more information
+        #     about the allocations.
+        #     """
+        # end
     end
 end
 
+@testset "Test operator interface allocs" begin
+    # just testing one that is clean here, since the others are already tested above
+    test_operator_interface_allocs(HubbardRealSpace(BoseFS(1, 2, 3)))
+end
 @testset "Operator interface test" begin
     # this is only needed for AbstractOperators that are not AbstractHamiltonians
     # and are not tested in the Hamiltonian interface tests
@@ -109,6 +144,31 @@ end
         test_operator_interface(op, addr)
         # Check that the result of show can be pasted into the REPL
         @test eval(Meta.parse(repr(op))) == op
+
+        try
+            check_operator_interface_consistency(op, addr) > 0 ||
+                @warn "The Hamiltonian does not satisfy the operator interface."
+        catch e
+            @warn """
+            Checking the consistency of the operator interface for the Hamiltonian failed with
+            an error for the Hamiltonian of type $(nameof(typeof(op))).\n
+            $op\n
+            `$e`
+            Re-run with `check_allocations = :error` to see the full error message and a stack trace.
+            """
+        end
+
+        # no_allocs = check_operator_interface_allocs(op, addr)
+        # if !no_allocs
+        #     @warn """
+        #     Operator interface test for $(nameof(typeof(op))) detected a potential issue with allocations:\n
+        #     $op\n
+        #     Use `InterfaceTests.check_operator_interface_consistency` for a more accurate
+        #     test of allocations and/or
+        #     `InterfaceTests.test_operator_interface_allocs` to get more information
+        #     about the allocations.
+        #     """
+        # end
     end
 end
 
@@ -767,6 +827,7 @@ end
 
     # wrap sparse matrix as MatrixHamiltonian
     mh =  MatrixHamiltonian(sparse_matrix)
+    @test default_starting_vector(mh) isa AbstractDVec
     # adjoint IsHermitian
     @test LOStructure(mh) == IsHermitian()
     @test mh' == mh
@@ -782,7 +843,9 @@ end
     @test d.shift ≈ a.shift
     # integer walkernumber triggers IsStochasticInteger algorithm
     sim = solve(
-        ProjectorMonteCarloProblem(mh; start_at=DVec(pairs(ones(Int, dim))), random_seed=18)
+        ProjectorMonteCarloProblem(mh; start_at=DVec(pairs(ones(Int, dim))),
+            random_seed=17, check_allocations=false
+        )
     )
     @test StochasticStyle(only(state_vectors(sim))) == IsStochasticInteger()
     e = DataFrame(sim)
@@ -790,11 +853,21 @@ end
     # wrap full matrix as MatrixHamiltonian
     fmh =  MatrixHamiltonian(Matrix(sparse_matrix))
     sim = solve(
-        ProjectorMonteCarloProblem(fmh; start_at=DVec(pairs(ones(dim))), random_seed=15)
+        ProjectorMonteCarloProblem(fmh; start_at=DVec(pairs(ones(dim))),
+            random_seed=15, check_allocations=false
+        )
     )
     @test StochasticStyle(only(state_vectors(sim))) == IsDeterministic()
     f = DataFrame(sim)
     @test f.shift ≈ a.shift
+    # default_starting_vector triggers IsDynamicSemistochastic algorithm
+    sim = solve(
+        ProjectorMonteCarloProblem(mh; random_seed=17, check_allocations=false)
+    )
+    @test StochasticStyle(only(state_vectors(sim))) isa IsDynamicSemistochastic
+    g = DataFrame(sim)
+    @test ≈(g.shift[end], a.shift[end], atol=0.3)
+
 end
 
 using Rimu.Hamiltonians: circshift_dot

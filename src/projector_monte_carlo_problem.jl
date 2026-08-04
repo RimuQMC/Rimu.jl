@@ -104,6 +104,9 @@ julia> size(DataFrame(simulation))
 - `minimum_size = 2*num_spectral_states(spectral_strategy)`: The minimum size of the basis
     used to construct starting vectors for simulations of spectral states, if `start_at`
     is not provided.
+- `check_allocations = :warn`: Check the operator interface for allocations. If set to
+    `:warn`, a warning is issued if the operator interface is not satisfied. If set to
+    `:error`, an error is thrown. If set to `false`, no check is performed.
 
 See also [`init`](@ref), [`solve`](@ref).
 
@@ -239,7 +242,8 @@ function ProjectorMonteCarloProblem(
     maxlength = nothing, # deprecated
     metadata = nothing,
     display_name = "PMCSimulation",
-    random_seed = true
+    random_seed = true,
+    check_allocations = :warn
 )
     if !isnothing(walltime)
         @warn "The keyword argument `walltime` is deprecated. Use `wall_time` instead."
@@ -353,6 +357,31 @@ function ProjectorMonteCarloProblem(
     end
 
     @assert isnothing(random_seed) || random_seed isa Number
+
+    if check_allocations ≠ false
+        address = if start_at isa AbstractFockAddress
+            start_at
+        elseif start_at isa AbstractDVec
+            first(keys(localpart(start_at)))
+        else
+            starting_address(hamiltonian)
+        end
+        try
+            check_operator_interface_consistency(hamiltonian, address) > 0 ||
+                @warn "The Hamiltonian does not satisfy the operator interface."
+        catch e
+            @warn """
+            Checking the consistency of the operator interface for the Hamiltonian failed with
+            an error for the Hamiltonian of type $(nameof(typeof(hamiltonian))).\n
+            $hamiltonian\n
+            `$e`
+            Re-run with `check_allocations = :error` to see the full error message and a stack trace.
+            """
+            if check_allocations === :error
+                throw(e)
+            end
+        end
+    end
 
     return ProjectorMonteCarloProblem{n_replicas,num_spectral_states(spectral_strategy)}(
         algorithm,

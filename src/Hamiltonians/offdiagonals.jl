@@ -50,7 +50,7 @@ function Offdiagonals(h, a)
     return Offdiagonals(h, a, num_offdiagonals(h, a))
 end
 
-function Base.getindex(s::Offdiagonals{A,T}, i)::Tuple{A,T} where {A,T}
+Base.@propagate_inbounds function Base.getindex(s::Offdiagonals{A,T}, i)::Tuple{A,T} where {A,T}
     @boundscheck 1 ≤ i ≤ s.length || throw(BoundsError(s, i))
     new_address, matrix_element = get_offdiagonal(s.hamiltonian, s.address, i)
     return (new_address, matrix_element)

@@ -60,6 +60,8 @@ include("RimuIO/RimuIO.jl")
 @reexport using .RimuIO
 include("StatsTools/StatsTools.jl")
 @reexport using .StatsTools
+include("InterfaceTests.jl")
+import .InterfaceTests: check_operator_interface_consistency
 
 export mpi_rank, is_mpi_root, @mpi_root, mpi_barrier
 export mpi_comm, mpi_root, mpi_size, mpi_seed!, mpi_allprintln
@@ -96,7 +98,5 @@ include("projector_monte_carlo_problem.jl")
 include("qmc_states.jl")
 include("fciqmc.jl")
 include("pmc_simulation.jl")
-
-include("InterfaceTests.jl")
 
 end # module

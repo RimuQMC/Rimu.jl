@@ -8,21 +8,27 @@ The module exports the following functions:
 - [`test_operator_interface`](@ref Rimu.InterfaceTests.test_operator_interface)
 - [`test_hamiltonian_interface`](@ref Rimu.InterfaceTests.test_hamiltonian_interface)
 - [`test_hamiltonian_structure`](@ref Rimu.InterfaceTests.test_hamiltonian_structure)
+- [`check_operator_interface_consistency`](@ref Rimu.InterfaceTests.check_operator_interface_consistency)
+- [`test_operator_interface_allocs`](@ref Rimu.InterfaceTests.test_operator_interface_allocs)
+- [`check_operator_interface_allocs`](@ref Rimu.InterfaceTests.check_operator_interface_allocs)
 """
 module InterfaceTests
 
 using Test: Test, @test, @testset, @test_throws
+using AllocCheck: AllocCheck, @check_allocs, check_allocs
 using Rimu: Rimu, DVec, Interfaces, LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     Hamiltonians, num_offdiagonals, allows_address_type, offdiagonals, random_offdiagonal,
     diagonal_element, dimension, dot_from_right, IsDeterministic, starting_address, PDVec,
     sparse, scale!, scalartype, operator_column, AbstractOperatorColumn,
-    has_random_offdiagonal, has_iterable_offdiagonals, parent_operator
+    has_random_offdiagonal, has_iterable_offdiagonals, parent_operator,
+    maximum_mode_occupation, AbstractFockAddress
 using Rimu.Hamiltonians: AbstractHamiltonian, AbstractOperator, AbstractObservable,
     AbstractOffdiagonals
-using LinearAlgebra: dot, mul!, isdiag, ishermitian
+using LinearAlgebra: dot, mul!, isdiag, ishermitian, norm
 
 export test_observable_interface, test_operator_interface, test_hamiltonian_interface,
-    test_hamiltonian_structure
+    test_hamiltonian_structure, check_operator_interface_consistency,
+    test_operator_interface_allocs, check_operator_interface_allocs
 
 """
     test_observable_interface(obs, addr)
@@ -240,6 +246,10 @@ function test_hamiltonian_interface(h, addr=starting_address(h);
             # starting_address is specific to Hamiltonians
             @test allows_address_type(h, starting_address(h))
 
+            if starting_address(h) isa AbstractFockAddress
+                @test maximum_mode_occupation(h) ≤ maximum_mode_occupation(starting_address(h))
+            end
+
             @test dimension(h) ≥ dimension(h, addr)
 
             # Hamiltonians can only have scalar eltype
@@ -319,4 +329,140 @@ function test_hamiltonian_structure(h::AbstractHamiltonian; sizelim=20)
         end
     end
 end
+
+"""
+    check_operator_interface_consistency(h::AbstractOperator, address=starting_address(h))
+    -> Int
+
+This function checks the consistency of an operator `h` with the [`AbstractOperator`](@ref)
+interface (and the [`AbstractHamiltonian`](@ref) interface if the second argument is not
+specified) by calling all interface functions at least once. The return value should be
+greater than zero if the operator column is nonzero.
+
+The function further checks for allocations with `AllocCheck.@check_allocs` and throws an
+error if any allocations are detected. This is useful for debugging the interface
+implementation. Note that the interface functions are not required to be non-allocating,
+but it is highly recommended to avoid allocations in the interface functions for performance
+reasons.
+
+## Example
+```julia-doctest
+julia> using BenchmarkTools, AllocCheck
+
+julia> using Rimu.InterfaceTests: check_operator_interface_consistency
+
+julia> check_operator_interface_consistency(HubbardReal1D(BoseFS(2,0,1))) > 0
+true
+```
+
+See also [`test_operator_interface_allocs`](@ref) for a more detailed allocation test.
+See also [`AbstractOperator`](@ref), [`AbstractHamiltonian`](@ref), and
+[`check_operator_interface_allocs`](@ref).
+"""
+@check_allocs function check_operator_interface_consistency(h, address=starting_address(h))
+    column = operator_column(h, address)
+    result = norm(diagonal_element(column))
+    if has_iterable_offdiagonals(h)
+        ods = offdiagonals(column)
+        for (addr, val) in ods
+            result += norm(val)
+        end
+    end
+    draws = num_offdiagonals(column)
+    if has_random_offdiagonal(h)
+        for _ in 1:draws
+            addr, val, _ = random_offdiagonal(column)
+            result += norm(val)
+        end
+    end
+    result *= (parent_operator(column) == h) # ensure that the parent operator is set
+    result *= (LOStructure(h) isa LOStructure) # ensure that the LOStructure is set
+    result *= (allows_address_type(h, address)) # ensure that the address type is allowed
+    return result
 end
+
+"""
+    test_operator_interface_allocs(h::AbstractOperator, address=starting_address(h))
+
+This function checks the allocations of the operator interface functions for an operator `h`
+at address `address`. All functions in the [`AbstractOperator`](@ref) interface are
+tested to be non-allocating with `AllocCheck.check_allocs`.
+
+If allocations are detected, an error is thrown and a message is printed indicating
+which function is allocating. This is useful for debugging the interface implementation.
+
+See also [`check_operator_interface_consistency`](@ref).
+"""
+function test_operator_interface_allocs(h, address = starting_address(h))
+    @testset "Operator interface allocs: $(nameof(typeof(h))) with $address" begin
+        column = operator_column(h, address)
+        @test Any[] == check_allocs(operator_column, (typeof(h), typeof(address)))
+        @test Any[] == check_allocs(diagonal_element, (typeof(column),))
+        if has_iterable_offdiagonals(h)
+            @test Any[] == check_allocs(has_iterable_offdiagonals, (typeof(h),))
+            ods = offdiagonals(column)
+            @test Any[] == check_allocs(offdiagonals, (typeof(column),))
+            iterval = iterate(ods)
+            @test Any[] == check_allocs(iterate, (typeof(ods),))
+            if iterval !== nothing
+                @test Any[] == check_allocs(iterate, (typeof(ods), typeof(iterval[2])))
+            end
+        end
+        @test Any[] == check_allocs(num_offdiagonals, (typeof(column),))
+        @test Any[] == check_allocs(has_random_offdiagonal, (typeof(h),))
+        if has_random_offdiagonal(h) && num_offdiagonals(column) > 0
+            @test Any[] == check_allocs(random_offdiagonal, (typeof(column),))
+        end
+        # ensure that the parent operator is set
+        @test Any[] == check_allocs(parent_operator, (typeof(column),))
+        # ensure that the LOStructure is set
+        @test Any[] == check_allocs(LOStructure, (typeof(h),))
+        # ensure that the address type is allowed
+        @test Any[] == check_allocs(allows_address_type, (typeof(h), typeof(address)))
+    end
+end
+
+"""
+    check_operator_interface_allocs(h, address=starting_address(h))::Bool
+
+This function checks the allocations of the operator interface functions for an operator `h`
+at address `address`. All functions in the [`AbstractOperator`](@ref) interface are
+tested to be non-allocating with `AllocCheck.check_allocs`.
+
+Returns `true` if all functions are non-allocating, `false` otherwise.
+
+Use [`test_operator_interface_allocs`](@ref) to run the same allocation tests with
+`Tests.@test` and obtain error messages and stack traces if allocations are detected.
+
+See also [`check_operator_interface_consistency`](@ref).
+"""
+function check_operator_interface_allocs(h, address=starting_address(h))
+    column = operator_column(h, address)
+    result = true
+    result &= (Any[] == check_allocs(operator_column, (typeof(h), typeof(address))))
+    result &= (Any[] == check_allocs(diagonal_element, (typeof(column),)))
+    if has_iterable_offdiagonals(h)
+        result &= (Any[] == check_allocs(has_iterable_offdiagonals, (typeof(h),)))
+        ods = offdiagonals(column)
+        result &= (Any[] == check_allocs(offdiagonals, (typeof(column),)))
+        iterval = iterate(ods)
+        result &= (Any[] == check_allocs(iterate, (typeof(ods),)))
+        if iterval !== nothing
+            result &= (Any[] == check_allocs(iterate, (typeof(ods), typeof(iterval[2]))))
+        end
+    end
+    result &= (Any[] == check_allocs(num_offdiagonals, (typeof(column),)))
+    result &= (Any[] == check_allocs(has_random_offdiagonal, (typeof(h),)))
+    if has_random_offdiagonal(h) && num_offdiagonals(column) > 0
+        result &= (Any[] == check_allocs(random_offdiagonal, (typeof(column),)))
+    end
+    # ensure that the parent operator is set
+    result &= (Any[] == check_allocs(parent_operator, (typeof(column),)))
+    # ensure that the LOStructure is set
+    result &= (Any[] == check_allocs(LOStructure, (typeof(h),)))
+    # ensure that the address type is allowed
+    result &= (Any[] == check_allocs(allows_address_type, (typeof(h), typeof(address))))
+    return result
+end
+
+end # module InterfaceTests

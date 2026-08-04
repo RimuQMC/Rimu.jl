@@ -252,6 +252,14 @@ function default_starting_vector(address::AbstractFockAddress; population=10, kw
     return default_starting_vector(address=>population; kwargs...)
 end
 
+# special case for MatrixHamiltonian, because it doesn't use AbstractFockAddress
+function default_starting_vector(
+    hamiltonian::MatrixHamiltonian;
+    address=starting_address(hamiltonian), population=10, kwargs...
+)
+    return default_starting_vector(address => population; kwargs...)
+end
+
 function default_starting_vector(fdv::Union{FrozenDVec,Pair};
     style = IsDynamicSemistochastic(),
     threading = nothing,

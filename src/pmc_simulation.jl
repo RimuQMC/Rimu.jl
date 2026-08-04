@@ -42,7 +42,7 @@ function _set_up_starting_vectors(
             end
         else
             return SMatrix{n_replicas, n_spectral}(
-                default_starting_vector(sa; style, initiator, threading) for sa in start_at
+                default_starting_vector(ham; address=sa, style, initiator, threading) for sa in start_at
             )
         end
     elseif n_spectral > 1
@@ -70,7 +70,7 @@ function _set_up_starting_vectors(
             end
         else
             return SMatrix{n_replicas, n_spectral}(
-                default_starting_vector(sa; style, initiator, threading) for sa in start_at
+                default_starting_vector(ham; address=sa, style, initiator, threading) for sa in start_at
             )
         end
     elseif start_at isa AbstractDVec
@@ -81,12 +81,11 @@ function _set_up_starting_vectors(
         end
     end
     return SMatrix{n_replicas, n_spectral}(
-        default_starting_vector(start_at; style, initiator, threading) for _ in 1:n_replicas
+        default_starting_vector(ham; address=start_at, style, initiator, threading) for _ in 1:n_replicas
     )
 end
 
 function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
-    # @unpack algorithm, hamiltonian, starting_vectors, style, threading, simulation_plan,
     @unpack algorithm, hamiltonian, start_at, style, threading, simulation_plan,
         replica_strategy, initial_shift_parameters,
         reporting_strategy, post_step_strategy,

@@ -4,6 +4,7 @@ version = "0.17.0"
 authors = ["Joachim Brand <j.brand@massey.ac.nz>"]
 
 [deps]
+AllocCheck = "9b6a8646-10ed-4001-bbdc-1d2f46dfbb1a"
 Arrow = "69666777-d1a9-59fb-9406-91d4454c9d45"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
@@ -57,6 +58,7 @@ IterativeSolversExt = "IterativeSolvers"
 KrylovKitExt = "KrylovKit"
 
 [compat]
+AllocCheck = "0.2.2"
 Arpack = "0.5"
 Arrow = "1.5, 2"
 Combinatorics = "1"
@@ -94,7 +96,7 @@ Tables = "1.9"
 TerminalLoggers = "0.1.4"
 TupleTools = "1"
 VectorInterface = "0.2, 0.3, 0.4, 0.5, 0.6"
-julia = "1.9"
+julia = "1.10"
 
 [extras]
 Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
