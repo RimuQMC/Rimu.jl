@@ -85,9 +85,7 @@ See also [`mom_transfer_diagonal`](@ref).
     g::CubicGrid{D,S}) where {M, D, S}
     # Get the momentum transfer for a given excitation.
     singlies = length(map) # number of at least singly occupied modes
-
     double = chosen - singlies * (singlies - 1) * (M - 2)
-
     if double > 0
         # Both moves from the same mode.
         double, mom_change = fldmod1(double, M - 1)
@@ -133,9 +131,7 @@ end
     chosen::Int, map1::ModeMap, map2::ModeMap, g::CubicGrid{D,S}) where {M, D, S}
     # Get the momentum transfer for a given excitation.
     singlies = length(map2)
-
     pair, mom_change = fldmod1(chosen, M - 1)
-
     f_hole, s_hole = fldmod1(pair, singlies) # where the holes are to be made
     src_indices = (map1[f_hole], map2[s_hole])
     src_modes = (src_indices[1].mode, src_indices[2].mode)
@@ -163,10 +159,8 @@ either `u` or `w` is `nothing`, the corresponding interaction term is ignored.
 
 """
 @inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, g::CubicGrid{D,S}, u, w) where {D, S}
-
     onproduct = 0.0
     u_scaled = u / 2.0 + w * D
-    
     for i in 1:length(map)
         occ_i = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0) * u_scaled
@@ -198,7 +192,6 @@ end
 end
 
 @inline function _mom_transfer_diagonal(map::BoseOccupiedModeMap, ::CubicGrid, u, ::Nothing)
-
     onproduct = 0.0
     for i in 1:length(map)
         occ_i = Float64(map[i].occnum)
@@ -212,23 +205,17 @@ end
 end
 
 @inline function _mom_transfer_diagonal(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D, S}
-
     onproduct = 0.0
     for i in 1:length(map)
         # 2. Add type assertions or unpack concrete objects if `map` holds abstract types
         mode_i = map[i].mode
         occ_i  = Float64(map[i].occnum)
-        
         onproduct += occ_i * (occ_i - 1.0)
-        
         # Pull the grid lookup outside the inner loop to save i-index computations
         g_i = g[mode_i] 
-        
         for j in 1:i-1
             occ_j = Float64(map[j].occnum)
-            
             q = g_i - g[map[j].mode] 
-            
             onproduct += 2.0 * occ_i * occ_j * (D - _cosin_sum(q, S))
         end
     end
@@ -263,27 +250,25 @@ end
 end
 
 """
-    mom_transfer_diagonal(component, g)
-This function does the excitation operation on the given addresses in the `component`, which 
-represents a multi-component Fock state address, respectively. This returns a diagonal element
-of the Hamiltonian. The excitation is carried out to get the reponse similar to the 
-nearest neighbour interaction and on-site interaction operation in real space.
+    mom_transfer_diagonal(components, g)
+This function returns a diagonal element of the Hamiltonian coresponding to the given address 
+stored in `components`. Here, `components` is a tuple of [`HubbardMomSpaceComponentData`](@ref) 
+for each pair combination of component of the multi-component Fock state address.
 
 '''math
-    \\hat{H}_\\text{int} = \\frac{1}{2}\\sum_{p,q,σ,σ'} V_{σσ'} 
-        \\hat{b}^†_{pσ} \\hat{b}^†_{qσ'} \\hat{b}^†_{qσ'} \\hat{b}_{pσ}
+    Ĥ_\\text{int} = ½\\sum_{p,q,σ,σ'} V_{σσ'} b̂^†_{pσ} b̂^†_{qσ'} b̂_{qσ'} b̂_{pσ}
 '''
 
-where `V_{σσ}' is the interaction coefficient that depends on  `u_{σσ'}' and 
-`w_{σσ'}'. `g` is the geometry of the lattice.
+where `V_{σσ}' is the interaction coefficient that depends on interaction parameters that are 
+stored in `components` and `g` is the geometry of the lattice.
 
 """
-@inline _mom_transfer_diagonal(component::Tuple{}, g::CubicGrid) = 0.0
+@inline _mom_transfer_diagonal(components::Tuple{}, g::CubicGrid) = 0.0
 
-@inline function _mom_transfer_diagonal(component::Tuple, g::CubicGrid)
+@inline function _mom_transfer_diagonal(components::Tuple, g::CubicGrid)
     # Extract the first item, and keep the remaining items as a smaller tuple
-    data = first(component)
-    tail_components = Base.tail(component)
+    data = first(components)
+    tail_components = Base.tail(components)
 
     # Compile-time evaluation path for nothing checks
     if isnothing(data.u) && isnothing(data.w)
@@ -320,8 +305,8 @@ in `D` dimensions and with a total of `M` momentum modes.
   \\hat{H} = -\\sum_{k,σ} ϵ_{kσ} n_{kσ} +
   \\sum_{p,q,k,σ,σ'} V_{σσ'} a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}
 ```
-where ``ϵ_{kσ} = -2 (\\sum_{d=1}^{D} \\Re(t_{σ,d}) \\cos(k_d) + \\Im(t_{σ,d}) \\sin(k_d))`` is 
-the single-particle `dispersion` and
+where ``ϵ_{kσ} = Σ_{d=1}^{D} ε(k_d)`` and ``ε(k)`` is a one-dimensional single particle `dispersion` 
+(with default [`hubbard_dispersion`](@ref))  and
 ``V_{σσ'} = (u_{σσ'}(1- \\frac{δ_{σσ'}}{2}) + w_{σσ'} \\sum_{d=1}^{D} \\cos(q_d))/M``
 the coefficients of a two-body interaction with onsite (``u_{σσ'}``) and nearest-neighbour 
 (``w_{σσ'}``) interaction terms.
@@ -345,16 +330,18 @@ Default is `geometry=PeriodicBoundaries(M,)`, i.e., a one-dimensional lattice wi
 number of sites `M` inferred from the number of modes in `address`.
 
 ## Other parameters
-
-* `t`: the hopping strengths. Must be a matrix of length `C × D `. The `i`-th and `j`-th element of the
+* `t`: the hopping strengths. Must be a matrix of size `C × D`. The `i`-th and `j`-th element of the
   matrix corresponds to the hopping strength of the `i`-th component and `j`-th direction.
-* `u`: the on-site interaction parameters. Must be a symmetric matrix. `u[i, j].`
+* `u`: the on-site interaction parameters. Must be a symmetric matrix of size `C × C`. `u[i, j].`
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
   corresponds to the interaction of a component with itself.
+* `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix of size `C × C`.
 * `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
   `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
+  
+  See also [`HubbardRealSpace`](@ref), [`HubbardMom1D`](@ref), [`ExtendedHubbardReal1D`](@ref).
 * `dispersion`: the function used to calculate the dispersion relation. Default is 
-    `hubbard_dispersion` which corresponds to the standard Hubbard model. 
+    [`hubbard_dispersion`](@ref) which corresponds to the standard tight binding model.  
   
   See also [`HubbardRealSpace`](@ref), [`HubbardMom1D`](@ref), [`ExtendedHubbardReal1D`](@ref).
 """
@@ -466,13 +453,15 @@ dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
 
 This holds the off-diagonals for a single- and multi-component two-body on-site and 
 nearest-neighbour interaction terms. It is structured where the index of this vector
-`chosen` determines the sources and destinations momentum modes of a two-body excitation 
-operation between particles of single-component Fock addresses `address1` and 
-`address2` of the multi-component Fock address `parent`. `u` and `w` represents the 
-interaction coefficient coresponding to on-site and nearest-neighbour interactions, 
-respectively, and are used to calculate the coefficient of the respective new address 
-after the excitation and returns it as an element of this vector as a pair of the new 
-address and the coefficient.
+determines `p`, `q`, `σ`, `σ'` and `k` in the two particle operator given by 
+```math a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}```. The operator is operated on a 
+`parent` which is a single-component (where `address1`=`address2`=`parents`) or 
+multi-component Fock address where `address1` and `address2` are the single-component 
+Fock addresses representing  `σ` and `σ'` component respectively. The operation 
+creates a new address and the corresponding coefficient which is stored as a pair. 
+`u` and `w` represents the interaction coefficient coresponding to on-site and 
+nearest-neighbour interactions, respectively, and are used to calculate the 
+coefficient of the respective new address.
 """
 struct HubbardMomSpaceComponentData{
     TT,C,I1,I2,D,G,A,A1,A2,U<:Union{Float64,Nothing},W<:Union{Float64,Nothing},O1,O2
