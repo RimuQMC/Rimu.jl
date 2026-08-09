@@ -78,8 +78,10 @@ end
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
         # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
-        2*HubbardReal1D(BoseFS(2,0,0); u=1.0im), # ScaledHamiltonian
-        HubbardReal1D(BoseFS(2, 0, 0); u=1.0im) + 2I # ShiftedHamiltonian
+        2 * HubbardReal1D(BoseFS(2,0,0); u=1.0im), # ScaledHamiltonian
+        2 * HubbardReal1D(BoseFS(2, 0, 0)), # ScaledHamiltonian with real factor
+        HubbardReal1D(BoseFS(2, 0, 0); u=1.0im) + 2I, # ShiftedHamiltonian
+        2 * (HubbardReal1D(BoseFS(2, 0, 0)) + 3.0I), # scaled and shifted
     ]
         test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL. Does not work with
