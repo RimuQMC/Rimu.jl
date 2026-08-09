@@ -163,6 +163,10 @@ A Hamiltonian that has been shifted by a scalar value. In combination with
 ``αH + βI``. Composite Hamiltonians constructed in this way are efficient for usage with
 deterministic and stochastic operations.
 
+Note that shifting a Hamiltonian by a scalar using `add` or `+` requires a
+`UniformScaling` object, which is created by multiplying a scalar with
+`I` (from the `LinearAlgebra` standard library).
+
 ## Example
 ```jldoctest
 julia> hamiltonian = HubbardRealSpace(BoseFS(1,1));
