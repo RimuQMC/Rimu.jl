@@ -66,6 +66,7 @@ Stoquastic
 Hamiltonians.TransformUndoer
 HamiltonianProduct
 ScaledHamiltonian
+ShiftedHamiltonian
 HamiltonianSum
 ```
 
