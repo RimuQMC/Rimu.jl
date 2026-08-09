@@ -74,9 +74,12 @@ end
         FroehlichPolaron(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
+        # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
+        # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
-        2*HubbardReal1D(BoseFS(2,0,0); u=1.0im)
+        2*HubbardReal1D(BoseFS(2,0,0); u=1.0im), # ScaledHamiltonian
+        HubbardReal1D(BoseFS(2, 0, 0); u=1.0im) + 2I # ShiftedHamiltonian
     ]
         test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL. Does not work with
@@ -1939,6 +1942,51 @@ end
     addr = FermiFS(1,0,0)
     H4 = HubbardReal1D(addr)
     @test_throws ArgumentError H1 + H4
+end
+
+@testset "ShiftedHamiltonian" begin
+    addr = BoseFS(1,1)
+    H = HubbardRealSpace(addr)
+    basis = build_basis(addr)
+
+    @testset "construction and arithmetic" begin
+        S = ShiftedHamiltonian(H, -2)
+        @test S.shift === -2.0
+        @test parent_operator(S) == H
+
+        # `h +/- I` should dispatch to ShiftedHamiltonian and preserve matrix action.
+        @test H - 2I == ShiftedHamiltonian(H, -2)
+        @test H + 3I == ShiftedHamiltonian(H, 3)
+        @test Matrix(H - 2I, basis) ≈ Matrix(H, basis) - 2I
+        @test Matrix(H + 3I, basis) ≈ Matrix(H, basis) + 3I
+
+        # `add` should construct alpha * H + beta * I via ShiftedHamiltonian.
+        @test add(H, 2I, 3, -4) == ShiftedHamiltonian(3 * H, -8)
+        @test add(2I, H, -4, 3) == ShiftedHamiltonian(3 * H, -8)
+    end
+
+    @testset "structure and adjoint" begin
+        Sreal = ShiftedHamiltonian(H, -1.5)
+        Scomplex = ShiftedHamiltonian(H, 1im)
+        @test LOStructure(Sreal) == IsHermitian()
+        @test LOStructure(Scomplex) == AdjointKnown()
+
+        Sadj = Scomplex'
+        @test Sadj == ShiftedHamiltonian(H', -1im)
+        @test Matrix(Sadj, basis) ≈ Matrix(Scomplex, basis)'
+
+        # If base structure is not Hermitian, shifting should preserve base structure.
+        Hnh = HubbardReal1D(BoseFS(1,2,3,4); u=1.0im)
+        @test LOStructure(ShiftedHamiltonian(Hnh, 2.0)) == LOStructure(Hnh)
+    end
+
+    @testset "nested shifts and repr" begin
+        S0 = ShiftedHamiltonian(H, -2)
+        S1 = ShiftedHamiltonian(S0, 5)
+        @test S1 == ShiftedHamiltonian(H, 3)
+        @test Matrix(S1, basis) ≈ Matrix(H, basis) + 3I
+        @test eval(Meta.parse(repr(S1))) == S1
+    end
 end
 
 @testset "Operator Traits" begin

@@ -3,15 +3,16 @@
     add(A::AbstractHamiltonian, B::AbstractHamiltonian, [a=1, b=1]; weight=0.5) -> HamiltonianSum
     +(A::AbstractHamiltonian, B::AbstractHamiltonian)
 
-The sum of two [`AbstractHamiltonian`](@ref)s, ``A + B``. The two Hamiltonians must act 
+The sum of two [`AbstractHamiltonian`](@ref)s, ``A + B``. The two Hamiltonians must act
 on the same address space. The keyword argument `weight` affects random spawning
-with [`random_offdiagonal`](@ref) and determines the probability of random spawns 
+with [`random_offdiagonal`](@ref) and determines the probability of random spawns
 from `A`, with `1 - weight` the probability of spawning from `B`.
 
 If coefficients `a` and `b` are given, the Hamiltonians are scaled with [`ScaledHamiltonian`](@ref),
 to represent ``aA + bB``.
 
-See also [`ScaledHamiltonian`](@ref), [`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref).
+See also [`ShiftedHamiltonian`](@ref), [`ScaledHamiltonian`](@ref),
+[`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref).
 """
 struct HamiltonianSum{T, H1<:AbstractHamiltonian, H2<:AbstractHamiltonian} <: AbstractHamiltonian{T}
     h1::H1
@@ -150,4 +151,115 @@ function Base.iterate(o::SumOffdiagonals, state)
         (add, val), state = next2
         return add => val, (state, false)
     end
+end
+
+"""
+    ShiftedHamiltonian(h::AbstractHamiltonian, shift::Number) <: ModifiedHamiltonian
+    add(h::AbstractHamiltonian, shift::UniformScaling) -> ShiftedHamiltonian
+    h + shift * I
+
+A Hamiltonian that has been shifted by a scalar value. In combination with
+[`ScaledHamiltonian`](@ref), this can be used to represent a Hamiltonian of the form
+``αH + βI``. Composite Hamiltonians constructed in this way are efficient for usage with
+deterministic and stochastic operations.
+
+## Example
+```jldoctest
+julia> hamiltonian = HubbardRealSpace(BoseFS(1,1));
+
+julia> hamiltonian - 2I == ShiftedHamiltonian(hamiltonian, -2) == add(hamiltonian, -2I)
+true
+
+julia> Matrix(hamiltonian)
+3×3 Matrix{Float64}:
+  0.0      -2.82843  -2.82843
+ -2.82843   1.0       0.0
+ -2.82843   0.0       1.0
+
+julia> Matrix(hamiltonian - 2I)
+3×3 Matrix{Float64}:
+ -2.0      -2.82843  -2.82843
+ -2.82843  -1.0       0.0
+ -2.82843   0.0      -1.0
+
+julia> transition_operator  = I - im * 0.1 * hamiltonian
+(1.0 + 0.0im)I + (-0.0 - 0.1im) * HubbardRealSpace(
+  fs"|1 1⟩";
+  geometry = CubicGrid((2,), (true,)),
+  t = [1.0;;],
+  u = [1.0;;],
+)
+
+julia> Matrix(transition_operator)
+3×3 Matrix{ComplexF64}:
+ 1.0+0.0im       0.0+0.282843im  0.0+0.282843im
+ 0.0+0.282843im  1.0-0.1im       0.0+0.0im
+ 0.0+0.282843im  0.0+0.0im       1.0-0.1im
+```
+
+See also [`HamiltonianSum`](@ref), [`ScaledHamiltonian`](@ref),
+[`ModifiedHamiltonian`](@ref), and [`AbstractHamiltonian`](@ref).
+"""
+struct ShiftedHamiltonian{T<:Number,H} <: ModifiedHamiltonian{T}
+    hamiltonian::H
+    shift::T
+end
+
+function ShiftedHamiltonian(h::AbstractHamiltonian{T1}, shift::T2) where {T1,T2<:Number}
+    T = promote_type(T1,T2)
+    return ShiftedHamiltonian{T, typeof(h)}(h, T(shift))
+end
+
+function ShiftedHamiltonian(h::ShiftedHamiltonian, shift::Number)
+    return ShiftedHamiltonian(h.hamiltonian, h.shift + shift)
+end
+
+function Base.show(io::IO, s::ShiftedHamiltonian{T}) where {T}
+    if T <: Real
+        print(io, s.shift, "I + ", s.hamiltonian)
+    else
+        print(io, "(", s.shift, ")", "I + ", s.hamiltonian)
+    end
+end
+
+function LinearAlgebra.adjoint(s::ShiftedHamiltonian)
+    return ShiftedHamiltonian(s.hamiltonian', conj(s.shift))
+end
+
+function LOStructure(::Type{<:ShiftedHamiltonian{T,H}}) where {T,H}
+    if LOStructure(H) == IsHermitian()
+        if T <: Real
+            return IsHermitian()
+        else
+            return AdjointKnown()
+        end
+    else
+        return LOStructure(H)
+    end
+end
+
+parent_operator(s::ShiftedHamiltonian) = s.hamiltonian
+modify_diagonal(s::ShiftedHamiltonian, _, value) = value + s.shift
+modify_offdiagonal(s::ShiftedHamiltonian, _, addr, value) = addr => value
+
+@doc (@doc ShiftedHamiltonian)
+function VectorInterface.add(
+    h::AbstractHamiltonian, shift::UniformScaling{T}, alpha::Number, beta::Number
+) where {T<:Number}
+    return ShiftedHamiltonian(alpha * h, beta * shift.λ)
+end
+function VectorInterface.add(
+    shift::UniformScaling{T}, h::AbstractHamiltonian, alpha::Number, beta::Number
+) where {T<:Number}
+    return add(h, shift, beta, alpha)
+end
+
+@doc (@doc ShiftedHamiltonian)
+function Base.:+(h::AbstractHamiltonian, shift::UniformScaling{T}) where {T<:Number}
+    return ShiftedHamiltonian(h, shift.λ)
+end
+Base.:+(shift::UniformScaling{T}, h::AbstractHamiltonian) where {T<:Number} = h + shift
+Base.:-(h::AbstractHamiltonian, shift::UniformScaling{T}) where {T<:Number} = h + (-shift)
+function Base.:-(shift::UniformScaling{T}, h::AbstractHamiltonian) where {T<:Number}
+    scale(h, -1) + shift
 end

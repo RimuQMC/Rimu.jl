@@ -200,13 +200,14 @@ function Base.iterate(o::ProductOffdiagonals, state::ProductIterState{S1,S2,OD1,
 end
 
 """
-    ScaledHamiltonian(H::AbstractHamiltonian, α) <: AbstractHamiltonian
-    scale(H, α)
+    ScaledHamiltonian(H::AbstractHamiltonian, α) <: ModifiedHamiltonian
+    scale(H, α) -> ScaledHamiltonian
     α * H
 
 The product of the Hamiltonian `H` with the scalar `α`.
 
-See also [`HamiltonianSum`](@ref), [`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref).
+See also [`ShiftedHamiltonian`](@ref), [`HamiltonianSum`](@ref),
+[`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref), [`ModifiedHamiltonian`](@ref).
 """
 struct ScaledHamiltonian{T,H} <: ModifiedHamiltonian{T}
     hamiltonian::H
@@ -224,9 +225,14 @@ end
 
 function Base.show(io::IO, h::ScaledHamiltonian{T}) where {T}
     if T <: Real
-        print(io, h.α, " * ", h.hamiltonian)
+        print(io, h.α, " * ")
     else
-        print(io, "(", h.α, ") * ", h.hamiltonian)
+        print(io, "(", h.α, ") * ")
+    end
+    if h.hamiltonian isa ShiftedHamiltonian
+        print(io, "(", h.hamiltonian, ")")
+    else
+        print(io, h.hamiltonian)
     end
 end
 

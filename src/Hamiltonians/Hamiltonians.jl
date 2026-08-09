@@ -102,8 +102,8 @@ export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCarte
 export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
-export HamiltonianProduct, ScaledHamiltonian
-export HamiltonianSum
+export ModifiedHamiltonian
+export HamiltonianProduct, ScaledHamiltonian, ShiftedHamiltonian, HamiltonianSum
 
 if VERSION < v"1.10"
     # used for ReducedDensityMatrix
