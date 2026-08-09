@@ -1962,9 +1962,9 @@ end
         @test Matrix(H - 2I, basis) ≈ Matrix(H, basis) - 2I
         @test Matrix(H + 3I, basis) ≈ Matrix(H, basis) + 3I
 
-        # `add` should construct alpha * H + beta * I via ShiftedHamiltonian.
-        @test add(H, 2I, 3, -4) == ShiftedHamiltonian(3 * H, -8)
-        @test add(2I, H, -4, 3) == ShiftedHamiltonian(3 * H, -8)
+        # `add` should construct beta * H + alpha * I via ShiftedHamiltonian.
+        @test add(H, 2I, -4, 3) == ShiftedHamiltonian(3 * H, -8)
+        @test add(2I, H, 3, -4) == ShiftedHamiltonian(3 * H, -8)
     end
 
     @testset "structure and adjoint" begin

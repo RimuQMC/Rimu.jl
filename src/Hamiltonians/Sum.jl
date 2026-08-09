@@ -155,12 +155,12 @@ end
 
 """
     ShiftedHamiltonian(h::AbstractHamiltonian, shift::Number) <: ModifiedHamiltonian
-    add(h::AbstractHamiltonian, shift::UniformScaling) -> ShiftedHamiltonian
+    add(h::AbstractHamiltonian, shift_op::UniformScaling, [α, β]) -> ShiftedHamiltonian
     h + shift * I
 
 A Hamiltonian that has been shifted by a scalar value. In combination with
 [`ScaledHamiltonian`](@ref), this can be used to represent a Hamiltonian of the form
-``αH + βI``. Composite Hamiltonians constructed in this way are efficient for usage with
+``β*H + α*I``. Composite Hamiltonians constructed in this way are efficient for usage with
 deterministic and stochastic operations.
 
 Note that shifting a Hamiltonian by a scalar using `add` or `+` requires a
@@ -187,7 +187,7 @@ julia> Matrix(hamiltonian - 2I)
  -2.82843   0.0      -1.0
 
 julia> transition_operator  = I - im * 0.1 * hamiltonian
-(1.0 + 0.0im)I + (-0.0 - 0.1im) * HubbardRealSpace(
+(1.0 + 0.0im)*I + (-0.0 - 0.1im) * HubbardRealSpace(
   fs"|1 1⟩";
   geometry = CubicGrid((2,), (true,)),
   t = [1.0;;],
@@ -220,9 +220,9 @@ end
 
 function Base.show(io::IO, s::ShiftedHamiltonian{T}) where {T}
     if T <: Real
-        print(io, s.shift, "I + ", s.hamiltonian)
+        print(io, s.shift, "*I + ", s.hamiltonian)
     else
-        print(io, "(", s.shift, ")", "I + ", s.hamiltonian)
+        print(io, "(", s.shift, ")*I + ", s.hamiltonian)
     end
 end
 
@@ -250,7 +250,7 @@ modify_offdiagonal(s::ShiftedHamiltonian, _, addr, value) = addr => value
 function VectorInterface.add(
     h::AbstractHamiltonian, shift::UniformScaling{T}, alpha::Number, beta::Number
 ) where {T<:Number}
-    return ShiftedHamiltonian(alpha * h, beta * shift.λ)
+    return ShiftedHamiltonian(beta * h, alpha * shift.λ)
 end
 function VectorInterface.add(
     shift::UniformScaling{T}, h::AbstractHamiltonian, alpha::Number, beta::Number
