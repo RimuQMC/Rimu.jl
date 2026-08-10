@@ -76,7 +76,7 @@ end
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
         # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
-        # HamiltonianProduct
+        # HamiltonianSum
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
         2 * HubbardReal1D(BoseFS(2,0,0); u=1.0im), # ScaledHamiltonian
         2 * HubbardReal1D(BoseFS(2, 0, 0)), # ScaledHamiltonian with real factor
