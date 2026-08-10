@@ -256,12 +256,12 @@ parent_operator(h::ScaledHamiltonian) = h.hamiltonian
 modify_diagonal(h::ScaledHamiltonian, _, value) = value*h.α
 modify_offdiagonal(h::ScaledHamiltonian, _, addr, value) = addr => value*h.α
 
-@doc (@doc ScaledHamiltonian)
-function VectorInterface.scale(h::AbstractHamiltonian, α::T) where {T<:Number}
-    if α == 1
-        return h
-    end
-    return ScaledHamiltonian(h, α)
-end
+# @doc (@doc ScaledHamiltonian)
+# function VectorInterface.scale(h::AbstractHamiltonian, α::T) where {T<:Number}
+#     if α == 1
+#         return h
+#     end
+#     return ScaledHamiltonian(h, α)
+# end
 
-Base.:*(α::Number, h::AbstractHamiltonian) = scale(h, α)
+# Base.:*(α::Number, h::AbstractHamiltonian) = scale(h, α)
