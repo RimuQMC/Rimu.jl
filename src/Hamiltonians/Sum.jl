@@ -269,7 +269,7 @@ end
     add(shift::UniformScaling, H::AbstractHamiltonian, [alpha, beta])
     add(H::AbstractHamiltonian, shift::UniformScaling, [beta, alpha])
 
-Construct the linear combination ``alpha * H + beta * I`` where `I` is the identity
+Construct the linear combination `alpha * H + beta * I` where `I` is the identity
 operator represented by a `UniformScaling`. This is the public entry point for applying
 a scalar shift to a Hamiltonian while preserving the underlying modified-operator
 implementation.
