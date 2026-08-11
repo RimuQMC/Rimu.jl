@@ -6,7 +6,7 @@ using Test
 using DataFrames
 using Suppressor
 using StaticArrays
-using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
+using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals, ScaledOrShiftedHamiltonian
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
@@ -73,11 +73,20 @@ end
         FroehlichPolaron(BoseFS{missing}(1, 1, 1)),
         FroehlichPolaron(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
-        Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
+        # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
+        # HamiltonianSum
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
-        2*HubbardReal1D(BoseFS(2,0,0); u=1.0im)
-    ]
+        # FCIQMC transition operator
+        (@inferred I + 0.01 * (-5.0*I + HubbardRealSpace(BoseFS(1,1,1,1)))),
+        2 * HubbardReal1D(BoseFS(2, 0, 0); u=1.0im), # scale
+        2 * HubbardReal1D(BoseFS(2, 0, 0)), # scale with real factor
+        HubbardReal1D(BoseFS(2, 0, 0); u=1.0im) + 2I, # ScaledOrShiftedHamiltonian
+        2 * (HubbardReal1D(BoseFS(2, 0, 0)) + 3.0I), # scaled and shifted
+        3.0I - HubbardReal1D(BoseFS(2, 0, 0)), # subtract a Hamiltonian
+        - HubbardReal1D(BoseFS(2, 0, 0)), # unary minus
+        (2 + 2im) * (HubbardReal1D(BoseFS(2, 0, 0)) + (3.0 + 1.0im)I), # complex
+        ]
         test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL. Does not work with
         # GuidingVectorSampling because it includes a DVec.
@@ -1881,16 +1890,20 @@ end
     c = operator_column(P, addr)
     @test iszero(last.(collect(offdiagonals(c))))
 
-    @testset "ScaledHamiltonian" begin
+    @testset "ScaledOrShifted scaling" begin
         addr = BoseFS(2,0,0)
         basis = build_basis(addr)
         H = HubbardReal1D(addr)
 
-        H1 = 2*H
+        H1 = @inferred 2*H
         @test Matrix(H1) == 2*Matrix(H)
         @test LOStructure(H1) == LOStructure(H)
-        @test 2*H1 == 4*H
-        @test 1*H1 == H1
+        H1_twice = 2 * H1
+        @test H1_twice isa ScaledOrShiftedHamiltonian
+        @test Matrix(H1_twice, basis) ≈ 4 * Matrix(H, basis)
+        H1_same = 1 * H1
+        @test H1_same isa ScaledOrShiftedHamiltonian
+        @test Matrix(H1_same, basis) ≈ Matrix(H1, basis)
 
         H2 = 3im*H
         @test Matrix(H2) == 3im*Matrix(H)
@@ -1939,6 +1952,63 @@ end
     addr = FermiFS(1,0,0)
     H4 = HubbardReal1D(addr)
     @test_throws ArgumentError H1 + H4
+end
+
+@testset "ScaledOrShiftedHamiltonian" begin
+    addr = BoseFS(1,1)
+    H = HubbardRealSpace(addr)
+    basis = build_basis(addr)
+
+    @testset "construction and arithmetic" begin
+        S = ScaledOrShiftedHamiltonian(H, 2, -3)
+        @test S.alpha == 2
+        @test S.beta == -3
+        @test parent_operator(S) == H
+
+        Sidentity = @inferred ScaledOrShiftedHamiltonian(H, 1, 0)
+        @test Sidentity isa ScaledOrShiftedHamiltonian
+        @test Sidentity.alpha == 1
+        @test Sidentity.beta == 0
+        @test Matrix(Sidentity, basis) ≈ Matrix(H, basis)
+
+        @test (@inferred H - 2I) == ScaledOrShiftedHamiltonian(H, One(), -2)
+        @test (@inferred H + 3I) == ScaledOrShiftedHamiltonian(H, One(), 3)
+        @test 2 * H == ScaledOrShiftedHamiltonian(H, 2, Zero())
+        @test Matrix(H - 2I, basis) ≈ Matrix(H, basis) - 2I
+        @test Matrix(2 * H + 3I, basis) ≈ 2 * Matrix(H, basis) + 3I
+
+        @test (@inferred add(H, 2I, -4, 3)) == ScaledOrShiftedHamiltonian(H, 3, -8)
+        @test (@inferred add(2I, H, 3, -4)) == ScaledOrShiftedHamiltonian(H, 3, -8)
+    end
+
+    @testset "structure and adjoint" begin
+        Sreal = ScaledOrShiftedHamiltonian(H, 2.5, -1.5)
+        Scomplex = ScaledOrShiftedHamiltonian(H, 1im, 2.0)
+        @test LOStructure(Sreal) == IsHermitian()
+        @test LOStructure(Scomplex) == AdjointKnown()
+
+        Sadj = Scomplex'
+        @test Sadj == ScaledOrShiftedHamiltonian(H', -1im, 2.0)
+        @test Matrix(Sadj, basis) ≈ Matrix(Scomplex, basis)'
+
+        Hnh = HubbardReal1D(BoseFS(1,2,3,4); u=1.0im)
+        @test LOStructure(ScaledOrShiftedHamiltonian(Hnh, 2.0, 1.0)) == LOStructure(Hnh)
+    end
+
+    @testset "nested composition and repr" begin
+        S0 = ScaledOrShiftedHamiltonian(H, 2, -1) # 2H - I
+        S1 = ScaledOrShiftedHamiltonian(S0, -1, 3) # -(2H - I) + 3 = -2H + 4I
+        @test S1 == ScaledOrShiftedHamiltonian(H, -2, 4)
+        @test Matrix(S1, basis) ≈ -2 * Matrix(H, basis) + 4I
+        @test eval(Meta.parse(repr(S1))) == S1
+
+        Sidentity = ScaledOrShiftedHamiltonian(H, 1, 0)
+        Snoop = ScaledOrShiftedHamiltonian(Sidentity, 1, 0)
+        @test Snoop isa ScaledOrShiftedHamiltonian
+        @test Snoop == Sidentity
+        @test eval(Meta.parse(repr(Snoop))) == Snoop
+        @test ScaledOrShiftedHamiltonian(H, One(), Zero()) == H
+    end
 end
 
 @testset "Operator Traits" begin

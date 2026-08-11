@@ -3,15 +3,15 @@
     add(A::AbstractHamiltonian, B::AbstractHamiltonian, [a=1, b=1]; weight=0.5) -> HamiltonianSum
     +(A::AbstractHamiltonian, B::AbstractHamiltonian)
 
-The sum of two [`AbstractHamiltonian`](@ref)s, ``A + B``. The two Hamiltonians must act 
+The sum of two [`AbstractHamiltonian`](@ref)s, ``A + B``. The two Hamiltonians must act
 on the same address space. The keyword argument `weight` affects random spawning
-with [`random_offdiagonal`](@ref) and determines the probability of random spawns 
+with [`random_offdiagonal`](@ref) and determines the probability of random spawns
 from `A`, with `1 - weight` the probability of spawning from `B`.
 
-If coefficients `a` and `b` are given, the Hamiltonians are scaled with [`ScaledHamiltonian`](@ref),
-to represent ``aA + bB``.
+If coefficients `a` and `b` are given, the Hamiltonians are combined as
+``aA + bB`` with the same address compatibility checks as `A + B`.
 
-See also [`ScaledHamiltonian`](@ref), [`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref).
+See also [`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref).
 """
 struct HamiltonianSum{T, H1<:AbstractHamiltonian, H2<:AbstractHamiltonian} <: AbstractHamiltonian{T}
     h1::H1
@@ -36,7 +36,7 @@ end
 
 @doc (@doc HamiltonianSum)
 function VectorInterface.add(
-    h1::AbstractHamiltonian, h2::AbstractHamiltonian, a::Number=1, b::Number=1; weight=0.5
+    h1::AbstractHamiltonian, h2::AbstractHamiltonian, a::Number=One(), b::Number=One(); weight=0.5
 )
     return HamiltonianSum(a*h1, b*h2; weight)
 end
@@ -151,3 +151,178 @@ function Base.iterate(o::SumOffdiagonals, state)
         return add => val, (state, false)
     end
 end
+
+"""
+    ScaledOrShiftedHamiltonian(H::AbstractHamiltonian, alpha, beta) <: ModifiedHamiltonian
+    +(H::AbstractHamiltonian, shift::UniformScaling)
+    add(shift::UniformScaling, H::AbstractHamiltonian, [alpha, beta])
+    *(alpha::Number, H::AbstractHamiltonian)
+    scale(H, alpha)
+    alpha * H + beta * I -> ScaledOrShiftedHamiltonian(H, alpha, beta)
+
+A Hamiltonian that has been scaled by a scalar, `alpha * H`, or shifted by a scalar,
+`H + beta * I`, or both, `alpha * H + beta * I`. Note that scaling and shifting a
+Hamiltonian by a scalar using `add` or `+` requires a `UniformScaling` object, which is
+created by multiplying a scalar with `LinearAlgebra.I`, representing a unit matrix.
+
+Scaling is applied to all matrix elements of the Hamiltonian, while shifting only affects
+the diagonal elements. As a consequence the eigenvalues of the Hamiltonian are scaled and
+shifted, while the eigenvectors remain unchanged. Composite Hamiltonians constructed in this
+way are efficient for usage with deterministic and stochastic operations. Nested and
+consecutive scaling and shifting operations are automatically combined into a single
+`ScaledOrShiftedHamiltonian` object.
+
+## Example
+```jldoctest
+julia> H = HubbardReal1D(BoseFS(1,1));
+
+julia> ssh = 3*H + 2*I
+3*HubbardReal1D(fs"|1 1⟩"; u=1.0, t=1.0) + 2*I
+
+julia> using Rimu.Hamiltonians: ScaledOrShiftedHamiltonian
+
+julia> ssh == add(2*I, H, 3) == ScaledOrShiftedHamiltonian(H, 3, 2)
+true
+
+julia> Matrix(H)
+3×3 Matrix{Float64}:
+  0.0      -2.82843  -2.82843
+ -2.82843   1.0       0.0
+ -2.82843   0.0       1.0
+
+julia> Matrix(3*H + 2*I)
+3×3 Matrix{Float64}:
+  2.0      -8.48528  -8.48528
+ -8.48528   5.0       0.0
+ -8.48528   0.0       5.0
+```
+!!! warning "Warning"
+    The `ScaledOrShiftedHamiltonian` type is an implementation detail and may change in
+    future versions of Rimu. Use the public interface functions [`add`](@ref), [`+`](@ref)
+    and [`scale`](@ref) to construct scaled and shifted Hamiltonians.
+
+See also [`HamiltonianSum`](@ref), [`HamiltonianProduct`](@ref),
+[`ModifiedHamiltonian`](@ref), and [`AbstractHamiltonian`](@ref).
+"""
+struct ScaledOrShiftedHamiltonian{T, TA, TB, H} <: ModifiedHamiltonian{T}
+    hamiltonian::H
+    alpha::TA
+    beta::TB
+end
+
+function ScaledOrShiftedHamiltonian(
+    h::AbstractHamiltonian{TH}, alpha::TA, beta::TB
+) where {TH,TA<:Number,TB<:Number}
+    T = promote_type(TA, TB, TH)
+    return ScaledOrShiftedHamiltonian{T, TA, TB, typeof(h)}(h, alpha, beta)
+end
+ScaledOrShiftedHamiltonian(h::AbstractHamiltonian, ::One, ::Zero) = h
+
+function ScaledOrShiftedHamiltonian(
+    h::ScaledOrShiftedHamiltonian, alpha::Number, beta::Number
+)
+    return ScaledOrShiftedHamiltonian(h.hamiltonian, alpha * h.alpha, alpha * h.beta + beta)
+end
+
+function Base.show(io::IO, s::ScaledOrShiftedHamiltonian{T, TA, TB}) where {T, TA, TB}
+    if TA <: One
+        print(io, s.hamiltonian)
+    elseif TA <: Real
+        print(io, s.alpha, "*", s.hamiltonian)
+    else
+        print(io, "(", s.alpha, ")*", s.hamiltonian)
+    end
+    if TB <: Zero
+        return
+    elseif TB <: Real
+        print(io, " + ", s.beta, "*I")
+    else
+        print(io, " + (", s.beta, ")*I")
+    end
+end
+
+function LinearAlgebra.adjoint(s::ScaledOrShiftedHamiltonian)
+    return ScaledOrShiftedHamiltonian(s.hamiltonian', conj(s.alpha), conj(s.beta))
+end
+
+function LOStructure(::Type{<:ScaledOrShiftedHamiltonian{T,TA,TB,H}}) where {T,TA,TB,H}
+    if LOStructure(H) == IsHermitian()
+        if (TA <: Real || TA <: One) && (TB <: Real || TB <: Zero)
+            return IsHermitian()
+        else
+            return AdjointKnown()
+        end
+    else
+        return LOStructure(H)
+    end
+end
+
+parent_operator(s::ScaledOrShiftedHamiltonian) = s.hamiltonian
+function modify_diagonal(s::ScaledOrShiftedHamiltonian{T}, _, value) where {T}
+    return T(s.alpha * value + s.beta)
+end
+function modify_offdiagonal(s::ScaledOrShiftedHamiltonian{T}, _, addr, value) where {T}
+    return addr => T(s.alpha * value)
+end
+
+"""
+    add(shift::UniformScaling, H::AbstractHamiltonian, [alpha, beta])
+    add(H::AbstractHamiltonian, shift::UniformScaling, [beta, alpha])
+
+Construct the linear combination `alpha * H + beta * I` where `I` is the identity
+operator represented by a `UniformScaling`. This returns a modified operator representing
+the Hamiltonian with all matrix elements scaled by `alpha` and all diagonal elements shifted
+by `beta`. The coefficients `alpha` and `beta` default to `One()` if not specified.
+
+The coefficient order matches the `add(y, x, α, β)` convention used throughout
+`VectorInterface`.
+
+See also [`+`](@ref), [`scale`](@ref), and [`HamiltonianSum`](@ref).
+"""
+function VectorInterface.add(
+    shift::UniformScaling{T}, h::AbstractHamiltonian, alpha::Number, beta::Number
+) where {T<:Number}
+    return ScaledOrShiftedHamiltonian(h, alpha, shift.λ * beta)
+end
+function VectorInterface.add(
+    h::AbstractHamiltonian, shift::UniformScaling{T}, beta::Number, alpha::Number
+) where {T<:Number}
+    return add(shift, h, alpha, beta)
+end
+
+"""
+    +(H::AbstractHamiltonian, shift::UniformScaling)
+    H + beta * I
+
+Return a modified Hamiltonian where all diagonal elements are uniformly shifted by a scalar
+`beta`. Use the identity operator `I` from `LinearAlgebra` to construct the shift.
+The resulting Hamiltonian is equivalent to `add(H, beta * I)`.
+
+See also [`add`](@ref), [`scale`](@ref).
+"""
+function Base.:+(h::AbstractHamiltonian, shift::UniformScaling{T}) where {T<:Number}
+    return ScaledOrShiftedHamiltonian(h, One(), shift.λ)
+end
+Base.:+(shift::UniformScaling{T}, h::AbstractHamiltonian) where {T<:Number} = h + shift
+
+Base.:-(h::AbstractHamiltonian, shift::UniformScaling{T}) where {T<:Number} = h + (-shift)
+function Base.:-(shift::UniformScaling{T}, h::AbstractHamiltonian) where {T<:Number}
+    return ScaledOrShiftedHamiltonian(h, -1, shift.λ)
+end
+Base.:-(h::AbstractHamiltonian) = ScaledOrShiftedHamiltonian(h, -1, Zero())
+
+"""
+    scale(H::AbstractHamiltonian, alpha)
+    *(alpha::Number, H::AbstractHamiltonian)
+
+Return the scalar multiple `alpha * H` as a modified Hamiltonian wrapper.
+All matrix elements are scaled by the factor `alpha`.
+
+See also [`add`](@ref), [`+`](@ref).
+"""
+function VectorInterface.scale(h::AbstractHamiltonian, alpha::T) where {T<:Number}
+    return ScaledOrShiftedHamiltonian(h, alpha, Zero())
+end
+
+@doc (@doc scale)
+Base.:*(alpha::Number, h::AbstractHamiltonian) = scale(h, alpha)

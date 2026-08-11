@@ -153,7 +153,7 @@ function coherence(::Type{<:Complex}, reference, vector)
             Int(!iszero(ref))
         )
     end
-    return iszero(overlap) ? 0.0 : accumulator / overlap
+    return iszero(overlap) ? 0.0 + 0im : accumulator / overlap
 end
 
 """
