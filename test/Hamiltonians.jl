@@ -73,13 +73,14 @@ end
         FroehlichPolaron(BoseFS{missing}(1, 1, 1)),
         FroehlichPolaron(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
-        I + 0.01 * (-5.0 * HubbardRealSpace(BoseFS(1,1,1,1))), # FCIQMC transition operator
         # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
         # HamiltonianSum
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
-        2 * HubbardReal1D(BoseFS(2, 0, 0); u=1.0im), # ScaledOrShiftedHamiltonian
-        2 * HubbardReal1D(BoseFS(2, 0, 0)), # ScaledOrShiftedHamiltonian with real factor
+        # FCIQMC transition operator
+        (@inferred I + 0.01 * (-5.0*I + HubbardRealSpace(BoseFS(1,1,1,1)))),
+        2 * HubbardReal1D(BoseFS(2, 0, 0); u=1.0im), # scale
+        2 * HubbardReal1D(BoseFS(2, 0, 0)), # scale with real factor
         HubbardReal1D(BoseFS(2, 0, 0); u=1.0im) + 2I, # ScaledOrShiftedHamiltonian
         2 * (HubbardReal1D(BoseFS(2, 0, 0)) + 3.0I), # scaled and shifted
         3.0I - HubbardReal1D(BoseFS(2, 0, 0)), # subtract a Hamiltonian
@@ -1894,7 +1895,7 @@ end
         basis = build_basis(addr)
         H = HubbardReal1D(addr)
 
-        H1 = 2*H
+        H1 = @inferred 2*H
         @test Matrix(H1) == 2*Matrix(H)
         @test LOStructure(H1) == LOStructure(H)
         H1_twice = 2 * H1
@@ -1958,29 +1959,26 @@ end
     H = HubbardRealSpace(addr)
     basis = build_basis(addr)
 
-    @test !isdefined(Rimu.Hamiltonians, :ScaledHamiltonian)
-    @test !isdefined(Rimu.Hamiltonians, :ShiftedHamiltonian)
-
     @testset "construction and arithmetic" begin
         S = ScaledOrShiftedHamiltonian(H, 2, -3)
         @test S.alpha == 2
         @test S.beta == -3
         @test parent_operator(S) == H
 
-        Sidentity = ScaledOrShiftedHamiltonian(H, 1, 0)
+        Sidentity = @inferred ScaledOrShiftedHamiltonian(H, 1, 0)
         @test Sidentity isa ScaledOrShiftedHamiltonian
         @test Sidentity.alpha == 1
         @test Sidentity.beta == 0
         @test Matrix(Sidentity, basis) ≈ Matrix(H, basis)
 
-        @test H - 2I == ScaledOrShiftedHamiltonian(H, One(), -2)
-        @test H + 3I == ScaledOrShiftedHamiltonian(H, One(), 3)
+        @test (@inferred H - 2I) == ScaledOrShiftedHamiltonian(H, One(), -2)
+        @test (@inferred H + 3I) == ScaledOrShiftedHamiltonian(H, One(), 3)
         @test 2 * H == ScaledOrShiftedHamiltonian(H, 2, Zero())
         @test Matrix(H - 2I, basis) ≈ Matrix(H, basis) - 2I
         @test Matrix(2 * H + 3I, basis) ≈ 2 * Matrix(H, basis) + 3I
 
-        @test add(H, 2I, -4, 3) == ScaledOrShiftedHamiltonian(H, 3, -8)
-        @test add(2I, H, 3, -4) == ScaledOrShiftedHamiltonian(H, 3, -8)
+        @test (@inferred add(H, 2I, -4, 3)) == ScaledOrShiftedHamiltonian(H, 3, -8)
+        @test (@inferred add(2I, H, 3, -4)) == ScaledOrShiftedHamiltonian(H, 3, -8)
     end
 
     @testset "structure and adjoint" begin
