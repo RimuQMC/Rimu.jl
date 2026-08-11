@@ -411,10 +411,11 @@ function _string_diagonal_real(d, addr)
 end
 
 """
-    SignCorrelation{T=ComplexF64} <: AbstractObservable{T}
+    SignCorrelation{T=ComplexF64}() <: AbstractObservable{T}
 
-Compute the sign coherence (sign correlation) between vectors. The result is normalised in
-a way that ensures the coherence is equal to 1 if all non-zero elements of the vector agree
+An observable that can be used to compute the sign correlation (normalised sign coherence)
+between two vectors when used in a three-way dot product. The result is normalised in
+a way that ensures the coherence is equal to 1 if all non-zero elements of the vectors agree
 in sign. The type parameter `T` controls the result type.
 
 Computing the dot product `dot(v, Ŝ, w)` of the sign correlation operator `Ŝ` with vectors `v` and
@@ -432,6 +433,10 @@ julia> c = PDVec(1 => 10.0, 4 => 0.5);
 julia> dot(a, SignCorrelation{Float64}(), c)
 1.0
 ```
+`SignCorrelation` can be passed as an observable into [`AllOverlaps`](@ref) to measure 
+the sign correlation between two replicas in a [`ProjectorMonteCarloProblem`](@ref) 
+simulation. Use the `post_step_strategy` [`SignCoherence`](@ref) to compute the
+sign coherence of a single replica against a fixed reference vector instead.
 """
 struct SignCorrelation{T<:Number} <: AbstractObservable{T} end
 
