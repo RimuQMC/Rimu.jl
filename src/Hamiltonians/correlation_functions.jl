@@ -437,8 +437,6 @@ struct SignCorrelation{T<:Number} <: AbstractObservable{T} end
 
 SignCorrelation() = SignCorrelation{ComplexF64}()
 
-Rimu.LOStructure(::Type{<:SignCorrelation}) = IsDiagonal()
-
 function Rimu.Interfaces.dot_from_right(
     lhs::AbstractDVec, ::SignCorrelation{T}, rhs::AbstractDVec
 ) where {T}
