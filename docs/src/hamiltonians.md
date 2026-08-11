@@ -94,7 +94,7 @@ TwoParticleExcitation
 ReducedDensityMatrix
 Momentum
 AxialAngularMomentumHO
-SignCorrelation
+SignCorrelator
 ```
 
 ## Geometry
