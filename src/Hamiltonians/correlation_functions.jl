@@ -417,7 +417,7 @@ Compute the sign coherence (sign correlation) between vectors. The result is nor
 a way that ensures the coherence is equal to 1 if all non-zero elements of the vector agree
 in sign. The type parameter `T` controls the result type.
 
-Computing the dot product `dot(v, Ŝ, w)` of the sign correlation operator `Ŝ` with vectors `v` and 
+Computing the dot product `dot(v, Ŝ, w)` of the sign correlation operator `Ŝ` with vectors `v` and
 `w` gives
 ```jldoctest
 julia> a = PDVec(1 => 1.0, 2 => -3.0);
@@ -442,9 +442,10 @@ Rimu.LOStructure(::Type{<:SignCorrelation}) = IsDiagonal()
 function Rimu.Interfaces.dot_from_right(
     lhs::AbstractDVec, ::SignCorrelation{T}, rhs::AbstractDVec
 ) where {T}
-    accumulator, overlap = sum(pairs(rhs); init=Rimu.MultiScalar(zero(T), 0)) do ((k, v_right))
+    init = Rimu.MultiScalar(zero(T), 0)
+    accumulator, nonzeros = sum(pairs(rhs); init) do ((k, v_right))
         product = T(sign(conj(lhs[k]) * v_right))
         Rimu.MultiScalar(product, Int(!iszero(product)))
     end
-    return iszero(overlap) ? zero(T) : accumulator / overlap
+    return iszero(nonzeros) ? zero(T) : accumulator / nonzeros
 end

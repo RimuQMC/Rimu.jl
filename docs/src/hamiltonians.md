@@ -94,6 +94,7 @@ TwoParticleExcitation
 ReducedDensityMatrix
 Momentum
 AxialAngularMomentumHO
+SignCorrelation
 ```
 
 ## Geometry
@@ -112,7 +113,7 @@ LadderBoundaries
 ```
 
 ## Additional documentation of internal functions
-The following internal functions and types are documented here for completeness, 
+The following internal functions and types are documented here for completeness,
 but are not part of the public API and may change any time. Use at your own risk.
 ```@docs
 Hamiltonians.one_electron_diagonal
