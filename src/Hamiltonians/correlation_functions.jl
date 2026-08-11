@@ -409,3 +409,40 @@ function _string_diagonal_real(d, addr)
 
     return result / M
 end
+
+"""
+    SignCoherence{T=ComplexF64} <: AbstractObservable{T}
+
+Compute the sign coherence (sign correlation) between vectors. The result is normalised in
+a way that ensures the coherence is equal to 1 if all non-zero elements of the vector agree
+in sign. The type parameter `T` controls the result type.
+
+```jldoctest
+julia> a = PDVec(1 => 1.0, 2 => -3.0);
+
+julia> b = PDVec(1 => -5.0, 3 => 4.0);
+
+julia> dot(a, Coherence(), b)
+-1.0 + 0.0im
+
+julia> c = PDVec(1 => 10.0, 4 => 0.5)
+
+julia> dot(c, Coherence{Float64}(), b)
+1.0
+```
+"""
+struct SignCoherence{T<:Number} <: AbstractObservable{T} end
+
+SignCoherence() = SignCoherence{ComplexF64}()
+
+Rimu.LOStructure(::Type{SignCoherence}) = IsDiagonal()
+
+function Rimu.Interfaces.dot_from_right(
+    lhs::AbstractDVec, ::SignCoherence{T}, rhs::AbstractDVec
+) where {T}
+    accumulator, overlap = sum(pairs(rhs); init=MultiScalar(zero(T), 0)) do ((k, v_right))
+        product = sign(lhs[k] * v_right)
+        MultiScalar(product, Int(!iszero(product)))
+    end
+    return accumulator / overlap
+end
