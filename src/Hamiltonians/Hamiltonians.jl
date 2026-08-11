@@ -32,7 +32,7 @@ Other
 - [`TimeReversalSymmetry`](@ref)
 - [`Stoquastic`](@ref)
 - [`HamiltonianProduct`](@ref)
-- [`ScaledHamiltonian`](@ref)
+- [`ScaledOrShiftedHamiltonian`](@ref)
 - [`HamiltonianSum`](@ref)
 
 ## [Observables](#Observables)
@@ -103,7 +103,7 @@ export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
 export ModifiedHamiltonian
-export HamiltonianProduct, ScaledHamiltonian, ShiftedHamiltonian, HamiltonianSum
+export HamiltonianProduct, HamiltonianSum, ScaledOrShiftedHamiltonian
 
 if VERSION < v"1.10"
     # used for ReducedDensityMatrix

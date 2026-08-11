@@ -65,8 +65,7 @@ TimeReversalSymmetry
 Stoquastic
 Hamiltonians.TransformUndoer
 HamiltonianProduct
-ScaledHamiltonian
-ShiftedHamiltonian
+ScaledOrShiftedHamiltonian
 HamiltonianSum
 ```
 

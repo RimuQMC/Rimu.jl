@@ -8,11 +8,11 @@ on the same address space. The keyword argument `weight` affects random spawning
 with [`random_offdiagonal`](@ref) and determines the probability of random spawns
 from `A`, with `1 - weight` the probability of spawning from `B`.
 
-If coefficients `a` and `b` are given, the Hamiltonians are scaled with [`ScaledHamiltonian`](@ref),
-to represent ``aA + bB``.
+If coefficients `a` and `b` are given, the Hamiltonians are scaled with
+[`ScaledOrShiftedHamiltonian`](@ref), to represent ``aA + bB``.
 
-See also [`ShiftedHamiltonian`](@ref), [`ScaledHamiltonian`](@ref),
-[`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref).
+See also [`ScaledOrShiftedHamiltonian`](@ref), [`HamiltonianProduct`](@ref),
+[`AbstractHamiltonian`](@ref).
 """
 struct HamiltonianSum{T, H1<:AbstractHamiltonian, H2<:AbstractHamiltonian} <: AbstractHamiltonian{T}
     h1::H1
@@ -37,7 +37,7 @@ end
 
 @doc (@doc HamiltonianSum)
 function VectorInterface.add(
-    h1::AbstractHamiltonian, h2::AbstractHamiltonian, a::Number=1, b::Number=1; weight=0.5
+    h1::AbstractHamiltonian, h2::AbstractHamiltonian, a::Number=One(), b::Number=One(); weight=0.5
 )
     return HamiltonianSum(a*h1, b*h2; weight)
 end
@@ -154,121 +154,6 @@ function Base.iterate(o::SumOffdiagonals, state)
 end
 
 """
-    ShiftedHamiltonian(h::AbstractHamiltonian, shift::Number) <: ModifiedHamiltonian
-    add(h::AbstractHamiltonian, shift_op::UniformScaling, [α, β]) -> ShiftedHamiltonian
-    h + shift * I
-
-A Hamiltonian that has been shifted by a scalar value. In combination with
-[`ScaledHamiltonian`](@ref), this can be used to represent a Hamiltonian of the form
-``β*H + α*I``. Composite Hamiltonians constructed in this way are efficient for usage with
-deterministic and stochastic operations.
-
-Note that shifting a Hamiltonian by a scalar using `add` or `+` requires a
-`UniformScaling` object, which is created by multiplying a scalar with
-`I` (from the `LinearAlgebra` standard library).
-
-## Example
-```jldoctest
-julia> hamiltonian = HubbardRealSpace(BoseFS(1,1));
-
-julia> hamiltonian - 2I == ShiftedHamiltonian(hamiltonian, -2) == add(hamiltonian, -2I)
-true
-
-julia> Matrix(hamiltonian)
-3×3 Matrix{Float64}:
-  0.0      -2.82843  -2.82843
- -2.82843   1.0       0.0
- -2.82843   0.0       1.0
-
-julia> Matrix(hamiltonian - 2I)
-3×3 Matrix{Float64}:
- -2.0      -2.82843  -2.82843
- -2.82843  -1.0       0.0
- -2.82843   0.0      -1.0
-
-julia> transition_operator  = I - im * 0.1 * hamiltonian
-(1.0 + 0.0im)*I + (-0.0 - 0.1im) * HubbardRealSpace(
-  fs"|1 1⟩";
-  geometry = CubicGrid((2,), (true,)),
-  t = [1.0;;],
-  u = [1.0;;],
-)
-
-julia> Matrix(transition_operator)
-3×3 Matrix{ComplexF64}:
- 1.0+0.0im       0.0+0.282843im  0.0+0.282843im
- 0.0+0.282843im  1.0-0.1im       0.0+0.0im
- 0.0+0.282843im  0.0+0.0im       1.0-0.1im
-```
-
-See also [`HamiltonianSum`](@ref), [`ScaledHamiltonian`](@ref),
-[`ModifiedHamiltonian`](@ref), and [`AbstractHamiltonian`](@ref).
-"""
-struct ShiftedHamiltonian{T<:Number,H} <: ModifiedHamiltonian{T}
-    hamiltonian::H
-    shift::T
-end
-
-function ShiftedHamiltonian(h::AbstractHamiltonian{T1}, shift::T2) where {T1,T2<:Number}
-    T = promote_type(T1,T2)
-    return ShiftedHamiltonian{T, typeof(h)}(h, T(shift))
-end
-
-function ShiftedHamiltonian(h::ShiftedHamiltonian, shift::Number)
-    return ShiftedHamiltonian(h.hamiltonian, h.shift + shift)
-end
-
-function Base.show(io::IO, s::ShiftedHamiltonian{T}) where {T}
-    if T <: Real
-        print(io, s.shift, "*I + ", s.hamiltonian)
-    else
-        print(io, "(", s.shift, ")*I + ", s.hamiltonian)
-    end
-end
-
-function LinearAlgebra.adjoint(s::ShiftedHamiltonian)
-    return ShiftedHamiltonian(s.hamiltonian', conj(s.shift))
-end
-
-function LOStructure(::Type{<:ShiftedHamiltonian{T,H}}) where {T,H}
-    if LOStructure(H) == IsHermitian()
-        if T <: Real
-            return IsHermitian()
-        else
-            return AdjointKnown()
-        end
-    else
-        return LOStructure(H)
-    end
-end
-
-parent_operator(s::ShiftedHamiltonian) = s.hamiltonian
-modify_diagonal(s::ShiftedHamiltonian, _, value) = value + s.shift
-modify_offdiagonal(s::ShiftedHamiltonian, _, addr, value) = addr => value
-
-# @doc (@doc ShiftedHamiltonian)
-# function VectorInterface.add(
-#     h::AbstractHamiltonian, shift::UniformScaling{T}, alpha::Number, beta::Number
-# ) where {T<:Number}
-#     return ShiftedHamiltonian(beta * h, alpha * shift.λ)
-# end
-# function VectorInterface.add(
-#     shift::UniformScaling{T}, h::AbstractHamiltonian, alpha::Number, beta::Number
-# ) where {T<:Number}
-#     return add(h, shift, beta, alpha)
-# end
-
-# @doc (@doc ShiftedHamiltonian)
-# function Base.:+(h::AbstractHamiltonian, shift::UniformScaling{T}) where {T<:Number}
-#     return ShiftedHamiltonian(h, shift.λ)
-# end
-# Base.:+(shift::UniformScaling{T}, h::AbstractHamiltonian) where {T<:Number} = h + shift
-# Base.:-(h::AbstractHamiltonian, shift::UniformScaling{T}) where {T<:Number} = h + (-shift)
-# function Base.:-(shift::UniformScaling{T}, h::AbstractHamiltonian) where {T<:Number}
-#     scale(h, -1) + shift
-# end
-
-"""
     ScaledOrShiftedHamiltonian(H::AbstractHamiltonian, alpha, beta) <: ModifiedHamiltonian
     +(H::AbstractHamiltonian, shift::UniformScaling)
     add(shift::UniformScaling, H::AbstractHamiltonian, [alpha, beta])
@@ -326,9 +211,9 @@ function ScaledOrShiftedHamiltonian(
     h::AbstractHamiltonian{TH}, alpha::TA, beta::TB
 ) where {TH,TA<:Number,TB<:Number}
     T = promote_type(TA, TB, TH)
-    ScaledOrShiftedHamiltonian{T, TA, TB, typeof(h)}(h, alpha, beta)
+    return ScaledOrShiftedHamiltonian{T, TA, TB, typeof(h)}(h, alpha, beta)
 end
-ScaledOrShiftedHamiltonian(h, ::One, ::Zero) = h
+ScaledOrShiftedHamiltonian(h::AbstractHamiltonian, ::One, ::Zero) = h
 
 function ScaledOrShiftedHamiltonian(
     h::ScaledOrShiftedHamiltonian, alpha::Number, beta::Number
@@ -359,7 +244,7 @@ end
 
 function LOStructure(::Type{<:ScaledOrShiftedHamiltonian{T,TA,TB,H}}) where {T,TA,TB,H}
     if LOStructure(H) == IsHermitian()
-        if TA <: Real && TB <: Real
+        if (TA <: Real || TA <: One) && (TB <: Real || TB <: Zero)
             return IsHermitian()
         else
             return AdjointKnown()
