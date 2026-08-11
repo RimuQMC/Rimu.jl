@@ -82,7 +82,10 @@ end
         2 * HubbardReal1D(BoseFS(2, 0, 0)), # ScaledOrShiftedHamiltonian with real factor
         HubbardReal1D(BoseFS(2, 0, 0); u=1.0im) + 2I, # ScaledOrShiftedHamiltonian
         2 * (HubbardReal1D(BoseFS(2, 0, 0)) + 3.0I), # scaled and shifted
-    ]
+        3.0I - HubbardReal1D(BoseFS(2, 0, 0)), # subtract a Hamiltonian
+        - HubbardReal1D(BoseFS(2, 0, 0)), # unary minus
+        (2 + 2im) * (HubbardReal1D(BoseFS(2, 0, 0)) + (3.0 + 1.0im)I), # complex
+        ]
         test_hamiltonian_interface(H)
         # Check that the result of show can be pasted into the REPL. Does not work with
         # GuidingVectorSampling because it includes a DVec.
