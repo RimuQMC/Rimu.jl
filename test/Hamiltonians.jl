@@ -104,10 +104,19 @@ end
         (Momentum(1), BoseFS(1, 2, 3, 4)),
         (G2MomCorrelator(3), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
         (IdentityOperator(), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
-        (SignCoherence(), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
     ]
         test_operator_interface(op, addr)
         # Check that the result of show can be pasted into the REPL
+        @test eval(Meta.parse(repr(op))) == op
+    end
+end
+
+@testset "Observable interface test" begin
+    for (op, addr) in [
+        (SignCorrelation(), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
+        (SignCorrelation{Float64}(), FermiFS(1, 1, 0, 1, 0, 1, 0, 1)),
+        ]
+        test_observable_interface(op, addr)
         @test eval(Meta.parse(repr(op))) == op
     end
 end
