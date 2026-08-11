@@ -72,10 +72,9 @@ HamiltonianSum
 These public functions construct scaled and shifted Hamiltonians without exposing the
 underlying wrapper type directly:
 ```@docs
-VectorInterface.add
-Base.:+
-VectorInterface.scale
-Base.:*
+VectorInterface.add(::UniformScaling, ::AbstractHamiltonian, ::Number, ::Number)
+Base.:+(::AbstractHamiltonian, ::UniformScaling)
+VectorInterface.scale(::AbstractHamiltonian, ::Number)
 ```
 
 ## Observables

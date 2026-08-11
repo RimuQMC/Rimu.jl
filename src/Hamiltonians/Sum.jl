@@ -197,9 +197,9 @@ julia> Matrix(3*H + 2*I)
  -8.48528   0.0       5.0
 ```
 !!! warning "Warning"
-    The `ScaledOrShiftedHamiltonian` type is an implementation detail and may change in future
-    versions of Rimu. Use the public interface functions [`add`](@ref), [`+`](@ref), [`scale`](@ref),
-    and [`*`](@ref) to construct scaled and shifted Hamiltonians.
+    The `ScaledOrShiftedHamiltonian` type is an implementation detail and may change in
+    future versions of Rimu. Use the public interface functions [`add`](@ref), [`+`](@ref)
+    and [`scale`](@ref) to construct scaled and shifted Hamiltonians.
 
 See also [`HamiltonianSum`](@ref), [`HamiltonianProduct`](@ref),
 [`ModifiedHamiltonian`](@ref), and [`AbstractHamiltonian`](@ref).
@@ -270,14 +270,14 @@ end
     add(H::AbstractHamiltonian, shift::UniformScaling, [beta, alpha])
 
 Construct the linear combination `alpha * H + beta * I` where `I` is the identity
-operator represented by a `UniformScaling`. This is the public entry point for applying
-a scalar shift to a Hamiltonian while preserving the underlying modified-operator
-implementation.
+operator represented by a `UniformScaling`. This returns a modified operator representing
+the Hamiltonian with all matrix elements scaled by `alpha` and all diagonal elements shifted
+by `beta`. The coefficients `alpha` and `beta` default to `One()` if not specified.
 
 The coefficient order matches the `add(y, x, α, β)` convention used throughout
 `VectorInterface`.
 
-See also [`+`](@ref), [`scale`](@ref), [`*`](@ref), and [`HamiltonianSum`](@ref).
+See also [`+`](@ref), [`scale`](@ref), and [`HamiltonianSum`](@ref).
 """
 function VectorInterface.add(
     shift::UniformScaling{T}, h::AbstractHamiltonian, alpha::Number, beta::Number
@@ -292,11 +292,13 @@ end
 
 """
     +(H::AbstractHamiltonian, shift::UniformScaling)
+    H + beta * I
 
-Return a Hamiltonian shifted by a scalar multiple of the identity operator.
-This is equivalent to `H + shift.λ * I` and returns a modified Hamiltonian wrapper.
+Return a modified Hamiltonian where all diagonal elements are uniformly shifted by a scalar
+`beta`. Use the identity operator `I` from `LinearAlgebra` to construct the shift.
+The resulting Hamiltonian is equivalent to `add(H, beta * I)`.
 
-See also [`add`](@ref), [`scale`](@ref), [`*`](@ref).
+See also [`add`](@ref), [`scale`](@ref).
 """
 function Base.:+(h::AbstractHamiltonian, shift::UniformScaling{T}) where {T<:Number}
     return ScaledOrShiftedHamiltonian(h, One(), shift.λ)
@@ -311,22 +313,16 @@ Base.:-(h::AbstractHamiltonian) = ScaledOrShiftedHamiltonian(h, -1, Zero())
 
 """
     scale(H::AbstractHamiltonian, alpha)
+    *(alpha::Number, H::AbstractHamiltonian)
 
 Return the scalar multiple `alpha * H` as a modified Hamiltonian wrapper.
-This is the canonical helper for scaling Hamiltonians by a numeric factor.
+All matrix elements are scaled by the factor `alpha`.
 
-See also [`add`](@ref), [`+`](@ref), [`*`](@ref).
+See also [`add`](@ref), [`+`](@ref).
 """
 function VectorInterface.scale(h::AbstractHamiltonian, alpha::T) where {T<:Number}
     return ScaledOrShiftedHamiltonian(h, alpha, Zero())
 end
 
-"""
-    *(alpha::Number, H::AbstractHamiltonian)
-
-Return the scalar multiple `alpha * H`.
-This is an alias for [`scale`](@ref).
-
-See also [`add`](@ref), [`+`](@ref), [`scale`](@ref).
-"""
+@doc (@doc scale)
 Base.:*(alpha::Number, h::AbstractHamiltonian) = scale(h, alpha)

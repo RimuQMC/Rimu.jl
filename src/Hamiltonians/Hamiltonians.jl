@@ -38,7 +38,6 @@ Other
 - [`add`](@ref)
 - [`+`](@ref)
 - [`scale`](@ref)
-- [`*`](@ref)
 
 ## [Observables](#Observables)
 - [`ParticleNumberOperator`](@ref)
