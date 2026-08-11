@@ -65,8 +65,16 @@ TimeReversalSymmetry
 Stoquastic
 Hamiltonians.TransformUndoer
 HamiltonianProduct
-ScaledHamiltonian
 HamiltonianSum
+```
+
+## Linear combination helpers
+These public functions construct scaled and shifted Hamiltonians without exposing the
+underlying wrapper type directly:
+```@docs
+VectorInterface.add(::UniformScaling, ::AbstractHamiltonian, ::Number, ::Number)
+Base.:+(::AbstractHamiltonian, ::UniformScaling)
+VectorInterface.scale(::AbstractHamiltonian, ::Number)
 ```
 
 ## Observables
@@ -116,6 +124,7 @@ LadderBoundaries
 The following internal functions and types are documented here for completeness,
 but are not part of the public API and may change any time. Use at your own risk.
 ```@docs
+Hamiltonians.ScaledOrShiftedHamiltonian
 Hamiltonians.one_electron_diagonal
 Hamiltonians.two_electron_diagonal
 Hamiltonians.MolecularHamiltonianOffDiagonals

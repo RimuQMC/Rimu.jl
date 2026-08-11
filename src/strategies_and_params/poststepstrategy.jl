@@ -225,7 +225,7 @@ function post_step_action(d::SingleParticleDensity, single_state, step)
         return (name => single_particle_density(vector; component),)
     else
         V = valtype(vector)
-        M = num_modes(keytype(vector))
+        M = num_modes_check_equal(keytype(vector))
         return (name => ntuple(_ -> 0.0, Val(M)),)
     end
 end
@@ -242,7 +242,7 @@ account. The result is always normalized so that `sum(result) ≈ num_particles(
 
 ```jldoctest
 julia> v = DVec(fs"|⋅↑⇅↓⋅⟩" => 1.0, fs"|↓↓⋅↑↑⟩" => 0.5)
-DVec{FermiFS2C{2, 2, 5, 4, FermiFS{2, 5, BitString{5, 1, UInt8}}, FermiFS{2, 5, BitString{5, 1, UInt8}}},Float64} with 2 entries, style = IsDeterministic{Float64}()
+DVec{FermiFS2C{4, 5, FermiFS{2, 5, BitString{5, 1, UInt8}}, FermiFS{2, 5, BitString{5, 1, UInt8}}},Float64} with 2 entries, style = IsDeterministic{Float64}()
   fs"|⋅↑⇅↓⋅⟩" => 1.0
   fs"|↓↓⋅↑↑⟩" => 0.5
 
@@ -260,7 +260,7 @@ julia> single_particle_density(v; component=1)
 function single_particle_density(dvec; component=0)
     K = keytype(dvec)
     V = float(valtype(dvec))
-    M = num_modes(K)
+    M = num_modes_check_equal(K)
 
     result = sum(pairs(dvec); init=MultiScalar(ntuple(_ -> zero(V), Val(M)))) do (k, v)
         MultiScalar(abs2(v) .* single_particle_density(k; component))

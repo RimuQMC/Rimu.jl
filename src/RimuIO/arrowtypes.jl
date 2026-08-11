@@ -1,3 +1,12 @@
+# Helper function
+function parse_int_or_missing(s::AbstractString)
+    s == "missing" && return missing
+    x = tryparse(Int, s)
+    x === nothing && throw(ArgumentError("Expected integer or \"missing\", got: $s"))
+    return x
+end
+
+
 const COMPLEX = Symbol("JuliaLang.Complex")
 ArrowTypes.arrowname(::Type{<:Complex}) = COMPLEX
 ArrowTypes.ArrowType(::Type{Complex{T}}) where {T} = Tuple{T,T}
@@ -40,7 +49,7 @@ end
 ###
 ### Single-component
 ###
-const BoseOrFermiFS{N,M,B} = Union{BoseFS{N,M,B},FermiFS{N,M,B}}
+const BoseOrFermiFS{N,M,B} = Union{BoseFS{N,M,B},FermiFS{N,M,B},HardcoreBoseFS{N,M,B}}
 
 function ArrowTypes.ArrowType(::Type{<:BoseOrFermiFS{<:Any,<:Any,B}}) where {B}
     return ArrowTypes.ArrowType(B)
@@ -79,7 +88,16 @@ function ArrowTypes.JuliaType(::Val{FERMIFS_BS}, ::Type{NTuple{X,Y}}, meta) wher
     N, M, B = split(meta, '.')
 
     BS = ArrowTypes.JuliaType(Val(BITSTRING), NTuple{X,Y}, B)
-    return FermiFS{parse(Int, N),parse(Int, M),BS}
+    return FermiFS{parse_int_or_missing(N),parse(Int, M),BS}
+end
+
+const HARDCOREBOSEFS_BS = Symbol("Rimu.HardcoreBoseFS.BitString")
+ArrowTypes.arrowname(::Type{<:HardcoreBoseFS{<:Any,<:Any,<:BitString}}) = HARDCOREBOSEFS_BS
+function ArrowTypes.JuliaType(::Val{HARDCOREBOSEFS_BS}, ::Type{NTuple{X,Y}}, meta) where {X,Y}
+    N, M, B = split(meta, '.')
+
+    BS = ArrowTypes.JuliaType(Val(BITSTRING), NTuple{X,Y}, B)
+    return HardcoreBoseFS{parse_int_or_missing(N),parse(Int, M),BS}
 end
 
 const FERMIFS_SPL = Symbol("Rimu.FermiFS.SortedParticleList")
@@ -92,16 +110,18 @@ function ArrowTypes.JuliaType(::Val{FERMIFS_SPL}, ::Type{NTuple{X,Y}}, meta) whe
 end
 
 ###
-### OccupationNumberFS
+### BoseFS{missing}
 ###
-const OCCUPATIONNUMBERFS = Symbol("Rimu.OccupationNumberFS")
-ArrowTypes.arrowname(::Type{<:OccupationNumberFS}) = OCCUPATIONNUMBERFS
-ArrowTypes.ArrowType(::Type{OccupationNumberFS{M,T}}) where {M,T} = NTuple{M,T}
-ArrowTypes.toarrow(fs::OccupationNumberFS) = Tuple(fs.onr)
-function ArrowTypes.JuliaType(::Val{OCCUPATIONNUMBERFS}, ::Type{NTuple{M,T}}, _) where {M,T}
-    return OccupationNumberFS{M,T}
+const BOSEFS_MISSING = Symbol("Rimu.BoseFS{missing}")
+ArrowTypes.arrowname(::Type{<:BoseFS{missing}}) = BOSEFS_MISSING
+function ArrowTypes.ArrowType(::Type{BoseFS{missing,M,S}}) where {M,U<:Unsigned,S<:SVector{M,U}}
+    NTuple{M,U}
 end
-function ArrowTypes.fromarrow(::Type{T}, storage) where {T<:OccupationNumberFS}
+ArrowTypes.toarrow(fs::BoseFS{missing}) = Tuple(fs.bs)
+function ArrowTypes.JuliaType(::Val{BOSEFS_MISSING}, ::Type{NTuple{M,T}}, _) where {M,T}
+    return BoseFS{missing,M,SVector{M,T}}
+end
+function ArrowTypes.fromarrow(::Type{T}, storage) where {T<:BoseFS{missing}}
     return T(SVector(storage))
 end
 
@@ -110,15 +130,14 @@ end
 ###
 const COMPOSITEFS = Symbol("Rimu.CompositeFS")
 ArrowTypes.arrowname(::Type{<:CompositeFS}) = COMPOSITEFS
-function ArrowTypes.ArrowType(::Type{<:CompositeFS{<:Any,<:Any,<:Any,T}}) where {T}
-    # Going over T.parameters is ugly.
-    return Tuple{map(ArrowTypes.ArrowType, T.parameters)...}
+function ArrowTypes.ArrowType(::Type{<:CompositeFS{<:Any,<:Any,T}}) where {T}
+    return Tuple{map(ArrowTypes.ArrowType, fieldtypes(T))...}
 end
 function ArrowTypes.toarrow(c::CompositeFS)
     return map(ArrowTypes.toarrow, c.components)
 end
-function ArrowTypes.arrowmetadata(::Type{<:CompositeFS{<:Any,<:Any,<:Any,T}}) where {T}
-    metas = map(T.parameters) do X
+function ArrowTypes.arrowmetadata(::Type{<:CompositeFS{<:Any,<:Any,T}}) where {T}
+    metas = map(fieldtypes(T)) do X
         string(ArrowTypes.arrowname(X), ':', ArrowTypes.arrowmetadata(X))
     end
     return join(metas, ';')
@@ -137,7 +156,7 @@ function ArrowTypes.JuliaType(
 ) where {T<:Tuple}
     metas = split(meta, ';')
 
-    comps = map(Tuple(T.parameters), metas) do X, m
+    comps = map(fieldtypes(T), metas) do X, m
         arrow_name, rest = split(m, ':')
         ArrowTypes.JuliaType(Val(Symbol(arrow_name)), X, rest)
     end
@@ -145,7 +164,6 @@ function ArrowTypes.JuliaType(
     return CompositeFS{
         length(comps),
         sum(num_particles, comps),
-        num_modes(first(comps)),
         Tuple{comps...},
     }
 end
@@ -154,8 +172,8 @@ function ArrowTypes.fromarrow(::Type{C}, chunks...) where {C<:CompositeFS}
 end
 function ArrowTypes.fromarrow(
     ::Type{C}, chunks::Tuple
-) where {T,C<:CompositeFS{<:Any,<:Any,<:Any,T}}
-    comps = map(ArrowTypes.fromarrow, Tuple(T.parameters), chunks)
+) where {T,C<:CompositeFS{<:Any,<:Any,T}}
+    comps = map(ArrowTypes.fromarrow, Tuple(fieldtypes(T)), chunks)
 
     return C(comps)
 end

@@ -80,10 +80,10 @@ See [`excitation`](@ref), [`occupied_mode_map`](@ref).
 end
 
 @inline function momentum_transfer_excitation(
-    add_a, add_b, chosen, map_a, map_b; fold=true
+    add_a::SingleComponentFockAddress, add_b::SingleComponentFockAddress,
+    chosen, map_a, map_b; fold=true
 )
-    M = num_modes(add_a)
-    M == num_modes(add_b) || throw(ArgumentError("Addresses must have the same number of modes"))
+    M = num_modes_check_equal(add_a, add_b)
 
     src_a, remainder = fldmod1(chosen, (M - 1) * length(map_b))
     dst_a, src_b = fldmod1(remainder, length(map_b))
@@ -196,11 +196,12 @@ or the excitation is diagonal, the function returns `value == 0`.
 
 See [`transcorrelated_diagonal`](@ref), [`Transcorrelated1D`](@ref).
 """
-function transcorrelated_three_body_excitation(add_a, add_b, i, map_a, map_b)
+function transcorrelated_three_body_excitation(
+    add_a::SingleComponentFockAddress, add_b::SingleComponentFockAddress, i, map_a, map_b
+)
     N1 = length(map_a)
     N2 = length(map_b)
-    M = num_modes(add_a)
-    M == num_modes(add_b) || throw(ArgumentError("Addresses must have the same number of modes"))
+    M = num_modes_check_equal(add_a, add_b)
 
     if add_a isa FermiFS # TODO: this is better done in the same way as momentum transfer
         p, q, s, p_k, q_l = Tuple(CartesianIndices((N1, N1 - 1, N2, M, M))[i])
@@ -238,7 +239,9 @@ function transcorrelated_three_body_excitation(add_a, add_b, i, map_a, map_b)
 end
 
 """
-    momentum_external_potential_excitation(ep, add, i, map::ModeMap) -> nadd, α
+    momentum_external_potential_excitation(
+        ep, add::SingleComponentFockAddress, i, map::ModeMap
+    ) -> nadd, α
 
 The momentum space version of an external potential. `ep` may be a discrete Fourier
 transform of a real-space potential.
@@ -254,7 +257,9 @@ term `∝ |add⟩`. It is expected that `map == occupied_mode_map(add)`.
 See [`momentum_external_potential_diagonal`](@ref), [`occupied_mode_map`](@ref),
 [`num_occupied_modes`](@ref), [`num_modes`](@ref).
 """
-function momentum_external_potential_excitation(ep, add, i, map::ModeMap)
+function momentum_external_potential_excitation(
+    ep, add::SingleComponentFockAddress, i, map::ModeMap
+)
     M = num_modes(add)
     p, q = fldmod1(i, M - 1) # i == (p-1)*(M-1) + q
     p_index = map[p] # p-th occupied mode in add

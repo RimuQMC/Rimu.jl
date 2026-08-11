@@ -8,7 +8,7 @@ Represents the projection of angular momentum onto `z`-axis:
 \\hat{L}_z = i \\hbar \\sum_{j=1}^N \\left( b_x b_y^\\dag - b_y b_x^\\dag \\right),
 ```
 where ``b_x^\\dag`` and ``b_x`` are raising and lowering (ladder) operators
-for  a harmonic oscillator in the ``x`` dimension, and simlarly for ``y``.
+for  a harmonic oscillator in the ``x`` dimension, and similarly for ``y``.
 
 This is implemented for an ``N`` particle Fock space with creation and annihilation
 operators as
@@ -34,7 +34,7 @@ julia> S = (2,2)
 (2, 2)
 
 julia> Lz = AxialAngularMomentumHO(S)
-AxialAngularMomentumHO((2, 2); z_dim = 3, addr = BoseFS{0,4}(0, 0, 0, 0))
+AxialAngularMomentumHO((2, 2); z_dim = 3, addr = BoseFS(0, 0, 0, 0))
 
 julia> v = DVec(BoseFS(prod(S), 2 => 1) => 1.0)
 DVec{BoseFS{1, 4, BitString{4, 1, UInt8}},Float64} with 1 entry, style = IsDeterministic{Float64}()

@@ -14,11 +14,10 @@ type [`SingleComponentFockAddress`](@ref).
 
 Examples of Fock addresses are:
 
-- [`BoseFS`](@ref): Bosonic Fock state with fixed particle and mode number.
+- [`BoseFS`](@ref): Bosonic Fock state with fixed mode number and fixed or variable
+    particle number.
 - [`FermiFS`](@ref): Fermionic Fock state with fixed mode number and fixed or variable
     particle number.
-- [`OccupationNumberFS`](@ref): Bosonic Fock state with a fixed number of modes. The number
-    of particles is not part of the type and can be changed by operators.
 - [`HardcoreBoseFS`](@ref): Fock state for hardcore bosons with fixed mode number and fixed
     or variable particle number.
 - [`CompositeFS`](@ref) Multi-component Fock state composed of the above types.
@@ -30,25 +29,28 @@ The various address types make use efficient underlying data storage types like 
 ```@docs
 Rimu.Interfaces.AbstractFockAddress
 Rimu.Interfaces.num_particles
-Rimu.Interfaces.num_modes
 Rimu.Interfaces.num_components
+Rimu.Interfaces.num_modes
+Rimu.Interfaces.num_modes_check_equal
+Rimu.Interfaces.num_modes_are_equal
 ```
 
 ```@autodocs
 Modules = [BitStringAddresses]
-Pages = ["BitStringAddresses.jl","fockaddress.jl","bosefs.jl","hardcorebosefs.jl","fermifs.jl","multicomponent.jl","occupationnumberfs.jl"]
+Pages = ["BitStringAddresses.jl","fockaddress.jl","bosefs.jl","hardcorebosefs.jl","fermifs.jl","multicomponent.jl"]
 Private = false
 ```
 
 ## Internal representations
 
-The addresses types [`BoseFS`](@ref), [`FermiFS`](@ref) and [`HardcoreBoseFS`](@ref) are 
+The addresses types [`BoseFS`](@ref), [`FermiFS`](@ref) and [`HardcoreBoseFS`](@ref), where the 
+particle number is either fixed (for fixed particle number `BoseFS`) or severely constrained, are 
 implemented as either bitstrings through [`BitString`](@ref), or sorted lists of particles 
 with [`SortedParticleList`](@ref). This allows for a space efficient representation.
 
-Therewhile, [`OccupationNumberFS`](@ref) internally uses the occupation number representation, 
-which allows it to handle excitation operations that change the particle number. This is fast
-but requires more storage space.
+Therewhile, [`BoseFS{missing}`](@ref), which allows for flexible and unconstrained particle number
+internally uses the occupation number representation, which allows it to handle excitation 
+operations that change the particle number. This is fast but requires more storage space.
 
 ### Internal APIs
 

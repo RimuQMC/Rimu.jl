@@ -1,15 +1,21 @@
 """
     BoseFS{N,M,S} <: SingleComponentFockAddress
 
-Address type that represents a Fock state of `N` spinless bosons in `M` modes by wrapping a
-[`BitString`](@ref), or a [`SortedParticleList`](@ref). Which is wrapped is chosen
-automatically based on the properties of the address.
+Address type that represents a Fock state of `N` spinless bosons in `M` modes. The
+particle number `N` can be set to `missing`. In the latter case the number of particles is
+not known at compile time and can be changed by excitations.
 
 # Constructors
 
 * `BoseFS{[N,M]}(val::Integer...)`: Create `BoseFS{N,M}` from occupation numbers. This is
   type-stable if the number of modes `M` and the number of particles `N` are provided.
   Otherwise, `M` and `N` are inferred from the arguments.
+
+* `BoseFS{missing}(arg; type=nothing)`: Create `BoseFS{missing,M}` from occupation numbers.
+  The number of particles is not known at compile time and can be changed by excitations.
+  The keyword argument `type` can be used to specify the type of the occupation numbers. It
+  must be an unsigned integer type. If unspecified, the smallest unsigned integer type that
+  can hold the maximum occupation number is chosen automatically.
 
 * `BoseFS{[N,M]}(onr)`: Create `BoseFS{N,M}` from occupation number representation, see
   [`onr`](@ref). This is efficient if `N` and `M` are provided, and `onr` is a
@@ -29,33 +35,73 @@ automatically based on the properties of the address.
 # Examples
 
 ```jldoctest
-julia> BoseFS{6,5}(0, 1, 2, 3, 0)
-BoseFS{6,5}(0, 1, 2, 3, 0)
+julia> address = BoseFS(0, 1, 2, 3, 0)
+BoseFS(0, 1, 2, 3, 0)
+
+julia> num_modes(address), num_particles(address)
+(5, 6)
 
 julia> BoseFS(abs(i - 3) ≤ 1 ? i - 1 : 0 for i in 1:5)
-BoseFS{6,5}(0, 1, 2, 3, 0)
+BoseFS(0, 1, 2, 3, 0)
 
-julia> BoseFS(5, 2 => 1, 3 => 2, 4 => 3)
-BoseFS{6,5}(0, 1, 2, 3, 0)
+julia> BoseFS(5, 2 => 1, 3 => 2, 4 => 3) # sparse constructor
+BoseFS(0, 1, 2, 3, 0)
 
 julia> BoseFS{6,5}(i => i - 1 for i in 2:4)
-BoseFS{6,5}(0, 1, 2, 3, 0)
+BoseFS(0, 1, 2, 3, 0)
 
 julia> fs"|0 1 2 3 0⟩" # \\rangle(tab) -> ⟩
-BoseFS{6,5}(0, 1, 2, 3, 0)
+BoseFS(0, 1, 2, 3, 0)
 
-julia> fs"|b 5: 2 3 3 4 4 4⟩"
-BoseFS{6,5}(0, 1, 2, 3, 0)
+julia> fs"|b 5: 2 3 3 4 4 4⟩" # compact sparse constructor
+BoseFS(0, 1, 2, 3, 0)
+
+julia> BoseFS{missing}(0, 1, 2, 3, 0) === fs"|0 1 2 3 0⟩{}" # missing particle number UInt8
+true
+
+julia> BoseFS{missing}(0, 1, 2, 3, 0; type=UInt16) === fs"|0 1 2 3 0⟩{UInt16}"
+true
 ```
 
-See also: [`SingleComponentFockAddress`](@ref), [`OccupationNumberFS`](@ref),
+See also: [`SingleComponentFockAddress`](@ref),
 [`FermiFS`](@ref), [`CompositeFS`](@ref), [`FermiFS2C`](@ref), [`@fs_str`](@ref).
+
+# Extended Help
+
+The particle number `N` is a type parameter of the address and will be inferred by default,
+unless it is specifically set to `missing`. Having the particle number as a type parameter
+allows for type-stable code and optimizations. It should be used by default for
+number-conserving Hamiltonians.
+
+Internally, there are three different storage types for `BoseFS`. The type `S` is
+chosen automatically based on the properties of the address. The storage types
+[`BitString`](@ref) and [`SortedParticleList`](@ref) are used for dense and sparse
+representations, respectively, when the number of particles is a type parameter and thus
+known at compile time.
+
+When the number of particles is set to `missing` and not known at compile time, the
+occupation numbers are stored in a statically-sized vector of type `SVector{M,T}` where
+`T` is an unsigned integer type. For a type-stable constructor with missing particle number,
+use
+```julia
+BoseFS{missing}(v::SVector{M,T}) where {M,T<:Unsigned}
+```
 """
 struct BoseFS{N,M,S} <: SingleComponentFockAddress{N,M}
     bs::S
+
+    function BoseFS{N,M,S}(bs::S) where {N,M,S}
+        new{N,M,S}(bs)
+    end
+    function BoseFS{missing,M,S}(bs::S) where {M,S<:SVector{M,<:Unsigned}}
+        new{missing,M,S}(bs)
+    end
 end
 
-@inline function BoseFS{N,M,S}(onr::Union{SVector{M},MVector{M},NTuple{M}}) where {N,M,S}
+@inline function BoseFS{N,M,S}(onr) where {N,M,S}
+    onr isa Union{SVector{M},MVector{M},NTuple{M}} || throw(ArgumentError(
+        "invalid occupation number representation: expected SVector{$M}, MVector{$M}, or NTuple{$M}; got $(typeof(onr))"
+    ))
     @boundscheck begin
         sum(onr) == N || throw(ArgumentError(
             "invalid ONR: $N particles expected, $(sum(onr)) given"
@@ -73,6 +119,7 @@ end
     end
     return BoseFS{N,M,S}(from_bose_onr(S, onr))
 end
+
 function BoseFS{N,M}(onr::Union{AbstractArray{<:Integer},NTuple{M,<:Integer}}) where {N,M}
     @boundscheck begin
         sum(onr) == N || throw(ArgumentError(
@@ -112,6 +159,7 @@ BoseFS(M::Integer, pairs::Pair...) = BoseFS(M, pairs)
 BoseFS(M::Integer, pairs) = BoseFS(sparse_to_onr(M, pairs))
 BoseFS{N,M}(pairs::Pair...) where {N,M} = BoseFS{N,M}(pairs)
 BoseFS{N,M}(pairs) where {N,M} = BoseFS{N,M}(sparse_to_onr(M, pairs))
+BoseFS{N,M}() where {N,M} = BoseFS{N,M}(sparse_to_onr(M, ())) # vacuum state
 BoseFS(pairs::Pair...) = throw(ArgumentError("number of modes must be provided"))
 
 
@@ -123,26 +171,33 @@ function print_address(io::IO, b::BoseFS{N,M}; compact=false) where {N,M}
     elseif b.bs isa SortedParticleList
         print(io, "BoseFS{$N,$M}(", onr_sparse_string(onr(b)), ")")
     else
-        print(io, "BoseFS{$N,$M}", tuple(onr(b)...))
+        print(io, "BoseFS", tuple(onr(b)...))
     end
 end
 
 Base.bitstring(b::BoseFS) = bitstring(b.bs) # TODO rename?
 
 Base.isless(a::BoseFS, b::BoseFS) = isless(a.bs, b.bs)
+function Base.isless(a::BoseFS{missing,M}, b::BoseFS{missing,M}) where {M}
+    # equivalent to `isless(reverse(a.bs), reverse(b.bs))`
+    # reversing the order here to make it consistent with BoseFS
+    i = M
+    @inbounds while i > 1 && a.bs[i] == b.bs[i]
+        i -= 1
+    end
+    return isless(a.bs[i], b.bs[i])
+end
+
 Base.hash(bba::BoseFS,  h::UInt) = hash(bba.bs, h)
 Base.:(==)(a::BoseFS, b::BoseFS) = a.bs == b.bs
 
 """
-    near_uniform_onr(N, M) -> onr::SVector{M,Int}
+    near_uniform_onr(::Val{N}, ::Val{M}) -> onr::SVector{M,Int}
 
 Create occupation number representation `onr` distributing `N` particles in `M`
 modes in a close-to-uniform fashion with each mode filled with at least
 `N ÷ M` particles and at most with `N ÷ M + 1` particles.
 """
-function near_uniform_onr(n::Number, m::Number)
-    return near_uniform_onr(Val(n),Val(m))
-end
 function near_uniform_onr(::Val{N}, ::Val{M}) where {N, M}
     fillingfactor, extras = divrem(N, M)
     # startonr = fill(fillingfactor,M)
@@ -162,16 +217,16 @@ occupation numbers.
 # Examples
 ```jldoctest
 julia> near_uniform(BoseFS{7,5})
-BoseFS{7,5}(2, 2, 1, 1, 1)
+BoseFS(2, 2, 1, 1, 1)
 
 julia> near_uniform(FermiFS{3,5})
-FermiFS{3,5}(1, 1, 1, 0, 0)
+FermiFS(1, 1, 1, 0, 0)
 
 julia> near_uniform(HardcoreBoseFS{missing}, 3, 5)
-HardcoreBoseFS{missing,5}(1, 1, 1, 0, 0)
+HardcoreBoseFS{missing}(1, 1, 1, 0, 0)
 
 julia> near_uniform(BoseFS(10,0,0,0))
-BoseFS{10,4}(3, 3, 2, 2)
+BoseFS(3, 3, 2, 2)
 ```
 """
 function near_uniform(T::Type{<:SingleComponentFockAddress{N,M}}) where {N,M}
@@ -329,19 +384,19 @@ The off-diagonals are indexed as follows:
 julia> using Rimu.Hamiltonians: hopnextneighbour
 
 julia> hopnextneighbour(BoseFS(1, 0, 1), 3)
-(BoseFS{2,3}(2, 0, 0), 1.4142135623730951)
+(BoseFS(2, 0, 0), 1.4142135623730951)
 
 julia> hopnextneighbour(BoseFS(1, 0, 1), 4)
-(BoseFS{2,3}(1, 1, 0), 1.0)
+(BoseFS(1, 1, 0), 1.0)
 
 julia> hopnextneighbour(BoseFS(1, 0, 1), 3, :twisted)
-(BoseFS{2,3}(2, 0, 0), -1.4142135623730951)
+(BoseFS(2, 0, 0), -1.4142135623730951)
 
 julia> hopnextneighbour(BoseFS(1, 0, 1), 3, :hard_wall)
-(BoseFS{2,3}(2, 0, 0), 0.0)
+(BoseFS(2, 0, 0), 0.0)
 
 julia> hopnextneighbour(BoseFS(1, 0, 1), 3, π/4)
-(BoseFS{2,3}(2, 0, 0), 1.0000000000000002 + 1.0im)
+(BoseFS(2, 0, 0), 1.0000000000000002 + 1.0im)
 ```
 """
 function hopnextneighbour(b::BoseFS{N,M,A}, chosen) where {N,M,A<:BitString}
@@ -475,4 +530,189 @@ end
         matrixelementint += bosonnumber * (bosonnumber - 1)
     end
     return matrixelementint
+end
+
+###
+### Variable particle number with N = missing
+###
+smallest_uint_type(n::Integer) = begin
+    n < 0 && throw(ArgumentError("n must be nonnegative"))
+    n <= typemax(UInt8) && return UInt8
+    n <= typemax(UInt16) && return UInt16
+    n <= typemax(UInt32) && return UInt32
+    n <= typemax(UInt64) && return UInt64
+    n <= typemax(UInt128) && return UInt128
+    throw(OverflowError("n is too large for fixed-width unsigned integers"))
+end
+
+function BoseFS{missing,M}(onr::SVector{M,T}) where {M,T<:Unsigned}
+    return @inbounds BoseFS{missing,M,typeof(onr)}(onr)
+end
+function BoseFS{missing}(onr::SVector{M,T}) where {M,T<:Unsigned}
+    return @inbounds BoseFS{missing,M,typeof(onr)}(onr)
+end
+function BoseFS{missing,M,S}(onr) where {M,S}
+    S <: SVector{M,<:Unsigned} || throw(ArgumentError(
+        "invalid container type: expected SVector{$M,<:Unsigned}; got $(S)"
+    ))
+    return BoseFS{missing,M,S}(S(onr))
+end
+function BoseFS{missing,M}(v::AbstractVector{<:Integer}; type=nothing) where {M}
+    BoseFS{missing,M}(v...; type)
+end
+function BoseFS{missing}(arg; type=nothing) # single argument constructor
+    isnothing(type) && (type = smallest_uint_type(maximum(arg)))
+    type <: Unsigned || throw(ArgumentError("type must be an unsigned integer type"))
+    onr = SVector{length(arg),type}(arg)
+    return @inbounds BoseFS{missing}(onr)
+end
+BoseFS{missing}(args::Integer...; type=nothing) = BoseFS{missing}(Tuple(args); type)
+BoseFS{missing}(arg::Integer; type=nothing) = BoseFS{missing}((arg,); type) # single mode address
+function BoseFS{missing,M}(args::Integer...; type=nothing) where {M}
+    BoseFS{missing,M}(Tuple(args); type)
+end
+function BoseFS{missing,M}(t::NTuple{M,T}; type=nothing) where {M,T<:Integer}
+    BoseFS{missing}(SVector{M}(t); type)
+end
+
+# BoseFS from BoseFS
+function BoseFS{N,M}(fs::BoseFS) where {N,M}
+    M === num_modes(fs) || throw(ArgumentError(
+        "number of modes must match: $M != $(num_modes(fs))"
+    ))
+    ons = occupation_number_representation(fs)
+    return BoseFS{N,M}(ons)
+end
+function BoseFS{N}(fs::BoseFS) where {N}
+    M = num_modes(fs)
+    ons = occupation_number_representation(fs)
+    return BoseFS{N,M}(ons)
+end
+function BoseFS{missing}(fs::BoseFS{N,M}; type=nothing) where {N,M}
+    type === nothing && (type = smallest_uint_type(N))
+    ons = occupation_number_representation(fs)
+    return BoseFS{missing,M}(ons...; type)
+end
+function BoseFS{missing,M}(fs::BoseFS) where {M}
+    M === num_modes(fs) || throw(ArgumentError(
+        "number of modes must match: $M != $(num_modes(fs))"
+    ))
+    BoseFS{missing}(fs)
+end
+BoseFS(fs::BoseFS) = fs
+
+# sparse constructors
+function BoseFS{missing}(M::Integer, pairs::Pair...; type=nothing)
+    BoseFS{missing}(M, pairs; type=type)
+end
+function BoseFS{missing}(M::Integer, pair::Pair; type=nothing)
+    BoseFS{missing}(M, (pair,); type=type)
+end
+function BoseFS{missing}(M::Integer, pairs; type=nothing)
+    BoseFS{missing,M}(pairs; type)
+end
+function BoseFS{missing,M}(pairs; type=nothing) where {M}
+    BoseFS{missing}(sparse_to_onr(M, pairs); type)
+end
+function BoseFS{missing,M}(pair::Pair; type=nothing) where {M}
+    BoseFS{missing}(sparse_to_onr(M, (pair,)); type)
+end
+BoseFS{missing}(pairs::Pair...; _...) = throw(ArgumentError("number of modes must be provided"))
+
+function from_bose_onr(::Type{S}, onr) where {M,T<:Unsigned,S<:SVector{M,T}}
+    return S(onr)
+end
+function to_bose_onr(onr::S, ::Val{M}) where {M, S <: SVector{M,<:Unsigned}}
+    return onr
+end
+function print_address(io::IO, b::BoseFS{missing,M,S}; compact=false) where {T,M,S<:SVector{M,T}}
+    if T === UInt8
+        if compact
+            print(io, "|", join(onr(b), ' '), "⟩{}")
+        else
+            print(io, "BoseFS{missing}", Int.(tuple(onr(b)...)))
+        end
+    else
+        if compact
+            print(io, "|", join(onr(b), ' '), "⟩{", string(T), "}")
+        else
+            print(io, "BoseFS{missing}(", Int(onr(b)[1]))
+            foreach(i -> print(io, ", ", Int(onr(b)[i])), 2:M)
+            print(io, "; type=", string(T), ")")
+        end
+    end
+end
+
+Interfaces.num_particles(a::BoseFS{missing}) = sum(Int, onr(a))
+function Interfaces.maximum_mode_occupation(::Type{<:BoseFS{missing,M,S}}) where {T,M,S<:SVector{M,T}}
+    return typemax(T)
+end
+Interfaces.maximum_mode_occupation(::Type{<:BoseFS{N}}) where {N} = N
+
+@inline function _destroy(onr::SVector{M,T}, mode::Integer) where {M,T}
+    val = onr[mode]
+    @set! onr[mode] = val - one(T)
+    return onr, val
+end
+
+@inline function _create(onr::SVector{M,T}, mode::Integer) where {M,T}
+    val = onr[mode] + one(T)
+    @set! onr[mode] = val
+    return onr, val
+end
+
+function excitation(
+    fs::BoseFS{missing,M,S},
+    c::NTuple{<:Any,Int},
+    d::NTuple{<:Any,Int}
+) where {M,S<:SVector{M,<:Unsigned}}
+    onr = fs.bs
+    accumulator = 1.0 # to avoid overflow
+    for i in d
+        onr, val = _destroy(onr, i)
+        iszero(val) && return fs, 0.0 # return early if invalid; efficient according to benchmarks
+        accumulator *= val
+    end
+    for i in c
+        onr, val = _create(onr, i)
+        accumulator *= val
+        iszero(val) && return fs, 0.0
+    end
+    return typeof(fs)(onr), √accumulator
+end
+function excitation(
+    fs::BoseFS{missing},
+    c::NTuple{N1,BoseFSIndex},
+    d::NTuple{N2,BoseFSIndex}
+) where {N1,N2}
+    creations = ntuple(i -> c[i].mode, Val(N1)) # convert BoseFSIndex to mode number
+    destructions = ntuple(i -> d[i].mode, Val(N2))
+    return excitation(fs, creations, destructions)
+end
+
+# `SingleComponentFockAddress` interface for BoseFS{missing}
+
+find_mode(fs::BoseFS{missing}, n::Integer, occ=nothing) = BoseFSIndex(fs.bs[n], n, n)
+function find_mode(fs::BoseFS{missing}, ns::NTuple{N,Integer}, occ=nothing) where N
+    return ntuple(i -> find_mode(fs, ns[i]), Val(N))
+end
+
+num_occupied_modes(fs::BoseFS{missing}) = count(!iszero, fs.bs)
+
+# for the lazy iterator `occupied_modes` we adapt the `BoseOccupiedModes` type
+function occupied_modes(fs::BoseFS{missing,M}) where {M}
+    return BoseOccupiedModes{missing,M,typeof(fs)}(fs)
+end
+
+function Base.length(bom::BoseOccupiedModes{<:Any,<:Any,<:BoseFS{missing}})
+    return num_occupied_modes(bom.storage)
+end
+
+function Base.iterate(bom::BoseOccupiedModes{<:Any,<:Any,<:BoseFS{missing,M}}, i=1) where M
+    s = onr(bom.storage) # is an SVector with the onr
+    while true
+        i > length(s) && return nothing
+        iszero(s[i]) || return BoseFSIndex(s[i], i, i), i + 1
+        i += 1
+    end
 end

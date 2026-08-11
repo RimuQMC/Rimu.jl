@@ -13,11 +13,10 @@ using StaticArrays: StaticArrays, @MVector, FieldVector, MVector, SA, SVector
 using Base.Cartesian
 
 using ..Interfaces: Interfaces, AbstractFockAddress, num_particles, num_modes,
-    num_components
+    num_components, num_modes_check_equal
 
 export SingleComponentFockAddress, BoseFS, FermiFS, HardcoreBoseFS
 export CompositeFS, FermiFS2C, time_reverse
-export OccupationNumberFS
 export BoseFSIndex, FermiFSIndex
 export BitString, SortedParticleList
 
@@ -37,6 +36,5 @@ include("bosefs.jl")
 include("hardcorebosefs.jl")
 include("fermifs.jl")
 include("multicomponent.jl")
-include("occupationnumberfs.jl")
 
 end

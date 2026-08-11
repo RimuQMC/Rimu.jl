@@ -129,6 +129,9 @@ length. These will be reported as columns in the `DataFrame` returned by
 [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem).
 """
 step_stats(v) = step_stats(StochasticStyle(v))
+function step_stats(::StyleUnknown)
+    throw(ArgumentError("StyleUnknown does not support step_stats"))
+end
 
 """
     apply_column!(v, column, num, boost=1) -> stats::Tuple
@@ -148,4 +151,7 @@ affecting the expectation value of the procedure.
 """
 function apply_column!(v, column, val, boost=1)
     return apply_column!(StochasticStyle(v), v, column, val, boost)
+end
+function apply_column!(::StyleUnknown, args...)
+    throw(ArgumentError("StyleUnknown does not support apply_column!"))
 end
