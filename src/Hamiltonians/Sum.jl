@@ -8,11 +8,10 @@ on the same address space. The keyword argument `weight` affects random spawning
 with [`random_offdiagonal`](@ref) and determines the probability of random spawns
 from `A`, with `1 - weight` the probability of spawning from `B`.
 
-If coefficients `a` and `b` are given, the Hamiltonians are scaled with
-[`ScaledOrShiftedHamiltonian`](@ref), to represent ``aA + bB``.
+If coefficients `a` and `b` are given, the Hamiltonians are combined as
+``aA + bB`` with the same address compatibility checks as `A + B`.
 
-See also [`ScaledOrShiftedHamiltonian`](@ref), [`HamiltonianProduct`](@ref),
-[`AbstractHamiltonian`](@ref).
+See also [`HamiltonianProduct`](@ref), [`AbstractHamiltonian`](@ref).
 """
 struct HamiltonianSum{T, H1<:AbstractHamiltonian, H2<:AbstractHamiltonian} <: AbstractHamiltonian{T}
     h1::H1
@@ -197,6 +196,10 @@ julia> Matrix(3*H + 2*I)
  -8.48528   5.0       0.0
  -8.48528   0.0       5.0
 ```
+!!! warning "Warning"
+    The `ScaledOrShiftedHamiltonian` type is an implementation detail and may change in future
+    versions of Rimu. Use the public interface functions [`add`](@ref), [`+`](@ref), [`scale`](@ref),
+    and [`*`](@ref) to construct scaled and shifted Hamiltonians.
 
 See also [`HamiltonianSum`](@ref), [`HamiltonianProduct`](@ref),
 [`ModifiedHamiltonian`](@ref), and [`AbstractHamiltonian`](@ref).
@@ -262,7 +265,20 @@ function modify_offdiagonal(s::ScaledOrShiftedHamiltonian{T}, _, addr, value) wh
     return addr => T(s.alpha * value)
 end
 
-@doc (@doc ScaledOrShiftedHamiltonian)
+"""
+    add(shift::UniformScaling, H::AbstractHamiltonian, [alpha, beta])
+    add(H::AbstractHamiltonian, shift::UniformScaling, [beta, alpha])
+
+Construct the linear combination ``alpha * H + beta * I`` where `I` is the identity
+operator represented by a `UniformScaling`. This is the public entry point for applying
+a scalar shift to a Hamiltonian while preserving the underlying modified-operator
+implementation.
+
+The coefficient order matches the `add(y, x, α, β)` convention used throughout
+`VectorInterface`.
+
+See also [`+`](@ref), [`scale`](@ref), [`*`](@ref), and [`HamiltonianSum`](@ref).
+"""
 function VectorInterface.add(
     shift::UniformScaling{T}, h::AbstractHamiltonian, alpha::Number, beta::Number
 ) where {T<:Number}
@@ -274,7 +290,14 @@ function VectorInterface.add(
     return add(shift, h, alpha, beta)
 end
 
-@doc (@doc ScaledOrShiftedHamiltonian)
+"""
+    +(H::AbstractHamiltonian, shift::UniformScaling)
+
+Return a Hamiltonian shifted by a scalar multiple of the identity operator.
+This is equivalent to `H + shift.λ * I` and returns a modified Hamiltonian wrapper.
+
+See also [`add`](@ref), [`scale`](@ref), [`*`](@ref).
+"""
 function Base.:+(h::AbstractHamiltonian, shift::UniformScaling{T}) where {T<:Number}
     return ScaledOrShiftedHamiltonian(h, One(), shift.λ)
 end
@@ -286,10 +309,24 @@ function Base.:-(shift::UniformScaling{T}, h::AbstractHamiltonian) where {T<:Num
 end
 Base.:-(h::AbstractHamiltonian) = ScaledOrShiftedHamiltonian(h, -1, Zero())
 
-@doc (@doc ScaledOrShiftedHamiltonian)
+"""
+    scale(H::AbstractHamiltonian, alpha)
+
+Return the scalar multiple `alpha * H` as a modified Hamiltonian wrapper.
+This is the canonical helper for scaling Hamiltonians by a numeric factor.
+
+See also [`add`](@ref), [`+`](@ref), [`*`](@ref).
+"""
 function VectorInterface.scale(h::AbstractHamiltonian, alpha::T) where {T<:Number}
     return ScaledOrShiftedHamiltonian(h, alpha, Zero())
 end
 
-@doc (@doc ScaledOrShiftedHamiltonian)
+"""
+    *(alpha::Number, H::AbstractHamiltonian)
+
+Return the scalar multiple `alpha * H`.
+This is an alias for [`scale`](@ref).
+
+See also [`add`](@ref), [`+`](@ref), [`scale`](@ref).
+"""
 Base.:*(alpha::Number, h::AbstractHamiltonian) = scale(h, alpha)

@@ -28,7 +28,7 @@ The following are provided:
 * [`dimension(op, address)`](@ref)
 
 For examples of how to implement a `ModifiedHamiltonian`, see, e.g.,
-[`ScaledOrShiftedHamiltonian`](@ref) or [`ParitySymmetry`](@ref) and read the source code.
+[`ParitySymmetry`](@ref) and read the source code.
 """
 abstract type ModifiedHamiltonian{T} <: AbstractHamiltonian{T} end
 
