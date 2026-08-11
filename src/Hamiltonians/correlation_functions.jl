@@ -422,12 +422,12 @@ julia> a = PDVec(1 => 1.0, 2 => -3.0);
 
 julia> b = PDVec(1 => -5.0, 3 => 4.0);
 
-julia> dot(a, Coherence(), b)
+julia> dot(a, SignCorrelation(), b)
 -1.0 + 0.0im
 
-julia> c = PDVec(1 => 10.0, 4 => 0.5)
+julia> c = PDVec(1 => 10.0, 4 => 0.5);
 
-julia> dot(c, Coherence{Float64}(), b)
+julia> dot(a, SignCorrelation{Float64}(), c)
 1.0
 ```
 """
@@ -441,7 +441,7 @@ function Rimu.Interfaces.dot_from_right(
     lhs::AbstractDVec, ::SignCorrelation{T}, rhs::AbstractDVec
 ) where {T}
     accumulator, overlap = sum(pairs(rhs); init=Rimu.MultiScalar(zero(T), 0)) do ((k, v_right))
-        product = sign(lhs[k] * v_right)
+        product = T(sign(lhs[k] * v_right))
         Rimu.MultiScalar(product, Int(!iszero(product)))
     end
     return accumulator / overlap
