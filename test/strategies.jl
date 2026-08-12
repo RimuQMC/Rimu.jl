@@ -212,7 +212,7 @@ end
         # test type stability of `coherence` with complex vectors
         v1 = rand(ComplexF64, 10) .- (0.5 + 0.5im)
         v2 = rand(ComplexF64, 10) .- (0.5 + 0.5im)
-        @inferred Rimu.coherence(ComplexF64, v1, v2)
+        @inferred dot(v1, SignCorrelator{Float64}(), v2)
 
         cdv = DVec(address => 1 + im; style=StochasticStyles.IsStochastic2Pop())
         shift = float(valtype(cdv))(diagonal_element(H*address)) # need complex shift
