@@ -142,7 +142,7 @@ SignCoherence(ref; name=:coherence) = SignCoherence(name, ref)
 
 function post_step_action(sc::SignCoherence, single_state, _)
     vector = single_state.v
-    T = promote_type(valtype(sc.reference), valtype(vector))
+    T = float(promote_type(valtype(sc.reference), valtype(vector)))
     return (sc.name => dot(sc.reference, SignCorrelator{T}(), vector),)
 end
 
