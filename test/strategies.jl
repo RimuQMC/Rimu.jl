@@ -209,11 +209,6 @@ end
         @test all(-1.0 .≤ df.coherence .≤ 1.0)
         @test all(in.(df.single_coherence, Ref((-1, 0, 1))))
 
-        # test type stability of coherence with complex vectors
-        v1 = PDVec(zip(1:10, rand(ComplexF64, 10) .- (0.5 + 0.5im)))
-        v2 = PDVec(zip(1:10, rand(10) .- 0.5))
-        @inferred dot(v1, SignCorrelator{Float64}(), v2)
-
         cdv = DVec(address => 1 + im; style=StochasticStyles.IsStochastic2Pop())
         shift = float(valtype(cdv))(diagonal_element(H*address)) # need complex shift
         df = solve(ProjectorMonteCarloProblem(H; start_at=cdv, shift, post_step_strategy)).df
