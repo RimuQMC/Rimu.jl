@@ -130,7 +130,9 @@ The coherence is defined as
 ```math
 C = \\frac{1}{L} ∑_i \\mathrm{sign}(r_i^* w_i) ,
 ```
-where ``L`` is the number of non-zero elements in the sum.
+where ``L`` is the number of non-zero elements in the sum, and ``r_i`` and ``w_i`` 
+are the coefficients of the `reference` and the coefficient vector of the current Monte 
+Carlo step, respectively.
 
 For measuring coherence between replicas, see [`SignCorrelator`](@ref).
 """
