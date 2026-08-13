@@ -124,7 +124,17 @@ end
     SignCoherence(reference[; name=:coherence]) <: PostStepStrategy
 
 After each step, compute the proportion of configurations that have the same sign as they do
-in the `reference_dvec`. Reports to a column named `name`, which defaults to `coherence`.
+in the `reference`. Reports to a column named `name`, which defaults to `coherence`.
+
+The coherence is defined as
+```math
+C = \\frac{1}{L} ∑_i \\mathrm{sign}(r_i^* w_i) ,
+```
+where ``L`` is the number of non-zero elements in the sum, and ``r_i`` and ``w_i`` 
+are the coefficients of the `reference` and the coefficient vector of the current Monte 
+Carlo step, respectively.
+
+For measuring coherence between replicas, see [`SignCorrelator`](@ref).
 """
 struct SignCoherence{R} <: PostStepStrategy
     name::Symbol
@@ -134,26 +144,8 @@ SignCoherence(ref; name=:coherence) = SignCoherence(name, ref)
 
 function post_step_action(sc::SignCoherence, single_state, _)
     vector = single_state.v
-    return (sc.name => coherence(valtype(vector), sc.reference, vector),)
-end
-
-function coherence(::Type{<:Real}, reference, vector)
-    accumulator, overlap = mapreduce(+, pairs(vector); init=MultiScalar(0.0, 0)) do ((k, v))
-        ref = reference[k]
-        MultiScalar(Float64(sign(ref) * sign(v)), Int(!iszero(ref)))
-    end
-    return iszero(overlap) ? 0.0 : accumulator / overlap
-end
-function coherence(::Type{<:Complex}, reference, vector)
-    z = MultiScalar(0.0 + 0im, 0)
-    accumulator, overlap = mapreduce(+, pairs(vector); init=z) do ((k, v))
-        ref = sign(reference[k])
-        MultiScalar(
-            ComplexF64(sign(real(v)) * sign(ref) + im * sign(imag(v)) * sign(ref)),
-            Int(!iszero(ref))
-        )
-    end
-    return iszero(overlap) ? 0.0 + 0im : accumulator / overlap
+    T = float(promote_type(valtype(sc.reference), valtype(vector)))
+    return (sc.name => dot(sc.reference, SignCorrelator{T}(), vector),)
 end
 
 """

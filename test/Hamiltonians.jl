@@ -121,6 +121,16 @@ end
     end
 end
 
+@testset "Observable interface test" begin
+    for (op, addr) in [
+        (SignCorrelator(), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
+        (SignCorrelator{Float64}(), FermiFS(1, 1, 0, 1, 0, 1, 0, 1)),
+    ]
+        test_observable_interface(op, addr)
+        @test eval(Meta.parse(repr(op))) == op
+    end
+end
+
 using Rimu.Hamiltonians: momentum_transfer_excitation
 
 @testset "momentum_transfer_excitation" begin
