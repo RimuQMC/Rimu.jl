@@ -278,8 +278,8 @@ end
 """
     test_hamiltonian_structure(h::AbstractHamiltonian; sizelim=20)
 
-Test the `LOStructure` of a small Hamiltonian `h` by instantiating it as a sparse matrix and
-checking whether the structure of the matrix is consistent with the result of
+Test the structure of a small Hamiltonian `h` by instantiating it as a sparse matrix.
+Checks whether the structure of the matrix is consistent with the result of
 `LOStructure(h)` and the `eltype` is consistent with `eltype(h)`.
 
 This function is intended to be used in automated test for small Hamiltonians where
