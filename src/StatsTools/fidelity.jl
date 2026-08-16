@@ -4,7 +4,8 @@
 
 Compute the fidelity of the average coefficient vector and the projector defined in
 `p_field`. Pass the [`PMCSimulation`](@ref Main.Rimu.PMCSimulation) struct or the
-`DataFrame` returned by [`solve`](@ref) from a [`ProjectorMonteCarloProblem`](@ref)
+`DataFrame` returned by [`solve`](@ref CommonSolve.solve) from a
+[`ProjectorMonteCarloProblem`](@ref Rimu.ProjectorMonteCarloProblem)
 simulation with an appropriate `post_step_strategy` and `replica_strategy`.
 The calculation is performed using the first two replicas `_r1s{i}` and `_r2s{i}`, where
 `i` is the `spectral_state`. Calls [`ratio_of_means`](@ref) to perform a blocking analysis
