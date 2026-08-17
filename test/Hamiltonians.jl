@@ -47,6 +47,10 @@ end
                 FermiFS((1, 1, 1, 1, 0, 0, 0, 0)),
             ); t=[1, 2], u=[0 3; 3 0], w=[1 0.5; 0.5 1]
         ),
+        HubbardRealSpace(
+            BoseFS((1, 2, 3, 4, 5, 6));
+            potential=reshape(float.([1, 2, 3, 4, 5, 5]), (6, 1))
+        ),
         GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6 + 2im); g=0.3),
         GutzwillerSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))); g=0.1),
 
@@ -312,6 +316,9 @@ end
         @test_throws InexactError HubbardRealSpace(
             bose; geometry=PeriodicBoundaries(3,2), u=[1.0im], t=[1.0im]
         )
+        @test_throws ArgumentError HubbardRealSpace(
+            bose; potential=[1,2,3,4,5,5]
+        )
 
         comp = CompositeFS(bose, bose)
         @test_throws ArgumentError HubbardRealSpace(
@@ -333,6 +340,9 @@ end
         @test_logs (:warn,) HubbardRealSpace(FermiFS((1,0)), u=[2])
         @test_logs (:warn,) HubbardRealSpace(
             CompositeFS(BoseFS((1,1)), FermiFS((1,0))); u=[2 2; 2 2]
+        )
+        @test_logs (:warn,) HubbardRealSpace(
+            bose; v=1, potential=reshape(float.([1, 2, 3, 4, 5, 5]), (6, 1))
         )
 
         H = HubbardRealSpace(comp, t=[1,2], u=[1 2; 2 3])

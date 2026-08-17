@@ -283,8 +283,15 @@ end
 
 # struct ================================================================================ #
 """
-    HubbardRealSpace(address; geometry=PeriodicBoundaries(M,), t=1, u=0, w=0, v=0) <:
-        AbstractHamiltonian
+    HubbardRealSpace(
+        address;
+        geometry=PeriodicBoundaries(M,),
+        t=1,
+        u=0,
+        w=0,
+        v=0,
+        potential=nothing
+    ) <: AbstractHamiltonian
 
 Hubbard model in real space. Supports single or multi-component Fock state
 addresses (with `C` components) and various (rectangular) lattice geometries
@@ -308,8 +315,11 @@ along dimension ``d``.
 
 * [`BoseFS`](@ref): Single-component Bose-Hubbard model.
 * [`FermiFS`](@ref): Single-component Fermi-Hubbard model.
-* [`CompositeFS`](@ref): For multi-component models.
+* [`CompositeFS`](@ref): For multi-component models. All components must have the same
+  number of modes `M`.
 
+The number of modes `M` is equal to the number of sites in the lattice and must be
+consistent with the `geometry` parameter.
 Note that a single component of fermions cannot interact with itself. A warning
 is produced if `address`is incompatible with the interaction parameters `u`.
 
@@ -338,6 +348,8 @@ number of sites `M` inferred from the number of modes in `address`.
    `w[i, i]` corresponds to the interaction of a component with itself.
 * `v`: the trap potential strengths. Must be a matrix of size `C × D`. `v[i,j]` is
   the strength of the trap for component `i` in the `j`th dimension.
+* `potential`: the external potential for each component at each lattice site. Must be a
+  matrix of size `M × C`. If provided, this will override the trap potential `v`.
 """
 struct HubbardRealSpace{
     TT,
@@ -368,6 +380,7 @@ function HubbardRealSpace(
     u=1.0,
     w=0.0,
     v=0.0,
+    potential=nothing,
 )
     C = num_components(address)
     D = num_dimensions(geometry)
@@ -391,15 +404,26 @@ function HubbardRealSpace(
 
     warn_fermi_interaction(address, u_mat)
 
-    # Precompute the trap potential terms
-    if isnothing(v_mat)
-        pot_vec = nothing
+    if isnothing(potential)
+        # Precompute the trap potential terms
+        if isnothing(v_mat)
+            pot_vec = nothing
+        else
+            ranges = Tuple(range(-fld(M, 2); length=M) for M in S)
+            x_sq = map(x -> Tuple(x) .^ 2, CartesianIndices(ranges))
+            pot_vec = zeros(prod(S), C)
+            for c in 1:C
+                pot_vec[:, c] .= vec(map(x -> sum(v_mat[c, :] .* x), x_sq))
+            end
+        end
     else
-        ranges = Tuple(range(-fld(M, 2); length=M) for M in S)
-        x_sq = map(x -> Tuple(x) .^ 2, CartesianIndices(ranges))
-        pot_vec = zeros(prod(S), C)
-        for c in 1:C
-            pot_vec[:, c] .= vec(map(x -> sum(v_mat[c, :] .* x), x_sq))
+        if !(potential isa AbstractMatrix{Float64}) || size(potential) != (prod(S), C)
+            throw(ArgumentError("`potential` must be a matrix of size $(prod(S)) × $C and of type `Float64`"))
+        end
+        pot_vec = potential
+        if !isnothing(v_mat)
+            @warn "`potential` is provided, so `v` will be ignored"
+            v_mat = nothing
         end
     end
 
@@ -500,6 +524,9 @@ function Base.show(io::IO, h::HubbardRealSpace{TT,C}) where {TT,C}
     end
     !isnothing(h.w) && println(io, "  w = ", h.w, ",")
     !isnothing(h.v) && println(io, "  v = ", TT.(h.v), ",")
+    if isnothing(h.v) && !isnothing(h.potential)
+        println(io, "  potential = ", h.potential, ",")
+    end
     print(io, ")")
 end
 
