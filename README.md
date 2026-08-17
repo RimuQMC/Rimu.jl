@@ -3,6 +3,7 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://RimuQMC.github.io/Rimu.jl/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://RimuQMC.github.io/Rimu.jl/dev/)
 [![Coverage Status](https://coveralls.io/repos/github/RimuQMC/Rimu.jl/badge.svg)](https://coveralls.io/github/RimuQMC/Rimu.jl)
+[![arXiv](https://img.shields.io/badge/arXiv-2601.19505-green.svg)](http://arxiv.org/abs/2601.19505)
 
 *Random Integrators for many-body quantum systems*
 
@@ -56,18 +57,43 @@ julia> using Rimu
 
 Note that `Rimu` is under active development and breaking changes to the user interface may occur at any time. We encourage potential users of the package to contact the authors for efficient communication.
 
+### Software publication
+To learn more about the algorithms and concepts behind `Rimu`, read the Rimu.jl preprint: 
+- “Rimu.jl: Random integrators for many-body quantum systems”, M. Čufar, C. J. Bradly, R. Yang, E. Pahl, and J. Brand, [arXiv:2601.19505 (2026)](http://arxiv.org/abs/2601.1950).
 
-### References
-The code implements the FCIQMC algorithm described in
+If you use `Rimu` for your work, please cite the preprint:
+```
+@misc{Cufar2026,
+  title = {{Rimu.jl}: {{Random}} Integrators for Many-Body Quantum Systems},
+  shorttitle = {Rimu.jl},
+  author = {{\v C}ufar, Matija and Bradly, C. J. and Yang, Ray and Pahl, Elke and Brand, Joachim},
+  year = 2026,
+  number = {arXiv:2601.19505},
+  eprint = {2601.19505},
+  publisher = {arXiv},
+  doi = {10.48550/arXiv.2601.19505},
+  archiveprefix = {arXiv},
+  url = {http://arxiv.org/abs/2601.19505},
+}
+```
+
+### Other references
+The original references for the FCIQMC algorithm are:
 - "Fermion Monte Carlo without fixed nodes: A game of life, death, and annihilation in Slater determinant space", G. H. Booth, A. J. W. Thom, A. Alavi, [*J. Chem. Phys.* **131**, 054106 (2009)](https://doi.org/10.1063/1.3193710).
 -  "Communications: Survival of the fittest: accelerating convergence in full configuration-interaction quantum Monte Carlo.", D. Cleland,  G. H. Booth, A. Alavi, [*J. Chem. Phys.* **132**, 041103 (2010)](https://doi.org/10.1063/1.3302277).
 
 Scientific papers describing additional features implemented in `Rimu`:
-- "Improved walker population control for full configuration interaction quantum Monte Carlo", M. Yang, E. Pahl, J. Brand, [*J. Chem. Phys.* **153**, 170143 (2020)](https://doi.org/10.1063/5.0023088); [arXiv:2008.01927](https://arxiv.org/abs/2008.01927).
-- "Stochastic differential equation approach to understanding the population control bias in full configuration interaction quantum Monte Carlo", J. Brand, M. Yang, E. Pahl, [arXiv:2103.07800](http://arxiv.org/abs/2103.07800) (2021).
+- "Improved walker population control for full configuration interaction quantum Monte Carlo", M. Yang, E. Pahl, J. Brand, [*J. Chem. Phys.* **153**, 170143 (2020)](https://doi.org/10.1063/5.0023088), [arXiv:2008.01927](https://arxiv.org/abs/2008.01927).
+- "Stochastic differential equation approach to understanding the population control bias in full configuration interaction quantum Monte Carlo", J. Brand, M. Yang, E. Pahl. [*Phys. Rev. B* **105** 235144 (2022)](https://link.aps.org/doi/10.1103/PhysRevB.105.235144), [arXiv:2103.07800](http://arxiv.org/abs/2103.07800) (2021).
+- “Accelerating the convergence of exact diagonalization with the transcorrelated method: Quantum gas in one dimension with contact interactions”, P. Jeszenszki, H. Luo, A. Alavi, and J. Brand. [*Phys. Rev. A* **98** 053627 (2018)](https://link.aps.org/doi/10.1103/PhysRevA.98.053627), [arXiv:1806.11268](http://arxiv.org/abs/1806.11268).
+
 
 Papers discussing results obtained with `Rimu`:
+- “Scale invariance of the polaron energy at the Mott-superfluid critical point”, M. Čufar, R. Alhyder, C. J. Bradly, V. Colussi, G. M. Bruun, J. Brand, and A. Recati, [arXiv:2604.17824](http://arxiv.org/abs/2604.17824) (2026).
+- “Bound excited states of Fröhlich polarons in one dimension”, J. Taylor, M. Čufar, D. Mitrouskas, R. Seiringer, E. Pahl, and J. Brand. [*Phys. Rev. B* **112** 184312 (2025)](https://link.aps.org/doi/10.1103/s9p9-jflq), [arXiv:2506.02440](http://arxiv.org/abs/2506.02440).
+- “Lattice Bose polarons at strong coupling and quantum criticality”, R. Alhyder, V. Colussi, M. Čufar, J. Brand, A. Recati, and G. M. Bruun. [*SciPost Physics* **19** 002 (2025)](https://scipost.org/SciPostPhys.19.1.002).
+- “Effective Theory for Strongly Attractive One-Dimensional Fermions”, T. G. Backert, F. Brauneis, M. Čufar, J. Brand, H.-W. Hammer, and A. G. Volosniev. [*Phys. Rev. Lett.* **135** 040401 (2025)](https://link.aps.org/doi/10.1103/8mnc-x42q), [arXiv:2412.05915](http://arxiv.org/abs/2412.05915).
+- "Magnetic impurity in a one-dimensional few-fermion system", L. Rammelmüller, D. Huber, M. Čufar, J. Brand, A. Volosniev. [*SciPost Physics* **14** 006 (2023)](https://scipost.org/10.21468/SciPostPhys.14.1.006).
 - "Polaron-Depleton Transition in the Yrast Excitations of a One-Dimensional Bose Gas with a Mobile Impurity", M. Yang, M. Čufar, E. Pahl, J. Brand, [*Condens. Matter* **7**, 15 (2022)](https://www.mdpi.com/2410-3896/7/1/15).
-- "Magnetic impurity in a one-dimensional few-fermion system", L. Rammelmüller, D. Huber, M. Čufar, J. Brand, A. Volosniev, [arXiv:2204.01606](http://arxiv.org/abs/2204.01606) (2022).
 
 For more information, consult the [documentation](https://RimuQMC.github.io/Rimu.jl/dev/).
