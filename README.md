@@ -58,7 +58,7 @@ julia> using Rimu
 Note that `Rimu` is under active development and breaking changes to the user interface may occur at any time. We encourage potential users of the package to contact the authors for efficient communication.
 
 ### Software publication
-To learn more about the algorithms and concepts behind `Rimu`, read the Rimu.jl preprint: 
+To learn more about the algorithms and concepts behind `Rimu`, read the Rimu.jl preprint:
 - “Rimu.jl: Random integrators for many-body quantum systems”, M. Čufar, C. J. Bradly, R. Yang, E. Pahl, and J. Brand, [arXiv:2601.19505 (2026)](http://arxiv.org/abs/2601.1950).
 
 If you use `Rimu` for your work, please cite the preprint:
@@ -92,7 +92,7 @@ Papers discussing results obtained with `Rimu`:
 - “Scale invariance of the polaron energy at the Mott-superfluid critical point”, M. Čufar, R. Alhyder, C. J. Bradly, V. Colussi, G. M. Bruun, J. Brand, and A. Recati, [arXiv:2604.17824](http://arxiv.org/abs/2604.17824) (2026).
 - “Bound excited states of Fröhlich polarons in one dimension”, J. Taylor, M. Čufar, D. Mitrouskas, R. Seiringer, E. Pahl, and J. Brand. [*Phys. Rev. B* **112** 184312 (2025)](https://link.aps.org/doi/10.1103/s9p9-jflq), [arXiv:2506.02440](http://arxiv.org/abs/2506.02440).
 - “Lattice Bose polarons at strong coupling and quantum criticality”, R. Alhyder, V. Colussi, M. Čufar, J. Brand, A. Recati, and G. M. Bruun. [*SciPost Physics* **19** 002 (2025)](https://scipost.org/SciPostPhys.19.1.002).
-- “Effective Theory for Strongly Attractive One-Dimensional Fermions”, T. G. Backert, F. Brauneis, M. Čufar, J. Brand, H.-W. Hammer, and A. G. Volosniev. [*Phys. Rev. Lett.* **135** 040401 (2025)](https://link.aps.org/doi/10.1103/8mnc-x42q), [arXiv:2412.05915](http://arxiv.org/abs/2412.05915).
+- “Effective Theory for Strongly Attractive One-Dimensional Fermions”, T. G. Backert, F. Brauneis, M. Čufar, J. Brand, H. W. Hammer, and A. G. Volosniev. [*Phys. Rev. Lett.* **135** 040401 (2025)](https://link.aps.org/doi/10.1103/8mnc-x42q), [arXiv:2412.05915](http://arxiv.org/abs/2412.05915).
 - "Magnetic impurity in a one-dimensional few-fermion system", L. Rammelmüller, D. Huber, M. Čufar, J. Brand, A. Volosniev. [*SciPost Physics* **14** 006 (2023)](https://scipost.org/10.21468/SciPostPhys.14.1.006).
 - "Polaron-Depleton Transition in the Yrast Excitations of a One-Dimensional Bose Gas with a Mobile Impurity", M. Yang, M. Čufar, E. Pahl, J. Brand, [*Condens. Matter* **7**, 15 (2022)](https://www.mdpi.com/2410-3896/7/1/15).
 
