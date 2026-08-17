@@ -48,7 +48,8 @@ end
             ); t=[1, 2], u=[0 3; 3 0], w=[1 0.5; 0.5 1]
         ),
         HubbardRealSpace(
-            bose; potential=reshape(float.([1, 2, 3, 4, 5, 5]), (6, 1))
+            BoseFS((1, 2, 3, 4, 5, 6));
+            potential=reshape(float.([1, 2, 3, 4, 5, 5]), (6, 1))
         ),
         GutzwillerSampling(HubbardReal1D(BoseFS((1, 2, 3)); u=6 + 2im); g=0.3),
         GutzwillerSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))); g=0.1),
