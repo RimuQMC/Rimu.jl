@@ -615,7 +615,7 @@ function diagonal_element(col::HubbardRealSpaceColumn{TT}) where {TT}
     else
         _interactions(comp_address(col.address), h.u, h.w, occmaps, h.geometry)
     end
-    pot = isnothing(h.v) ? 0.0 : external_potential(col.address, h.potential, occmaps)
+    pot = isnothing(h.potential) ? 0.0 : external_potential(col.address, h.potential, occmaps)
 
     return convert(TT, int + pot)
 end
