@@ -1,4 +1,4 @@
-using Documenter
+using Documenter, DocumenterCodeBlocks
 using Rimu
 using Literate
 
@@ -77,6 +77,7 @@ makedocs(;
     checkdocs=:exports,
     doctest=false, # Doctests are done while testing.
     # warnonly = true, # should be disabled for a release
+    plugins = [CodeBlocks()],
 )
 
 deploydocs(
