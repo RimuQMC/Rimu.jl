@@ -1,5 +1,5 @@
 """
-    FroehlichPolaron(address::BoseFS{missing,M}; kwargs...) <: AbstractHamiltonian
+    FroehlichPolaron{T}(address::BoseFS{missing,M}; kwargs...) <: AbstractHamiltonian{T}
 
 
 The Froehlich polaron Hamiltonian for a 1D lattice with `M` momentum modes is given by
@@ -12,6 +12,8 @@ where ``p`` is the total momentum, ``p̂_f = Σ_k k âₖ^† âₖ`` is the m
 bosons, and ``k`` part of the momentum lattice with separation ``2π/l``. ``N̂`` is the number
 operator for the bosons.
 
+Setting the type parameter `T` is optional and will be inferred from the keyword arguments
+if not provided. Set `T` to `Float32` for single precision, e.g. when using GPUs.
 
 # Keyword Arguments
 
@@ -67,11 +69,11 @@ end
 
 function FroehlichPolaron{T}(
     addr::BoseFS{missing,M,SVector{M,AT}};
-    v=1.0,
-    mass=1.0,
-    omega=1.0,
-    l=1.0,
-    p=0.0,
+    v=1,
+    mass=1,
+    omega=1,
+    l=1,
+    p=0,
     momentum_cutoff=nothing,
     mode_cutoff=nothing,
 ) where {T,M,AT}
@@ -109,11 +111,11 @@ function FroehlichPolaron{T}(
 end
 function FroehlichPolaron(
     addr::BoseFS{missing};
-    v=1.0,
-    mass=1.0,
-    omega=1.0,
-    l=1.0,
-    p=0.0,
+    v=1,
+    mass=1,
+    omega=1,
+    l=1,
+    p=0,
     kwargs...
 )
     T = float(promote_type(typeof(v), typeof(mass), typeof(omega), typeof(l), typeof(p)))
