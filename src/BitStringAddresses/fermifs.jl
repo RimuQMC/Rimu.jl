@@ -150,7 +150,7 @@ end
 
 function excitation(
     ::Type{T}, a::FermiFS{N,M,S}, creations::NTuple{NC}, destructions::NTuple{ND}
-) where {T, N, M, S, NC, ND}
+) where {T <: AbstractFloat, N, M, S, NC, ND}
     if NC != ND && !ismissing(N)
         throw(ArgumentError("number of creations and destructions must be equal, got $NC and $ND"))
     end

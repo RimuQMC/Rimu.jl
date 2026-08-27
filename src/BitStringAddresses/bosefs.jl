@@ -351,7 +351,9 @@ end
 
 # find_occupied_mode provided by generic implementation
 
-function excitation(::Type{T}, b::B, creations::NTuple{C}, destructions::NTuple{C}) where {T, B<:BoseFS, C}
+function excitation(
+    ::Type{T}, b::B, creations::NTuple{C}, destructions::NTuple{C}
+) where {T <: AbstractFloat, B<:BoseFS, C}
     new_bs, val = bose_excitation(T, b.bs, creations, destructions)
     return B(new_bs), val # type doesn't change
 end
@@ -666,7 +668,7 @@ function excitation(
     fs::BoseFS{missing,M,S},
     c::NTuple{<:Any,Int},
     d::NTuple{<:Any,Int}
-) where {T,M,S<:SVector{M,<:Unsigned}}
+) where {T <: AbstractFloat, M, S<:SVector{M,<:Unsigned}}
     onr = fs.bs
     accumulator = one(T) # to avoid overflow
     for i in d
@@ -686,7 +688,7 @@ function excitation(
     fs::BoseFS{missing},
     c::NTuple{N1,BoseFSIndex},
     d::NTuple{N2,BoseFSIndex}
-) where {T, N1,N2}
+) where {T <: AbstractFloat, N1, N2}
     creations = ntuple(i -> c[i].mode, Val(N1)) # convert BoseFSIndex to mode number
     destructions = ntuple(i -> d[i].mode, Val(N2))
     return excitation(T, fs, creations, destructions)
