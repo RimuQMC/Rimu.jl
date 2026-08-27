@@ -351,11 +351,11 @@ end
 
 # find_occupied_mode provided by generic implementation
 
-function excitation(b::B, creations::NTuple{C}, destructions::NTuple{C}) where {B<:BoseFS, C}
-    new_bs, val = bose_excitation(b.bs, creations, destructions)
+function excitation(::Type{T}, b::B, creations::NTuple{C}, destructions::NTuple{C}) where {T, B<:BoseFS, C}
+    new_bs, val = bose_excitation(T, b.bs, creations, destructions)
     return B(new_bs), val # type doesn't change
 end
-function excitation(b::BoseFS, c::NTuple{C}, d::NTuple{D}) where {C, D}
+function excitation(::Type, ::BoseFS, ::NTuple{C}, ::NTuple{D}) where {C,D}
     throw(ArgumentError("number of creations and destructions must be equal, got $C and $D"))
 end
 
@@ -662,32 +662,34 @@ end
 end
 
 function excitation(
+    ::Type{T},
     fs::BoseFS{missing,M,S},
     c::NTuple{<:Any,Int},
     d::NTuple{<:Any,Int}
-) where {M,S<:SVector{M,<:Unsigned}}
+) where {T,M,S<:SVector{M,<:Unsigned}}
     onr = fs.bs
-    accumulator = 1.0 # to avoid overflow
+    accumulator = one(T) # to avoid overflow
     for i in d
         onr, val = _destroy(onr, i)
-        iszero(val) && return fs, 0.0 # return early if invalid; efficient according to benchmarks
+        iszero(val) && return fs, zero(T) # return early if invalid; efficient according to benchmarks
         accumulator *= val
     end
     for i in c
         onr, val = _create(onr, i)
         accumulator *= val
-        iszero(val) && return fs, 0.0
+        iszero(val) && return fs, zero(T)
     end
     return typeof(fs)(onr), √accumulator
 end
 function excitation(
+    ::Type{T},
     fs::BoseFS{missing},
     c::NTuple{N1,BoseFSIndex},
     d::NTuple{N2,BoseFSIndex}
-) where {N1,N2}
+) where {T, N1,N2}
     creations = ntuple(i -> c[i].mode, Val(N1)) # convert BoseFSIndex to mode number
     destructions = ntuple(i -> d[i].mode, Val(N2))
-    return excitation(fs, creations, destructions)
+    return excitation(T, fs, creations, destructions)
 end
 
 # `SingleComponentFockAddress` interface for BoseFS{missing}

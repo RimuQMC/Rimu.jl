@@ -143,7 +143,7 @@ LOStructure(::Type{<:FroehlichPolaron{<:Real}}) = IsHermitian()
 
 function diagonal_element(h::FroehlichPolaron{<:Any,M}, addr::BoseFS{missing,M}) where {M}
     map = onr(addr)
-    p_f = dot(h.ks,map)
+    p_f = dot(h.ks, map)
     return h.omega * num_particles(addr) + (h.p - p_f)^2 / h.mass
 end
 
@@ -162,23 +162,24 @@ function get_offdiagonal(h::FroehlichPolaron{T,M,<:Any,T}, addr::BoseFS{missing,
 
     new_p_tot = dot(h.ks, onr(naddress))
     if abs(new_p_tot) > h.momentum_cutoff # check if momentum of new address exceeds momentum_cutoff
-        return addr, 0.0
+        return addr, zero(T)
     else
         return naddress, value
     end
 end
 
 function _froehlich_offdiag(h, addr::BoseFS{missing,M},chosen) where {M}
+    T = eltype(h)
     if chosen ≤ M # assign first M indices to creations
         if onr(addr)[chosen] ≥ h.mode_cutoff # check whether occupation exceeds cutoff
-            return addr, 0.0
+            return addr, zero(T)
         else
-            naddress, value = excitation(addr, (chosen,), ())
+            naddress, value = excitation(T, addr, (chosen,), ())
             return naddress, - h.v * value
         end
     else # remaining indices are destructions
 
-        naddress, value = excitation(addr, (), (chosen - M,))
+        naddress, value = excitation(T, addr, (), (chosen - M,))
         return naddress, - h.v * value
     end
 end
