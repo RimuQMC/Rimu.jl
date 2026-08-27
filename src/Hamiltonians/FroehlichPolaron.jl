@@ -65,7 +65,7 @@ struct FroehlichPolaron{
     mode_cutoff::Int
 end
 
-function FroehlichPolaron(
+function FroehlichPolaron{T}(
     addr::BoseFS{missing,M,SVector{M,AT}};
     v=1.0,
     mass=1.0,
@@ -74,24 +74,24 @@ function FroehlichPolaron(
     p=0.0,
     momentum_cutoff=nothing,
     mode_cutoff=nothing,
-) where {M,AT}
+) where {T,M,AT}
     if l ≤ 0
         throw(ArgumentError("l must be positive"))
     end
 
-    v, p, mass, omega, l = promote(float(v), float(p), float(mass), float(omega), float(l))
+    v, p, mass, omega, l = T.((v, p, mass, omega, l))
 
-    step = typeof(v)(2π/M)
+    step = T(2π/M)
     if isodd(M)
-        start = -π*(1+1/M) + step
+        start = -π * T(1 + 1/M) + step
     else
         start = -π + step
     end
     kr = (M/l)*range(start; step = step, length = M)
-    ks = SVector{M,typeof(v)}(kr)
+    ks = SVector{M,T}(kr)
 
     if !isnothing(momentum_cutoff)
-        momentum_cutoff = typeof(v)(momentum_cutoff)
+        momentum_cutoff = T(momentum_cutoff)
         momentum = dot(ks,onr(addr))
         if abs(momentum) > momentum_cutoff
             throw(ArgumentError("Starting address has momentum $momentum which cannot exceed momentum_cutoff $momentum_cutoff"))
@@ -107,14 +107,27 @@ function FroehlichPolaron(
     end
     return FroehlichPolaron(addr, v, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff)
 end
+function FroehlichPolaron(
+    addr::BoseFS{missing};
+    v=1.0,
+    mass=1.0,
+    omega=1.0,
+    l=1.0,
+    p=0.0,
+    kwargs...
+)
+    T = float(promote_type(typeof(v), typeof(mass), typeof(omega), typeof(l), typeof(p)))
+    return FroehlichPolaron{T}(addr; v=v, mass=mass, omega=omega, l=l, p=p, kwargs...)
+end
 
 function Base.show(io::IO, h::FroehlichPolaron)
     compact_addr = repr(h.addr, context=:compact => true) # compact print address
-    print(io, "FroehlichPolaron($compact_addr; ")
+    print(io, "FroehlichPolaron")
+    eltype(h) === Float64 || print(io, "{$(eltype(h))}")
+    print(io, "($compact_addr; ")
     print(io, "v=$(h.v), mass=$(h.mass), omega=$(h.omega), l=$(h.l), p=$(h.p), ")
     isnothing(h.momentum_cutoff) || print(io, "momentum_cutoff=$(h.momentum_cutoff), ")
     print(io, "mode_cutoff=$(h.mode_cutoff))")
-
 end
 
 function starting_address(h::FroehlichPolaron)
