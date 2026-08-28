@@ -19,7 +19,7 @@ if not provided. Set `T` to `Float32` for single precision, e.g. when using GPUs
 
 * `p=0.0`: the total momentum ``p``.
 * `v=1.0`: the coupling strength ``v``.
-* `electron_mass=0.5`: the particle mass ``m``.
+* `two_m=1.0`: twice the particle mass ``2m``.
 * `omega=1.0`: the oscillation frequency of the phonons ``ω``.
 * `l=1.0`: the box size in real space ``l``. Provides scale parameter of the momentum
     lattice.
@@ -35,7 +35,7 @@ julia> fs = BoseFS{missing}(0,0,0)
 BoseFS{missing}(0, 0, 0)
 
 julia> ham = FroehlichPolaron(fs; v=0.5)
-FroehlichPolaron(fs"|0 0 0⟩{}"; v=0.5, electron_mass=0.5, omega=1.0, l=1.0, p=0.0, mode_cutoff=255)
+FroehlichPolaron(fs"|0 0 0⟩{}"; v=0.5, two_m=1.0, omega=1.0, l=1.0, p=0.0, mode_cutoff=255)
 
 julia> dimension(ham)
 16777216
@@ -58,7 +58,7 @@ struct FroehlichPolaron{
 } <: AbstractHamiltonian{T}
     addr::A
     v::T
-    electron_mass::T
+    two_m::T
     omega::T
     l::T
     p::T
@@ -70,23 +70,23 @@ end
 function FroehlichPolaron{T}(
     addr::BoseFS{missing,M,SVector{M,AT}};
     v=1,
-    electron_mass=1//2,
+    two_m=1,
     omega=1,
     l=1,
     p=0,
     momentum_cutoff=nothing,
     mode_cutoff=nothing,
-    mass=nothing, # deprecated keyword, use `electron_mass` instead
+    mass=nothing, # deprecated keyword, use `two_m` instead
 ) where {T,M,AT}
     if l ≤ 0
         throw(ArgumentError("l must be positive"))
     end
 
     if !isnothing(mass)
-        @warn "The keyword argument `mass` is deprecated. Use `electron_mass` instead."
-        electron_mass = mass/2
+        @warn "The keyword argument `mass` is deprecated. Use `two_m` instead."
+        two_m = mass
     end
-    v, p, electron_mass, omega, l = T.((v, p, electron_mass, omega, l))
+    v, p, two_m, omega, l = T.((v, p, two_m, omega, l))
 
     step = T(2π/M)
     if isodd(M)
@@ -112,25 +112,25 @@ function FroehlichPolaron{T}(
     if _exceed_mode_cutoff(mode_cutoff, addr)
         throw(ArgumentError("Starting address cannot have occupations that exceed mode_cutoff"))
     end
-    return FroehlichPolaron(addr, v, electron_mass, omega, l, p, ks, momentum_cutoff, mode_cutoff)
+    return FroehlichPolaron(addr, v, two_m, omega, l, p, ks, momentum_cutoff, mode_cutoff)
 end
 function FroehlichPolaron(
     addr::BoseFS{missing};
     v=1,
-    electron_mass=1//2,
+    two_m=1,
     omega=1,
     l=1,
     p=0,
-    mass=nothing, # deprecated keyword, use `electron_mass` instead
+    mass=nothing, # deprecated keyword, use `two_m` instead
     kwargs...
 )
     if !isnothing(mass)
-        @warn "The keyword argument `mass` is deprecated. Use `electron_mass` instead."
-        electron_mass = mass/2
+        @warn "The keyword argument `mass` is deprecated. Use `two_m` instead."
+        two_m = mass
     end
 
-    T = float(promote_type(typeof(v), typeof(electron_mass), typeof(omega), typeof(l), typeof(p)))
-    return FroehlichPolaron{T}(addr; v=v, electron_mass=electron_mass, omega=omega, l=l, p=p, kwargs...)
+    T = float(promote_type(typeof(v), typeof(two_m), typeof(omega), typeof(l), typeof(p)))
+    return FroehlichPolaron{T}(addr; v=v, two_m=two_m, omega=omega, l=l, p=p, kwargs...)
 end
 
 function Base.show(io::IO, h::FroehlichPolaron)
@@ -138,7 +138,7 @@ function Base.show(io::IO, h::FroehlichPolaron)
     print(io, "FroehlichPolaron")
     eltype(h) === Float64 || print(io, "{$(eltype(h))}")
     print(io, "($compact_addr; ")
-    print(io, "v=$(h.v), electron_mass=$(h.electron_mass), omega=$(h.omega), l=$(h.l), p=$(h.p), ")
+    print(io, "v=$(h.v), two_m=$(h.two_m), omega=$(h.omega), l=$(h.l), p=$(h.p), ")
     isnothing(h.momentum_cutoff) || print(io, "momentum_cutoff=$(h.momentum_cutoff), ")
     print(io, "mode_cutoff=$(h.mode_cutoff))")
 end
@@ -155,7 +155,7 @@ LOStructure(::Type{<:FroehlichPolaron{<:Real}}) = IsHermitian()
 function diagonal_element(h::FroehlichPolaron{<:Any,M}, addr::BoseFS{missing,M}) where {M}
     map = onr(addr)
     p_f = dot(h.ks, map)
-    return h.omega * num_particles(addr) + (h.p - p_f)^2 / (2 * h.electron_mass)
+    return h.omega * num_particles(addr) + (h.p - p_f)^2 / h.two_m
 end
 
 function num_offdiagonals(::FroehlichPolaron{<:Any,M}, ::BoseFS{missing,M}) where {M}

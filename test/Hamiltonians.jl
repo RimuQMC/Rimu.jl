@@ -1248,7 +1248,7 @@ end
     @test num_offdiagonals(f2, addr1) == 2*3
 
     # test diagonal_element
-    f2_diag = f2.omega*6 + (1/f2.mass) * (f2.p - dot(f2.ks, onr(addr2)))^2
+    f2_diag = f2.omega*6 + (1/f2.two_m) * (f2.p - dot(f2.ks, onr(addr2)))^2
     @test diagonal_element(f2, addr2) == f2_diag
 
     # test offdiagonal element
