@@ -190,15 +190,14 @@ function diagonal_element(col::FroehlichPolaronNDColumn)
     h = col.hamiltonian
     occ = onr(col.address)
 
-    Pphonon = zero(h.ks[1])
-    Nphonon = 0
+    p_phonon = -h.p
+    n_phonon = 0
     for m in 1:num_modes(col.address)
         nm = occ[m]
-        Nphonon += nm
-        Pphonon += h.ks[m] * nm
+        n_phonon += nm
+        p_phonon += h.ks[m] * nm
     end
-    ek = dot(h.p - Pphonon, h.p - Pphonon) / (h.mass)
-    return (h.omega * Nphonon)+ ek
+    return (h.omega * n_phonon) + dot(p_phonon, p_phonon) / (h.mass)
 end
 
 struct FroehlichPolaronNDOffdiagonals{A,H} <: AbstractVector{Pair{A,Float64}}
@@ -214,11 +213,10 @@ Base.size(ods::FroehlichPolaronNDOffdiagonals) = (ods.num_offdiagonals,)
 
 
 @inline function calc_vk(h::FroehlichPolaronND{T,M,D}, kidx::Int) where {T,M,D}
-    knorm = sqrt(dot(h.ks[kidx], h.ks[kidx]))
-
     if D == 1
         return h.vk_constant
     else
+        knorm = norm(h.ks[kidx])
         if knorm == 0.0
             return  0.0
         else
@@ -253,9 +251,7 @@ and returns the new offdiagonal element.
         occ = onr(new_addr)
         phononmom = zero(h.ks[1])
         for m in 1:M
-
             phononmom += h.ks[m] * occ[m]
-
         end
         if norm(phononmom) ≤ h.momentum_cutoff
             return new_addr => amp
