@@ -81,6 +81,7 @@ function FroehlichPolaron{T}(
     if l ≤ 0
         throw(ArgumentError("l must be positive"))
     end
+    T <: AbstractFloat || throw(ArgumentError("T must be a subtype of AbstractFloat"))
 
     if !isnothing(mass)
         @warn "The keyword argument `mass` is deprecated. Use `two_m` instead."

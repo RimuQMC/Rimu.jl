@@ -1235,6 +1235,10 @@ end
     f3 = FroehlichPolaron(addr3; mode_cutoff=20.0)
 
     @test starting_address(f2) == f2.addr == addr2
+    @test f2 == @test_logs (:warn,) FroehlichPolaron(addr2; mass=1)
+    @test f2 == @test_logs (:warn,) FroehlichPolaron{Float64}(addr2; mass=1)
+    @test_throws ArgumentError FroehlichPolaron{Int}(addr2; mass=1)
+    @test_throws ArgumentError FroehlichPolaron(addr2; mass=1, l=-1)
 
     # test ks vector
     step = (2π/3)
