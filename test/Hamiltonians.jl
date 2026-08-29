@@ -1241,8 +1241,8 @@ end
     @test starting_address(f2) == f2.addr == addr2
     @test f2 == @test_logs (:warn,) FroehlichPolaron1D(addr2; mass=1)
     @test f2 == @test_logs (:warn,) FroehlichPolaron1D{Float64}(addr2; mass=1)
-    @test_throws ArgumentError FroehlichPolaron1D{Int}(addr2; mass=1)
-    @test_throws ArgumentError FroehlichPolaron1D(addr2; mass=1, l=-1)
+    @test_throws ArgumentError FroehlichPolaron1D{Int}(addr2)
+    @test_throws ArgumentError FroehlichPolaron1D(addr2; l=-1)
 
     # test ks vector
     step = (2π/3)
