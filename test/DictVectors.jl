@@ -504,3 +504,47 @@ end
     @test fdv == freeze(fdv)
     @test inner(fdv, dv) ≈ norm(dv, 2)^2
 end
+
+@testset "LoadBalancedCommunicator" begin
+    # Test basic construction
+    @testset "construction" begin
+        addr = BoseFS(1,1,1,1,1)
+        comm = LoadBalancedCommunicator{typeof(addr), Float64}(
+            variance_threshold=1.5,
+            check_frequency=100
+        )
+        
+        @test mpi_rank(comm) == 0
+        @test mpi_size(comm) == 1
+        @test comm.load_balancer.variance_threshold == 1.5
+        @test comm.load_balancer.check_frequency == 100
+    end
+    
+    # Test it works with PDVec
+    @testset "PDVec integration" begin
+        addr = BoseFS(1,1,1,1,1)
+        comm = LoadBalancedCommunicator{typeof(addr), Float64}()
+        
+        pdvec = PDVec(addr => 1.0; communicator=comm)
+        @test pdvec.communicator isa LoadBalancedCommunicator
+        @test length(pdvec) == 1
+        @test pdvec[addr] == 1.0
+    end
+    
+    # Test basic operations
+    @testset "basic operations" begin
+        addr = BoseFS(1,1,1,1,1)
+        H = HubbardReal1D(addr)
+        comm = LoadBalancedCommunicator{typeof(addr), Float64}(check_frequency=10)
+        
+        pdvec = PDVec(addr => 1.0; communicator=comm)
+        
+        # Apply Hamiltonian a few times
+        for i in 1:20
+            pdvec = H * pdvec
+        end
+        
+        @test !isempty(pdvec)
+        @test norm(pdvec) > 0
+    end
+end
