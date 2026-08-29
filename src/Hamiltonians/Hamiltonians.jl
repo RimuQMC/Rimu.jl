@@ -24,7 +24,7 @@ Other
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
 - [`HamiltonianProduct`](@ref)
-- [`FroehlichPolaronND`](@ref)
+- [`FroehlichPolaron`](@ref)
 
 - [`MolecularHamiltonian`](@ref)
 
@@ -96,7 +96,7 @@ export Stoquastic
 export Transcorrelated1D
 export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron1D
-export FroehlichPolaronND
+export FroehlichPolaron
 export ParticleNumberOperator
 
 export MolecularHamiltonian
@@ -140,7 +140,7 @@ include("HubbardRealSpace.jl")
 include("ExtendedHubbardReal1D.jl")
 
 include("FroehlichPolaron1D.jl")
-include("FroelichPolaron_nD.jl")
+include("FroehlichPolaron.jl")
 
 
 include("Transcorrelated1D.jl")

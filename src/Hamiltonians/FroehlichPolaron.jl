@@ -1,5 +1,5 @@
 """
-    FroehlichPolaronND(address::BoseFS{missing,M}; kwargs...) <: AbstractHamiltonian
+    FroehlichPolaron(address::BoseFS{missing,M}; kwargs...) <: AbstractHamiltonian
 
 
 The Froehlich polaron Hamiltonian for a `D` dimensional box of volume`l^D` with `M ` momentum modes is given by
@@ -37,8 +37,8 @@ All of the components of ``V_k`` that are not dependent on ``\\mathbf{k}`` are s
 julia> fs = BoseFS{missing}(0,0,0,0)
 BoseFS{missing}(0, 0, 0, 0)
 
-julia> ham = FroehlichPolaronND(fs; D = 2,alpha = 1)
-FroehlichPolaronND(
+julia> ham = FroehlichPolaron(fs; D = 2,alpha = 1)
+FroehlichPolaron(
   fs"|0 0 0 0⟩{}",
   geometry = CubicGrid((2, 2), (true, true)),
   alpha = 1.0, D = 2, mass = 1.0, omega = 1.0,
@@ -50,13 +50,13 @@ FroehlichPolaronND(
 julia> dimension(ham)
 4294967296
 
-julia> dimension(FroehlichPolaronND(fs; alpha = 1,D = 2, mode_cutoff=5))
+julia> dimension(FroehlichPolaron(fs; alpha = 1,D = 2, mode_cutoff=5))
 1296
 ```
 
 See also [`BoseFS`](@ref), [`dimension`](@ref), [`AbstractHamiltonian`](@ref).
 """
-struct FroehlichPolaronND{
+struct FroehlichPolaron{
         T,
         M, #num_modes
         D, #dimension
@@ -79,7 +79,7 @@ struct FroehlichPolaronND{
 end
 
 
-function FroehlichPolaronND(
+function FroehlichPolaron(
     address::BoseFS{missing,M,SVector{M,AT}};
     D::Int = 1,
     geometry::CubicGrid = PeriodicBoundaries(ntuple(Returns(round(Int, M^(1/D))), D)),
@@ -147,14 +147,14 @@ function FroehlichPolaronND(
         throw(ArgumentError("Starting address cannot have occupations that exceed mode_cutoff"))
     end
 
-    return FroehlichPolaronND{typeof(alpha), M,D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
+    return FroehlichPolaron{typeof(alpha), M,D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
         address ,geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant,twist)
 end
 
 
-function Base.show(io::IO, h::FroehlichPolaronND{T,M,D}) where {T,M,D}  #put D is the show function
+function Base.show(io::IO, h::FroehlichPolaron{T,M,D}) where {T,M,D}  #put D is the show function
     io = IOContext(io, :compact => true)
-    println(io, "FroehlichPolaronND(")
+    println(io, "FroehlichPolaron(")
     println(io, "  ", starting_address(h), ",")
     println(io, "  geometry = ", h.geometry, ",")
     println(io, "  alpha = ", h.alpha,", D = ", D,  ", mass = ", h.mass, ", omega = ", h.omega,",")
@@ -165,28 +165,28 @@ function Base.show(io::IO, h::FroehlichPolaronND{T,M,D}) where {T,M,D}  #put D i
     print(io, ")")
 end
 
-LOStructure(::Type{<:FroehlichPolaronND}) = IsHermitian()
+LOStructure(::Type{<:FroehlichPolaron}) = IsHermitian()
 
-starting_address(h::FroehlichPolaronND) = h.address
+starting_address(h::FroehlichPolaron) = h.address
 
-function dimension(h::FroehlichPolaronND, address)
+function dimension(h::FroehlichPolaron, address)
     M = num_modes(address)
     n = h.mode_cutoff
     return BigInt(n + 1)^BigInt(M)
 end
 
-struct FroehlichPolaronNDColumn{H,A} <: AbstractOperatorColumn{A,Float64,H}
+struct FroehlichPolaronColumn{H,A} <: AbstractOperatorColumn{A,Float64,H}
     hamiltonian::H
     address::A
     num_offdiagonals::Int
 end
 
-function operator_column(h::FroehlichPolaronND, address)
+function operator_column(h::FroehlichPolaron, address)
     M = num_modes(address)
-    return FroehlichPolaronNDColumn(h, address, 2M)
+    return FroehlichPolaronColumn(h, address, 2M)
 end
 
-function diagonal_element(col::FroehlichPolaronNDColumn)
+function diagonal_element(col::FroehlichPolaronColumn)
     h = col.hamiltonian
     occ = onr(col.address)
 
@@ -200,19 +200,19 @@ function diagonal_element(col::FroehlichPolaronNDColumn)
     return (h.omega * n_phonon) + dot(p_phonon, p_phonon) / (h.mass)
 end
 
-struct FroehlichPolaronNDOffdiagonals{A,H} <: AbstractVector{Pair{A,Float64}}
+struct FroehlichPolaronOffdiagonals{A,H} <: AbstractVector{Pair{A,Float64}}
     address::A
     h::H
     num_offdiagonals::Int
 end
 
-offdiagonals(col::FroehlichPolaronNDColumn) = FroehlichPolaronNDOffdiagonals(col.address, col.hamiltonian, col.num_offdiagonals)
+offdiagonals(col::FroehlichPolaronColumn) = FroehlichPolaronOffdiagonals(col.address, col.hamiltonian, col.num_offdiagonals)
 
 
-Base.size(ods::FroehlichPolaronNDOffdiagonals) = (ods.num_offdiagonals,)
+Base.size(ods::FroehlichPolaronOffdiagonals) = (ods.num_offdiagonals,)
 
 
-@inline function calc_vk(h::FroehlichPolaronND{T,M,D}, kidx::Int) where {T,M,D}
+@inline function calc_vk(h::FroehlichPolaron{T,M,D}, kidx::Int) where {T,M,D}
     if D == 1
         return h.vk_constant
     else
@@ -226,11 +226,11 @@ Base.size(ods::FroehlichPolaronNDOffdiagonals) = (ods.num_offdiagonals,)
 end
 
 """
-    phonon_op(h::FroehlichPolaronND, addr, chosen)
+    phonon_op(h::FroehlichPolaron, addr, chosen)
 The phonon_op function applies the creation and annihilation operators on a chosen address
 and returns the new offdiagonal element.
 """
-@inline function phonon_op(h::FroehlichPolaronND{T,M,D}, addr, chosen) where {T,M,D}
+@inline function phonon_op(h::FroehlichPolaron{T,M,D}, addr, chosen) where {T,M,D}
     if chosen ≤ M
         if !isnothing(h.mode_cutoff) && onr(addr)[chosen] ≥ h.mode_cutoff
             return addr => 0.0
@@ -264,18 +264,18 @@ and returns the new offdiagonal element.
 end
 
 
-function Base.getindex(ods::FroehlichPolaronNDOffdiagonals, i::Int)
+function Base.getindex(ods::FroehlichPolaronOffdiagonals, i::Int)
     return phonon_op(ods.h, ods.address, i)
 end
 
 
-function random_offdiagonal(col::FroehlichPolaronNDColumn)
+function random_offdiagonal(col::FroehlichPolaronColumn)
     M2 = col.num_offdiagonals
     i = rand(1:M2)
     addr_val = phonon_op(col.hamiltonian, col.address, i)
     return first(addr_val), 1/M2, last(addr_val)
 end
 
-parent_operator(col::FroehlichPolaronNDColumn) = col.hamiltonian
-starting_address(col::FroehlichPolaronNDColumn) = col.address
-num_offdiagonals(col::FroehlichPolaronNDColumn) = col.num_offdiagonals
+parent_operator(col::FroehlichPolaronColumn) = col.hamiltonian
+starting_address(col::FroehlichPolaronColumn) = col.address
+num_offdiagonals(col::FroehlichPolaronColumn) = col.num_offdiagonals
