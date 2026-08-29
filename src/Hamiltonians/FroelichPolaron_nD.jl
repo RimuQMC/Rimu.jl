@@ -43,7 +43,8 @@ FroehlichPolaronND(
   geometry = CubicGrid((2, 2), (true, true)),
   alpha = 1.0, D = 2, mass = 1.0, omega = 1.0,
   l = [1.0, 1.0], p = [0.0, 0.0],
-  mode_cutoff = 255
+  mode_cutoff = 255,
+  twist = [0.0, 0.0]
 )
 
 julia> dimension(ham)
@@ -92,18 +93,15 @@ function FroehlichPolaronND(
     twist = zeros(D)
 
 ) where {M, AT}
-
     if D != 1
         vk_constant = sqrt((gamma(((D-1)/2)) * alpha * 2^(D-1) * pi^((D-1)/2) * omega^2) / (sqrt(mass * omega)*prod(l)))
     else
         vk_constant = (2 * alpha /(l[1]))^0.5
     end
 
-
     if length(l) != D || any(x -> x <= 0, l)
         throw(ArgumentError("`l` must be a positive-valued vector of length $D"))
     end
-
 
     if abs(M^(1/D) - round(M^(1/D))) > 0.01
         throw(ArgumentError("num_modes(address)==$M is not an integer power with exponent $D"))
@@ -114,7 +112,6 @@ function FroehlichPolaronND(
     p = SVector{D,Float64}(float.(p))
 
     ks_tmp = Vector{SVector{D,Float64}}(undef, M)
-
 
     for idx_mode in 1:M
         idx = Tuple(geometry[idx_mode])
@@ -134,7 +131,6 @@ function FroehlichPolaronND(
 
     ks = SVector{M,SVector{D,Float64}}(Tuple(ks_tmp))
 
-
     if !isnothing(momentum_cutoff)
         momentum_cutoff = typeof(alpha)(momentum_cutoff)
         momentum = dot(ks,onr(address))
@@ -143,7 +139,6 @@ function FroehlichPolaronND(
         end
     end
 
-
     if isnothing(mode_cutoff)
         mode_cutoff = Int(typemax(AT))
     end
@@ -151,10 +146,6 @@ function FroehlichPolaronND(
     if _exceed_mode_cutoff(mode_cutoff, address)
         throw(ArgumentError("Starting address cannot have occupations that exceed mode_cutoff"))
     end
-
-
-
-
 
     return FroehlichPolaronND{typeof(alpha), M,D, typeof(address), typeof(momentum_cutoff),typeof(geometry)}(
         address ,geometry, alpha, mass, omega, l, p, ks, momentum_cutoff, mode_cutoff,vk_constant,twist)
@@ -169,7 +160,8 @@ function Base.show(io::IO, h::FroehlichPolaronND{T,M,D}) where {T,M,D}  #put D i
     println(io, "  alpha = ", h.alpha,", D = ", D,  ", mass = ", h.mass, ", omega = ", h.omega,",")
     println(io, "  l = ", Float64.(h.l), ", p = ", Float64.(h.p),  ",")
     !isnothing(h.momentum_cutoff) && println(io, "  momentum_cutoff = ", h.momentum_cutoff, ",")
-    println(io, "  mode_cutoff = ", isnothing(h.mode_cutoff) ? "nothing" : string(h.mode_cutoff))
+    println(io, "  mode_cutoff = ", isnothing(h.mode_cutoff) ? "nothing" : string(h.mode_cutoff), ",")
+    println(io, "  twist = ", h.twist)
     print(io, ")")
 end
 
@@ -178,7 +170,6 @@ LOStructure(::Type{<:FroehlichPolaronND}) = IsHermitian()
 starting_address(h::FroehlichPolaronND) = h.address
 
 function dimension(h::FroehlichPolaronND, address)
-
     M = num_modes(address)
     n = h.mode_cutoff
     return BigInt(n + 1)^BigInt(M)
@@ -195,7 +186,6 @@ function operator_column(h::FroehlichPolaronND, address)
     return FroehlichPolaronNDColumn(h, address, 2M)
 end
 
-
 function diagonal_element(col::FroehlichPolaronNDColumn)
     h = col.hamiltonian
     occ = onr(col.address)
@@ -210,7 +200,6 @@ function diagonal_element(col::FroehlichPolaronNDColumn)
     ek = dot(h.p - Pphonon, h.p - Pphonon) / (h.mass)
     return (h.omega * Nphonon)+ ek
 end
-
 
 struct FroehlichPolaronNDOffdiagonals{A,H} <: AbstractVector{Pair{A,Float64}}
     address::A
@@ -239,10 +228,10 @@ Base.size(ods::FroehlichPolaronNDOffdiagonals) = (ods.num_offdiagonals,)
 end
 
 """
-The phonon_op function applies the creation and annihalation operators on a chosen address and returns the new offdiagonal element.
+    phonon_op(h::FroehlichPolaronND, addr, chosen)
+The phonon_op function applies the creation and annihilation operators on a chosen address
+and returns the new offdiagonal element.
 """
-
-
 @inline function phonon_op(h::FroehlichPolaronND{T,M,D}, addr, chosen) where {T,M,D}
     if chosen ≤ M
         if !isnothing(h.mode_cutoff) && onr(addr)[chosen] ≥ h.mode_cutoff
@@ -260,9 +249,6 @@ The phonon_op function applies the creation and annihalation operators on a chos
 
     end
 
-
-
-
     if !isnothing(h.momentum_cutoff)
         occ = onr(new_addr)
         phononmom = zero(h.ks[1])
@@ -279,7 +265,6 @@ The phonon_op function applies the creation and annihalation operators on a chos
     else
         return new_addr => amp
     end
-
 end
 
 
@@ -294,7 +279,6 @@ function random_offdiagonal(col::FroehlichPolaronNDColumn)
     addr_val = phonon_op(col.hamiltonian, col.address, i)
     return first(addr_val), 1/M2, last(addr_val)
 end
-
 
 parent_operator(col::FroehlichPolaronNDColumn) = col.hamiltonian
 starting_address(col::FroehlichPolaronNDColumn) = col.address

@@ -83,6 +83,7 @@ end
         # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
         FroehlichPolaronND(BoseFS{missing}(0,0,0,0)),
+        FroehlichPolaronND(BoseFS{missing}(0, 0, 0, 0); twist=[0.1]),
         # HamiltonianSum
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
         # FCIQMC transition operator
