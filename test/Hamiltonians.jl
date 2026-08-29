@@ -76,9 +76,9 @@ end
         HOCartesianContactInteractions(BoseFS((2, 0, 0, 0))),
         HOCartesianEnergyConservedPerDim(BoseFS((2, 0, 0, 0))),
         HOCartesianCentralImpurity(BoseFS((1, 0, 0, 0, 0))),
-        FroehlichPolaron(BoseFS{missing}(1, 1, 1)),
-        FroehlichPolaron(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
-        FroehlichPolaron{Float32}(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
+        FroehlichPolaron1D(BoseFS{missing}(1, 1, 1)),
+        FroehlichPolaron1D(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
+        FroehlichPolaron1D{Float32}(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
         # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
@@ -1225,24 +1225,24 @@ end
     end
 end
 
-@testset "FroehlichPolaron" begin
+@testset "FroehlichPolaron1D" begin
     addr1 = BoseFS{missing}(1,1,1)
 
     # test momentum_cutoff and mode_cutoff when initialising
     addr2 = BoseFS{missing}(1,2,3)
-    @test_throws ArgumentError FroehlichPolaron(addr2; mode_cutoff=1.0)
-    @test_throws ArgumentError FroehlichPolaron(addr2; momentum_cutoff=10.0)
-    @test_throws ArgumentError FroehlichPolaron(BoseFS{missing}(3,2,1); momentum_cutoff=10.0)
+    @test_throws ArgumentError FroehlichPolaron1D(addr2; mode_cutoff=1.0)
+    @test_throws ArgumentError FroehlichPolaron1D(addr2; momentum_cutoff=10.0)
+    @test_throws ArgumentError FroehlichPolaron1D(BoseFS{missing}(3,2,1); momentum_cutoff=10.0)
 
     addr3 = BoseFS{missing}(1,2,3,4)
-    f2 = FroehlichPolaron(addr2)
-    f3 = FroehlichPolaron(addr3; mode_cutoff=20.0)
+    f2 = FroehlichPolaron1D(addr2)
+    f3 = FroehlichPolaron1D(addr3; mode_cutoff=20.0)
 
     @test starting_address(f2) == f2.addr == addr2
-    @test f2 == @test_logs (:warn,) FroehlichPolaron(addr2; mass=1)
-    @test f2 == @test_logs (:warn,) FroehlichPolaron{Float64}(addr2; mass=1)
-    @test_throws ArgumentError FroehlichPolaron{Int}(addr2; mass=1)
-    @test_throws ArgumentError FroehlichPolaron(addr2; mass=1, l=-1)
+    @test f2 == @test_logs (:warn,) FroehlichPolaron1D(addr2; mass=1)
+    @test f2 == @test_logs (:warn,) FroehlichPolaron1D{Float64}(addr2; mass=1)
+    @test_throws ArgumentError FroehlichPolaron1D{Int}(addr2; mass=1)
+    @test_throws ArgumentError FroehlichPolaron1D(addr2; mass=1, l=-1)
 
     # test ks vector
     step = (2π/3)
@@ -1273,22 +1273,22 @@ end
     # test momentum_cutoff
     # addr2 has momentum 12.56
     addr4 = BoseFS{missing}(1,2,1)
-    f4 = FroehlichPolaron(addr4; momentum_cutoff=10.0)
+    f4 = FroehlichPolaron1D(addr4; momentum_cutoff=10.0)
     @test get_offdiagonal(f4, addr2, 3)[2] == 0.0
 
     m = 5; l = 6
     addr5 = BoseFS{missing,5}()
     mom_unit = 2π/l
     momentum_cutoff = 1.5 * mom_unit
-    f5 = FroehlichPolaron(addr5; l, mode_cutoff=1, momentum_cutoff)
+    f5 = FroehlichPolaron1D(addr5; l, mode_cutoff=1, momentum_cutoff)
     basis5 = build_basis(f5)
     mom_vec = map(o -> dot(o, f5.ks), onr.(basis5))
     @test all(abs.(mom_vec) .≤ momentum_cutoff) ==  true
     @test length(basis5) == 20
 
     # with and without momentum cutoff
-    f6 = FroehlichPolaron(addr5; v=10, mode_cutoff=1)
-    f7 = FroehlichPolaron(addr5; v=10, mode_cutoff=1, momentum_cutoff=100)
+    f6 = FroehlichPolaron1D(addr5; v=10, mode_cutoff=1)
+    f7 = FroehlichPolaron1D(addr5; v=10, mode_cutoff=1, momentum_cutoff=100)
     @test get_offdiagonal(f6, addr5, 1) == get_offdiagonal(f7, addr5, 1)
 end
 

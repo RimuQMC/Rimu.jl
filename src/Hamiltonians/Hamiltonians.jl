@@ -20,7 +20,7 @@ Harmonic oscillator models
 - [`HOCartesianCentralImpurity`](@ref)
 
 Other
-- [`FroehlichPolaron`](@ref)
+- [`FroehlichPolaron1D`](@ref)
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
 - [`HamiltonianProduct`](@ref)
@@ -95,7 +95,7 @@ export TimeReversalSymmetry
 export Stoquastic
 export Transcorrelated1D
 export hubbard_dispersion, continuum_dispersion
-export FroehlichPolaron
+export FroehlichPolaron1D
 export FroehlichPolaronND
 export ParticleNumberOperator
 
@@ -139,7 +139,7 @@ include("HubbardMom1DEP.jl")
 include("HubbardRealSpace.jl")
 include("ExtendedHubbardReal1D.jl")
 
-include("FroehlichPolaron.jl")
+include("FroehlichPolaron1D.jl")
 include("FroelichPolaron_nD.jl")
 
 
