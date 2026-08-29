@@ -2,19 +2,18 @@
 # So are num_particles, num_modes, num_components.
 
 """
-    SingleComponentFockAddress{N,M} <: AbstractFockAddress{N,M}
+    SingleComponentFockAddress{N,M} <: AbstractFockAddress
 
 A type representing a single component Fock state with `N` particles and `M` modes. The
 particle number is part of the type but can be set to `missing` to allow for a variable
 particle number. The number of modes is always fixed.
 
-Implemented subtypes:
+## Implemented subtypes:
 - [`BoseFS`](@ref): Bosonic Fock state.
 - [`FermiFS`](@ref): Fermionic Fock state.
 - [`HardcoreBoseFS`](@ref): Fock state for hardcore bosons or spin or qubit systems.
 
-# Supported functionality
-
+## Supported functionality
 * [`find_mode`](@ref)
 * [`find_occupied_mode`](@ref)
 * [`num_occupied_modes`](@ref)
@@ -27,9 +26,14 @@ Implemented subtypes:
 
 See also [`CompositeFS`](@ref), [`AbstractFockAddress`](@ref).
 """
-abstract type SingleComponentFockAddress{N,M} <: AbstractFockAddress{N,M} end
+abstract type SingleComponentFockAddress{N,M} <: AbstractFockAddress end
+
+Interfaces.num_particles(::Type{<:SingleComponentFockAddress{N}}) where {N} = N
 
 Interfaces.num_components(::Type{<:SingleComponentFockAddress}) = 1
+Interfaces.num_modes(::Type{<:SingleComponentFockAddress{<:Any,M}}) where {M} = M
+Interfaces.num_modes_are_equal(::Type{<:SingleComponentFockAddress}) = true
+Interfaces.num_modes_check_equal(A::Type{<:SingleComponentFockAddress}) = num_modes(A)
 
 """
     occupation_number_representation(fs::SingleComponentFockAddress)
@@ -705,7 +709,7 @@ end
     from_bose_onr(::Type{B}, onr::AbstractArray) -> B
 
 Convert array `onr` to type `B`. It is safe to assume `onr` contains a valid
-occupation-number representation array. The checks are preformed in the [`BoseFS`](@ref)
+occupation-number representation array. The checks are performed in the [`BoseFS`](@ref)
 constructor.
 
 This function is a part of the interface for an underlying storage format used by
@@ -809,7 +813,7 @@ Base.eltype(::FermiUnoccupiedModes) = FermiFSIndex
     from_fermi_onr(::Type{B}, onr) -> B
 
 Convert array `onr` to type `B`. It is safe to assume `onr` contains a valid
-occupation-number representation array. The checks are preformed in the [`FermiFS`](@ref)
+occupation-number representation array. The checks are performed in the [`FermiFS`](@ref)
 constructor.
 
 This function is a part of the interface for an underlying storage format used by

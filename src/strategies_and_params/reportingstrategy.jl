@@ -120,7 +120,6 @@ Get metadata `key` from `report`. `key` is converted to a `String`. Returns `def
 
 See also [`metadata!`](@ref), [`Report`](@ref), [`report!`](@ref).
 """
-DataAPI.metadata(report::Report, key, default) = get(report.meta, string(key), default)
 function DataAPI.metadata(report::Report, key; style::Bool=false)
     if style
         return (report.meta[string(key)], :default)
@@ -128,6 +127,7 @@ function DataAPI.metadata(report::Report, key; style::Bool=false)
         return report.meta[string(key)]
     end
 end
+DataAPI.metadata(report::Report, key, default) = get(report.meta, string(key), default)
 
 const SymbolOrString = Union{Symbol,AbstractString}
 

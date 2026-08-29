@@ -27,6 +27,8 @@ The following are provided:
 * [`random_offdiagonal(column)`](@ref)
 * [`dimension(op, address)`](@ref)
 
+For examples of how to implement a `ModifiedHamiltonian`, see, e.g.,
+[`ParitySymmetry`](@ref) and read the source code.
 """
 abstract type ModifiedHamiltonian{T} <: AbstractHamiltonian{T} end
 

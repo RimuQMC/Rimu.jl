@@ -31,21 +31,22 @@ jobs:
       - name: generate benchmark result
         id: generate-result-markdown
         run: |
-          body=$(julia -tauto -e '
-          using BenchmarkCI
-          let
-              judgement = BenchmarkCI._loadjudge(BenchmarkCI.DEFAULT_WORKSPACE)
-              title = "Benchmark result"
-              ciresult = BenchmarkCI.CIResult(; judgement, title)
-              BenchmarkCI.printcommentmd(stdout::IO, ciresult)
-          end
-          ')
-          body="${body//'%'/'%25'}"
-          body="${body//$'\n'/'%0A'}"
-          body="${body//$'\r'/'%0D'}"
-          echo ::set-output name=body::$body
-      # check if the previous comment exists
+          {
+            echo 'body<<BENCHMARK_RESULT_EOF'
+            julia -tauto -e '
+            using BenchmarkCI
+            let
+                judgement = BenchmarkCI._loadjudge(BenchmarkCI.DEFAULT_WORKSPACE)
+                title = "Benchmark result"
+                ciresult = BenchmarkCI.CIResult(; judgement, title)
+                BenchmarkCI.printcommentmd(stdout::IO, ciresult)
+            end
+            '
+            echo 'BENCHMARK_RESULT_EOF'
+          } >> "$GITHUB_OUTPUT"
+      # check if the previous comment exists (only for non-fork PRs that have write access)
       - name: find comment
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
         uses: peter-evans/find-comment@v4
         id: fc
         with:
@@ -55,13 +56,13 @@ jobs:
 
       # create/update comment
       - name: create comment
-        if: ${{ steps.fc.outputs.comment-id == 0 && github.actor != 'dependabot[bot]' }}
+        if: ${{ steps.fc.outputs.comment-id == 0 && github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
         uses: peter-evans/create-or-update-comment@v5
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: ${{ steps.generate-result-markdown.outputs.body }}
       - name: update comment
-        if: ${{ steps.fc.outputs.comment-id != 0 && github.actor != 'dependabot[bot]' }}
+        if: ${{ steps.fc.outputs.comment-id != 0 && github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository }}
         uses: peter-evans/create-or-update-comment@v5
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}

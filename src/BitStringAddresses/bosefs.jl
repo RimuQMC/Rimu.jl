@@ -63,7 +63,7 @@ julia> BoseFS{missing}(0, 1, 2, 3, 0; type=UInt16) === fs"|0 1 2 3 0⟩{UInt16}"
 true
 ```
 
-See also: [`SingleComponentFockAddress`](@ref), [`OccupationNumberFS`](@ref),
+See also: [`SingleComponentFockAddress`](@ref),
 [`FermiFS`](@ref), [`CompositeFS`](@ref), [`FermiFS2C`](@ref), [`@fs_str`](@ref).
 
 # Extended Help
@@ -159,6 +159,7 @@ BoseFS(M::Integer, pairs::Pair...) = BoseFS(M, pairs)
 BoseFS(M::Integer, pairs) = BoseFS(sparse_to_onr(M, pairs))
 BoseFS{N,M}(pairs::Pair...) where {N,M} = BoseFS{N,M}(pairs)
 BoseFS{N,M}(pairs) where {N,M} = BoseFS{N,M}(sparse_to_onr(M, pairs))
+BoseFS{N,M}() where {N,M} = BoseFS{N,M}(sparse_to_onr(M, ())) # vacuum state
 BoseFS(pairs::Pair...) = throw(ArgumentError("number of modes must be provided"))
 
 

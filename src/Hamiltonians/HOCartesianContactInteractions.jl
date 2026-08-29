@@ -165,7 +165,7 @@ basis functions, implemented in [`four_oscillator_integral_general`](@ref).
 !!! warning
     `num_offdiagonals` is a bad estimate for this Hamiltonian. Take care when building
     a matrix or using QMC methods. Use [`get_all_blocks`](@ref) first then pass option
-    `col_hint = block_size` to [`BasisSetRep`](@ref) to safely build the matrix.
+    `col_hint = block_size` to [`BasisSetRepresentation`](@ref) to safely build the matrix.
 """
 struct HOCartesianContactInteractions{
     D,  # number of dimensions

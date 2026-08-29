@@ -6,8 +6,7 @@ Return all possible Fock states of a given type as a vector. This method is _muc
 than `build_basis(::AbstractHamiltonian, ...)`, but does not take matrix blocking into
 account. This version of `build_basis` accepts no additional arguments.
 
-All address types except [`OccupationNumberFS`](@ref Main.Rimu.OccupationNumberFS) are
-supported.
+All address types are supported.
 
 Returns a sorted vector of length equal to the [`dimension`](@ref) of `addr`.
 
@@ -155,8 +154,8 @@ end
 ###
 ### CompositeFS
 ###
-function build_basis(::Type{C}) where {T,C<:CompositeFS{<:Any,<:Any,<:Any,T}}
-    sub_results = map(build_basis, reverse(Tuple(T.parameters)))
+function build_basis(::Type{C}) where {T,C<:CompositeFS{<:Any,<:Any,T}}
+    sub_results = map(build_basis, reverse(Tuple(fieldtypes(T))))
     result = Vector{C}(undef, prod(length, sub_results))
     Threads.@threads for i in eachindex(result)
         @inbounds result[i] = C(_collect_addrs(sub_results, i))

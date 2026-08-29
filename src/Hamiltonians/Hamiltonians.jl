@@ -35,8 +35,12 @@ Other
 - [`TimeReversalSymmetry`](@ref)
 - [`Stoquastic`](@ref)
 - [`HamiltonianProduct`](@ref)
-- [`ScaledHamiltonian`](@ref)
 - [`HamiltonianSum`](@ref)
+
+## [Linear combination helpers](#Linear-combination-helpers)
+- [`add`](@ref)
+- [`+`](@ref)
+- [`scale`](@ref)
 
 ## [Observables](#Observables)
 - [`ParticleNumberOperator`](@ref)
@@ -48,6 +52,7 @@ Other
 - [`TwoParticleExcitation`](@ref)
 - [`Momentum`](@ref)
 - [`AxialAngularMomentumHO`](@ref)
+- [`SignCorrelator`](@ref)
 
 ## [Interface for working with Hamiltonians](#Hamiltonians-interface)
 - [`AbstractHamiltonian`](@ref): defined in the module [`Interfaces`](@ref)
@@ -72,7 +77,7 @@ using VectorInterface: add, scale
 using ..BitStringAddresses
 import ..BitStringAddresses: ModeMap, FermiFS2CModes, full_mode_maps
 using ..Interfaces
-using ..Interfaces: sum_mutating!
+using ..Interfaces: sum_mutating!, num_modes_check_equal, num_modes
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
     offdiagonals, random_offdiagonal, LOStructure, allows_address_type, operator_column,
     undo_transform, has_random_offdiagonal, has_iterable_offdiagonals, parent_operator
@@ -98,7 +103,7 @@ export MolecularHamiltonian
 
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
-export StringCorrelator, G2MomCorrelator
+export StringCorrelator, G2MomCorrelator, SignCorrelator
 
 export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
 
@@ -106,8 +111,8 @@ export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCarte
 export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
-export HamiltonianProduct, ScaledHamiltonian
-export HamiltonianSum
+export ModifiedHamiltonian
+export HamiltonianProduct, HamiltonianSum
 
 if VERSION < v"1.10"
     # used for ReducedDensityMatrix

@@ -53,7 +53,7 @@ FermiFS(0, 1, 1, 1, 0)
 ```
 
 See also: [`SingleComponentFockAddress`](@ref), [`BoseFS`](@ref), [`CompositeFS`](@ref),
-[`FermiFS2C`](@ref), [`BitString`](@ref), [`OccupationNumberFS`](@ref), [`@fs_str`](@ref).
+[`FermiFS2C`](@ref), [`BitString`](@ref), [`@fs_str`](@ref).
 """
 struct FermiFS{N,M,S} <: SingleComponentFockAddress{N,M}
     bs::S

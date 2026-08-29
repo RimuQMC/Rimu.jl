@@ -76,28 +76,29 @@ end
 
 LOStructure(::Type{<:G2RealCorrelator}) = IsDiagonal()
 function Interfaces.allows_address_type(::G2RealCorrelator{D}, ::Type{A}) where {D,A}
-    return num_modes(A) > D
+    num_modes_are_equal(A) || return false
+    return num_modes_check_equal(A) > D
 end
 
 function diagonal_element(::G2RealCorrelator{0}, addr::SingleComponentFockAddress)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     v = onr(addr)
     return dot(v, v .- 1) / M
 end
 function diagonal_element(::G2RealCorrelator{D}, addr::SingleComponentFockAddress) where {D}
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     d = mod(D, M)
     v = onr(addr)
     return circshift_dot(v, v, (d,)) / M
 end
 
 function diagonal_element(::G2RealCorrelator{0}, addr::CompositeFS)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     v = sum(map(onr, addr.components))
     return dot(v, v .- 1) / M
 end
 function diagonal_element(::G2RealCorrelator{D}, addr::CompositeFS) where {D}
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     d = mod(D, M)
     v = sum(map(onr, addr.components))
     return circshift_dot(v, v, (d,)) / M
@@ -195,8 +196,9 @@ VectorInterface.scalartype(::G2RealSpace) = Float64 # needed because eltype is a
 function Interfaces.allows_address_type(
     g2::G2RealSpace{C1,C2}, A::Type{<:AbstractFockAddress}
 ) where {C1,C2}
-    result = prod(size(g2.geometry)) == num_modes(A)
-    return result && 0 ≤ C1 ≤ num_components(A) && 0 ≤ C2 ≤ num_components(A)
+    num_modes_are_equal(A) || return false
+    prod(size(g2.geometry)) == num_modes_check_equal(A) || return false
+    return 0 ≤ C1 ≤ num_components(A) && 0 ≤ C2 ≤ num_components(A)
 end
 
 num_offdiagonals(g2::G2RealSpace, _) = 0
@@ -267,7 +269,7 @@ function Base.show(io::IO, ::SuperfluidCorrelator{D}) where {D}
     print(io, "SuperfluidCorrelator($D)")
 end
 function Interfaces.allows_address_type(::SuperfluidCorrelator{D}, ::Type{A}) where {D,A}
-    return num_modes(A) > D
+    return A <: SingleComponentFockAddress && num_modes_check_equal(A) > D
 end
 
 function num_offdiagonals(::SuperfluidCorrelator, addr::SingleComponentFockAddress)
@@ -328,7 +330,7 @@ function StringCorrelator(d::Int; address=nothing, type=nothing)
         elseif address === nothing
             type = ComplexF64
         else
-            M = num_modes(address)
+            M = num_modes_check_equal(address)
             N = num_particles(address)
             if !ismissing(N) && iszero(N % M)
                 type = Float64
@@ -344,7 +346,7 @@ function Base.show(io::IO, ::StringCorrelator{D,T}) where {D,T}
     print(io, "StringCorrelator($D; type=$T)")
 end
 function Interfaces.allows_address_type(::StringCorrelator{D}, ::Type{A}) where {D,A}
-    return num_modes(A) > D && A <: SingleComponentFockAddress
+    return A <: SingleComponentFockAddress && num_modes_check_equal(A) > D
 end
 
 LOStructure(::Type{<:StringCorrelator}) = IsDiagonal()
@@ -380,7 +382,7 @@ function diagonal_element(
 end
 
 function _string_diagonal_complex(d, addr)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     N = num_particles(addr)
     n̄ = N/M
     v = onr(addr)
@@ -395,7 +397,7 @@ function _string_diagonal_complex(d, addr)
     return result / M
 end
 function _string_diagonal_real(d, addr)
-    M = num_modes(addr)
+    M = num_modes_check_equal(addr)
     N = num_particles(addr)
     n̄ = N ÷ M
     v = onr(addr)
@@ -408,4 +410,57 @@ function _string_diagonal_real(d, addr)
     end
 
     return result / M
+end
+
+"""
+    SignCorrelator{T=ComplexF64}() <: AbstractObservable{T}
+
+An observable that can be used to compute the sign correlation (normalised sign coherence)
+between two vectors when used in a three-way dot product. The result is normalised in
+a way that ensures the coherence is equal to 1 if all non-zero elements of the vectors agree
+in sign. The type parameter `T` controls the result type.
+
+Computing the dot product `dot(v, Ŝ, w)` of the sign correlation operator `Ŝ` with vectors
+`v` and `w` gives
+```math
+𝐯⋅Ŝ⋅𝐰  = \\frac{1}{L} ∑_i \\mathrm{sign}(v_i^* w_i) ,
+```
+where ``L`` is the number of non-zero elements in the sum. This works with complex-valued
+vectors. The sign correlation of a nonzero vector with itself is always
+`dot(v, Ŝ, v) == 1`. If either vector is zero, the sign correlation returns zero as well.
+
+## Example
+
+```jldoctest
+julia> a = PDVec(1 => 1.0, 2 => -3.0);
+
+julia> b = PDVec(1 => -5.0, 3 => 4.0);
+
+julia> dot(a, SignCorrelator(), b)
+-1.0 + 0.0im
+
+julia> c = PDVec(1 => 10.0, 4 => 0.5);
+
+julia> dot(a, SignCorrelator{Float64}(), c)
+1.0
+```
+
+`SignCorrelator` can be passed as an observable into [`AllOverlaps`](@ref) to measure
+the sign correlation between two replicas in a [`ProjectorMonteCarloProblem`](@ref)
+simulation. Use the `post_step_strategy` [`SignCoherence`](@ref) to compute the
+sign coherence of a single replica against a fixed reference vector instead.
+"""
+struct SignCorrelator{T<:Number} <: AbstractObservable{T} end
+
+SignCorrelator() = SignCorrelator{ComplexF64}()
+
+function Rimu.Interfaces.dot_from_right(
+    lhs::AbstractDVec, ::SignCorrelator{T}, rhs::AbstractDVec
+) where {T}
+    init = Rimu.MultiScalar(zero(T), 0)
+    accumulator, nonzeros = sum(pairs(rhs); init) do ((k, v_right))
+        product = T(sign(conj(lhs[k]) * v_right))
+        Rimu.MultiScalar(product, Int(!iszero(product)))
+    end
+    return iszero(nonzeros) ? zero(T) : accumulator / nonzeros
 end

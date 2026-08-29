@@ -396,7 +396,7 @@ end
     LOStructure(typeof(op))
 
 Return information about the structure of the linear operator `op`.
-`LOStructure` is used as a trait to speficy symmetries or other properties of the linear
+`LOStructure` is used as a trait to specify symmetries or other properties of the linear
 operator `op` that may simplify or speed up calculations. Implemented instances are:
 
 * `IsDiagonal()`: The operator is diagonal.

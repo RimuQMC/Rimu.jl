@@ -19,7 +19,7 @@ collection of addresses can be passed as `v0`.
     dense-matrix eigensolver from the `LinearAlgebra` standard library (eventually using
     LAPACK). Only suitable for small matrices.
 - [`KrylovKitSolver(matrix_free=true)`](@ref): An algorithm for finding a few eigenvalues
-    and vectors. With `matrix_free=true` the problem is solved without instatiating a
+    and vectors. With `matrix_free=true` the problem is solved without instantiating a
     matrix. This is suitable for large dimensions. With `matrix_free=false` the problem is
     solved after instantiating a sparse matrix. This is faster if sufficient memory is
     available. Requires `using KrylovKit`.

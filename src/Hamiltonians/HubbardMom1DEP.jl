@@ -50,7 +50,7 @@ V_\\mathrm{ext}(x) &= v_\\mathrm{ho} \\,x^2 ,
 ```
 is an external harmonic potential in momentum space,
 ``\\mathrm{DFT}[…]_k`` is a discrete Fourier transform performed by `fft()[k%M + 1]`, and
-`M == num_modes(address)`.
+`M == num_modes_check_equal(address)`.
 
 # Arguments
 
@@ -77,7 +77,7 @@ function HubbardMom1DEP(
     address::Union{SingleComponentFockAddress,FermiFS2C};
     u=1.0, t=1.0, dispersion = hubbard_dispersion, v_ho=1.0,
 )
-    M = num_modes(address)
+    M = num_modes_check_equal(address)
     U, T, V = promote(float(u), float(t), float(v_ho))
     step = 2π/M
     if isodd(M)
@@ -174,7 +174,7 @@ struct OffdiagonalsBoseMom1DEP{
 end
 
 function offdiagonals(h::HubbardMom1DEP, a::SingleComponentFockAddress)
-    M = num_modes(a)
+    M = num_modes_check_equal(a)
     map = occupied_mode_map(a)
     singlies = length(map)
     doublies = count(i -> i.occnum ≥ 2, map)
@@ -187,7 +187,7 @@ function Base.getindex(s::OffdiagonalsBoseMom1DEP{A,T}, i)::Tuple{A,T} where {A,
     @boundscheck begin
         1 ≤ i ≤ length(s) || throw(BoundsError(s, i))
     end
-    M = num_modes(s.address)
+    M = num_modes_check_equal(s.address)
     if i ≤ s.num_mom
         new_address, onproduct = momentum_transfer_excitation(s.address, i, s.map)
         matrix_element = s.hamiltonian.u/(2*M) * onproduct
@@ -215,7 +215,7 @@ struct OffdiagonalsFermiMom1D2CEP{
 end
 
 function offdiagonals(h::HubbardMom1DEP, a::FermiFS2C)
-    M = num_modes(a)
+    M = num_modes_check_equal(a)
     comp_a, comp_b = a.components
     N1 = num_particles(comp_a)
     N2 = num_particles(comp_b)
@@ -235,7 +235,7 @@ function Base.getindex(s::OffdiagonalsFermiMom1D2CEP{A,T}, i)::Tuple{A,T} where 
         1 ≤ i ≤ length(s) || throw(BoundsError(s, i))
     end
     c1, c2 = s.address.components
-    M = num_modes(s.address)
+    M = num_modes_check_equal(s.address)
     if i ≤ s.num_mom
         new_c1, new_c2, onproduct = momentum_transfer_excitation(c1, c2, i, s.map_a, s.map_b)
         new_address = CompositeFS(new_c1, new_c2)

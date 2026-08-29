@@ -124,7 +124,17 @@ end
     SignCoherence(reference[; name=:coherence]) <: PostStepStrategy
 
 After each step, compute the proportion of configurations that have the same sign as they do
-in the `reference_dvec`. Reports to a column named `name`, which defaults to `coherence`.
+in the `reference`. Reports to a column named `name`, which defaults to `coherence`.
+
+The coherence is defined as
+```math
+C = \\frac{1}{L} ∑_i \\mathrm{sign}(r_i^* w_i) ,
+```
+where ``L`` is the number of non-zero elements in the sum, and ``r_i`` and ``w_i`` 
+are the coefficients of the `reference` and the coefficient vector of the current Monte 
+Carlo step, respectively.
+
+For measuring coherence between replicas, see [`SignCorrelator`](@ref).
 """
 struct SignCoherence{R} <: PostStepStrategy
     name::Symbol
@@ -134,26 +144,8 @@ SignCoherence(ref; name=:coherence) = SignCoherence(name, ref)
 
 function post_step_action(sc::SignCoherence, single_state, _)
     vector = single_state.v
-    return (sc.name => coherence(valtype(vector), sc.reference, vector),)
-end
-
-function coherence(::Type{<:Real}, reference, vector)
-    accumulator, overlap = mapreduce(+, pairs(vector); init=MultiScalar(0.0, 0)) do ((k, v))
-        ref = reference[k]
-        MultiScalar(Float64(sign(ref) * sign(v)), Int(!iszero(ref)))
-    end
-    return iszero(overlap) ? 0.0 : accumulator / overlap
-end
-function coherence(::Type{<:Complex}, reference, vector)
-    z = MultiScalar(0.0 + 0im, 0)
-    accumulator, overlap = mapreduce(+, pairs(vector); init=z) do ((k, v))
-        ref = sign(reference[k])
-        MultiScalar(
-            ComplexF64(sign(real(v)) * sign(ref) + im * sign(imag(v)) * sign(ref)),
-            Int(!iszero(ref))
-        )
-    end
-    return iszero(overlap) ? 0.0 : accumulator / overlap
+    T = float(promote_type(valtype(sc.reference), valtype(vector)))
+    return (sc.name => dot(sc.reference, SignCorrelator{T}(), vector),)
 end
 
 """
@@ -235,7 +227,7 @@ function post_step_action(d::SingleParticleDensity, single_state, step)
         return (name => single_particle_density(vector; component),)
     else
         V = valtype(vector)
-        M = num_modes(keytype(vector))
+        M = num_modes_check_equal(keytype(vector))
         return (name => ntuple(_ -> 0.0, Val(M)),)
     end
 end
@@ -252,7 +244,7 @@ account. The result is always normalized so that `sum(result) ≈ num_particles(
 
 ```jldoctest
 julia> v = DVec(fs"|⋅↑⇅↓⋅⟩" => 1.0, fs"|↓↓⋅↑↑⟩" => 0.5)
-DVec{FermiFS2C{2, 2, 5, 4, FermiFS{2, 5, BitString{5, 1, UInt8}}, FermiFS{2, 5, BitString{5, 1, UInt8}}},Float64} with 2 entries, style = IsDeterministic{Float64}()
+DVec{FermiFS2C{4, 5, FermiFS{2, 5, BitString{5, 1, UInt8}}, FermiFS{2, 5, BitString{5, 1, UInt8}}},Float64} with 2 entries, style = IsDeterministic{Float64}()
   fs"|⋅↑⇅↓⋅⟩" => 1.0
   fs"|↓↓⋅↑↑⟩" => 0.5
 
@@ -270,7 +262,7 @@ julia> single_particle_density(v; component=1)
 function single_particle_density(dvec; component=0)
     K = keytype(dvec)
     V = float(valtype(dvec))
-    M = num_modes(K)
+    M = num_modes_check_equal(K)
 
     result = sum(pairs(dvec); init=MultiScalar(ntuple(_ -> zero(V), Val(M)))) do (k, v)
         MultiScalar(abs2(v) .* single_particle_density(k; component))

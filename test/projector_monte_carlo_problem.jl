@@ -395,3 +395,142 @@ end
     @test p.max_length == 200
     @test p.simulation_plan.wall_time == 23
 end
+
+using Rimu: DoubleLogProjected, DoubleLogSumUpdate
+@testset "shift strategies" begin
+    h = HubbardReal1D(BoseFS(1, 3))
+
+    # DoubleLogUpdate
+    shift_strategy = DoubleLogUpdate(target_walkers=100)
+    @test eval(Meta.parse(repr(shift_strategy))) == shift_strategy
+
+    p = ProjectorMonteCarloProblem(h;
+        shift_strategy, last_step=200, random_seed=7
+    )
+    @test p.algorithm.shift_strategy isa DoubleLogUpdate
+    @test p.algorithm.shift_strategy.target_walkers == 100
+    df = DataFrame(solve(p))
+    @test size(df, 1) == 200
+    @test 95 < df.norm[end] < 105
+
+    # DontUpdate
+    shift_strategy = DontUpdate(target_walkers=100)
+    @test eval(Meta.parse(repr(shift_strategy))) == shift_strategy
+    p = ProjectorMonteCarloProblem(h;
+        shift_strategy, last_step=200, random_seed=7
+    )
+    @test p.algorithm.shift_strategy isa DontUpdate
+    @test p.algorithm.shift_strategy.target_walkers == 100
+    df = DataFrame(solve(p))
+    @test size(df, 1) < 50
+    @test 90 < df.norm[end] < 110
+
+    # LogUpdate
+    shift_strategy = LogUpdate(0.1)
+    @test eval(Meta.parse(repr(shift_strategy))) == shift_strategy
+    dv = DVec(BoseFS(1, 3) => 100; style=IsDynamicSemistochastic())
+    p = ProjectorMonteCarloProblem(h;
+        start_at=dv,
+        shift_strategy, last_step=200, random_seed=7
+    )
+    @test p.algorithm.shift_strategy isa LogUpdate
+    sim = solve(p)
+    @test sim.success == true
+    df = DataFrame(sim)
+    @test size(df, 1) == 200
+    @test 200 < df.norm[end]
+
+    # LogUpdateAfterTargetWalkers
+    shift_strategy = LogUpdateAfterTargetWalkers(; target_walkers=100)
+    @test eval(Meta.parse(repr(shift_strategy))) == shift_strategy
+    p = ProjectorMonteCarloProblem(h;
+        shift_strategy, last_step=200, random_seed=7
+    )
+    sim = solve(p)
+    @test sim.success == true
+    df = DataFrame(sim)
+    @test size(df, 1) == 200
+    @test 200 < df.norm[end] < 300
+
+    # DoubleLogUpdateAfterTargetWalkers
+    shift_strategy = DoubleLogUpdateAfterTargetWalkers(; target_walkers=100)
+    @test eval(Meta.parse(repr(shift_strategy))) == shift_strategy
+    p = ProjectorMonteCarloProblem(h;
+        shift_strategy, last_step=200, random_seed=7
+    )
+    sim = solve(p)
+    @test sim.success == true
+    df = DataFrame(sim)
+    @test size(df, 1) == 200
+    @test 95 < df.norm[end] < 105
+
+    # DoubleLogSumUpdate
+    shift_strategy = Rimu.DoubleLogSumUpdate(; target_walkers=100, α=0.1)
+    @test eval(Meta.parse(repr(shift_strategy))) == shift_strategy
+    p = ProjectorMonteCarloProblem(h;
+        shift_strategy, last_step=200, random_seed=7
+    )
+    sim = solve(p)
+    @test sim.success == true
+    df = DataFrame(sim)
+    @test size(df, 1) == 200
+    @test 95 < df.norm[end] < 105
+
+    # DoubleLogProjected
+    shift_strategy = Rimu.DoubleLogProjected(; target=100, projector=Norm2Projector())
+    @test eval(Meta.parse(repr(shift_strategy))) == shift_strategy
+    p = ProjectorMonteCarloProblem(h;
+        shift_strategy, last_step=200, random_seed=7
+    )
+    sim = solve(p)
+    @test sim.success == true
+    df = DataFrame(sim)
+    @test size(df, 1) == 200
+    @test 195 < df.norm[end] < 205
+    @test 95 < norm(state_vectors(sim), 2) < 105
+end
+
+@testset "Initiators" begin
+    h = HubbardReal1D(near_uniform(BoseFS{5,10}))
+    exact = solve(ExactDiagonalizationProblem(h)).values[1]
+    # -9.243675114393374
+
+    # SimpleInitiator
+    p = ProjectorMonteCarloProblem(h;
+        initiator=SimpleInitiator(2),
+        style=IsDeterministic(), target_walkers=100, last_step=500, random_seed=7
+    )
+    sim = solve(p)
+    @test sim.success == true
+    df = DataFrame(sim)
+    vals_above_threshold = sum(x -> x > 2, values(state_vectors(sim)[1])) # 11
+    @test 9 < vals_above_threshold < 13
+    res_simple = mean(df.shift[300:end]) # -3.8322529030118884
+    @test res_simple > exact
+
+    # Initiator
+    p = ProjectorMonteCarloProblem(h;
+        initiator=Initiator(2),
+        style=IsDeterministic(), target_walkers=100, last_step=500, random_seed=7
+    )
+    sim = solve(p)
+    @test sim.success == true
+    df = DataFrame(sim)
+    vals_above_threshold = sum(x -> x > 2, values(state_vectors(sim)[1])) # 11
+    @test 9 < vals_above_threshold < 13
+    res_initiator = mean(df.shift[300:end]) # -5.636368431774439
+    @test res_simple > res_initiator > exact
+
+    # CoherentInitiator
+    p = ProjectorMonteCarloProblem(h;
+        initiator=CoherentInitiator(2),
+        style=IsDeterministic(), target_walkers=100, last_step=500, random_seed=7
+    )
+    sim = solve(p)
+    @test sim.success == true
+    df = DataFrame(sim)
+    vals_above_threshold = sum(x -> x > 2, values(state_vectors(sim)[1])) # 11
+    @test 9 < vals_above_threshold < 13
+    res_coherent = mean(df.shift[300:end]) # -5.636368431774439
+    @test res_coherent ≈ res_initiator
+end
