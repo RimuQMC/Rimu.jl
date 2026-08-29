@@ -78,8 +78,7 @@ end
         HOCartesianCentralImpurity(BoseFS((1, 0, 0, 0, 0))),
         FroehlichPolaron(BoseFS{missing}(1, 1, 1)),
         FroehlichPolaron(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
-        FroehlichPolaron(BoseFS{missing}(1, 1, 1)),
-        FroehlichPolaron(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
+        FroehlichPolaron{Float32}(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
         # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
@@ -1239,6 +1238,10 @@ end
     f3 = FroehlichPolaron(addr3; mode_cutoff=20.0)
 
     @test starting_address(f2) == f2.addr == addr2
+    @test f2 == @test_logs (:warn,) FroehlichPolaron(addr2; mass=1)
+    @test f2 == @test_logs (:warn,) FroehlichPolaron{Float64}(addr2; mass=1)
+    @test_throws ArgumentError FroehlichPolaron{Int}(addr2; mass=1)
+    @test_throws ArgumentError FroehlichPolaron(addr2; mass=1, l=-1)
 
     # test ks vector
     step = (2π/3)
@@ -1252,7 +1255,7 @@ end
     @test num_offdiagonals(f2, addr1) == 2*3
 
     # test diagonal_element
-    f2_diag = f2.omega*6 + (1/f2.mass) * (f2.p - dot(f2.ks, onr(addr2)))^2
+    f2_diag = f2.omega*6 + (1/f2.two_m) * (f2.p - dot(f2.ks, onr(addr2)))^2
     @test diagonal_element(f2, addr2) == f2_diag
 
     # test offdiagonal element
