@@ -244,7 +244,7 @@ end
 @inline function _cosin_sum(q::SVector{D}, S::NTuple{D}) where {D}
     onproduct = 0.0
     for i in 1:D
-        onproduct += cos(q[i] * 2π / S[i])
+        onproduct += cospi(2q[i] / S[i])
     end
     return onproduct
 end
