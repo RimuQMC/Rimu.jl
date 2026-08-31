@@ -16,16 +16,16 @@ if not provided. Set `T` to `Float32` for single precision, e.g. when using GPUs
 
 # Keyword Arguments
 
-* `p=0.0`: the total momentum ``p``.
-* `v=1.0`: the coupling strength ``v``.
-* `alpha=nothing`: the dimensionless coupling strength ``α``.
+* `p = 0.0`: the total momentum ``p``.
+* `v = 1.0`: the coupling strength ``v``.
+* `alpha = nothing`: the dimensionless coupling strength ``α``.
     If provided, this will override the value of `v` using the relation
     ``v = \\sqrt{2α ω²/(l \\sqrt{2m ω})}``.
-* `two_m=1.0`: twice the particle mass ``2m``.
-* `omega=1.0`: the oscillation frequency of the phonons ``ω``.
-* `l=1.0`: the box size in real space ``l``. Provides scale parameter of the momentum
+* `two_m = 1.0`: twice the particle mass ``2m``.
+* `omega = 1.0`: the oscillation frequency of the phonons ``ω``.
+* `l = 1.0`: the box size in real space ``l``. Provides scale parameter of the momentum
     lattice.
-* `momentum_cutoff=nothing`: the maximum boson momentum allowed for an address.
+* `momentum_cutoff = nothing`: the maximum boson momentum allowed for an address.
 * `mode_cutoff`: the maximum number of bosons in each momentum mode. Defaults to the maximum
     value supported by the address type [`BoseFS{missing}`](@ref).
     [`maximum_mode_occupation(hamiltonian)`](@ref Main.Interfaces.maximum_mode_occupation)

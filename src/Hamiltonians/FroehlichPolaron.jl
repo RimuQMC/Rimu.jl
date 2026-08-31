@@ -6,47 +6,51 @@ The Froehlich polaron Hamiltonian in `D` dimensions (``D = 1, 2, 3, …``) with 
 momentum modes is given by
 
 ```math
-H = (𝐩̂_f - 𝐩)^2/2m + ωN̂  +  Σ_𝐤 v_k(â^†_𝐤 + â_{-𝐤})
+H = (𝐩̂_f - 𝐩)^2/2m + ωN̂  -  Σ_𝐤 v_k(â^†_𝐤 + â_{-𝐤})
 ```
 
 where ``𝐩`` is the total momentum vector, ``𝐩̂_f = Σ_𝐤 𝐤 â^†_𝐤 â_𝐤`` is the momentum operator
 for the bosons, and the ``𝐤`` is the single-phonon momentum on a `D` dimensional cubic
-lattice with separation ``2π/l``. ``N̂ = Σ_𝐤 â^†_𝐤 â_𝐤`` is the number operator for the bosons.
+lattice with separation ``2π/l``. Note that the number of modes ``M`` must be a `D`-th
+power of an integer. Otherwise, the constructor will throw an error.
+The number operator for the bosons is given by ``N̂ = Σ_𝐤 â^†_𝐤 â_𝐤``.
 
 The coupling constant ``v_k`` is given by
 * in 1D:
 ```math
-v_k = -\\sqrt{2α \\frac{ω²}{l \\sqrt{2m ω}}}
+v_k^2 = 2α \\frac{ω²}{l \\sqrt{2m ω}}
 ```
 * in 2D and 3D:
 ```math
-v_k = -\\sqrt{α \\frac{Γ[(D-1)/2]  2^{D-1}  π^{(D-1)/2}  ω²} {k^{D-1} lᴰ \\sqrt{m ω}}}
+v_k^2 = α \\frac{Γ[(D-1)/2]  2^{D-1}  π^{(D-1)/2}  ω²} {k^{D-1} lᴰ \\sqrt{m ω}}
 ```
 
 # Keyword Arguments
 
-* `p=[0.0,...]`: the total momentum vector ``𝐩``.
+* `p = [0.0,...]`: the total momentum vector ``𝐩``.
 * `D = 1`: the dimension of the Hamiltonian.
-* `alpha=1.0`: the dimensionless coupling strength ``\\alpha``.
-* `two_m=1.0`: twice the particle mass ``2m``.
-* `omega=1.0`: the oscillation frequency of the phonons ``ω``.
-* `l=1.0`: the linear box size in real space ``l``. Provides scale parameter of the momentum
+* `alpha = 1.0`: the dimensionless coupling strength ``\\alpha``.
+* `two_m = 1.0`: twice the particle mass ``2m``.
+* `omega = 1.0`: the oscillation frequency of the phonons ``ω``.
+* `l = 1.0`: the linear box size in real space ``l``. Provides scale parameter of the momentum
     lattice.
-* `momentum_cutoff=nothing`: the maximum boson momentum allowed for an address.
+* `momentum_cutoff = nothing`: the maximum boson momentum allowed for an address.
 * `mode_cutoff`: the maximum number of bosons in each momentum mode. Defaults to the maximum
     value supported by the address type [`BoseFS{missing}`](@ref).
-* `twist=zeros(D)`: twist the boundary conditions in each dimension by the given value
+    [`maximum_mode_occupation(hamiltonian)`](@ref Main.Interfaces.maximum_mode_occupation)
+    will return this value.
+* `twist = zeros(D)`: twist the boundary conditions in each dimension by the given value
     ``∈ [0, 1]``.
 
-Setting the type parameter `T` is optional and will be inferred from the keyword arguments
-if not provided. Set `T` to `Float32` for single precision, e.g. when using GPUs.
+Setting the type parameter `T` is optional and `T` will be inferred from the keyword
+arguments if not provided. Set `T` to `Float32` for single precision, e.g. when using GPUs.
 
 # Examples
 ```jldoctest
 julia> fs = BoseFS{missing}(0,0,0,0)
 BoseFS{missing}(0, 0, 0, 0)
 
-julia> ham = FroehlichPolaron(fs; D = 2,alpha = 1)
+julia> ham = FroehlichPolaron(fs; D = 2, alpha = 1)
 FroehlichPolaron(
   fs"|0 0 0 0⟩{}",
   alpha = 1.0, D = 2, two_m = 1.0, omega = 1.0,
