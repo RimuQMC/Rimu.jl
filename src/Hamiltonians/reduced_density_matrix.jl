@@ -221,7 +221,7 @@ Instantiate a `ReducedDensityMatrixCalculator!{P}` object to calculate matrix el
 
 Add the contribution of `pair` to the reduced density matrix to `rdm`.
 """
-struct ReducedDensityMatrixCalulcator!{TT,P,D}
+struct ReducedDensityMatrixCalculator!{TT,P,D}
     left::D
     dim::Int
 
