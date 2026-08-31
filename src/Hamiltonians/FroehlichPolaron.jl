@@ -1,20 +1,26 @@
 """
-    FroehlichPolaron(address::BoseFS{missing,M}; kwargs...) <: AbstractHamiltonian
+    FroehlichPolaron{T}(address::BoseFS{missing,M}; kwargs...) <: AbstractHamiltonian{T}
 
 
-The Froehlich polaron Hamiltonian for a `D` dimensional box of volume`l^D` with `M ` momentum modes is given by
+The Froehlich polaron Hamiltonian for a `D` dimensional box of volume `l^D` with `M`
+momentum modes is given by
 
 ```math
-H = (𝐩̂_f - 𝐩)^2/2m + ωN̂  +  Σ_𝐤 v_𝐤(â^†_𝐤 + â_{-𝐤})
+H = (𝐩̂_f - 𝐩)^2/2m + ωN̂  +  Σ_𝐤 v_k(â^†_𝐤 + â_{-𝐤})
 ```
 
 where ``𝐩`` is the total momentum vector, ``𝐩̂_f = Σ_𝐤 𝐤 â^†_𝐤 â_𝐤`` is the momentum operator
 for the bosons, and the ``𝐤`` is the single-phonon momentum on a lattice with separation
-``2π/l``. ``N̂` = Σ_𝐤 â^†_𝐤 â_𝐤` is the number operator for the bosons.
+``2π/l``. ``N̂ = Σ_𝐤 â^†_𝐤 â_𝐤`` is the number operator for the bosons.
 
-The coupling constant in ``D`` dimensions is given by
+The coupling constant ``v_k`` is given by
+* in 1D:
 ```math
-v_k = (-1)\\sqrt{\\frac{(\\Gamma(\\frac{D-1}{2})  \\alpha  2^{D-1}  \\pi^{\\frac{D-1}{2}}  \\omega^2)} { (\\sqrt{m \\omega})}(\\frac{1}{k^{D-1}V})}
+v_k = -\\sqrt{2α \\frac{ω²}{l \\sqrt{2m ω}}}
+```
+* in 2D and 3D:
+```math
+v_k = -\\sqrt{α \\frac{Γ[(D-1)/2]  2^{D-1}  π^{(D-1)/2}  ω²} {k^{D-1} lᴰ \\sqrt{m ω}}}
 ```
 
 # Keyword Arguments
@@ -24,12 +30,13 @@ v_k = (-1)\\sqrt{\\frac{(\\Gamma(\\frac{D-1}{2})  \\alpha  2^{D-1}  \\pi^{\\frac
 * `alpha=1.0`: the dimensionless coupling strength ``\\alpha``.
 * `two_m=1.0`: twice the particle mass ``2m``.
 * `omega=1.0`: the oscillation frequency of the phonons ``ω``.
-* `l=[1.0,...]`: the ``D`` dimensional hypercube dimensions in real space ``l``. Provides scale parameter of the momentum
+* `l=1.0`: the linear box size in real space ``l``. Provides scale parameter of the momentum
     lattice.
 * `momentum_cutoff=nothing`: the maximum boson momentum allowed for an address.
 * `mode_cutoff`: the maximum number of bosons in each momentum mode. Defaults to the maximum
     value supported by the address type [`BoseFS{missing}`](@ref).
-* `twist=zeros(D)`: twist the boundary conditions in each dimension by the given value.
+* `twist=zeros(D)`: twist the boundary conditions in each dimension by the given value
+``∈ [0, 1]``.
 
 # Examples
 ```jldoctest
@@ -41,9 +48,8 @@ FroehlichPolaron(
   fs"|0 0 0 0⟩{}",
   geometry = CubicGrid((2, 2), (true, true)),
   alpha = 1.0, D = 2, two_m = 1.0, omega = 1.0,
-  l = [1.0, 1.0], p = [0.0, 0.0],
+  l = 1.0, p = [0.0, 0.0],
   mode_cutoff = 255,
-  twist = [0.0, 0.0]
 )
 
 julia> dimension(ham)
@@ -69,7 +75,7 @@ struct FroehlichPolaron{
     alpha::T
     two_m::T
     omega::T
-    l::SVector{D, T}
+    l::T
     p::SVector{D, T}
     ks::SVector{M, SVector{D, T}}
     momentum_cutoff::MC
@@ -83,6 +89,7 @@ function FroehlichPolaron(
     alpha = 1,
     two_m = 1,
     omega = 1,
+    l = 1,
     mass=nothing, # deprecated keyword, use `two_m` instead
     kwargs...
 )
@@ -91,8 +98,8 @@ function FroehlichPolaron(
         two_m = mass
     end
 
-    T = float(promote_type(typeof(alpha), typeof(two_m), typeof(omega)))
-    return FroehlichPolaron{T}(address; alpha, two_m, omega, kwargs...)
+    T = float(promote_type(typeof(alpha), typeof(two_m), typeof(omega), typeof(l)))
+    return FroehlichPolaron{T}(address; alpha, two_m, omega, l, kwargs...)
 end
 
 function FroehlichPolaron{T}(
@@ -102,7 +109,7 @@ function FroehlichPolaron{T}(
     alpha = 1,
     two_m = 1,
     omega = 1,
-    l = ones(D),
+    l = 1,
     p = zeros(D),
     momentum_cutoff = nothing,
     mode_cutoff = nothing,
@@ -115,26 +122,25 @@ function FroehlichPolaron{T}(
         @warn "The keyword argument `mass` is deprecated. Use `two_m` instead."
         two_m = mass
     end
-    alpha, two_m, omega = T.((alpha, two_m, omega))
+    (l isa Real && l > 0) || throw(ArgumentError("`l` must be a positive number"))
+
+    alpha, two_m, omega, l = T.((alpha, two_m, omega, l))
 
     if !isnothing(v)
         if D != 1
             throw(ArgumentError("v is only supported for D=1"))
         end
         @warn "The keyword argument `v` is deprecated. Use `alpha` instead."
-        alpha = T(only(l) * T(v)^2 * sqrt(two_m * omega)/(2 * omega^2))
+        alpha = T(l * T(v)^2 * sqrt(two_m * omega)/(2 * omega^2))
     end
 
     if D != 1
-        vk_constant = sqrt((gamma(((D-1)/T(2))) * alpha * 2^(D-1) * pi^((D-1)/T(2)) *
-            omega^2) / (sqrt(two_m * omega)*prod(l))
+        vk_constant = sqrt(
+            (gamma(((D-1)/T(2))) * alpha * 2^(D-1) * pi^((D-1)/T(2)) * omega^2) /
+            (sqrt(two_m * omega) * l^D)
         )
     else
-        vk_constant = sqrt(2 * alpha /only(l))
-    end
-
-    if length(l) != D || any(x -> x <= 0, l)
-        throw(ArgumentError("`l` must be a positive-valued vector of length $D"))
+        vk_constant = sqrt(2 * alpha * omega^2 /(only(l) * sqrt(two_m * omega)))
     end
 
     if abs(M^(1/D) - round(M^(1/D))) > 0.01
@@ -144,7 +150,6 @@ function FroehlichPolaron{T}(
         throw(ArgumentError("num_modes(address)==$M must equal length(geometry)==$(length(geometry))"))
     end
 
-    l = SVector{D,T}(T.(l))
     p = SVector{D,T}(T.(p))
 
     ks_tmp = Vector{SVector{D,T}}(undef, M)
@@ -161,7 +166,7 @@ function FroehlichPolaron{T}(
             else
                 m = idx[d] - div(linear_dimension, 2)
             end
-            (2π / l[d]) * m
+            (2π / l) * m
         end, D)
         ks_tmp[idx_mode] = SVector{D,T}(kv)
     end
@@ -289,11 +294,12 @@ and returns the new offdiagonal element.
             return addr => zero(T)
         end
         new_addr, val = excitation(T, addr, (chosen,), ())
+        vk = calc_vk(h, chosen)
     else
         k = chosen - M
         new_addr, val = excitation(T, addr, (), (k,))
+        vk = calc_vk(h, k)
     end
-    vk = calc_vk(h, chosen)
     amp = -vk * val
 
     if !isnothing(h.momentum_cutoff) && norm(_p_phonon(h.ks, new_addr)) > h.momentum_cutoff
