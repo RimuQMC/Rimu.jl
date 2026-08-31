@@ -49,7 +49,6 @@ BoseFS{missing}(0, 0, 0, 0)
 julia> ham = FroehlichPolaron(fs; D = 2,alpha = 1)
 FroehlichPolaron(
   fs"|0 0 0 0⟩{}",
-  geometry = CubicGrid((2, 2), (true, true)),
   alpha = 1.0, D = 2, two_m = 1.0, omega = 1.0,
   l = 1.0, p = [0.0, 0.0],
   mode_cutoff = 255,
@@ -109,7 +108,6 @@ end
 function FroehlichPolaron{T}(
     address::BoseFS{missing,M,SVector{M,AT}};
     D::Int = 1,
-    geometry::CubicGrid = PeriodicBoundaries(ntuple(Returns(round(Int, M^(1/D))), D)),
     alpha = 1,
     two_m = 1,
     omega = 1,
@@ -121,7 +119,12 @@ function FroehlichPolaron{T}(
     mass=nothing, # deprecated keyword, use `two_m` instead
     v = nothing,
 ) where {T, M, AT}
-    D = dimension(geometry) # geometry overrides D keyword argument
+    if abs(M^(1/D) - round(M^(1/D))) > 0.01
+        throw(ArgumentError("num_modes(address)==$M must be an integer power with exponent $D"))
+    end
+    geometry::CubicGrid = PeriodicBoundaries(ntuple(Returns(round(Int, M^(1/D))), D))
+    @assert M == length(geometry) "num_modes(address)==$M must equal length(geometry)==$(length(geometry))"
+
     if !isnothing(mass)
         @warn "The keyword argument `mass` is deprecated. Use `two_m` instead."
         two_m = mass
@@ -145,13 +148,6 @@ function FroehlichPolaron{T}(
             (gamma(((D-1)/T(2))) * alpha * 2^(D-1) * pi^((D-1)/T(2)) * omega^2) /
             (sqrt(two_m * omega) * l^D)
         )
-    end
-
-    if abs(M^(1/D) - round(M^(1/D))) > 0.01
-        throw(ArgumentError("num_modes(address)==$M must be an integer power with exponent $D"))
-    end
-    if M != length(geometry)
-        throw(ArgumentError("num_modes(address)==$M must equal length(geometry)==$(length(geometry))"))
     end
 
     p = SVector{D,T}(T.(p))
@@ -209,7 +205,6 @@ function Base.show(io::IO, h::FroehlichPolaron{T,M,D}) where {T,M,D}  #put D is 
     eltype(h) === Float64 || print(io, "{$(eltype(h))}")
     println(io, "(")
     println(io, "  ", starting_address(h), ",")
-    println(io, "  geometry = ", h.geometry, ",")
     println(io, "  alpha = ", h.alpha,", D = ", D,  ", two_m = ", h.two_m, ", omega = ", h.omega,",")
     println(io, "  l = $(h.l), p = $(h.p),")
     isnothing(h.momentum_cutoff) || println(io, "  momentum_cutoff = ", h.momentum_cutoff, ",")
