@@ -180,7 +180,7 @@ end
     for i in 1:length(map)
         occ_i = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0) * D
-        g_i = g[map[i].mode] # Hoisted from inner loop
+        g_i = g[map[i].mode]
         
         for j in 1:i-1
             occ_j = Float64(map[j].occnum)
