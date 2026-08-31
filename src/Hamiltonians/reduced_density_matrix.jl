@@ -129,7 +129,7 @@ A matrix-valued operator that can be used to calculate the `p`-particle reduced 
 matrix. The matrix elements are defined as:
 
 ```math
-\\hat{ρ}^{(p)}_{j_1,...,j_1,k_1,...,k_p} =  \\prod_{i=1}^{p} â^†_{j_i} \\prod_{l=p}^{1} â_{k_{l}}
+\\hat{ρ}^{(p)}_{j_1,...,j_p,k_1,...,k_p} =  \\prod_{i=1}^{p} â^†_{j_i} \\prod_{l=p}^{1} â_{k_{l}}
 ```
 
 The integer indices `j_i` and `k_i` represent single particle modes. For efficiency they are
@@ -203,7 +203,7 @@ function Interfaces.dot_from_right(
     dim = binomial(num_modes(keytype(left)), P)
     ρ = sum_mutating!(
         zeros(TT, (dim, dim)),
-        ReducedDensityMatrixCalculcator!{TT,P}(left, dim),
+        ReducedDensityMatrixCalculator!{TT,P}(left, dim),
         pairs(right)
     )
     return ρ
@@ -221,14 +221,14 @@ Instantiate a `ReducedDensityMatrixCalculator!{P}` object to calculate matrix el
 
 Add the contribution of `pair` to the reduced density matrix to `rdm`.
 """
-struct ReducedDensityMatrixCalculcator!{TT,P,D}
+struct ReducedDensityMatrixCalulcator!{TT,P,D}
     left::D
     dim::Int
 
-    ReducedDensityMatrixCalculcator!{TT,P}(left, dim) where {TT,P} = new{TT,P,typeof(left)}(left, dim)
+    ReducedDensityMatrixCalculator!{TT,P}(left, dim) where {TT,P} = new{TT,P,typeof(left)}(left, dim)
 end
 
-function (calc!::ReducedDensityMatrixCalculcator!{TT, P})(result, pair) where {TT, P}
+function (calc!::ReducedDensityMatrixCalculator!{TT, P})(result, pair) where {TT, P}
     addr_right, val_right = pair
     left = calc!.left
     
