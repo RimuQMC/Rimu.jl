@@ -59,7 +59,7 @@ Note that `Rimu` is under active development and breaking changes to the user in
 
 ### Software publication
 To learn more about the algorithms and concepts behind `Rimu`, read the Rimu.jl preprint: 
-- “Rimu.jl: Random integrators for many-body quantum systems”, M. Čufar, C. J. Bradly, R. Yang, E. Pahl, and J. Brand, [arXiv:2601.19505 (2026)](http://arxiv.org/abs/2601.1950).
+- “Rimu.jl: Random integrators for many-body quantum systems”, M. Čufar, C. J. Bradly, R. Yang, E. Pahl, and J. Brand, [arXiv:2601.19505 (2026)](http://arxiv.org/abs/2601.19505).
 
 If you use `Rimu` for your work, please cite the preprint:
 ```
