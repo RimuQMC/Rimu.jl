@@ -357,7 +357,7 @@ function excitation(
     new_bs, val = bose_excitation(T, b.bs, creations, destructions)
     return B(new_bs), val # type doesn't change
 end
-function excitation(::Type, ::BoseFS, ::NTuple{C}, ::NTuple{D}) where {C,D}
+function excitation(::Type{<:AbstractFloat}, ::BoseFS, ::NTuple{C}, ::NTuple{D}) where {C,D}
     throw(ArgumentError("number of creations and destructions must be equal, got $C and $D"))
 end
 
@@ -665,10 +665,10 @@ end
 
 function excitation(
     ::Type{T},
-    fs::BoseFS{missing,M,S},
+    fs::BoseFS{missing},
     c::NTuple{<:Any,Int},
     d::NTuple{<:Any,Int}
-) where {T <: AbstractFloat, M, S<:SVector{M,<:Unsigned}}
+) where {T <: AbstractFloat}
     onr = fs.bs
     accumulator = one(T) # to avoid overflow
     for i in d
