@@ -123,6 +123,7 @@ function FroehlichPolaron{T}(
     mass=nothing, # deprecated keyword, use `two_m` instead
     v = nothing,
 ) where {T, M, AT}
+    T <: AbstractFloat || throw(ArgumentError("T must be a subtype of AbstractFloat"))
     if abs(M^(1/D) - round(M^(1/D))) > 0.01
         throw(ArgumentError("num_modes(address)==$M must be an integer power with exponent $D"))
     end
@@ -168,7 +169,7 @@ function FroehlichPolaron{T}(
             if isodd(linear_dimension)
                 m += idx[d] - 1 - div(linear_dimension, 2)
             else
-                m = idx[d] - div(linear_dimension, 2)
+                m += idx[d] - div(linear_dimension, 2)
             end
             (2π / l) * m
         end, D)
@@ -220,6 +221,8 @@ end
 LOStructure(::Type{<:FroehlichPolaron}) = IsHermitian()
 
 starting_address(h::FroehlichPolaron) = h.address
+
+Interfaces.maximum_mode_occupation(h::FroehlichPolaron) = h.mode_cutoff
 
 function dimension(h::FroehlichPolaron, address)
     M = num_modes(address)
