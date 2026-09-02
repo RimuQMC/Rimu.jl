@@ -143,13 +143,13 @@ function print_address(io::IO, f::HardcoreBoseFS{N,M}; compact=false) where {N,M
 end
 
 function excitation(
-    a::HardcoreBoseFS{N,M,S}, creations::NTuple{NC}, destructions::NTuple{ND}
-) where {N,M,S,NC,ND}
+    ::Type{T}, a::HardcoreBoseFS{N,M,S}, creations::NTuple{NC}, destructions::NTuple{ND}
+) where {T <: AbstractFloat, N, M, S, NC, ND}
     if NC != ND && !ismissing(N)
         throw(ArgumentError("number of creations and destructions must be equal, got $NC and $ND"))
     end
     new_bs, value = fermi_excitation(a.bs, creations, destructions)
-    return HardcoreBoseFS{N,M,S}(new_bs), abs(value) # different from FermiFS, no sign
+    return HardcoreBoseFS{N,M,S}(new_bs), T(abs(value)) # different from FermiFS, no sign
 end
 
 # See "fermifs.jl" for other function definitions for HardcoreBoseFS.

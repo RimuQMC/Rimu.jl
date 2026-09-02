@@ -128,7 +128,7 @@ function AllOverlaps(
     mixed_spectral_overlaps=false
 )
     if transform ≠ nothing
-        Base.depwarn("Passing `transform` to `AllOverlaps` is deprected. Transformation undoing is handled automatically.", :AllOverlaps)
+        Base.depwarn("Passing `transform` to `AllOverlaps` is deprecated. Transformation undoing is handled automatically.", :AllOverlaps)
     end
 
     n_replicas isa Integer || throw(ArgumentError("n_replicas must be an integer"))

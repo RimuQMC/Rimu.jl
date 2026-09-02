@@ -32,8 +32,12 @@ Other
 - [`TimeReversalSymmetry`](@ref)
 - [`Stoquastic`](@ref)
 - [`HamiltonianProduct`](@ref)
-- [`ScaledHamiltonian`](@ref)
 - [`HamiltonianSum`](@ref)
+
+## [Linear combination helpers](#Linear-combination-helpers)
+- [`add`](@ref)
+- [`+`](@ref)
+- [`scale`](@ref)
 
 ## [Observables](#Observables)
 - [`ParticleNumberOperator`](@ref)
@@ -45,6 +49,7 @@ Other
 - [`TwoParticleExcitation`](@ref)
 - [`Momentum`](@ref)
 - [`AxialAngularMomentumHO`](@ref)
+- [`SignCorrelator`](@ref)
 
 ## [Interface for working with Hamiltonians](#Hamiltonians-interface)
 - [`AbstractHamiltonian`](@ref): defined in the module [`Interfaces`](@ref)
@@ -95,7 +100,7 @@ export MolecularHamiltonian
 
 export G2RealCorrelator, G2RealSpace, SuperfluidCorrelator, DensityMatrixDiagonal, Momentum
 export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
-export StringCorrelator, G2MomCorrelator
+export StringCorrelator, G2MomCorrelator, SignCorrelator
 
 export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
 
@@ -103,8 +108,8 @@ export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCarte
 export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
-export HamiltonianProduct, ScaledHamiltonian
-export HamiltonianSum
+export ModifiedHamiltonian
+export HamiltonianProduct, HamiltonianSum
 
 if VERSION < v"1.10"
     # used for ReducedDensityMatrix

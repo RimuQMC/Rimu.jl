@@ -23,7 +23,7 @@ subspace spanned by the `addresses`, use `filter = Returns(false)`.
 
 Providing a `max_depth` will limit the size of the matrix and basis by only visiting
 addresses that are connected to the `starting_address` through `max_depth` hops through the
-Hamiltonian. Similarly, providing `minimum_size` will stop the bulding process after the
+Hamiltonian. Similarly, providing `minimum_size` will stop the building process after the
 basis reaches a length of at least `minimum_size`.
 
 Setting `sort` to `true` will sort the matrix rows and columns. This is useful when the

@@ -174,7 +174,12 @@ See also [`find_occupied_mode`](@ref), [`occupied_modes`](@ref).
 unoccupied_modes
 
 """
-    excitation(addr::SingleComponentFockAddress, creations::NTuple, destructions::NTuple)
+    excitation(
+        [::Type{T},]
+        addr::SingleComponentFockAddress,
+        creations::NTuple,
+        destructions::NTuple
+    ) -> (::SingleComponentFockAddress, ::T)
 
 Generate an excitation on address `addr` by applying `creations` and `destructions`, which
 are tuples of the appropriate address indices (i.e. [`BoseFSIndex`](@ref) for
@@ -189,7 +194,8 @@ Returns the new address `f'` and the factor `α`. The value of `α` is given by 
 root of the product of mode occupations before destruction and after creation. If the
 excitation is illegal, returns an arbitrary address and the value `0.0`. Note that the
 number of particles may change if the number of creation and destruction operators is not
-equal and `num_particles(typeof(addr))` is `missing`.
+equal and `num_particles(typeof(addr))` is `missing`. A type `T <: AbstractFloat` can be
+specified to set the type of the returned value of `α`. The default is `Float64`.
 See examples below.
 
 # Example
@@ -216,8 +222,8 @@ BoseFS{missing}(1, 2, 3)
 julia> num_particles(s)
 6
 
-julia> es, α = excitation(s, (1,1), (3,))
-(BoseFS{missing}(3, 2, 2), 4.242640687119285)
+julia> es, α = excitation(Float32, s, (1,1), (3,))
+(BoseFS{missing}(3, 2, 2), 4.2426405f0)
 
 julia> num_particles(es)
 7
@@ -225,7 +231,9 @@ julia> num_particles(es)
 
 See [`SingleComponentFockAddress`](@ref).
 """
-excitation
+function excitation(addr::SingleComponentFockAddress, creations::NTuple, destructions::NTuple)
+    return excitation(Float64, addr, creations, destructions)
+end
 
 
 """
@@ -709,7 +717,7 @@ end
     from_bose_onr(::Type{B}, onr::AbstractArray) -> B
 
 Convert array `onr` to type `B`. It is safe to assume `onr` contains a valid
-occupation-number representation array. The checks are preformed in the [`BoseFS`](@ref)
+occupation-number representation array. The checks are performed in the [`BoseFS`](@ref)
 constructor.
 
 This function is a part of the interface for an underlying storage format used by
@@ -729,8 +737,8 @@ to_bose_onr
 
 """
     bose_excitation(
-        bs::B, creations::NTuple{N,BoseFSIndex}, destructions::NTuple{N,BoseFSIndex}
-    ) -> Tuple{B,Float64}
+        ::Type{T}, bs::B, creations::NTuple{N,BoseFSIndex}, destructions::NTuple{N,BoseFSIndex}
+    ) -> Tuple{B, T}
 
 Perform excitation as if `bs` was a bosonic address. See also
 [`bose_excitation_value`](@ref).
@@ -813,7 +821,7 @@ Base.eltype(::FermiUnoccupiedModes) = FermiFSIndex
     from_fermi_onr(::Type{B}, onr) -> B
 
 Convert array `onr` to type `B`. It is safe to assume `onr` contains a valid
-occupation-number representation array. The checks are preformed in the [`FermiFS`](@ref)
+occupation-number representation array. The checks are performed in the [`FermiFS`](@ref)
 constructor.
 
 This function is a part of the interface for an underlying storage format used by
@@ -835,7 +843,7 @@ fermi_find_mode
 """
     fermi_excitation(
         bs::B, creations::NTuple{N,FermiFSIndex}, destructions::NTuple{N,FermiFSIndex}
-    ) → Tuple{B,Float64}
+    ) → Tuple{B, Int}
 
 Perform excitation as if `bs` was a fermionic address.
 
