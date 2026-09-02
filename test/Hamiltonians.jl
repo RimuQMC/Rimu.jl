@@ -1309,7 +1309,6 @@ end
     @test starting_address(f2) == f2.address == addr2
 
     # test ks vector
-
     step = (2π/3)
     ks2 = [(3/1) * [k] for k in range(-π*(1+1/3) + step; step=step, length=3)]
     @test Vector(f2.ks) == ks2
@@ -1328,7 +1327,6 @@ end
     offd = offdiagonals(operator_column(f2,addr2))
     @test (offd[2]) == (BoseFS{missing}(1,3,3) => -(2* f2.alpha /(f2.l[1]))^0.5 *sqrt(3))
 
-
     f3_offdiag = (BoseFS{missing}(1,2,3,3) => -(2* f2.alpha /(f2.l[1]))^0.5*sqrt(4))
     offdf3 = offdiagonals(operator_column(f3,addr3))
     @test (offdf3[8]) == f3_offdiag
@@ -1346,16 +1344,16 @@ end
     offdf4 = offdiagonals(operator_column(f4,addr2))
     @test offdf4[3][2] == 0.0
 
-
-    m = 5; l = 6
-    addr5 = BoseFS{missing,5}()
+    # test basis building with momentum cutoff for D=2
+    m = 9; l = 6
+    addr5 = BoseFS{missing,m}()
     mom_unit = 2π/l
     momentum_cutoff = 1.5 * mom_unit
-    f5 = FroehlichPolaron(addr5; l, mode_cutoff=1, momentum_cutoff)
+    f5 = FroehlichPolaron(addr5; D=2, l, mode_cutoff=1, momentum_cutoff)
     basis5 = build_basis(f5)
-    mom_vec = map(o -> dot(o, f5.ks), onr.(basis5))
-    @test all(abs.(mom_vec) .≤ momentum_cutoff) == true
-    @test length(basis5) == 20
+    mom_vec = map(o -> sum(f5.ks .* o), onr.(basis5))
+    @test all(norm.(mom_vec) .≤ momentum_cutoff) == true
+    @test length(basis5) == 152
 
     # with and without momentum cutoff
     f6 = FroehlichPolaron(addr5;  mode_cutoff=1)
@@ -1363,8 +1361,6 @@ end
     offdf6 = offdiagonals(operator_column(f6, addr5))
     offdf7 = offdiagonals(operator_column(f7, addr5))
     @test offdf6[1] == offdf7[1]
-
-
 end
 
 """
