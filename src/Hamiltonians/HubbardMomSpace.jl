@@ -261,17 +261,10 @@ stored in `components` and `g` is the geometry of the lattice.
 """
 @inline _mom_transfer_diagonal(components::Tuple{}, g::CubicGrid) = 0.0
 
-@inline function _mom_transfer_diagonal(components::Tuple, g::CubicGrid)
-    # Extract the first item, and keep the remaining items as a smaller tuple
-    data = first(components)
-    tail_components = Base.tail(components)
-
-    # Compile-time evaluation path for nothing checks
+@inline function _mom_transfer_diagonal((data, rest...)::Tuple, g::CubicGrid)
     if isnothing(data.u) && isnothing(data.w)
-        # Skip processing this element and pass directly to the rest of the tuple
         current_product = 0.0
     else
-        # Determine type path statically
         idx1, idx2 = component_index(data)
         
         current_product = if idx1 == idx2
@@ -282,7 +275,7 @@ stored in `components` and `g` is the geometry of the lattice.
     end
 
     # Sum up the current step with the rest of the unrolled tuple
-    return current_product + _mom_transfer_diagonal(tail_components, g)
+    return current_product + _mom_transfer_diagonal(rest, g)
 end
 
 @inline _interaction_parameter_diag(u::Float64, w::Float64, D::Int) = u + 2 * w * D
