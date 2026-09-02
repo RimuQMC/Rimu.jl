@@ -1,4 +1,4 @@
-# Release notes
+# Change log
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -7,14 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * Pass custom external potential to HubbardRealSpace ([#399, #400])
-* Restrict number type in `FroehlichPolaron` ([#405])
+* Allow restring the number type in `FroehlichPolaron`; make it compatible with GPU. ([#405])
 
 ### Deprecated
 * Keyword `mass` in `FroehlichPolaron` renamed to `two_m` ([#405])
 
 ### Other changes
 * Documentation update ([#398, #407])
-* `excitation` accepts floating point type as argument to define the type for the returned value. ([#405])
+* `excitation` accepts floating point type as argument to define the type for the returned value and internal calculations. This permits compiling the function on a GPU with reduced precision arithmetic. ([#405])
 
 ## Version [v0.18.0] - 2026-08-13
 
@@ -45,4 +45,4 @@ Types of changes (based on [Keep a Changelog](https://keepachangelog.com/en/1.1.
 * `Removed` for now removed features.
 * `Fixed` for any bug fixes.
 * `Security` in case of vulnerabilities
-* `Other changes` for changes to internals or documentation.
+* `Other changes` for changes to internals or documentation (not API breaking).
