@@ -1316,6 +1316,33 @@ end
     ks3 = [(4/1)* [k] for k in range(-π+step; step=step, length=4)]
     @test Vector(f3.ks) == ks3
 
+    # test a two-dimensional square lattice
+    addr_2d = BoseFS{missing}(0, 0, 0, 0)
+    f_2d = FroehlichPolaron(addr_2d; D=2, alpha=2, two_m=4, omega=3, l=2, p=[1, -2])
+    @test Vector(f_2d.ks) == [[0, 0], [π, 0], [0, π], [π, π]]
+
+    addr_2d_occupied = BoseFS{missing}(1, 2, 0, 0)
+    f_2d_diag = f_2d.omega * 3 + norm(f_2d.p - f_2d.ks[1] - 2f_2d.ks[2])^2 / f_2d.two_m
+    @test diagonal_element(f_2d * addr_2d_occupied) == f_2d_diag
+
+    offd_2d = offdiagonals(operator_column(f_2d, addr_2d))
+    @test last(offd_2d[1]) == 0
+    @test first(offd_2d[2]) == BoseFS{missing}(0, 1, 0, 0)
+    @test last(offd_2d[2]) ≈ -sqrt(
+        2π * f_2d.alpha * f_2d.omega^2 /
+        (sqrt(f_2d.two_m * f_2d.omega) * f_2d.l^2 * norm(f_2d.ks[2]))
+    )
+    @test abs(last(offd_2d[4])) < abs(last(offd_2d[2]))
+
+    f_2d_cutoff = FroehlichPolaron(addr_2d; D=2, l=2, momentum_cutoff=π / 2)
+    @test last(offdiagonals(operator_column(f_2d_cutoff, addr_2d))[2]) == 0
+
+    f_2d_twist = FroehlichPolaron(addr_2d; D=2, l=2, twist=[1 / 2, 1 / 4])
+    @test Vector(f_2d_twist.ks) == [
+        π * [1 / 2, 1 / 4], π * [3 / 2, 1 / 4],
+        π * [1 / 2, 5 / 4], π * [3 / 2, 5 / 4],
+    ]
+
     # test num_offdiagonals
     @test num_offdiagonals(operator_column(f2, addr1)) == 2*3
 
