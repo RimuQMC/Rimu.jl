@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix mystery allocation in allocation testing ([#395])
 
 ## Older versions
-For changes prior to [v0.18.0] see the [list of releases](https://github.com/RimuQMC/Rimu.jl/releases) on GitHub.
+For changes prior to [v0.18.0](v0180---2026-08-13) see the [list of releases](https://github.com/RimuQMC/Rimu.jl/releases) on GitHub.
 
 ## Instructions
 
