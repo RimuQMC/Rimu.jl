@@ -43,15 +43,12 @@ end
 @inline function _mom_hopping_unrolled(
     kes::SMatrix{<:Any, <:Any, T}, comps::Tuple, ::Val{I}
 ) where {T, I}
-    # 1. Zero Allocations: comps[I] uses a compile-time constant literal index
     occ = occupied_mode_map(comps[I]) # This is a ModeMap for the I-th component
     onproduct = zero(T)
-    # 2. This inner loop compiles perfectly to flat machine instructions
     for x in occ
         onproduct += kes[I, x.mode] * x.occnum
     end
     
-    # 3. Recurse down to the next component index
     return onproduct + _mom_hopping_unrolled(kes, comps, Val(I - 1))
 end
 @inline function _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress) 
