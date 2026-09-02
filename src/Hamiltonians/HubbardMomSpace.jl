@@ -8,7 +8,7 @@ allowed momenta `ks_vec_of_vecs`, lattice `geometry`, hopping strengths `t`, and
 function _mom_space_energies_and_ks(ks_vec_of_vecs::Vector, geometry::CubicGrid{D, S}, t::SMatrix, 
         dispersion::Function) where {D, S}
     # Calculate the dispersion relation for a given set of k values and hopping strength t.
-    C,_ = size(t)
+    C = size(t, 1)
     M = prod(S)
     kes_mat = zeros(Float64,C,M)
     ks_mat = zeros(Float64,D,M)
