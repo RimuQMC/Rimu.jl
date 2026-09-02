@@ -180,7 +180,7 @@ end
     for i in 1:length(map)
         occ_i = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0) * D
-        g_i = g[map[i].mode] # Hoisted from inner loop
+        g_i = g[map[i].mode]
         
         for j in 1:i-1
             occ_j = Float64(map[j].occnum)
@@ -244,7 +244,7 @@ end
 @inline function _cosin_sum(q::SVector{D}, S::NTuple{D}) where {D}
     onproduct = 0.0
     for i in 1:D
-        onproduct += cos(q[i] * 2π / S[i])
+        onproduct += cospi(2q[i] / S[i])
     end
     return onproduct
 end
@@ -336,7 +336,6 @@ number of sites `M` inferred from the number of modes in `address`.
   corresponds to the interaction between the `i`-th and `j`-th component. `u[i, i]`
   corresponds to the interaction of a component with itself.
 * `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix of size `C × C`.
-* `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix.
   `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
   
   See also [`HubbardRealSpace`](@ref), [`HubbardMom1D`](@ref), [`ExtendedHubbardReal1D`](@ref).
