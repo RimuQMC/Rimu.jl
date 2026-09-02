@@ -553,8 +553,6 @@ function diagonal_element(col::HubbardMomSpaceColumn{TT}) where {TT}
     ke = _mom_hopping(col.hamiltonian.kes_mat, col.address)
     diag = _mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address)
     return convert(TT, ke + diag)
-    # return convert(TT, _mom_hopping(col.hamiltonian.kes_mat, col.address) + 
-    #     _mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address))
 end
 
 function operator_column(h::HubbardMomSpace{TT,<:Any,<:Any,A,G}, address) where {TT,A,G}
