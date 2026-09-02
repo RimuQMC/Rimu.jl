@@ -35,7 +35,7 @@ For changes prior to [v0.18.0] see the [list of releases](https://github.com/Rim
 
 ## Instructions
 
-Add all important changes while preparing a PR to the [Unreleased] section. When preparing a release, move the entries into a new section for the release.
+Add all important changes while preparing a PR to the Unreleased section. When preparing a release, move the entries into a new section for the release.
 
 Types of changes (based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/))
 
