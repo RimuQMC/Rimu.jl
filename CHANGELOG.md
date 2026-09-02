@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Docs: fix some typos ([#393])
-- Fix failing benchmark runs for fork PRs: skip PR comments for fork PRs, modernize output syntax (#394)
+- Fix failing benchmark runs for fork PRs: skip PR comments for fork PRs, modernize output syntax [(#394)]
 - Fix mystery allocation in allocation testing ([#395])
 
 ## Older versions
