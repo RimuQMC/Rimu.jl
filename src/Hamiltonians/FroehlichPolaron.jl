@@ -22,7 +22,7 @@ v_k^2 = 2α \\frac{ω²}{l \\sqrt{2m ω}}
 ```
 * in 2D and 3D:
 ```math
-v_k^2 = α \\frac{Γ[(D-1)/2]  2^{D-1}  π^{(D-1)/2}  ω²} {k^{D-1} lᴰ \\sqrt{m ω}}
+v_k^2 = α \\frac{Γ[(D-1)/2]  2^{D-1}  π^{(D-1)/2}  ω²} {k^{D-1} lᴰ \\sqrt{2m ω}}
 ```
 
 # Keyword Arguments

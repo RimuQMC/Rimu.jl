@@ -26,6 +26,7 @@ jobs:
           chmod +x $JULIA_MPIEXEC
           julia -e 'println(ENV)'
           julia -e 'using Pkg; Pkg.instantiate(); Pkg.build()'
+          julia --project=docs/ -e 'using Pkg; Pkg.add(url="https://github.com/JuliaDocs/Documenter.jl", rev="master")' # temporary fix for Documenter.jl bug
           julia --project=docs/ -e 'using Pkg; Pkg.instantiate()'
           julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
           julia --project=docs/ -e 'using Rimu'
