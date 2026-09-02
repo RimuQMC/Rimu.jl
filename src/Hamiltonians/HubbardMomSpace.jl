@@ -8,7 +8,7 @@ allowed momenta `ks_vec_of_vecs`, lattice `geometry`, hopping strengths `t`, and
 function _mom_space_energies_and_ks(ks_vec_of_vecs::Vector, geometry::CubicGrid{D, S}, t::SMatrix, 
         dispersion::Function) where {D, S}
     # Calculate the dispersion relation for a given set of k values and hopping strength t.
-    C,_ = size(t)
+    C = size(t, 1)
     M = prod(S)
     kes_mat = zeros(Float64,C,M)
     ks_mat = zeros(Float64,D,M)
@@ -43,21 +43,17 @@ end
 @inline function _mom_hopping_unrolled(
     kes::SMatrix{<:Any, <:Any, T}, comps::Tuple, ::Val{I}
 ) where {T, I}
-    # 1. Zero Allocations: comps[I] uses a compile-time constant literal index
     occ = occupied_mode_map(comps[I]) # This is a ModeMap for the I-th component
     onproduct = zero(T)
-    # 2. This inner loop compiles perfectly to flat machine instructions
     for x in occ
         onproduct += kes[I, x.mode] * x.occnum
     end
     
-    # 3. Recurse down to the next component index
     return onproduct + _mom_hopping_unrolled(kes, comps, Val(I - 1))
 end
 @inline function _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress) 
     occ = occupied_mode_map(address)
     onproduct = zero(eltype(kes))
-    # 2. This inner loop compiles perfectly to flat machine instructions
     @inbounds for x in occ
         onproduct += kes[1, x.mode] * x.occnum
     end
@@ -164,7 +160,7 @@ either `u` or `w` is `nothing`, the corresponding interaction term is ignored.
     for i in 1:length(map)
         occ_i = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0) * u_scaled
-        g_i = g[map[i].mode] # Hoisted from inner loop
+        g_i = g[map[i].mode]
         
         for j in 1:i-1
             occ_j = Float64(map[j].occnum)
@@ -207,11 +203,9 @@ end
 @inline function _mom_transfer_diagonal(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D, S}
     onproduct = 0.0
     for i in 1:length(map)
-        # 2. Add type assertions or unpack concrete objects if `map` holds abstract types
         mode_i = map[i].mode
         occ_i  = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0)
-        # Pull the grid lookup outside the inner loop to save i-index computations
         g_i = g[mode_i] 
         for j in 1:i-1
             occ_j = Float64(map[j].occnum)
@@ -251,6 +245,7 @@ end
 
 """
     mom_transfer_diagonal(components, g)
+    
 This function returns a diagonal element of the Hamiltonian coresponding to the given address 
 stored in `components`. Here, `components` is a tuple of [`HubbardMomSpaceComponentData`](@ref) 
 for each pair combination of component of the multi-component Fock state address.
@@ -265,17 +260,10 @@ stored in `components` and `g` is the geometry of the lattice.
 """
 @inline _mom_transfer_diagonal(components::Tuple{}, g::CubicGrid) = 0.0
 
-@inline function _mom_transfer_diagonal(components::Tuple, g::CubicGrid)
-    # Extract the first item, and keep the remaining items as a smaller tuple
-    data = first(components)
-    tail_components = Base.tail(components)
-
-    # Compile-time evaluation path for nothing checks
+@inline function _mom_transfer_diagonal((data, rest...)::Tuple, g::CubicGrid)
     if isnothing(data.u) && isnothing(data.w)
-        # Skip processing this element and pass directly to the rest of the tuple
         current_product = 0.0
     else
-        # Determine type path statically
         idx1, idx2 = component_index(data)
         
         current_product = if idx1 == idx2
@@ -286,7 +274,7 @@ stored in `components` and `g` is the geometry of the lattice.
     end
 
     # Sum up the current step with the rest of the unrolled tuple
-    return current_product + _mom_transfer_diagonal(tail_components, g)
+    return current_product + _mom_transfer_diagonal(rest, g)
 end
 
 @inline _interaction_parameter_diag(u::Float64, w::Float64, D::Int) = u + 2 * w * D
@@ -576,29 +564,23 @@ end
 # Collect HubbardMomSpaceComponentData for each component of the address.
 @inline function _column_components(h::HubbardMomSpace{TT,1,D}, 
         address::SingleComponentFockAddress) where {TT,D}
-    if isnothing(h.w) && isnothing(h.u)
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, nothing, nothing),)
-    elseif isnothing(h.w) && !isnothing(h.u)
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, h.u[1], nothing),)
-    elseif !isnothing(h.w) && isnothing(h.u)
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, nothing, h.w[1]),)
-    else
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, h.u[1], h.w[1]),)
+    u = isnothing(h.u) ? nothing : h.u[1]
+    w = isnothing(h.w) ? nothing : h.w[1]
+    return (
+        HubbardMomSpaceComponentData{TT,1,1,1,D}(
+            h.geometry, address, address, address, u, w
+        ),
+    )
     end
 end
 
 @inline function _column_components(h::HubbardMomSpace{TT,1,D}, address::FermiFS) where {TT,D}
-    if !isnothing(h.w)
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, nothing, h.w[1,1]),)
-    else
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, nothing, nothing),)
-    end
+    w = isnothing(w) ? nothing : h.w[1, 1]
+    return (
+        HubbardMomSpaceComponentData{TT,1,1,1,D}(
+            h.geometry, address, address, address, nothing, h.w[1,1]
+        ),
+    )
 end
 
 @inline function _column_components(h::HubbardMomSpace{TT,<:Any,D}, address::CompositeFS) where {TT,D}
