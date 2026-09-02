@@ -57,7 +57,6 @@ end
 @inline function _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress) 
     occ = occupied_mode_map(address)
     onproduct = zero(eltype(kes))
-    # 2. This inner loop compiles perfectly to flat machine instructions
     @inbounds for x in occ
         onproduct += kes[1, x.mode] * x.occnum
     end
