@@ -578,13 +578,12 @@ end
 end
 
 @inline function _column_components(h::HubbardMomSpace{TT,1,D}, address::FermiFS) where {TT,D}
-    if !isnothing(h.w)
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, nothing, h.w[1,1]),)
-    else
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, nothing, nothing),)
-    end
+    w = isnothing(w) ? nothing : h.w[1, 1]
+    return (
+        HubbardMomSpaceComponentData{TT,1,1,1,D}(
+            h.geometry, address, address, address, nothing, h.w[1,1]
+        ),
+    )
 end
 
 @inline function _column_components(h::HubbardMomSpace{TT,<:Any,D}, address::CompositeFS) where {TT,D}
