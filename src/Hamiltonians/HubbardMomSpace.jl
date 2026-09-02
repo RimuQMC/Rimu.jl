@@ -206,7 +206,6 @@ end
         mode_i = map[i].mode
         occ_i  = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0)
-        # Pull the grid lookup outside the inner loop to save i-index computations
         g_i = g[mode_i] 
         for j in 1:i-1
             occ_j = Float64(map[j].occnum)
