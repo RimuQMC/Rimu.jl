@@ -203,7 +203,6 @@ end
 @inline function _mom_transfer_diagonal(map::FermiOccupiedModeMap, g::CubicGrid{D,S}, _, w) where {D, S}
     onproduct = 0.0
     for i in 1:length(map)
-        # 2. Add type assertions or unpack concrete objects if `map` holds abstract types
         mode_i = map[i].mode
         occ_i  = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0)
