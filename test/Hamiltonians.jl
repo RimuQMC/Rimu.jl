@@ -56,6 +56,7 @@ end
                 FermiFS((1, 1, 1, 1, 1, 0, 0, 0)),
                 FermiFS((1, 1, 1, 1, 0, 0, 0, 0)),
             ); t=[1, 2], u=[0 3; 3 0], w=[1 0.5; 0.5 1]
+        ),
         HubbardRealSpace(
             BoseFS((1, 2, 3, 4, 5, 6));
             potential=reshape(float.([1, 2, 3, 4, 5, 5]), (6, 1))
