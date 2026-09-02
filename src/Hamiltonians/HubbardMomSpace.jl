@@ -567,18 +567,13 @@ end
 # Collect HubbardMomSpaceComponentData for each component of the address.
 @inline function _column_components(h::HubbardMomSpace{TT,1,D}, 
         address::SingleComponentFockAddress) where {TT,D}
-    if isnothing(h.w) && isnothing(h.u)
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, nothing, nothing),)
-    elseif isnothing(h.w) && !isnothing(h.u)
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, h.u[1], nothing),)
-    elseif !isnothing(h.w) && isnothing(h.u)
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, nothing, h.w[1]),)
-    else
-        return (HubbardMomSpaceComponentData{TT,1,1,1,D}(h.geometry, address, address, 
-            address, h.u[1], h.w[1]),)
+    u = isnothing(h.u) ? nothing : h.u[1]
+    w = isnothing(h.w) ? nothing : h.w[1]
+    return (
+        HubbardMomSpaceComponentData{TT,1,1,1,D}(
+            h.geometry, address, address, address, u, w
+        ),
+    )
     end
 end
 
