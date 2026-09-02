@@ -6,14 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-* Pass custom external potential to HubbardRealSpace [399], [400]
+* Pass custom external potential to HubbardRealSpace ([399], [400])
 * Restrict number type in `FroehlichPolaron` [405]
 
 ### Deprecated
 * Keyword `mass` in `FroehlichPolaron` renamed to `two_m` [405]
 
 ### Other changes
-* Documentation update [398], [407]
+* Documentation update ([398], [407])
 * `excitation` accepts floating point type as argument to define the type for the returned value. [405]
 
 ## Version [v0.18.0] - 2026-08-13
