@@ -571,7 +571,6 @@ end
             h.geometry, address, address, address, u, w
         ),
     )
-    end
 end
 
 @inline function _column_components(h::HubbardMomSpace{TT,1,D}, address::FermiFS) where {TT,D}
@@ -607,38 +606,58 @@ end
         _column_components(h, address, as, m_rest, σ_rest, Val(I1+1) )...,)
 end
 
-@inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress,
-    ::Tuple{}, ::Tuple{}, ::Tuple{}, ::Val, ::Val) = ()
-@inline function _mom_interactions_col(h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, 
-    a::SingleComponentFockAddress, (b,as...)::NTuple{N}, (u, us...)::NTuple{N}, (w, ws...)::NTuple{N}, 
-    ::Val{I1}, ::Val{I2}) where {TT,C,D,N,I1,I2}
+@inline _mom_interactions_col(
+    ::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress,::Tuple{}, 
+    ::Tuple{}, ::Tuple{}, ::Val, ::Val
+) = ()
+
+@inline function _mom_interactions_col(
+    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress, 
+    (b,as...)::NTuple{N}, (u, us...)::NTuple{N}, (w, ws...)::NTuple{N}, ::Val{I1}, ::Val{I2}
+) where {TT,C,D,N,I1,I2}
+
     return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, u, w), 
             _mom_interactions_col(h, address, a, as, us, ws, Val(I1), Val(I2+1))...)
 end
 
-@inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, 
-    ::Tuple{},::Tuple{Nothing}, ::Tuple{}, ::Val, ::Val) = ()
-@inline function _mom_interactions_col(h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, 
-    a::SingleComponentFockAddress, (b,as...)::NTuple{N}, m::Tuple{Nothing}, σ::NTuple{N}, ::Val{I1}, 
-    ::Val{I2}) where {TT,C,D,N,I1,I2}
+@inline _mom_interactions_col(
+    ::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, ::Tuple{},
+    ::Tuple{Nothing}, ::Tuple{}, ::Val, ::Val
+) = ()
+
+@inline function _mom_interactions_col(
+    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress, 
+    (b,as...)::NTuple{N}, m::Tuple{Nothing}, σ::NTuple{N}, ::Val{I1}, ::Val{I2}
+) where {TT,C,D,N,I1,I2}
+
     return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
             _mom_interactions_col(h, address, a, as, m, σ[2:N], Val(I1), Val(I2+1))...)
 end
 
-@inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, 
-    ::Tuple{},::Tuple{}, ::Tuple{Nothing}, ::Val, ::Val) = ()
-@inline function _mom_interactions_col(h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, 
-    a::SingleComponentFockAddress, (b,as...)::NTuple{N}, m::Tuple{N}, σ::Tuple{Nothing}, ::Val{I1}, 
-    ::Val{I2}) where {TT,C,D,N,I1,I2}
+@inline _mom_interactions_col(
+    ::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, ::Tuple{},
+    ::Tuple{}, ::Tuple{Nothing}, ::Val, ::Val
+) = ()
+
+@inline function _mom_interactions_col(
+    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress, 
+    (b,as...)::NTuple{N}, m::Tuple{N}, σ::Tuple{Nothing}, ::Val{I1}, ::Val{I2}
+) where {TT,C,D,N,I1,I2}
+
     return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
             _mom_interactions_col(h, address, a, as, m[2:N], σ, Val(I1), Val(I2+1))...)
 end
 
-@inline _mom_interactions_col(::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, 
-    ::Tuple{},::Tuple{Nothing}, ::Tuple{Nothing}, ::Val, ::Val) = ()
-@inline function _mom_interactions_col(h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, 
-    a::SingleComponentFockAddress, (b,as...)::NTuple{N}, m::Tuple{Nothing}, σ::Tuple{Nothing}, ::Val{I1}, 
-    ::Val{I2}) where {TT,C,D,N,I1,I2}
+@inline _mom_interactions_col(
+    ::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress, ::Tuple{},
+    ::Tuple{Nothing}, ::Tuple{Nothing}, ::Val, ::Val
+) = ()
+
+@inline function _mom_interactions_col(
+    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress, 
+    (b,as...)::NTuple{N}, m::Tuple{Nothing}, σ::Tuple{Nothing}, ::Val{I1}, ::Val{I2}
+) where {TT,C,D,N,I1,I2}
+
     return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
             _mom_interactions_col(h, address, a, as, m, σ, Val(I1), Val(I2+1))...)
 end
