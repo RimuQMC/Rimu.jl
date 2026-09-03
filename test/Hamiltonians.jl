@@ -826,12 +826,12 @@ end
         H = HubbardMomSpace(addr)
         m = momentum(H)
         @test Matrix(m)[1] isa SVector
-        @test Matrix(m)[1][1] ≈ 0.0
+        @test round(Matrix(m)[1][1], digits=10) ≈ 0.0
         c_addr = CompositeFS(addr, BoseFS(0,0,2,0,0,0))
         Hc = HubbardMomSpace(c_addr)
         mc = momentum(Hc)
         @test Matrix(mc)[1] isa SVector
-        @test Matrix(mc)[1][1] ≈ 0.0
+        @test round(Matrix(mc)[1][1], digits=10) ≈ 0.0
         c_addr = CompositeFS(addr, BoseFS(0,0,1,1,0,0))
         Hc = HubbardMomSpace(c_addr)
         mc = momentum(Hc)

@@ -238,7 +238,7 @@ end
 @inline function _cosin_sum(q::SVector{D}, S::NTuple{D}) where {D}
     onproduct = 0.0
     for i in 1:D
-        onproduct += cospi(2q[i] / S[i])
+        onproduct += cos(2π*q[i] / S[i])
     end
     return onproduct
 end
@@ -574,10 +574,10 @@ end
 end
 
 @inline function _column_components(h::HubbardMomSpace{TT,1,D}, address::FermiFS) where {TT,D}
-    w = isnothing(w) ? nothing : h.w[1, 1]
+    w = isnothing(h.w) ? nothing : h.w[1, 1]
     return (
         HubbardMomSpaceComponentData{TT,1,1,1,D}(
-            h.geometry, address, address, address, nothing, h.w[1,1]
+            h.geometry, address, address, address, nothing, w
         ),
     )
 end
