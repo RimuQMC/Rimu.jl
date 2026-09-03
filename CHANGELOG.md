@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-* Pass custom external potential to HubbardRealSpace ([#399, #400])
+* Change log ([#409])
+* Pass custom external potential to `HubbardRealSpace` ([#399, #400])
 * Allow restricting the number type in `FroehlichPolaron`; make it compatible with GPU. ([#405])
 
 ### Deprecated
