@@ -223,6 +223,7 @@ using Rimu.Hamiltonians: Directions, Displacements
             @test length(geom) == prod(dims)
             @test Rimu.Hamiltonians.fold(geom) == fold
             @test eval(Meta.parse(repr(geom))) == geom
+            @test dimension(geom) == length(size(geom))
         end
     end
 
@@ -1244,6 +1245,11 @@ end
     @test_throws ArgumentError FroehlichPolaron1D{Int}(addr2)
     @test_throws ArgumentError FroehlichPolaron1D(addr2; l=-1)
 
+    # passing alpha
+    f_alpha = FroehlichPolaron1D(addr2; alpha=2.0, l=3, two_m=4, omega=5.0)
+    @test f_alpha.v^2 ≈ 2 * 2 * 5.0^2/(3 * sqrt(4 * 5.0))
+    # v^2 = 2 * alpha * omega^2 / (l * sqrt(2 m omega))
+
     # test ks vector
     step = (2π/3)
     ks2 = (3/1)*range(-π*(1+1/3) +  step; step=step, length=3)
@@ -1299,12 +1305,19 @@ end
     addr2 = BoseFS{missing}(1,2,3)
     @test_throws ArgumentError FroehlichPolaron(addr2; mode_cutoff=1.0)
     @test_throws ArgumentError FroehlichPolaron(addr2; momentum_cutoff=10.0)
-    @test_throws ArgumentError FroehlichPolaron(BoseFS{missing}(3,2,1); momentum_cutoff=10.0)
+    f = FroehlichPolaron(addr2; two_m=3)
+    @test f == @test_logs (:warn,) FroehlichPolaron(addr2; mass=3)
+    @test f == @test_logs (:warn,) FroehlichPolaron{Float64}(addr2; mass=3)
+    @test_throws ArgumentError FroehlichPolaron(BoseFS{missing}(3, 2, 1); momentum_cutoff=10.0)
     @test_throws ArgumentError FroehlichPolaron(BoseFS{missing}(3,2,1); D=2)
+    @test_throws ArgumentError FroehlichPolaron(BoseFS{missing}(3,2,1,0); D=2, v=1)
+    @test_logs (:warn,) FroehlichPolaron(BoseFS{missing}(3,2,1,0); D=1, v=1)
 
     addr3 = BoseFS{missing}(1,2,3,4)
     f2 = FroehlichPolaron(addr2)
+    @test maximum_mode_occupation(f2) == 255
     f3 = FroehlichPolaron(addr3; mode_cutoff=20.0)
+    @test maximum_mode_occupation(f3) == 20
 
     @test starting_address(f2) == f2.address == addr2
 

@@ -47,22 +47,30 @@ arguments if not provided. Set `T` to `Float32` for single precision, e.g. when 
 
 # Examples
 ```jldoctest
-julia> fs = BoseFS{missing}(0,0,0,0)
+julia> fs = BoseFS{missing, 4}() # vacuum state with 4 modes
 BoseFS{missing}(0, 0, 0, 0)
 
-julia> ham = FroehlichPolaron(fs; D = 2, alpha = 1)
+julia> ham = FroehlichPolaron(fs; D=2, alpha=1, l=6)
 FroehlichPolaron(
   fs"|0 0 0 0⟩{}",
   alpha = 1.0, D = 2, two_m = 1.0, omega = 1.0,
-  l = 1.0, p = [0.0, 0.0],
+  l = 6.0, p = [0.0, 0.0],
   mode_cutoff = 255,
 )
 
 julia> dimension(ham)
 4294967296
 
-julia> dimension(FroehlichPolaron(fs; alpha = 1,D = 2, mode_cutoff=5))
+julia> dimension(FroehlichPolaron(fs; alpha=1, D=2, mode_cutoff=5))
 1296
+
+julia> FroehlichPolaron{Float32}(fs; alpha=0.5, l=6) # suitable for GPU
+FroehlichPolaron{Float32}(
+  fs"|0 0 0 0⟩{}",
+  alpha = 0.5, D = 1, two_m = 1.0, omega = 1.0,
+  l = 6.0, p = Float32[0.0],
+  mode_cutoff = 255,
+)
 ```
 
 See also [`BoseFS`](@ref), [`dimension`](@ref), [`AbstractHamiltonian`](@ref),
