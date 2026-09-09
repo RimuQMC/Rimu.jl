@@ -181,14 +181,14 @@ bose_num_occupied_modes(ss::SortedParticleList) = length(ss)
 bose_find_mode(ss::SortedParticleList, n) = find_mode(ss, n)
 
 @inline function bose_excitation(
-    ss::SortedParticleList{N,M,T}, creations, destructions
-) where {N,M,T}
+    ::Type{T}, ss::SortedParticleList, creations, destructions
+) where {T}
     creations_rev = reverse(creations)
     value = bose_excitation_value(creations_rev, destructions)
     if iszero(value)
-        return ss, 0.0
+        return ss, zero(T)
     else
-        return move_particles(ss, creations_rev, destructions), √value
+        return move_particles(ss, creations_rev, destructions), √T(value)
     end
 end
 
@@ -236,7 +236,7 @@ order. Will return 0 if move is illegal.
 
 Note that this function only works on indices obtained from a [`SortedParticleList`](@ref).
 """
-@inline fermi_excitation_value_spl(::Tuple{}, ::Tuple{}) = 1.0
+@inline fermi_excitation_value_spl(::Tuple{}, ::Tuple{}) = 1
 @inline function fermi_excitation_value_spl((c, cs...), ::Tuple{})
     cs = map(_fix_pos_create(c), cs)
     return fermi_excitation_value_spl(cs, ()) * ifelse(isodd(c.offset), -1, 1) * (c.occnum == 0)
@@ -255,15 +255,15 @@ function fermi_find_mode(ss::SortedParticleList, ns::Tuple)
 end
 
 @inline function fermi_excitation(
-    ss::SortedParticleList{N,M,T}, creations::NTuple{K}, destructions::NTuple{K}
-) where {N,M,T,K}
+    ss::SortedParticleList, creations::NTuple{K}, destructions::NTuple{K}
+) where {T,K}
     creations_rev = reverse(creations)
     destructions_rev = reverse(destructions)
     value = fermi_excitation_value_spl(creations_rev, destructions_rev)
     if iszero(value)
-        return ss, 0.0
+        return ss, value
     else
-        return move_particles(ss, creations_rev, destructions), float(value)
+        return move_particles(ss, creations_rev, destructions), value
     end
 end
 
