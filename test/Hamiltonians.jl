@@ -1370,6 +1370,7 @@ end
     f3_offdiag = (BoseFS{missing}(1,2,3,3) => -(2* f2.alpha /(f2.l[1]))^0.5*sqrt(4))
     offdf3 = offdiagonals(operator_column(f3,addr3))
     @test (offdf3[8]) == f3_offdiag
+    @test_throws BoundsError offdf3[80]
 
     # test mode_cutoff
     offd =offdiagonals(operator_column(f2,BoseFS{missing}(10,3,4)))

@@ -212,7 +212,7 @@ function FroehlichPolaron{T}(
     )
 end
 
-function Base.show(io::IO, h::FroehlichPolaron{T,M,D}) where {T,M,D}  #put D is the show function
+function Base.show(io::IO, h::FroehlichPolaron{T,M,D}) where {T,M,D}
     io = IOContext(io, :compact => true)
     print(io, "FroehlichPolaron")
     eltype(h) === Float64 || print(io, "{$(eltype(h))}")
@@ -323,6 +323,9 @@ and returns the new offdiagonal element.
 end
 
 function Base.getindex(ods::FroehlichPolaronOffdiagonals, i::Int)
+    @boundscheck begin
+        1 ≤ i ≤ ods.num_offdiagonals || throw(BoundsError(ods, i))
+    end
     return phonon_op(ods.h, ods.address, i)
 end
 
