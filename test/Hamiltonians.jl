@@ -130,6 +130,7 @@ end
         (Momentum(1), BoseFS(1, 2, 3, 4)),
         (G2MomCorrelator(3), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
         (IdentityOperator(), BoseFS(1, 2, 0, 3, 0, 4, 0, 1)),
+        (momentum(HubbardMomSpace(BoseFS((0, 5, 0)))), BoseFS((0, 5, 0)))
     ]
         test_operator_interface(op, addr)
         # Check that the result of show can be pasted into the REPL
