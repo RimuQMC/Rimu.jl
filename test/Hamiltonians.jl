@@ -116,6 +116,7 @@ end
     end
 end
 
+using Rimu.Hamiltonians: MomentumMomSpace
 @testset "Operator interface test" begin
     # this is only needed for AbstractOperators that are not AbstractHamiltonians
     # and are not tested in the Hamiltonian interface tests
@@ -656,7 +657,7 @@ end
 
         H3 = ExtendedHubbardMom1D(BoseFS((0, 0, 5, 0, 0, 0)); u=0, v=2, t=3)
         H4 = HubbardMomSpace(BoseFS((0, 0, 5, 0, 0, 0)); u=[0], w=[2], t=[3])
-                
+
         @test exact_energy(H3) ≈ exact_energy(H4)  rtol=0.0001
 
         @test offdiagonals(H4 * H4.address)[1] == collect(offdiagonals(H4 * H4.address))[1]
@@ -845,35 +846,36 @@ end
         addr = FermiFS(0,1,1,1,0,0)
         H = HubbardMomSpace(addr)
         m = momentum(H)
-        @test Matrix(m)[1] isa SVector
-        @test round(Matrix(m)[1][1], digits=10) ≈ 0.0
+        matrix = Matrix(BasisSetRepresentation(m, starting_address(m)))
+        @test matrix[1] isa SVector
+        @test round(matrix[1][1], digits=10) ≈ 0.0
         c_addr = CompositeFS(addr, BoseFS(0,0,2,0,0,0))
         Hc = HubbardMomSpace(c_addr)
         mc = momentum(Hc)
-        @test Matrix(mc)[1] isa SVector
-        @test round(Matrix(mc)[1][1], digits=10) ≈ 0.0
+        @test Matrix(mc, c_addr)[1] isa SVector
+        @test round(Matrix(mc, c_addr)[1][1], digits=10) ≈ 0.0
         c_addr = CompositeFS(addr, BoseFS(0,0,1,1,0,0))
         Hc = HubbardMomSpace(c_addr)
         mc = momentum(Hc)
-        @test Matrix(mc)[1] isa SVector
-        @test Matrix(mc)[1][1] ≈ 2π/num_modes(c_addr)[2]
+        @test Matrix(mc, c_addr)[1] isa SVector
+        @test Matrix(mc, c_addr)[1][1] ≈ 2π/num_modes(c_addr)[2]
 
         #Two-dimensional system
         addr = FermiFS(0,1,0,1,1,1,0,1,0)
         H = HubbardMomSpace(addr; geometry=PeriodicBoundaries(3,3))
         m = momentum(H)
-        @test Matrix(m)[1] isa SVector
-        @test Matrix(m)[1] ≈ SVector(0.0, 0.0)
+        @test Matrix(m, addr)[1] isa SVector
+        @test Matrix(m, addr)[1] ≈ SVector(0.0, 0.0)
         c_addr = CompositeFS(addr, BoseFS(0,0,0,0,5,0,0,0,0))
         Hc = HubbardMomSpace(c_addr; geometry=PeriodicBoundaries(3,3))
         mc = momentum(Hc)
-        @test Matrix(mc)[1] isa SVector
-        @test Matrix(mc)[1] ≈ SVector(0.0, 0.0)
+        @test Matrix(mc, c_addr)[1] isa SVector
+        @test Matrix(mc, c_addr)[1] ≈ SVector(0.0, 0.0)
         c_addr = CompositeFS(addr, BoseFS(0,0,0,0,1,1,0,0,0))
         Hc = HubbardMomSpace(c_addr; geometry=PeriodicBoundaries(3,3))
         mc = momentum(Hc)
-        @test Matrix(mc)[1] isa SVector
-        @test Matrix(mc)[1] ≈ SVector(-2π/size(Hc.geometry)[2], 0.0)
+        @test Matrix(mc, c_addr)[1] isa SVector
+        @test Matrix(mc, c_addr)[1] ≈ SVector(-2π/size(Hc.geometry)[2], 0.0)
     end
 end
 
