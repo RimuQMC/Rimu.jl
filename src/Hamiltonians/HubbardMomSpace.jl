@@ -287,8 +287,14 @@ end
 @inline _interaction_parameter_diag(u::Float64, ::Nothing, _) = u
 
 """
-    HubbardMomSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C, D), u=ones(C, C), 
-        w=zeros(C, C), dispersion=hubbard_dispersion) <: AbstractHamiltonian{Float64}
+    HubbardMomSpace(
+        address; 
+        geometry=PeriodicBoundaries(M,), 
+        t=ones(C, D), 
+        u=ones(C, C), 
+        w=zeros(C, C), 
+        dispersion=hubbard_dispersion
+    ) <: AbstractHamiltonian{Float64}
 
 Hubbard model in momentum space. Supports single or multi-component Fock state
 addresses (with `C` components) and various (rectangular) lattice geometries
