@@ -41,6 +41,7 @@ HOCartesianCentralImpurity
 ```@docs
 MatrixHamiltonian
 Transcorrelated1D
+FroehlichPolaron1D
 FroehlichPolaron
 MolecularHamiltonian
 ```
