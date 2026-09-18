@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Dot products with `UniformProjector` could error for empty vectors or operators without offdiagonals ([#403])
+* Dot product and `inner` could error for empty `DVec` with non-scalar `valtype`. ([#353])
 
 ### Other changes
 * Documentation update ([#398, #407])
