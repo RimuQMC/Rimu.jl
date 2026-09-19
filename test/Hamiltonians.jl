@@ -27,6 +27,8 @@ end
         HubbardReal1DEP(BoseFS(1, 2, 3, 4); t=1.0im),
         HubbardReal1DEP(BoseFS(1, 2, 3, 4); u=1.0im),
         HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
+        HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5, dispersion=continuum_dispersion),
+        HubbardMom1D{Float32}(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5),
         HubbardMom1D(BoseFS{missing}(6, 0, 0, 4); t=1.0, u=0.5),
         HubbardMom1D(BoseFS{missing}(6, 0, 0, 4); t=1.0, u=0.5),
         HubbardMom1D(BoseFS((6, 0, 0, 4)); t=1.0, u=0.5 + im),
@@ -91,6 +93,7 @@ end
         FroehlichPolaron1D(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         FroehlichPolaron1D{Float32}(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
+        momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0); t=1.0+1.0im)),
         # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
         FroehlichPolaron(BoseFS{missing}(0,0,0,0)),
@@ -295,6 +298,7 @@ end
     @test HubbardMom1D(bs3; u=0, t) == HM3Hu0
     @test diagonal_element(HM3Cu0, bs3) == 0
     @test 2t*num_particles(bs3) + diagonal_element(HM3Hu0, bs3) == 0
+    @test eltype(HubbardMom1D(bs3; u=1.0f0, t=2)) == Float32
 
     HM2Cu0 =HubbardMom1D(bs2; u=0, t, dispersion=continuum_dispersion)
     HM2Hu0 =HubbardMom1D(bs2; u=0, t, dispersion=hubbard_dispersion)

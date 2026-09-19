@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 * `FroehlichPolaron` is extended to multiple dimensions; the legacy code for the 1D model is still available (but experimental) as `FroehlichPolaron1D`([#355])
-* Allow restricting the number type in `FroehlichPolaron`; make it compatible with GPU. ([#405])
-* New Hamiltonian `HubbardMomSpace` is added. ([#353])
+* New Hamiltonian `HubbardMomSpace`. ([#353])
 * Started CHANGELOG.md ([#409])
 * Pass custom external potential to `HubbardRealSpace` ([#399, #400])
+
+### Changed
+* Allow restricting the number type in `FroehlichPolaron`; make it compatible with GPU. ([#405])
+* `HubbardMom1D` now supports reduced precision arithmetic suitable for GPUs; printing the type was improved. ([#353])
 
 ### Deprecated
 * Keyword `mass` in `FroehlichPolaron` renamed to `two_m` ([#405])
