@@ -26,6 +26,7 @@ ExtendedHubbardReal1D
 ```@docs
 HubbardMom1D
 HubbardMom1DEP
+HubbardMomSpace
 ExtendedHubbardMom1D
 ```
 
@@ -40,6 +41,7 @@ HOCartesianCentralImpurity
 ```@docs
 MatrixHamiltonian
 Transcorrelated1D
+FroehlichPolaron1D
 FroehlichPolaron
 MolecularHamiltonian
 ```

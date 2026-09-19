@@ -20,9 +20,12 @@ Harmonic oscillator models
 - [`HOCartesianCentralImpurity`](@ref)
 
 Other
-- [`FroehlichPolaron`](@ref)
+- [`FroehlichPolaron1D`](@ref)
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
+- [`HamiltonianProduct`](@ref)
+- [`FroehlichPolaron`](@ref)
+
 - [`MolecularHamiltonian`](@ref)
 
 ## [Wrappers](#Hamiltonian-wrappers)
@@ -83,7 +86,8 @@ export dimension, rayleigh_quotient, momentum
 
 export IdentityOperator
 export MatrixHamiltonian
-export HubbardReal1D, HubbardMom1D, ExtendedHubbardReal1D, ExtendedHubbardMom1D, HubbardRealSpace
+export HubbardReal1D, HubbardMom1D, ExtendedHubbardReal1D, ExtendedHubbardMom1D
+export HubbardMomSpace, HubbardRealSpace
 export HubbardReal1DEP, shift_lattice, shift_lattice_inv
 export HubbardMom1DEP
 export GutzwillerSampling, GuidingVectorSampling
@@ -92,6 +96,7 @@ export TimeReversalSymmetry
 export Stoquastic
 export Transcorrelated1D
 export hubbard_dispersion, continuum_dispersion
+export FroehlichPolaron1D
 export FroehlichPolaron
 export ParticleNumberOperator
 
@@ -133,9 +138,12 @@ include("ExtendedHubbardMom1D.jl")
 include("HubbardMom1D.jl")
 include("HubbardMom1DEP.jl")
 include("HubbardRealSpace.jl")
+include("HubbardMomSpace.jl")
 include("ExtendedHubbardReal1D.jl")
 
+include("FroehlichPolaron1D.jl")
 include("FroehlichPolaron.jl")
+
 
 include("Transcorrelated1D.jl")
 
