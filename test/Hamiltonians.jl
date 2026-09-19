@@ -850,6 +850,7 @@ end
         addr = FermiFS(0,1,1,1,0,0)
         H = HubbardMomSpace(addr)
         m = momentum(H)
+        @test LOStructure(m) isa IsDiagonal
         matrix = Matrix(BasisSetRepresentation(m, starting_address(m)))
         @test matrix[1] isa SVector
         @test round(matrix[1][1], digits=10) ≈ 0.0
@@ -1476,6 +1477,7 @@ end
         fermi = HubbardMom1D(CompositeFS(FermiFS((0,0,1,0,0)), FermiFS((0,0,1,0,0))))
 
         @test exact_energy(bose) ≈ exact_energy(fermi)
+        @test LOStructure(momentum(bose)) == LOStructure(momentum(fermi)) == IsDiagonal()
     end
     @testset "Comparison with HubbardRealSpace" begin
         c = CompositeFS(FermiFS((0,1,1,1,0)), FermiFS((0,0,1,0,0)))

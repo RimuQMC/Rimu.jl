@@ -299,8 +299,7 @@ end
 struct MomentumMom1D{T,H<:AbstractHamiltonian} <: AbstractHamiltonian{T}
     ham::H
 end
-LOStructure(::Type{MomentumMom1D}) = IsDiagonal()
-num_offdiagonals(ham::MomentumMom1D, _) = 0
+LOStructure(::Type{<:MomentumMom1D}) = IsDiagonal()
 diagonal_element(mom::MomentumMom1D, address) = mod1(onr(address)⋅ks(mom.ham) + π, 2π) - π
 # fold into (-π, π]
 starting_address(mom::MomentumMom1D) = starting_address(mom.ham)
