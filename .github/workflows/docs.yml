@@ -26,6 +26,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    concurrency:
+      group: documentation-deploy
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
