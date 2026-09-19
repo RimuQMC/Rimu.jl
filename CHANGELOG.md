@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * `FroehlichPolaron` is extended to multiple dimensions; the legacy code for the 1D model is still available (but experimental) as `FroehlichPolaron1D`([#355])
 * Allow restricting the number type in `FroehlichPolaron`; make it compatible with GPU. ([#405])
+* New Hamiltonian `HubbardMomSpace` is added. ([#353])
 * Started CHANGELOG.md ([#409])
 * Pass custom external potential to `HubbardRealSpace` ([#399, #400])
 
@@ -16,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 * Dot products with `UniformProjector` could error for empty vectors or operators without offdiagonals ([#403])
+* Dot product and `inner` could error for empty `DVec` with non-scalar `valtype`. ([#353])
 
 ### Other changes
 * Documentation update ([#398, #407])
