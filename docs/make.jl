@@ -29,11 +29,11 @@ function parse_header(filename::String)
         return 100, "BAD_EXAMPLE"
     end
 end
-
+mkpath(EXAMPLES_OUTPUT)
 Changelog.generate(
     Changelog.Documenter(),
     joinpath(@__DIR__, "../CHANGELOG.md"),
-    joinpath(@__DIR__, "src/generated/CHANGELOG.md");
+    joinpath(EXAMPLES_OUTPUT, "CHANGELOG.md");
     repo = "RimuQMC/Rimu.jl",
 )
 
