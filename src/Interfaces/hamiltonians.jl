@@ -184,12 +184,12 @@ Mandatory methods to implement:
 
 * [`starting_address(op::AbstractHamiltonian)`](@ref)
 * [`operator_column(op, address)`](@ref) returns an [`AbstractOperatorColumn`](@ref)
+* [`num_offdiagonals(op::AbstractHamiltonian)`](@ref) returns an upper bound on
+  the number of off-diagonal elements in any column
 
 [`AbstractOperatorColumn`](@ref) has its own interface methods:
 * [`parent_operator(column)`](@ref) returns the operator of the column
 * [`diagonal_element(column)`](@ref) returns the diagonal element of the column
-* [`num_offdiagonals(column)`](@ref) (this can be an upper bound) returns the number of
-    off-diagonal elements in the column
 * [`offdiagonals(column)`](@ref) returns an object representing the off-diagonal elements
     of the column
 * [`random_offdiagonal(column)`](@ref) returns a random off-diagonal element in the column
@@ -197,6 +197,8 @@ Mandatory methods to implement:
 Optional additional methods to implement:
 
 * [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
+* [`num_offdiagonals(column)`](@ref) (this can be an upper bound) returns the number of
+    off-diagonal elements in the column
 * [`has_random_offdiagonal(::Type{typeof(op)})`](@ref has_random_offdiagonal): defaults to
   `true`.
 * [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals):
@@ -282,26 +284,25 @@ Part of the [`AbstractHamiltonian`](@ref) interface. See also
 diagonal_element
 
 """
-    num_offdiagonals(column::AbstractOperatorColumn)
-    num_offdiagonals(ham, address) # (deprecated)
+    num_offdiagonals(op::AbstractOperator)
+    num_offdiagonals(::Type{<:AbstractOperator})
 
-Compute the number of number of reachable configurations from address `address`,
-where `column = operator_column(ham, address)`. If necessary, this may be an upper bound.
+Return an upper bound on the number of off-diagonal elements in any column of the operator
+`op`. This may be used to preallocate memory for the off-diagonal elements. Calling
+`num_offdiagonals(column)` on an [`AbstractOperatorColumn`](@ref) may return a sharper
+bound on the number of off-diagonal elements.
 
-# Example
+Part of the [`AbstractHamiltonian`](@ref) interface. When defining a new operator type,
+overload this function for the operator type. `num_offdiagonals(column)` will default
+to calling this method. If the number of off-diagonal elements can be determined more
+accurately for a specific column, overload `num_offdiagonals(column)` for the
+[`AbstractOperatorColumn`](@ref) type as well.
 
-```jldoctest
-julia> H = HubbardMom1D(BoseFS(3, 2, 1));
-
-julia> column = operator_column(H, starting_address(H));
-
-julia> num_offdiagonals(column)
-10
-```
-Part of the [`AbstractHamiltonian`](@ref) interface. See also
-[`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
+See also [`num_offdiagonals(column)`](@ref num_offdiagonals(::AbstractOperatorColumn)).
 """
-num_offdiagonals
+function num_offdiagonals(op::AbstractOperator)
+    num_offdiagonals(typeof(op))
+end
 
 """
     newadd, me = get_offdiagonal(ham, address, chosen) # (deprecated)
@@ -427,6 +428,14 @@ function num_offdiagonals(h::H, addr) where {H<:AbstractOperator}
     return num_offdiagonals(LOStructure(H), h, addr)
 end
 num_offdiagonals(::IsDiagonal, _, _) = 0
+num_offdiagonals(::IsDiagonal, _) = 0
+
+function num_offdiagonals(::Type{H}) where {H<:AbstractOperator}
+    return num_offdiagonals(LOStructure(H), H)
+end
+function num_offdiagonals(::LOStructure, ::Type{H}) where {H<:AbstractOperator}
+    throw(ArgumentError("num_offdiagonals not implemented for type $H"))
+end
 
 """
     has_adjoint(op)
@@ -485,6 +494,31 @@ function Base.show(io::IO, c::AbstractOperatorColumn{A,T,O}) where {A,T,O}
     show(io, parent_operator(c))
     print(io, " * ", starting_address(c))
 end
+
+"""
+    num_offdiagonals(column::AbstractOperatorColumn)
+    num_offdiagonals(ham, address) # (deprecated)
+
+Return the number of number of reachable configurations from address `address`,
+where `column = operator_column(ham, address)`. If necessary, this may be an upper bound.
+
+# Example
+
+```jldoctest
+julia> H = HubbardMom1D(BoseFS(3, 2, 1));
+
+julia> column = operator_column(H, starting_address(H));
+
+julia> num_offdiagonals(column)
+10
+```
+Part of the [`AbstractHamiltonian`](@ref) interface. See also
+[`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
+"""
+# function num_offdiagonals(column::AbstractOperatorColumn)
+#     num_offdiagonals(parent_operator(column))
+# end
+
 
 """
     OffdiagonalsOperatorColumn <: AbstractOperatorColumn

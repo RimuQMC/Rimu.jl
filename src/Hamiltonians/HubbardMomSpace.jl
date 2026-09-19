@@ -564,6 +564,7 @@ end
 
 parent_operator(column::HubbardMomSpaceColumn) = column.hamiltonian
 starting_address(column::HubbardMomSpaceColumn) = column.address
+num_offdiagonals(column::HubbardMomSpaceColumn) = column.num_offdiagonals
 
 function diagonal_element(col::HubbardMomSpaceColumn{TT}) where {TT}
     ke = _mom_hopping(col.hamiltonian.kes_mat, col.address)
