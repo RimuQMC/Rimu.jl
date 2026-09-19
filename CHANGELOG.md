@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+Add unreleased changes here!
+
+## v0.18.1 - 2026-09-19
+
 ### Added
 * `FroehlichPolaron` is extended to multiple dimensions; the legacy code for the 1D model is still available (but experimental) as `FroehlichPolaron1D`([#355])
 * New Hamiltonian `HubbardMomSpace`. ([#353])
