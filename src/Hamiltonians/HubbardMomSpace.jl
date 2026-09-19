@@ -250,7 +250,7 @@ end
 end
 
 """
-    mom_transfer_diagonal(components, g)
+    mom_transfer_diagonal(components, geometry)
     
 This function returns a diagonal element of the Hamiltonian corresponding to the given address 
 stored in `components`. Here, `components` is a tuple of [`HubbardMomSpaceComponentData`](@ref) 
@@ -261,12 +261,12 @@ for each pair combination of component of the multi-component Fock state address
 '''
 
 where `V_{σσ}' is the interaction coefficient that depends on interaction parameters that are 
-stored in `components` and `g` is the geometry of the lattice.
+stored in `components` and `geometry` is the geometry of the lattice.
 
 """
-@inline _mom_transfer_diagonal(components::Tuple{}, ::CubicGrid) = 0.0
+@inline mom_transfer_diagonal(components::Tuple{}, ::CubicGrid) = 0.0
 
-@inline function _mom_transfer_diagonal((data, rest...)::Tuple, geometry::CubicGrid)
+@inline function mom_transfer_diagonal((data, rest...)::Tuple, geometry::CubicGrid)
     if isnothing(data.u) && isnothing(data.w)
         current_product = 0.0
     else
@@ -279,7 +279,7 @@ stored in `components` and `g` is the geometry of the lattice.
         end
     end
 
-    return current_product + _mom_transfer_diagonal(rest, geometry)
+    return current_product + mom_transfer_diagonal(rest, geometry)
 end
 
 @inline _interaction_parameter_diag(u::Float64, w::Float64, D::Int) = u + 2 * w * D
@@ -287,8 +287,14 @@ end
 @inline _interaction_parameter_diag(u::Float64, ::Nothing, _) = u
 
 """
-    HubbardMomSpace(address; geometry=PeriodicBoundaries(M,), t=ones(C, D), u=ones(C, C), 
-        w=zeros(C, C), dispersion=hubbard_dispersion) <: AbstractHamiltonian{Float64}
+    HubbardMomSpace(
+        address; 
+        geometry=PeriodicBoundaries(M,), 
+        t=ones(C, D), 
+        u=ones(C, C), 
+        w=zeros(C, C), 
+        dispersion=hubbard_dispersion
+    ) <: AbstractHamiltonian{Float64}
 
 Hubbard model in momentum space. Supports single or multi-component Fock state
 addresses (with `C` components) and various (rectangular) lattice geometries
@@ -561,7 +567,7 @@ starting_address(column::HubbardMomSpaceColumn) = column.address
 
 function diagonal_element(col::HubbardMomSpaceColumn{TT}) where {TT}
     ke = _mom_hopping(col.hamiltonian.kes_mat, col.address)
-    diag = _mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address)
+    diag = mom_transfer_diagonal(col.components, col.geometry)/num_modes_check_equal(col.address)
     return convert(TT, ke + diag)
 end
 
@@ -738,10 +744,27 @@ end
 # Momentum operator in momentum space
 ########################################################################################################
 
-struct MomentumMomSpace{T,C,D,H<:AbstractHamiltonian{T}} <: AbstractHamiltonian{SVector{D,T}}
+struct MomentumMomSpace{T,C,D,H<:AbstractHamiltonian{T}} <: AbstractOperator{SVector{D,T}}
     ham::H
 end
+momentum(ham::HubbardMomSpace{T,C,D}) where {T,C,D} = MomentumMomSpace{T,C,D,typeof(ham)}(ham)
+MomentumMomSpace(ham::HubbardMomSpace{T,C,D}) where {T,C,D} = MomentumMomSpace{T,C,D,typeof(ham)}(ham)
+
 LOStructure(::Type{MomentumMomSpace}) = IsDiagonal()
+dimension(mom::MomentumMomSpace, _) = 1
+starting_address(mom::MomentumMomSpace) = starting_address(mom.ham)
+function Base.show(
+    io::IO, h::MomentumMomSpace
+)
+    io = IOContext(io, :compact => true)
+    println(io, "MomentumMomSpace(")
+    println(io, "  ", h.ham, )
+    print(io, ")")
+end
+function allows_address_type(h::MomentumMomSpace{<:Any,1}, ::Type{A}) where {A}
+    return A <: AbstractFockAddress && 
+        num_modes(A) == num_modes(h.ham.address)
+end
 num_offdiagonals(::MomentumMomSpace, _) = 0
 function diagonal_element(mom::MomentumMomSpace{T,1,D}, address::SingleComponentFockAddress) where {T,D}
     return SVector{D,T}(dot(mom.ham.ks_mat[i, :], occupied_mode_map(address)) for i in 1:D)
@@ -749,8 +772,3 @@ end
 function diagonal_element(mom::MomentumMomSpace{T,C,D}, address::CompositeFS) where {T,C,D}
     return SVector{D,T}(sum(dot(mom.ham.ks_mat[i, :], occupied_mode_map(c)) for c in address.components) for i in 1:D)
 end
-# fold into (-π, π]
-starting_address(mom::MomentumMomSpace) = starting_address(mom.ham)
-dimension(mom::MomentumMomSpace, _) = 1
-
-momentum(ham::HubbardMomSpace{T,C,D}) where {T,C,D} = MomentumMomSpace{T,C,D,typeof(ham)}(ham)

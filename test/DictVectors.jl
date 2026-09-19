@@ -185,6 +185,11 @@ function test_dvec_interface(type; kwargs...)
                 @test iszero(inner(w, v))
                 @test iszero(inner(u, w))
             end
+            @testset "inner with non-scalar value" begin
+                v = DVec(fs"|0 5 1⟩" => 2.0)
+                w = empty(v, SVector{1,Float64})
+                @test inner(v, w) == [0]
+            end
             @testset "norm" begin
                 vector = rand(10)
                 u = type(zip(rand(Int, 10), vector); kwargs...)
