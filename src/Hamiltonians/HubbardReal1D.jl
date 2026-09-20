@@ -4,7 +4,7 @@
 Implements a one-dimensional Bose Hubbard chain in real space.
 
 ```math
-\\hat{H} = - \\sum_i \\left(t a_i^† a_{i+1} + t^* a_{i+1}^† a_i \\right) + 
+\\hat{H} = - \\sum_i \\left(t a_i^† a_{i+1} + t^* a_{i+1}^† a_i \\right) +
 \\frac{u}{2}\\sum_i n_i (n_i-1)
 ```
 
@@ -63,6 +63,11 @@ Base.getproperty(h::HubbardReal1D, ::Val{:boundary_condition}) = :periodic
 
 function num_offdiagonals(::HubbardReal1D, address::SingleComponentFockAddress)
     return 2 * num_occupied_modes(address)
+end
+function num_offdiagonals(h::HubbardReal1D)
+    address = starting_address(h)
+    possibly_occpied_modes = min(num_modes(address), num_particles(address))
+    return 2 * possibly_occpied_modes # upper bound, does not depend on address
 end
 
 function diagonal_element(h::HubbardReal1D, address::SingleComponentFockAddress)

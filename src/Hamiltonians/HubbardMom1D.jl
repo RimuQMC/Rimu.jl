@@ -96,6 +96,7 @@ end
 dimension(::HubbardMom1D, address) = number_conserving_dimension(address)
 
 LOStructure(::Type{<:HubbardMom1D{<:Real}}) = IsHermitian()
+LOStructure(::Type{<:HubbardMom1D{<:Real,<:Any,<:FermiFS}}) = IsDiagonal()
 
 Base.getproperty(h::HubbardMom1D, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::HubbardMom1D, ::Val{:ks}) = getfield(h, :ks)
@@ -165,6 +166,19 @@ end
     M = num_modes_check_equal(ham)
     return N1 * N2 * (M - 1)
 end
+
+function num_offdiagonals(ham::HubbardMom1D{<:Any,<:Any,<:SingleComponentFockAddress})
+    address = starting_address(ham)
+    return num_offdiagonals(ham, address, num_particles(address), 0)
+    # upper bound, does not depend on address
+end
+function num_offdiagonals(ham::HubbardMom1D{<:Any,<:Any,<:FermiFS2C})
+    address = starting_address(ham)
+    return num_offdiagonals(ham, address)
+    # upper bound, does not depend on address
+end
+num_offdiagonals(ham::HubbardMom1D{<:Any,<:Any,<:FermiFS}) = 0
+
 
 """
     momentum_transfer_diagonal(H, map::ModeMap)

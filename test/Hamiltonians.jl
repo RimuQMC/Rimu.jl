@@ -308,6 +308,8 @@ end
     HM3Ct0 =HubbardMom1D(bs3; t=0, dispersion=continuum_dispersion)
     HM3Ht0 =HubbardMom1D(bs3; t=0, dispersion=hubbard_dispersion)
     @test offdiagonals(HM3Ht0,bs3) == offdiagonals(HM3Ht0,bs3)
+
+    @test num_offdiagonals(HM3Ht0 * bs3) ≤ num_offdiagonals(HM3Ht0)
 end
 
 @testset "1C model properties" begin
@@ -321,6 +323,7 @@ end
             @test LOStructure(H) == IsHermitian()
             @test starting_address(H) == addr
             @test eval(Meta.parse(repr(H))) == H
+            @test num_offdiagonals(H * addr) ≤ num_offdiagonals(H)
         end
     end
 end
@@ -1547,7 +1550,7 @@ end
     @test Vector(f3.ks) == ks3
 
     # test num_offdiagonals
-    @test num_offdiagonals(f2, addr1) == 2*3
+    @test num_offdiagonals(f2, addr1) ≤ num_offdiagonals(f2) == 2*3
 
     # test diagonal_element
     f2_diag = f2.omega*6 + (1/f2.two_m) * (f2.p - dot(f2.ks, onr(addr2)))^2
@@ -1645,7 +1648,7 @@ end
     ]
 
     # test num_offdiagonals
-    @test num_offdiagonals(operator_column(f2, addr1)) == 2*3
+    @test num_offdiagonals(operator_column(f2, addr1)) ≤ num_offdiagonals(f2) == 2*3
 
     # test diagonal_element
     f2_diag = f2.omega * 6 + norm(f2.p - sum(f2.ks .* onr(addr2)))^2 / f2.two_m

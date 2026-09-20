@@ -497,7 +497,7 @@ end
 
 """
     num_offdiagonals(column::AbstractOperatorColumn)
-    num_offdiagonals(ham, address) # (deprecated)
+    num_offdiagonals(ham, address) # (deprecated - may not be defined for all operators)
 
 Return the number of number of reachable configurations from address `address`,
 where `column = operator_column(ham, address)`. If necessary, this may be an upper bound.
