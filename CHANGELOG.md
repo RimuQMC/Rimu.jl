@@ -3,9 +3,14 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<!-- ## Unreleased
+## Unreleased
 
-Add any unreleased changes here and uncomment the section! -->
+Add any unreleased changes here!
+### Added
+* New optional method in the `AbstractHamiltonian` interface: `num_offdiagonals(op)` can be called on the operator for an upper bound on the number of offdiagonals in the columns. Defaults to `missing`. ([#415])
+
+### Changed
+* `num_offdiagonals(op)` is implemented for `FroehlichPolaron`, `FroehlichPolaron1D`, `HubbardMom1D`, `HubbardReal1D`. ([#415])
 
 ## Version [v0.18.1] - 2026-09-19
 
@@ -90,3 +95,4 @@ Types of changes (based on [Keep a Changelog](https://keepachangelog.com/en/1.1.
 [#407]: https://github.com/RimuQMC/Rimu.jl/issues/407
 [#409]: https://github.com/RimuQMC/Rimu.jl/issues/409
 [#414]: https://github.com/RimuQMC/Rimu.jl/issues/414
+[#415]: https://github.com/RimuQMC/Rimu.jl/issues/415
