@@ -7,6 +7,24 @@ See [`ProjectorMonteCarloProblem`](@ref), [`FCIQMC`](@ref).
 abstract type PMCAlgorithm end
 
 """
+    StepAction
+Abstract type for actions to perform at each reporting step in the simulation.
+
+# Usage
+Pass an instance of a subtype of `StepAction` to the `step_actions` keyword
+argument of [`ProjectorMonteCarloProblem`](@ref). The action may report results at each step
+that are collected in the final report.
+
+# Extended Help
+## Implementing a new step action
+Action objects should be callable, accepting a `Rimu.ReplicaState` and returning
+a `NamedTuple` of results to be reported. Reporting of action results is handled
+by the `reporting_strategy`.
+"""
+abstract type StepAction end
+
+
+"""
     SimulationPlan(; starting_step = 1, last_step = 100, wall_time = Inf)
 Defines the duration of the simulation. The simulation ends when the `last_step` is reached
 or the `wall_time` is exceeded.
@@ -104,6 +122,11 @@ julia> size(DataFrame(simulation))
 - `minimum_size = 2*num_spectral_states(spectral_strategy)`: The minimum size of the basis
     used to construct starting vectors for simulations of spectral states, if `start_at`
     is not provided.
+- `step_actions = ()`: Warning: experimental feature - subject to change.
+    Tuple of actions to perform at each global step. Each action
+    should be a callable object that accepts a `Rimu.ReplicaState` and returns a
+    `NamedTuple` of results to be reported. Reporting of action results is handled
+    by the `reporting_strategy`.
 
 See also [`init`](@ref), [`solve`](@ref).
 
@@ -179,12 +202,13 @@ struct ProjectorMonteCarloProblem{N,S} # is not type stable but does not matter
     replica_strategy::ReplicaStrategy{N}
     initial_shift_parameters
     reporting_strategy::ReportingStrategy
-    post_step_strategy::Tuple
+    post_step_strategy::NTuple{<:Any,PostStepStrategy}
     spectral_strategy::SpectralStrategy{S}
     max_length::Int
     metadata::LittleDict{String,String} # user-supplied metadata + display_name
     random_seed::Union{Nothing,UInt64}
     minimum_size::Int
+    step_actions::NTuple{<:Any,StepAction} # StepAction is a callable object
 end
 
 function Base.show(io::IO, p::ProjectorMonteCarloProblem)
@@ -201,6 +225,7 @@ function Base.show(io::IO, p::ProjectorMonteCarloProblem)
     print(io, "  reporting_strategy = ", p.reporting_strategy)
     println(io, "  post_step_strategy = ", p.post_step_strategy)
     println(io, "  spectral_strategy = ", p.spectral_strategy)
+    println(io, "  step_actions = ", p.step_actions)
     println(io, "  max_length = ", p.max_length)
     println(io, "  metadata = ", p.metadata)
     print(io, "  random_seed = ", p.random_seed)
@@ -234,6 +259,7 @@ function ProjectorMonteCarloProblem(
     post_step_strategy = (),
     n_spectral = 1,
     spectral_strategy = GramSchmidt(n_spectral),
+    step_actions = (),
     minimum_size = 2*num_spectral_states(spectral_strategy),
     max_length = nothing,
     maxlength = nothing, # deprecated
@@ -241,6 +267,10 @@ function ProjectorMonteCarloProblem(
     display_name = "PMCSimulation",
     random_seed = true
 )
+    if step_actions isa StepAction
+        step_actions = (step_actions,)
+    end
+
     if !isnothing(walltime)
         @warn "The keyword argument `walltime` is deprecated. Use `wall_time` instead."
         wall_time = walltime
@@ -370,7 +400,8 @@ function ProjectorMonteCarloProblem(
         max_length,
         metadata,
         random_seed,
-        minimum_size
+        minimum_size,
+        step_actions
     )
 end
 
