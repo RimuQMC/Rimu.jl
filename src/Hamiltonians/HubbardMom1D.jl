@@ -169,7 +169,9 @@ end
 
 function num_offdiagonals(ham::HubbardMom1D{<:Any,<:Any,<:SingleComponentFockAddress})
     address = starting_address(ham)
-    return num_offdiagonals(ham, address, num_particles(address), 0)
+    max_singlies = min(num_modes(address), num_particles(address))
+    max_doublies = min(num_modes(address), num_particles(address) ÷ 2)
+    return num_offdiagonals(ham, address, max_singlies, max_doublies)
     # upper bound, does not depend on address
 end
 function num_offdiagonals(ham::HubbardMom1D{<:Any,<:Any,<:FermiFS2C})
