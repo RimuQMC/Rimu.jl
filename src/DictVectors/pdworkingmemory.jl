@@ -121,7 +121,7 @@ Base.eltype(w::PDWorkingMemory{K,V}) where {K,V} = Pair{K,V}
     num_rows(w::PDWorkingMemory) -> Int
 
 Number of rows in the working memory. The number of rows is equal to the number of segments
-accross all MPI ranks.
+across all MPI ranks.
 
 See [`PDWorkingMemory`](@ref).
 """
@@ -238,7 +238,7 @@ end
     synchronize_remote!([::Communicator,] w::PDWorkingMemory) -> names, values
 
 Synchronize non-local segments across MPI and add the results to the first
-column. Controlled by the [`Communicator`](@ref). This can only be perfomed after
+column. Controlled by the [`Communicator`](@ref). This can only be performed after
 [`collect_local!`](@ref).
 
 Should return a `Tuple` of names and a `Tuple` of values to report.

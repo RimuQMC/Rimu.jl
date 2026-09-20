@@ -5,16 +5,24 @@ using Rimu.StochasticStyles
 using Rimu.StochasticStyles: projected_deposit!, diagonal_step!, spawn!
 using Rimu.StochasticStyles:
     Exact, SingleSpawn, WithReplacement, WithoutReplacement, Bernoulli,
-    DynamicSemistochastic, IsStochastic2Pop
+    DynamicSemistochastic
 
 @testset "default_style" begin
     default_style_of_typeof(x) = default_style(typeof(x))
     @test default_style_of_typeof(1) == IsStochasticInteger{Int}()
     @test default_style_of_typeof(1.0) == IsDeterministic{Float64}()
     @test default_style_of_typeof(1.0f0) == IsDeterministic{Float32}()
-    @test default_style_of_typeof(1im) == IsStochastic2Pop{Complex{Int}}()
+    @test default_style_of_typeof(1im) isa StyleUnknown
     @test default_style_of_typeof(1.0 + 1im) == IsDeterministic{ComplexF64}()
     @test default_style_of_typeof([1.0f0 + 1im, 1.0f0 + 1im]) isa StyleUnknown
+end
+@testset "StochasticStyles interface defaults" begin
+    address = BoseFS(1,2,3)
+    dv = DVec(address => 1 + im)
+    @test StochasticStyle(dv) isa StyleUnknown
+    @test_throws ArgumentError step_stats(dv)
+    h = HubbardReal1D(address)
+    @test_throws ArgumentError apply_column!(dv, operator_column(h, address), 1)
 end
 @testset "Generic Hamiltonian-free functions" begin
     matrix = [1 2 3; 4 5 6; 7 8 9]
@@ -91,6 +99,7 @@ end
     end
 end
 
+transition_op(H, shift, time_step) = I + time_step * (shift*I - H)
 @testset "diagonal_step!" begin
     add = BoseFS((1,1,1))
     H = HubbardReal1D(add)
@@ -103,7 +112,7 @@ end
         # clones
         for _ in 1:20
             dv = DVec(add => 0)
-            T = Rimu.FirstOrderTransitionOperator(H, 10, 0.5)
+            T = transition_op(H, 10, 0.5)
             st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1, 0)
             @test st[1] == 4 || st[1] == 5
             @test dv[BoseFS((2,0,1))] == st[1] + 1 # original value + clones
@@ -111,7 +120,7 @@ end
         # deaths
         for _ in 1:20
             dv = DVec(BoseFS((2,0,1)) => 0)
-            T = Rimu.FirstOrderTransitionOperator(H, -1.0, 0.125)
+            T = transition_op(H, -1.0, 0.125)
             st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 2, 0)
             @test st[2] == 0 || st[2] == 1
             @test dv[BoseFS((2,0,1))] == 2 - st[2] # original value - deaths
@@ -119,7 +128,7 @@ end
         # zombies
         for _ in 1:20
             dv = DVec(BoseFS((2,0,1)) => 0)
-            T = Rimu.FirstOrderTransitionOperator(H, -10, 0.5)
+            T = transition_op(H, -10, 0.5)
             st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1, 0)
             @test st[2] == 1
             @test st[3] == 4 || st[3] == 5
@@ -129,24 +138,24 @@ end
     @testset "Exact" begin
         # nothing happens - one annihilation
         dv = DVec(add => -1.0)
-        T = Rimu.FirstOrderTransitionOperator(H, 0, 1)
+        T = transition_op(H, 0, 1)
         @test diagonal_step!(dv, operator_column(T, add), 1.0, 0) == (0, 0, 0)
         @test dv[add] == 0
         # clones
         dv = DVec(add => 0.0)
-        T = Rimu.FirstOrderTransitionOperator(H, 10, 1)
+        T = transition_op(H, 10, 1)
         st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 2.5, 0)
         @test st[1] == 22.5
         @test dv[BoseFS((2,0,1))] == 25.0
         # deaths
         dv = DVec(add => 0.0)
-        T = Rimu.FirstOrderTransitionOperator(H, -0.5, 0.5)
+        T = transition_op(H, -0.5, 0.5)
         st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1.0, 0)
         @test st[2] == 0.75
         @test dv[BoseFS((2,0,1))] == 0.25
         # zombies
         dv = DVec(add => 0.0)
-        T = Rimu.FirstOrderTransitionOperator(H, -10, 0.5)
+        T = transition_op(H, -10, 0.5)
         st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1.0, 0)
         @test st[2] == 1
         @test st[3] == 4.5
@@ -163,21 +172,21 @@ end
 
         # clones - above projection threshold
         dv = DVec(add => 0.0)
-        T = Rimu.FirstOrderTransitionOperator(H, 10, 0.5)
+        T = transition_op(H, 10, 0.5)
         st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1, 1)
         @test st[1] == 4.5
         @test dv[BoseFS((2,0,1))] == 5.5
         # deaths - below threshold
         for _ in 1:20
             dv = DVec(add => 0.0)
-            T = Rimu.FirstOrderTransitionOperator(H, -0.5, 0.5)
+            T = transition_op(H, -0.5, 0.5)
             st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1.0, 1)
             @test st[2] == 0.0 || st[2] == 1.0
             @test dv[BoseFS((2,0,1))] == 1 - st[2]
         end
         # zombies
         dv = DVec(add => 0.0)
-        T = Rimu.FirstOrderTransitionOperator(H, -10, 0.5)
+        T = transition_op(H, -10, 0.5)
         st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1, 1)
         @test st[2] == 1
         @test st[3] == 4.5
@@ -189,14 +198,14 @@ end
     add = BoseFS((1,1,1))
     H = HubbardReal1D(add)
     col = operator_column(H, add)
-    
+
     # column => value should fall back to same result as add => value
     dv1 = DVec(add => 1.0)
     dv2 = DVec(add => 1.0)
-    
+
     deposit!(dv1, add, 2.0, add => 1.0)   # default address => value
-    deposit!(dv2, add, 2.0, col => 1.0)   # column => value 
-    
+    deposit!(dv2, add, 2.0, col => 1.0)   # column => value
+
     @test dv1 == dv2
 end
 

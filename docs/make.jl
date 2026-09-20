@@ -1,6 +1,7 @@
-using Documenter
+using Documenter, DocumenterCodeBlocks
 using Rimu
 using Literate
+using Changelog
 
 EXAMPLES_INPUT = joinpath(@__DIR__, "../scripts")
 EXAMPLES_OUTPUT = joinpath(@__DIR__, "src/generated")
@@ -28,6 +29,13 @@ function parse_header(filename::String)
         return 100, "BAD_EXAMPLE"
     end
 end
+mkpath(EXAMPLES_OUTPUT)
+Changelog.generate(
+    Changelog.Documenter(),
+    joinpath(@__DIR__, "../CHANGELOG.md"),
+    joinpath(EXAMPLES_OUTPUT, "CHANGELOG.md");
+    repo = "RimuQMC/Rimu.jl",
+)
 
 for fn in EXAMPLES_FILES
     fnmd_full = Literate.markdown(
@@ -46,11 +54,13 @@ makedocs(;
     ],
     format=Documenter.HTML(
         prettyurls = false,
+        edit_link = "develop",
         size_threshold=700_000, # 700 kB
         size_threshold_warn=200_000, # 200 kB
     ),
     pages=[
         "Guide" => "index.md",
+        "Change log" => "generated/CHANGELOG.md",
         "Examples" => EXAMPLES_PAIRS[sortperm(EXAMPLES_NUMS)],
         "User documentation" => [
             "Exact Diagonalization" => "exactdiagonalization.md",
@@ -76,6 +86,7 @@ makedocs(;
     checkdocs=:exports,
     doctest=false, # Doctests are done while testing.
     # warnonly = true, # should be disabled for a release
+    plugins = [CodeBlocks()],
 )
 
 deploydocs(

@@ -61,52 +61,6 @@ function _determine_initial_shift(hamiltonian, starting_vectors)
 end
 
 """
-    FirstOrderTransitionOperator(hamiltonian, shift, time_step) <: AbstractHamiltonian
-    FirstOrderTransitionOperator(sp::DefaultShiftParameters, hamiltonian)
-
-First order transition operator
-```math
-𝐓 = 1 + dτ(S - 𝐇)
-```
-where ``𝐇`` is the `hamiltonian`, ``dτ`` the `time_step` and ``S`` is the `shift`.
-
-``𝐓`` represents the first order expansion of the exponential evolution operator
-of the imaginary-time Schrödinger equation (Euler step) and repeated application
-will project out the ground state eigenvector of the `hamiltonian`.  It is the
-transition operator used in [`FCIQMC`](@ref).
-"""
-struct FirstOrderTransitionOperator{
-    T,S,H<:AbstractHamiltonian{T}
-} <: Hamiltonians.ModifiedHamiltonian{T}
-    hamiltonian::H
-    shift::S
-    time_step::Float64
-end
-function FirstOrderTransitionOperator(hamiltonian::H, shift::S, time_step) where {H,S}
-    T = eltype(H)
-    return FirstOrderTransitionOperator{T,S,H}(hamiltonian, shift, Float64(time_step))
-end
-function FirstOrderTransitionOperator(sp::DefaultShiftParameters, hamiltonian)
-    return FirstOrderTransitionOperator(hamiltonian, sp.shift, sp.time_step)
-end
-
-function Hamiltonians.parent_operator(op::FirstOrderTransitionOperator)
-    return op.hamiltonian
-end
-function Hamiltonians.modify_offdiagonal(op::FirstOrderTransitionOperator, _, addr, value)
-    return addr => -op.time_step * value
-end
-function Hamiltonians.modify_diagonal(op::FirstOrderTransitionOperator, _, value)
-    return 1 - op.time_step * (value - op.shift)
-end
-function Hamiltonians.LOStructure(op::FirstOrderTransitionOperator)
-    return LOStructure(op.hamiltonian)
-end
-function Base.adjoint(op::FirstOrderTransitionOperator)
-    return FirstOrderTransitionOperator(adjoint(op.hamiltonian), op.shift, op.time_step)
-end
-
-"""
     advance!(algorithm::PMCAlgorithm, report::Report, state::ReplicaState, s_state::SingleState)
 
 Advance the `s_state` by one step according to the `algorithm`. The `state` is used only to
@@ -128,7 +82,7 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
 
     ### PROPAGATOR ACTS
     ### FROM HERE
-    transition_op = FirstOrderTransitionOperator(shift_parameters, hamiltonian)
+    transition_op = I + time_step * (shift*I - hamiltonian)
 
     # Step
     step_stat_names, step_stat_values, wm, pv = apply_operator!(wm, pv, v, transition_op)

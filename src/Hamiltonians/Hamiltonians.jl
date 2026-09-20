@@ -20,9 +20,12 @@ Harmonic oscillator models
 - [`HOCartesianCentralImpurity`](@ref)
 
 Other
-- [`FroehlichPolaron`](@ref)
+- [`FroehlichPolaron1D`](@ref)
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
+- [`HamiltonianProduct`](@ref)
+- [`FroehlichPolaron`](@ref)
+
 - [`MolecularHamiltonian`](@ref)
 
 ## [Wrappers](#Hamiltonian-wrappers)
@@ -32,8 +35,12 @@ Other
 - [`TimeReversalSymmetry`](@ref)
 - [`Stoquastic`](@ref)
 - [`HamiltonianProduct`](@ref)
-- [`ScaledHamiltonian`](@ref)
 - [`HamiltonianSum`](@ref)
+
+## [Linear combination helpers](#Linear-combination-helpers)
+- [`add`](@ref)
+- [`+`](@ref)
+- [`scale`](@ref)
 
 ## [Observables](#Observables)
 - [`ParticleNumberOperator`](@ref)
@@ -45,6 +52,7 @@ Other
 - [`TwoParticleExcitation`](@ref)
 - [`Momentum`](@ref)
 - [`AxialAngularMomentumHO`](@ref)
+- [`SignCorrelator`](@ref)
 
 ## [Interface for working with Hamiltonians](#Hamiltonians-interface)
 - [`AbstractHamiltonian`](@ref): defined in the module [`Interfaces`](@ref)
@@ -71,7 +79,7 @@ using VectorInterface: add, scale
 using ..BitStringAddresses
 import ..BitStringAddresses: ModeMap, FermiFS2CModes, full_mode_maps
 using ..Interfaces
-using ..Interfaces: sum_mutating!
+using ..Interfaces: sum_mutating!, num_modes_check_equal, num_modes
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
     offdiagonals, random_offdiagonal, LOStructure, allows_address_type, operator_column,
     undo_transform, has_random_offdiagonal, has_iterable_offdiagonals, parent_operator
@@ -80,7 +88,8 @@ export dimension, rayleigh_quotient, momentum
 
 export IdentityOperator
 export MatrixHamiltonian
-export HubbardReal1D, HubbardMom1D, ExtendedHubbardReal1D, ExtendedHubbardMom1D, HubbardRealSpace
+export HubbardReal1D, HubbardMom1D, ExtendedHubbardReal1D, ExtendedHubbardMom1D
+export HubbardMomSpace, HubbardRealSpace
 export HubbardReal1DEP, shift_lattice, shift_lattice_inv
 export HubbardMom1DEP
 export GutzwillerSampling, GuidingVectorSampling
@@ -89,6 +98,7 @@ export TimeReversalSymmetry
 export Stoquastic
 export Transcorrelated1D
 export hubbard_dispersion, continuum_dispersion
+export FroehlichPolaron1D
 export FroehlichPolaron
 export ParticleNumberOperator
 
@@ -99,6 +109,7 @@ export SingleParticleExcitation, TwoParticleExcitation, ReducedDensityMatrix
 export TestOneParticleDensity, TestOneParticleDensityGradient, TestTwoParticleDensity,
     TestTwoParticleDensityGradient
 export StringCorrelator, G2MomCorrelator
+export StringCorrelator, G2MomCorrelator, SignCorrelator
 
 export CubicGrid, PeriodicBoundaries, HardwallBoundaries, LadderBoundaries
 
@@ -106,8 +117,8 @@ export HOCartesianContactInteractions, HOCartesianEnergyConservedPerDim, HOCarte
 export AxialAngularMomentumHO
 export get_all_blocks, fock_to_cart
 
-export HamiltonianProduct, ScaledHamiltonian
-export HamiltonianSum
+export ModifiedHamiltonian
+export HamiltonianProduct, HamiltonianSum
 
 @public vertices, index
 
@@ -118,6 +129,8 @@ if VERSION < v"1.10"
         return Hermitian(A)
     end
 end
+
+const FermiOrHardcoreBoseFS{N,M,S} = Union{FermiFS{N,M,S},HardcoreBoseFS{N,M,S}}
 
 include("abstract.jl")
 include("offdiagonals.jl")
@@ -132,9 +145,12 @@ include("ExtendedHubbardMom1D.jl")
 include("HubbardMom1D.jl")
 include("HubbardMom1DEP.jl")
 include("HubbardRealSpace.jl")
+include("HubbardMomSpace.jl")
 include("ExtendedHubbardReal1D.jl")
 
+include("FroehlichPolaron1D.jl")
 include("FroehlichPolaron.jl")
+
 
 include("Transcorrelated1D.jl")
 

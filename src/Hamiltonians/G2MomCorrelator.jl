@@ -38,7 +38,7 @@ function G2MomCorrelator(d::Int)
 end
 
 function Rimu.Interfaces.allows_address_type(g2m::G2MomCorrelator, ::Type{A}) where {A}
-    return num_modes(A) > g2m.d && A <: SingleComponentFockAddress
+    return A <: SingleComponentFockAddress && num_modes_check_equal(A) > g2m.d
 end
 
 function Base.show(io::IO, g::G2MomCorrelator{3})

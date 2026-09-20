@@ -53,7 +53,7 @@ Q_{kl} &= -\\frac{v^2}{t M^2}k \\tilde{u}(k)\\,l\\tilde{u}(l),
 * [`HubbardMom1DEP`](@ref)
 """
 struct Transcorrelated1D{
-    M,F<:CompositeFS{2,<:Any,M,<:Tuple{FermiFS,FermiFS}}, # TODO: relax this to allow bosons
+    M,F<:FermiFS2C, # TODO: relax this to allow bosons
     P<:Union{Nothing,SVector{M,Float64}}
 } <: AbstractHamiltonian{Float64}
     address::F
@@ -70,7 +70,7 @@ struct Transcorrelated1D{
 end
 
 function Transcorrelated1D(address; t=1.0, v=1.0, v_ho=0.0, cutoff=1, three_body_term=true)
-    M = num_modes(address)
+    M = num_modes_check_equal(address)
     cutoff < 1 && throw(ArgumentError("`cutoff` must be a positive integer"))
     ks = SVector{M}(i_to_k.(1:M, M))
     kes = t .* ks.^2
@@ -307,7 +307,7 @@ function Base.getindex(od::Transcorrelated1DOffdiagonals, i)
     h = od.hamiltonian
     N1 = length(map1)
     N2 = length(map2)
-    M = num_modes(c1)
+    M = num_modes_check_equal(c1)
 
     n_mom = N1 * N2 * (M - 1)
     three_body_term = od.hamiltonian.three_body_term

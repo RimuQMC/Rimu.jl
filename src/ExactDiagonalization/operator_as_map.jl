@@ -82,7 +82,7 @@ function LinearMaps.LinearMap(
     full_basis::Bool=false,
 )
     if !isnothing(basis)
-        full_basis && @warn "`basis` and `full_basis` given. Ignorning `full_basis`."
+        full_basis && @warn "`basis` and `full_basis` given. Ignoring `full_basis`."
     elseif full_basis
         basis = build_basis(starting_address)
     else

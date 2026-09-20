@@ -5,7 +5,7 @@ Provides convenience functions:
 * [`RimuIO.save_df(filename, df::DataFrame)`](@ref) Save dataframe in Arrow format.
 * [`RimuIO.load_df(filename)`](@ref) Load Arrow file into dataframe.
 * [`RimuIO.save_state(filename, vector; metadata...)`](@ref) Save a vector and
-  optinal metadata in Arrow format.
+  optional metadata in Arrow format.
 * [`RimuIO.load_state(filename)`](@ref) Load a file created by `save_state`.
 """
 module RimuIO
@@ -15,7 +15,7 @@ using StaticArrays: StaticArrays, SVector
 
 using Rimu: mpi_size, mpi_rank, mpi_barrier
 using Rimu.BitStringAddresses: BitStringAddresses, BitString, BoseFS,
-    CompositeFS, OccupationNumberFS, FermiFS, SortedParticleList,
+    CompositeFS, FermiFS, SortedParticleList, HardcoreBoseFS,
     num_modes, num_particles
 using Rimu.DictVectors: PDVec, DVec, target_segment
 using Rimu.Interfaces: Interfaces, localpart, storage

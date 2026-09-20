@@ -36,13 +36,18 @@ end
         near_uniform(BoseFS{10, 10}),
         BoseFS(101, 5 => 10),
         FermiFS(1,1,1,0,0,0),
+        HardcoreBoseFS(1, 1, 1, 0, 0, 0),
+        HardcoreBoseFS{missing}(1, 1, 1, 0, 0, 0),
+        FermiFS{missing}(1, 1, 1, 0, 0, 0),
         FermiFS2C(near_uniform(FermiFS{50,100}), FermiFS(100, 1 => 1)),
+        FermiFS2C{missing}((1,0,1),(0,0,0)),
         CompositeFS(near_uniform(BoseFS{8,9}), near_uniform(BoseFS{1,9})),
-        OccupationNumberFS(1,2,3,4,5),
+        BoseFS{missing}(1,2,3,4,5),
+        BoseFS{missing}(1,300,0),
         CompositeFS(
             BoseFS(1,1,1,1,1),
             FermiFS(1,0,0,0,0),
-            OccupationNumberFS(5,4,3,2,1),
+            BoseFS{missing}(5,4,3,2,1),
             BoseFS(1,1,0,0,0),
             FermiFS(1,1,1,0,0),
         ),
@@ -131,6 +136,12 @@ end
             @test load_state(PDVec, file)[1] == pdvec
             @test load_state(DVec, file)[1] isa DVec
             @test load_state(DVec, file)[1] == pdvec
+
+            # Regression test: loading from Arrow-backed columns should be stable
+            # across repeated calls (no intermittent TaskFailed exceptions).
+            for _ in 1:20
+                @test load_state(PDVec, file)[1] == pdvec
+            end
             rm(file)
         end
 

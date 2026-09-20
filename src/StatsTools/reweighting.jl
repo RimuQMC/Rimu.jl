@@ -117,7 +117,7 @@ see Eq. (20).
 `shift` and `wn` are equal length vectors containing the shift and walker number time
 series, respectively.  Reweighting is done over `h` time steps and `length(shift) - skip`
 time steps are used for the blocking analysis done with [`ratio_of_means`](@ref).
-`weights` is a function that calulates the weights. See [`w_exp`](@ref) and
+`weights` is a function that calculates the weights. See [`w_exp`](@ref) and
 [`w_lin`](@ref).
 ```math
 E_{gr} = E_r - \\frac{1}{dτ}\\ln
@@ -326,7 +326,7 @@ where the time series `hproj ==` ``(Ĥ'\\mathbf{v})⋅\\mathbf{c}^{(n)}`` and `
 [`ProjectedEnergy`](@ref Main.ProjectedEnergy) on how to set these up).  Reweighting is done
 over `h` time steps and `length(shift) - skip` time steps are used for the blocking analysis
 done with [`ratio_of_means`](@ref). `weights` is a function that
-calulates the weights. See [`w_exp`](@ref) and [`w_lin`](@ref).  Additional keyword
+calculates the weights. See [`w_exp`](@ref) and [`w_lin`](@ref).  Additional keyword
 arguments are passed on to [`ratio_of_means`](@ref).
 
 When `h` is greater than the autocorrelation time scale of the `shift`, then `r.ratio` is an
@@ -516,7 +516,7 @@ described in [Umrigar *et al.* (1993)](http://dx.doi.org/10.1063/1.465195).
 Reweighting is done over `h` time steps and `length(shift) - skip` time steps are used
 for the blocking analysis done with [`ratio_of_means`](@ref).
 `weights` is a function that
-calulates the weights. See [`w_exp`](@ref) and [`w_lin`](@ref).
+calculates the weights. See [`w_exp`](@ref) and [`w_lin`](@ref).
 Additional keyword arguments are passed on to [`ratio_of_means`](@ref).
 
 Error propagation is done with

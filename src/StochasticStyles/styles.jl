@@ -33,7 +33,9 @@ walkers.
 When using this style, make sure to set a complex number as target walkers in the
 [`ShiftStrategy`](@ref Main.ShiftStrategy)!
 
-This style is experimental.
+!!! warning
+    This style is experimental and may not be fully supported. It is not recommended for
+    production use and may be removed in the future.
 
 See also [`StochasticStyle`](@ref).
 """
@@ -215,4 +217,4 @@ end
 default_style(::Type{T}) where {T<:Integer} = IsStochasticInteger{T}()
 default_style(::Type{T}) where {T<:AbstractFloat} = IsDeterministic{T}()
 default_style(::Type{T}) where {T<:Complex{<:AbstractFloat}} = IsDeterministic{T}()
-default_style(::Type{T}) where {T<:Complex{<:Integer}} = IsStochastic2Pop{T}()
+# default_style(::Type{T}) where {T<:Complex{<:Integer}} = IsStochastic2Pop{T}()

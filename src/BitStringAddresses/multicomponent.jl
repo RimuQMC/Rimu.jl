@@ -1,37 +1,81 @@
 """
     CompositeFS(addresses::SingleComponentFockAddress...) <: AbstractFockAddress
 
-Used to encode addresses for multi-component models. All component addresses
-are expected to have the same number of modes.
+Address type used to encode addresses for multi-component models or spinor quantum
+particles.
 
-See also: [`BoseFS`](@ref), [`FermiFS`](@ref), [`SingleComponentFockAddress`](@ref),
-[`num_modes`](@ref), [`FermiFS2C`](@ref), [`AbstractFockAddress`](@ref).
+## Examples
+```jldoctest
+julia> c1 = CompositeFS(FermiFS(1,0,0), FermiFS(1,1,0), BoseFS{missing}(0,0))
+CompositeFS(
+  FermiFS(1, 0, 0),
+  FermiFS(1, 1, 0),
+  BoseFS{missing}(0, 0),
+)
+
+julia> num_components(c1)
+3
+
+julia> num_modes(c1)
+(3, 3, 2)
+
+julia> fs"|↑⋅⋅⟩ ⊗ |↑↑⋅⟩ ⊗ |0 0⟩{}" == c1 # compact representation for printing
+true
+
+julia> FermiFS2C{missing}((1,1,0), (1,0,1)) # special case for spin-1/2 fermions
+CompositeFS(
+  FermiFS{missing}(1, 1, 0),
+  FermiFS{missing}(1, 0, 1),
+)
+```
+See also: [`FermiFS2C`](@ref), [`BoseFS`](@ref), [`FermiFS`](@ref),
+[`num_components`](@ref), [`num_modes`](@ref),
+[`num_modes_are_equal`](@ref Rimu.Interfaces.num_modes_are_equal),
+[`num_modes_check_equal`](@ref), [`num_particles`](@ref),
+[`maximum_mode_occupation`](@ref Rimu.Interfaces.maximum_mode_occupation), [`@fs_str`](@ref),
+[`SingleComponentFockAddress`](@ref), [`AbstractFockAddress`](@ref).
 """
-struct CompositeFS{C,N,M,T} <: AbstractFockAddress{N,M}
+struct CompositeFS{C,N,T} <: AbstractFockAddress
     components::T
-    # C: components, N: total particles, M: modes in each component, T: tuple type with constituent address types
-    function CompositeFS{C,N,M,T}(adds::T) where {C,N,M,T}
-        return new{C,N,M,T}(adds)
+    # C: components, N: total particles, T: tuple type with constituent address types
+    function CompositeFS{C,N,T}(adds::T) where {C,N,T}
+        return new{C,N,T}(adds)
     end
-    function CompositeFS{C,N,M,T}(adds...) where {C,N,M,T}
-        return new{C,N,M,T}(adds)
+    function CompositeFS{C,N,T}(adds...) where {C,N,T}
+        return new{C,N,T}(adds)
     end
 end
 
-# Slow constructor - not to be used internallly
+# Slow constructor - not to be used internally
 function CompositeFS(adds::Vararg{SingleComponentFockAddress})
     N = sum(a -> num_particles(typeof(a)), adds)
-    M1, M2 = extrema(num_modes, adds)
-    if M1 ≠ M2
-        throw(ArgumentError("all addresses must have the same number of modes"))
-    end
-    return CompositeFS{length(adds),N,M1,typeof(adds)}(adds)
+    return CompositeFS{length(adds),N,typeof(adds)}(adds)
+end
+Interfaces.num_particles(::Type{<:CompositeFS{<:Any,N}}) where {N} = N
+function Interfaces.num_particles(cfs::CompositeFS{<:Any,missing})
+    sum(num_particles, cfs.components)
+end # only required for missing, as the fallback for others is defined in the abstract type
+
+function Interfaces.maximum_mode_occupation(::Type{<:CompositeFS{C,N,T}}) where {C,N,T}
+    Interfaces.maximum_mode_occupation.(fieldtypes(T))
 end
 
 Interfaces.num_components(::Type{<:CompositeFS{C}}) where {C} = C
+Interfaces.num_modes(::Type{<:CompositeFS{C,N,T}}) where {C,N,T} = num_modes.(fieldtypes(T))
+function Interfaces.num_modes_are_equal(A::Type{<:CompositeFS})
+    t = num_modes(A)::Tuple
+    return allequal(t)
+end
+function Interfaces.num_modes_check_equal(A::Type{<:CompositeFS})
+    t = num_modes(A)::Tuple
+    if !allequal(t)
+        throw(ArgumentError("Components of CompositeFS must have the same number of modes. Got: $t"))
+    end
+    return first(t)
+end
 Base.hash(c::CompositeFS, u::UInt) = hash(c.components, u)
 
-function print_address(io::IO, c::CompositeFS{C}; compact=false) where {C}
+function print_address(io::IO, c::CompositeFS; compact=false)
     if compact
         for add in c.components[1:end-1]
             print_address(io, add; compact)
@@ -57,8 +101,8 @@ Apply the time-reversal operation on a two-component Fock address that flips all
 
 Requires each component address to have the same type.
 """
-function time_reverse(c::CompositeFS{2,N,M,T}) where {N, M, T <: NTuple{2}}
-    return CompositeFS{2,N,M,T}(reverse(c.components))
+function time_reverse(c::CompositeFS{2,N,T}) where {N, T <: NTuple{2}}
+    return CompositeFS{2,N,T}(reverse(c.components))
 end
 
 """
@@ -86,12 +130,17 @@ end
 """
     FermiFS2C <: AbstractFockAddress
     FermiFS2C(onr_a, onr_b)
+    FermiFS2C{missing}(onr_a, onr_b)
 
 Fock state address with two fermionic (spin) components. Alias for [`CompositeFS`](@ref)
-with two [`FermiFS`](@ref) components. Construct by specifying either two compatible
-[`FermiFS`](@ref)s, two [`onr`](@ref)s, or the number of modes followed by `mode =>
-occupation_number` pairs, where `occupation_number=1` will put a particle in the first
-component and `occupation_number=-1` will put a particle in the second component.
+with two [`FermiFS`](@ref) components. If the type parameter `missing` is specified, the
+number of particles is not known at compile time. This is useful for spinful fermionic
+systems where the number of particles in each spin channel may vary.
+
+Construct by specifying either two compatible [`FermiFS`](@ref)s, two [`onr`](@ref)s, or
+the number of modes followed by `mode => occupation_number` pairs, where
+`occupation_number = 1` will put a particle in the first
+component and `occupation_number = -1` will put a particle in the second component.
 See examples below.
 
 # Examples
@@ -99,39 +148,67 @@ See examples below.
 ```jldoctest
 julia> FermiFS2C(FermiFS(1,0,0), FermiFS(0,1,1))
 CompositeFS(
-  FermiFS{1,3}(1, 0, 0),
-  FermiFS{2,3}(0, 1, 1),
+  FermiFS(1, 0, 0),
+  FermiFS(0, 1, 1),
 )
 
 julia> FermiFS2C((1,0,0), (0,1,1))
 CompositeFS(
-  FermiFS{1,3}(1, 0, 0),
-  FermiFS{2,3}(0, 1, 1),
+  FermiFS(1, 0, 0),
+  FermiFS(0, 1, 1),
 )
 
-julia> FermiFS2C(3, 1 => 1, 2 => -1, 3 => -1)
+julia> FermiFS2C{missing}((1,0,0), (0,1,1)) # number non-conserving, spin flips allowed
 CompositeFS(
-  FermiFS{1,3}(1, 0, 0),
-  FermiFS{2,3}(0, 1, 1),
+  FermiFS{missing}(1, 0, 0),
+  FermiFS{missing}(0, 1, 1),
 )
 
-julia> fs"|↑↓↓⟩"
+julia> FermiFS2C{missing}(3, 1 => 1, 2 => -1, 3 => -1)
 CompositeFS(
-  FermiFS{1,3}(1, 0, 0),
-  FermiFS{2,3}(0, 1, 1),
+  FermiFS{missing}(1, 0, 0),
+  FermiFS{missing}(0, 1, 1),
+)
+
+julia> fs"|↑↓↓⟩" # \\uparrow(tab) -> ↑, \\downarrow(tab) -> ↓, \\rangle(tab) -> ⟩
+CompositeFS(
+  FermiFS(1, 0, 0),
+  FermiFS(0, 1, 1),
+)
+
+julia> fs"|↑↓↓⇅⟩{}" # \\dblarrowupdown(tab) -> ⇅
+CompositeFS(
+  FermiFS{missing}(1, 0, 0, 1),
+  FermiFS{missing}(0, 1, 1, 1),
 )
 ```
-"""
-const FermiFS2C{N1,N2,M,N,F1,F2} =
-    CompositeFS{2,N,M,Tuple{F1,F2}} where {F1<:FermiFS{N1,M},F2<:FermiFS{N2,M}}
 
-FermiFS2C(f1::FermiFS{<:Any,M}, f2::FermiFS{<:Any,M}) where {M} = CompositeFS(f1, f2)
+See also: [`CompositeFS`](@ref), [`FermiFS`](@ref), [`@fs_str`](@ref).
+"""
+const FermiFS2C{N,M,F1,F2} =
+    CompositeFS{2,N,Tuple{F1,F2}} where {
+        F1<:FermiFS{<:Any,M},
+        F2<:FermiFS{<:Any,M}
+    }
+
+function FermiFS2C(f1::FermiFS, f2::FermiFS)
+    cfs = CompositeFS(f1, f2)
+    num_modes_check_equal(cfs) # ensure both components have the same number of modes
+    return cfs
+end
 FermiFS2C(onr_a, onr_b) = FermiFS2C(FermiFS(onr_a), FermiFS(onr_b))
+FermiFS2C{missing}(onr_a, onr_b) = FermiFS2C(FermiFS{missing}(onr_a), FermiFS{missing}(onr_b))
 FermiFS2C(M::Integer, pairs::Pair...) = FermiFS2C(M, pairs)
+FermiFS2C{missing}(M::Integer, pairs::Pair...) = FermiFS2C{missing}(M, pairs)
 function FermiFS2C(M::Integer, pairs)
     up_pairs = filter(p -> p[2] > 0, pairs)
     down_pairs = map(p -> p[1] => -p[2], filter(p -> p[2] < 0, pairs))
     return FermiFS2C(FermiFS(M, up_pairs), FermiFS(M, down_pairs))
+end
+function FermiFS2C{missing}(M::Integer, pairs)
+    up_pairs = filter(p -> p[2] > 0, pairs)
+    down_pairs = map(p -> p[1] => -p[2], filter(p -> p[2] < 0, pairs))
+    return FermiFS2C(FermiFS{missing}(M, up_pairs), FermiFS{missing}(M, down_pairs))
 end
 
 function print_address(io::IO, f::FermiFS2C; compact=false)
@@ -140,7 +217,15 @@ function print_address(io::IO, f::FermiFS2C; compact=false)
         str = join(
             [i && j ? '⇅' : i ? '↑' : j ? '↓' : '⋅' for (i, j) in zip(Bool.(o1), Bool.(o2))]
         )
-        print(io, "|", str, "⟩")
+        if ismissing(num_particles(typeof(f)))
+            if ismissing(num_particles(typeof(f.components[1]))) && ismissing(num_particles(typeof(f.components[2])))
+                print(io, "|", str, "⟩{}")
+            else
+                invoke(print_address, Tuple{typeof(io),CompositeFS}, io, f; compact=true)
+            end
+        else
+            print(io, "|", str, "⟩")
+        end
     else
         # Show as normal CompositeFS
         invoke(print_address, Tuple{typeof(io),CompositeFS}, io, f)
@@ -150,20 +235,20 @@ end
 """
     FermiFS2CModes
 
-This struct stores the occupied and unoccupied mode maps associated with an 
-address of type [`FermiFS2C`](@ref). It should be constructed using the 
-[`full_mode_maps`](@ref) function.  
+This struct stores the occupied and unoccupied mode maps associated with an
+address of type [`FermiFS2C`](@ref). It should be constructed using the
+[`full_mode_maps`](@ref) function.
 
-The struct has two fields, `occupied` and `unoccupied`, each containing a 
-`ModeMap` represented as a two-element `Tuple`:  
+The struct has two fields, `occupied` and `unoccupied`, each containing a
+`ModeMap` represented as a two-element `Tuple`:
 
 - Index `1` corresponds to the α spin channel
 - Index `2` corresponds to the β spin channel
 
 This convention follows the spin-channel indexing defined in [`FermiFS2C`](@ref).
 
-See also 
-[`FermiFS2C`](@ref), [`ModeMap`](@ref), [`occupied_mode_map`](@ref), 
+See also
+[`FermiFS2C`](@ref), [`ModeMap`](@ref), [`occupied_mode_map`](@ref),
 and [`unoccupied_mode_map`](@ref).
 """
 struct FermiFS2CModes{TI<:FermiFSIndex,OA,OB,UA,UB}

@@ -10,10 +10,27 @@ on:
       - '*'
 
 jobs:
-  build:
+  changelog:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v3
+      - name: Check that CHANGELOG.md links are up to date
+        run: |
+          julia --project=docs/ -e 'using Pkg; Pkg.instantiate()'
+          julia --project=docs/ -e 'using Changelog; Changelog.generate(Changelog.CommonMark(), "CHANGELOG.md"; repo="RimuQMC/Rimu.jl")'
+          git diff --exit-code CHANGELOG.md || (echo "::error::CHANGELOG.md links are out of date. Run 'make changelog' and commit the result." && exit 1)
+
+  build:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: documentation-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
         with:
           version: '1'

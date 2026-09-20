@@ -3,7 +3,7 @@
 
 [`CompressionStrategy`](@ref) that compresses a vector by threshold projection. Every entry
 in the vector with a value below the threshold is either set to zero, or increased to the
-threshold. The probabilty of setting it to zero is equal to `abs(value) / threshold`.
+threshold. The probability of setting it to zero is equal to `abs(value) / threshold`.
 """
 struct ThresholdCompression{T} <: CompressionStrategy
     threshold::T

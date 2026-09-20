@@ -6,8 +6,7 @@ Return all possible Fock states of a given type as a vector. This method is _muc
 than `build_basis(::AbstractHamiltonian, ...)`, but does not take matrix blocking into
 account. This version of `build_basis` accepts no additional arguments.
 
-All address types except [`OccupationNumberFS`](@ref Main.Rimu.OccupationNumberFS) are
-supported.
+All address types are supported.
 
 Returns a sorted vector of length equal to the [`dimension`](@ref) of `addr`.
 
@@ -90,15 +89,15 @@ end
 end
 
 ###
-### FermiFS
+### FermiFS or HardcoreBoseFS
 ###
 # The algorithm is similar to the BoseFS one.
 
 # this is equivalent to `dimension(FermiFS{n,m})`, but does not return a `BigInt`.
 _fermi_dimension(n, m) = binomial(m, n)
 
-function build_basis(::Type{<:FermiFS{N,M}}) where {N,M}
-    T = typeof(near_uniform(FermiFS{N,M}))
+function build_basis(::Type{AT}) where {N, M, AT<:FermiOrHardcoreBoseFS{N,M}}
+    T = typeof(near_uniform(AT))
     result = Vector{T}(undef, _fermi_dimension(N, M))
     _fermi_basis!(result, (), 1, N, Val(M), 2 * Threads.nthreads())
     return result
@@ -144,10 +143,19 @@ end
 end
 
 ###
+### FermiFS or HardcoreBoseFS with missing N
+###
+function build_basis(::Type{AT}) where {M, AT<:FermiOrHardcoreBoseFS{missing,M}}
+    M > 63 && throw(ArgumentError("Cannot build basis for type $AT with M=$M > 63"))
+    T = typeof(near_uniform(AT, 0, M))
+    return [T(BitString{M}(i)) for i in 0 : (UInt(1) << M) - 1]
+end
+
+###
 ### CompositeFS
 ###
-function build_basis(::Type{C}) where {T,C<:CompositeFS{<:Any,<:Any,<:Any,T}}
-    sub_results = map(build_basis, reverse(Tuple(T.parameters)))
+function build_basis(::Type{C}) where {T,C<:CompositeFS{<:Any,<:Any,T}}
+    sub_results = map(build_basis, reverse(Tuple(fieldtypes(T))))
     result = Vector{C}(undef, prod(length, sub_results))
     Threads.@threads for i in eachindex(result)
         @inbounds result[i] = C(_collect_addrs(sub_results, i))

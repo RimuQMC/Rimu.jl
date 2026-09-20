@@ -185,6 +185,11 @@ function test_dvec_interface(type; kwargs...)
                 @test iszero(inner(w, v))
                 @test iszero(inner(u, w))
             end
+            @testset "inner with non-scalar value" begin
+                v = DVec(fs"|0 5 1⟩" => 2.0)
+                w = empty(v, SVector{1,Float64})
+                @test inner(v, w) == [0]
+            end
             @testset "norm" begin
                 vector = rand(10)
                 u = type(zip(rand(Int, 10), vector); kwargs...)
@@ -266,11 +271,18 @@ function test_dvec_interface(type; kwargs...)
             fu = freeze(u)
             @test fu isa AbstractProjector
             @test inner(fu, u) ≈ inner(u, fu) ≈ sum(abs2, u)
+
+            hm = HubbardMom1D(BoseFS(1, 2, 0))
+            dvm = DVec(hm*starting_address(hm))
+            @test dot(UniformProjector(), hm, dvm) isa Float64
+            @test dot(UniformProjector(), hm, zero(dvm)) isa Float64
+            @test dot(UniformProjector(), momentum(hm), dvm) isa Float64 # no offdiagonals
+            @test dot(Norm2Projector(), momentum(hm), dvm) isa Float64 # fallback
         end
         @testset "StochasticStyle" begin
             @test StochasticStyle(type(:a => 1; kwargs...)) isa IsStochasticInteger{Int}
             @test StochasticStyle(type(:a => 1.5; kwargs...)) isa IsDeterministic
-            @test StochasticStyle(type(:a => 1 + 2im; kwargs...)) isa IsStochastic2Pop
+            @test StochasticStyle(type(:a => 1 + 2im; kwargs...)) isa StyleUnknown
             if type ≠ InitiatorDVec # matrix as val doesn't make sense
                 @test StochasticStyle(type(:a => SA[1 1; 1 1]; kwargs...)) isa StyleUnknown
             end

@@ -65,9 +65,7 @@ include("StatsTools/StatsTools.jl")
 
 export mpi_rank, is_mpi_root, @mpi_root, mpi_barrier
 export mpi_comm, mpi_root, mpi_size, mpi_seed!, mpi_allprintln
-export lomc!
 export default_starting_vector
-export FciqmcRunStrategy, RunTillLastStep
 export ShiftStrategy, LogUpdate, LogUpdateAfterTargetWalkers
 export DontUpdate, DoubleLogUpdate, DoubleLogUpdateAfterTargetWalkers
 export ReportingStrategy, ReportDFAndInfo, ReportToFile
@@ -90,7 +88,6 @@ function __init__()
     MPI.Initialized() || MPI.Init(threadlevel=:funneled)
 end
 
-include("strategies_and_params/fciqmcrunstrategy.jl")
 include("strategies_and_params/poststepstrategy.jl")
 include("strategies_and_params/replicastrategy.jl")
 include("strategies_and_params/reportingstrategy.jl")
@@ -105,8 +102,6 @@ include("strategies_and_params/stepaction.jl") # need ReplicaState
 
 include("fciqmc.jl")
 include("pmc_simulation.jl")
-
-include("lomc.jl")                  # top level
 
 include("InterfaceTests.jl")
 

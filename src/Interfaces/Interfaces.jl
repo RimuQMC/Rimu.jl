@@ -16,7 +16,7 @@ Follow the links for the definitions of the interfaces!
     [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem) as implemented in
     [`StochasticStyles`](@ref Main.StochasticStyles)
 * [`AbstractFockAddress`](@ref) for defining Fock states, see also
-    [`BitStringAddresses`](@ref Main.BitStringAddresses).
+    [`BitStringAddresses`](@ref Rimu.BitStringAddresses).
 
 # Additional exports
 
@@ -34,6 +34,7 @@ Follow the links for the definitions of the interfaces!
 * [`undo_transform`](@ref)
 * [`has_random_offdiagonal`](@ref)
 * [`has_iterable_offdiagonals`](@ref)
+* [`maximum_mode_occupation`](@ref)
 
 ## working with  [`AbstractDVec`](@ref)s and [`StochasticStyle`](@ref)
 * [`deposit!`](@ref)
@@ -57,6 +58,7 @@ Follow the links for the definitions of the interfaces!
 * [`num_particles`](@ref)
 * [`num_modes`](@ref)
 * [`num_components`](@ref)
+* [`maximum_mode_occupation`](@ref)
 """
 module Interfaces
 
@@ -67,7 +69,8 @@ using DataFrames: DataFrame, metadata
 import OrderedCollections: freeze
 
 export
-    AbstractFockAddress, num_particles, num_modes, num_components
+    AbstractFockAddress, num_particles, num_modes, num_components, num_modes_check_equal,
+    maximum_mode_occupation, num_modes_are_equal
 export
     StochasticStyle, default_style, StyleUnknown, apply_column!, step_stats,
     CompressionStrategy, NoCompression, compress!

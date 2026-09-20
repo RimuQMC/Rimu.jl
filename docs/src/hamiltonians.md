@@ -26,6 +26,7 @@ ExtendedHubbardReal1D
 ```@docs
 HubbardMom1D
 HubbardMom1DEP
+HubbardMomSpace
 ExtendedHubbardMom1D
 ```
 
@@ -40,6 +41,7 @@ HOCartesianCentralImpurity
 ```@docs
 MatrixHamiltonian
 Transcorrelated1D
+FroehlichPolaron1D
 FroehlichPolaron
 MolecularHamiltonian
 ```
@@ -65,8 +67,16 @@ TimeReversalSymmetry
 Stoquastic
 Hamiltonians.TransformUndoer
 HamiltonianProduct
-ScaledHamiltonian
 HamiltonianSum
+```
+
+## Linear combination helpers
+These public functions construct scaled and shifted Hamiltonians without exposing the
+underlying wrapper type directly:
+```@docs
+VectorInterface.add(::UniformScaling, ::AbstractHamiltonian, ::Number, ::Number)
+Base.:+(::AbstractHamiltonian, ::UniformScaling)
+VectorInterface.scale(::AbstractHamiltonian, ::Number)
 ```
 
 ## Observables
@@ -98,6 +108,7 @@ TestTwoParticleDensity
 TestTwoParticleDensityGradient
 Momentum
 AxialAngularMomentumHO
+SignCorrelator
 ```
 
 ## Geometry
@@ -122,9 +133,10 @@ Hamiltonians.vertices
 ```
 
 ## Additional documentation of internal functions
-The following internal functions and types are documented here for completeness, 
+The following internal functions and types are documented here for completeness,
 but are not part of the public API and may change any time. Use at your own risk.
 ```@docs
+Hamiltonians.ScaledOrShiftedHamiltonian
 Hamiltonians.one_electron_diagonal
 Hamiltonians.two_electron_diagonal
 Hamiltonians.MolecularHamiltonianOffDiagonals
