@@ -150,6 +150,9 @@ function test_operator_interface(op, addr;
             end
             if test_iterable_offdiagonals
                 @testset "offdiagonals" begin
+                    @test ismissing(num_offdiagonals(op)) ||
+                        num_offdiagonals(op) ≥ num_offdiagonals(op*addr)
+
                     offdiags = offdiagonals(column)
                     @test num_offdiagonals(column) isa Union{Int,BigInt}
                     @test num_offdiagonals(column) >= length(collect(offdiags))

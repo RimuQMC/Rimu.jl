@@ -98,19 +98,22 @@ Mandatory methods to implement:
 - [`allows_address_type(op, type)`](@ref)
 - [`operator_column(op, address)`](@ref)
 - [`diagonal_element(column)`](@ref)
-- [`num_offdiagonals(column)`](@ref) (this can be an upper bound)
-- [`offdiagonals(column)`](@ref) required for deterministic operations, see
-    [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals) below
+- [`num_offdiagonals(column)`](@ref) returns an upper bound on the number of off-diagonal
+  elements in the column. Defaults to calling `num_offdiagonals(parent_operator(column))`.
+- [`offdiagonals(column)`](@ref) is required for deterministic operations, see
+    [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals) below.
 
 Optional additional methods to implement:
-- [`VectorInterface.scalartype(ham)`](@ref): defaults to `eltype(eltype(ham))`
-- [`LOStructure(::Type{typeof(ham)})`](@ref LOStructure): defaults to `AdjointUnknown`
-- [`dimension(ham, addr)`](@ref Main.Hamiltonians.dimension): defaults to dimension of
-  address space
-- [`undo_transform(ham, op)`](@ref): the default implementation returns `op`.
+- [`num_offdiagonals(op::AbstractOperator)`](@ref) returns an upper bound on
+  the number of off-diagonal elements in any column. Defaults to `missing`.
+- [`VectorInterface.scalartype(ham)`](@ref): Defaults to `eltype(eltype(ham))`.
+- [`LOStructure(::Type{typeof(ham)})`](@ref LOStructure): Defaults to `AdjointUnknown`.
+- [`dimension(ham, addr)`](@ref Main.Hamiltonians.dimension): Defaults to dimension of
+  address space.
+- [`undo_transform(ham, op)`](@ref): The default implementation returns `op`.
 - [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals):
-  defaults to `true`
-- [`has_random_offdiagonal(::Type{typeof(op)})`](@ref has_random_offdiagonal): defaults to
+  Defaults to `true`.
+- [`has_random_offdiagonal(::Type{typeof(op)})`](@ref has_random_offdiagonal): Defaults to
   `false`. If this set to `true`, the method [`random_offdiagonal(column)`](@ref) needs to
   be implemented.
 
@@ -183,33 +186,33 @@ For available implementations see [`Hamiltonians`](@ref Main.Hamiltonians).
 Mandatory methods to implement:
 
 * [`starting_address(op::AbstractHamiltonian)`](@ref)
-* [`operator_column(op, address)`](@ref) returns an [`AbstractOperatorColumn`](@ref)
-* [`num_offdiagonals(op::AbstractHamiltonian)`](@ref) returns an upper bound on
-  the number of off-diagonal elements in any column
+* [`operator_column(op, address)`](@ref) returns an [`AbstractOperatorColumn`](@ref).
 
 [`AbstractOperatorColumn`](@ref) has its own interface methods:
-* [`parent_operator(column)`](@ref) returns the operator of the column
-* [`diagonal_element(column)`](@ref) returns the diagonal element of the column
+* [`parent_operator(column)`](@ref) returns the operator of the column.
+* [`diagonal_element(column)`](@ref) returns the diagonal element of the column.
 * [`offdiagonals(column)`](@ref) returns an object representing the off-diagonal elements
-    of the column
-* [`random_offdiagonal(column)`](@ref) returns a random off-diagonal element in the column
+    of the column.
+* [`random_offdiagonal(column)`](@ref) returns a random off-diagonal element in the column.
+* [`num_offdiagonals(column)`](@ref) returns an upper bound on the number of off-diagonal
+  elements in the column. Defaults to calling `num_offdiagonals(parent_operator(column))`.
 
 Optional additional methods to implement:
 
-* [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): defaults to `AdjointUnknown`
-* [`num_offdiagonals(column)`](@ref) (this can be an upper bound) returns the number of
-    off-diagonal elements in the column
-* [`has_random_offdiagonal(::Type{typeof(op)})`](@ref has_random_offdiagonal): defaults to
+* [`LOStructure(::Type{typeof(op)})`](@ref LOStructure): Defaults to `AdjointUnknown`.
+* [`num_offdiagonals(op::AbstractHamiltonian)`](@ref) returns an upper bound on
+  the number of off-diagonal elements in any column. Defaults to `missing`.
+* [`has_random_offdiagonal(::Type{typeof(op)})`](@ref has_random_offdiagonal): Defaults to
   `true`.
 * [`has_iterable_offdiagonals(::Type{typeof(op)})`](@ref has_iterable_offdiagonals):
-  defaults to `true`.
-* [`dimension(::AbstractHamiltonian, addr)`](@ref Main.Hamiltonians.dimension): defaults to
-  dimension of address space
-* [`allows_address_type(h::AbstractHamiltonian, type)`](@ref): defaults to
-  `type :< typeof(starting_address(h))`
+  Defaults to `true`.
+* [`dimension(::AbstractHamiltonian, addr)`](@ref Main.Hamiltonians.dimension): Defaults to
+  dimension of address space.
+* [`allows_address_type(h::AbstractHamiltonian, type)`](@ref): Defaults to
+  `type :< typeof(starting_address(h))`.
 * [`maximum_mode_occupation(h::AbstractHamiltonian)`](@ref Main.Interfaces.maximum_mode_occupation):
-  defaults to `maximum_mode_occupation(typeof(starting_address(h)))`
-* [`momentum(::AbstractHamiltonian)`](@ref Main.Hamiltonians.momentum): no default
+  Defaults to `maximum_mode_occupation(typeof(starting_address(h)))`.
+* [`momentum(::AbstractHamiltonian)`](@ref Main.Hamiltonians.momentum): No default.
 
 ## Alternative Interface (deprecated)
 
@@ -221,18 +224,18 @@ Optional additional methods to implement:
 Provides the following functions and methods:
 
 * [`ProjectorMonteCarloProblem(H)`](@ref Main.ProjectorMonteCarloProblem):
-  use this Hamiltonian for FCIQMC
+  Use this Hamiltonian for FCIQMC.
 * [`ExactDiagonalizationProblem(H)`](@ref Main.ExactDiagonalizationProblem):
-  use this Hamiltonian for exact diagonalization
-* `*(H, v)`: deterministic matrix-vector multiply (allocating)
-* `H(v)`: equivalent to `H * v`.
-* `mul!(w, H, v)`: mutating matrix-vector multiply.
-* [`dot(x, H, v)`](@ref Main.Hamiltonians.dot): compute `x⋅(H*v)` minimizing allocations.
-* `H[address1, address2]`: indexing with `getindex()` - mostly for testing purposes (slow!)
+  Use this Hamiltonian for exact diagonalization.
+* `*(H, v)`: Deterministic matrix-vector multiply (allocating).
+* `H(v)`: Equivalent to `H * v`.
+* `mul!(w, H, v)`: Mutating matrix-vector multiply.
+* [`dot(x, H, v)`](@ref Main.Hamiltonians.dot): Compute `x⋅(H*v)` minimizing allocations.
+* `H[address1, address2]`: Indexing with `getindex()` - mostly for testing purposes (slow!).
 * [`BasisSetRepresentation`](@ref Main.ExactDiagonalization.BasisSetRepresentation):
-  construct a basis set representation
-* [`sparse`](@ref Main.ExactDiagonalization.sparse), [`Matrix`](@ref): construct a (sparse)
-  matrix representation
+  Construct a basis set representation.
+* [`sparse`](@ref Main.ExactDiagonalization.sparse), [`Matrix`](@ref): Construct a (sparse)
+  matrix representation.
 
 See also [`Hamiltonians`](@ref Main.Hamiltonians), [`Interfaces`](@ref),
 [`AbstractOperatorColumn`](@ref), [`AbstractOperator`](@ref), [`AbstractObservable`](@ref).
@@ -282,27 +285,6 @@ Part of the [`AbstractHamiltonian`](@ref) interface. See also
 [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
 diagonal_element
-
-"""
-    num_offdiagonals(op::AbstractOperator)
-    num_offdiagonals(::Type{<:AbstractOperator})
-
-Return an upper bound on the number of off-diagonal elements in any column of the operator
-`op`. This may be used to preallocate memory for the off-diagonal elements. Calling
-`num_offdiagonals(column)` on an [`AbstractOperatorColumn`](@ref) may return a sharper
-bound on the number of off-diagonal elements.
-
-Part of the [`AbstractHamiltonian`](@ref) interface. When defining a new operator type,
-overload this function for the operator type. `num_offdiagonals(column)` will default
-to calling this method. If the number of off-diagonal elements can be determined more
-accurately for a specific column, overload `num_offdiagonals(column)` for the
-[`AbstractOperatorColumn`](@ref) type as well.
-
-See also [`num_offdiagonals(column)`](@ref num_offdiagonals(::AbstractOperatorColumn)).
-"""
-function num_offdiagonals(op::AbstractOperator)
-    num_offdiagonals(typeof(op))
-end
 
 """
     newadd, me = get_offdiagonal(ham, address, chosen) # (deprecated)
@@ -430,11 +412,29 @@ end
 num_offdiagonals(::IsDiagonal, _, _) = 0
 num_offdiagonals(::IsDiagonal, _) = 0
 
-function num_offdiagonals(::Type{H}) where {H<:AbstractOperator}
-    return num_offdiagonals(LOStructure(H), H)
+"""
+    num_offdiagonals(op::AbstractOperator)
+
+Return an upper bound on the number of off-diagonal elements in any column of the
+operator `op`, or `missing` if the number is unknown. This may be used to preallocate memory
+for the off-diagonal elements. Calling `num_offdiagonals(column)` on an
+[`AbstractOperatorColumn`](@ref) may return a sharper bound on the number of off-diagonal
+elements.
+
+Part of the [`AbstractHamiltonian`](@ref) interface. Defaults to calling
+`num_offdiagonals(LOStructure(op), op)` and will return 0 for diagonal operators.
+When defining a new operator type, overload this function if the operator is known to be
+sparse. `num_offdiagonals(column)` will default to calling this method. If the number of
+off-diagonal elements can be determined more accurately for a specific column, overload
+`num_offdiagonals(column)` for the [`AbstractOperatorColumn`](@ref) type as well.
+
+See also [`num_offdiagonals(column)`](@ref num_offdiagonals(::AbstractOperatorColumn)).
+"""
+function num_offdiagonals(op::AbstractOperator)
+    return num_offdiagonals(LOStructure(op), op)
 end
-function num_offdiagonals(::LOStructure, ::Type{H}) where {H<:AbstractOperator}
-    throw(ArgumentError("num_offdiagonals not implemented for type $H"))
+function num_offdiagonals(::LOStructure, op)
+    return missing
 end
 
 """
@@ -515,9 +515,9 @@ julia> num_offdiagonals(column)
 Part of the [`AbstractHamiltonian`](@ref) interface. See also
 [`AbstractOperatorColumn`](@ref) and [`operator_column`](@ref).
 """
-# function num_offdiagonals(column::AbstractOperatorColumn)
-#     num_offdiagonals(parent_operator(column))
-# end
+function num_offdiagonals(column::AbstractOperatorColumn)
+    return num_offdiagonals(parent_operator(column))
+end
 
 
 """
