@@ -27,10 +27,16 @@ jobs:
         uses: julia-actions/cache@v3
       - name: "Build"
         uses: julia-actions/julia-buildpkg@v1
-      - name: "Run tests"
+      - name: Run tests
         run: |
-          julia --color=yes --project=@. -t2 -e "using Pkg; Pkg.test(\"Rimu\"; coverage=true);"
-
+          if [[ "${{ matrix.julia-version }}" == "1" && \
+                "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            julia --color=yes --project=@. -t2 -e \
+              'using Pkg; Pkg.test("Rimu"; coverage=true)'
+          else
+            julia --color=yes --project=@. -t2 -e \
+              'using Pkg; Pkg.test("Rimu")'
+          fi
       - name: "Run MPI tests"
         run: |
           export JULIA_PROJECT=@.
@@ -47,14 +53,17 @@ jobs:
 
           mpiexecjl -n 2 julia --code-coverage=user --depwarn=yes --project=test test/mpi_runtests.jl
 
-      - name: "Remove empty coverage files"
+      - name: Remove empty coverage files
+        if: ${{ (matrix.julia-version == '1') && (matrix.os == 'ubuntu-latest') }}
         run: find . -name '*.cov' -type f -size 0 -delete
 
-      - name: "Process coverage"
+      - name: Process coverage
+        if: ${{ (matrix.julia-version == '1') && (matrix.os == 'ubuntu-latest') }}
         uses: julia-actions/julia-processcoverage@v1
-      - name: "Coveralls"
+
+      - name: Coveralls
+        if: ${{ (matrix.julia-version == '1') && (matrix.os == 'ubuntu-latest') }}
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.github_token }}
           path-to-lcov: ./lcov.info
-        if: ${{ (matrix.julia-version == '1') && (matrix.os == 'ubuntu-latest') }}
