@@ -157,13 +157,9 @@ function test_operator_interface(op, addr;
                     @test num_offdiagonals(column) isa Union{Int,BigInt}
                     @test num_offdiagonals(column) >= length(collect(offdiags))
                     if num_offdiagonals(column) > 0
-                        @test iterate(offdiags)[1] isa Union{Tuple{typeof(addr),eltype(op)},
-                            Pair{typeof(addr),eltype(op)}
-                        }
+                        @test iterate(offdiags)[1] isa Pair{typeof(addr),eltype(op)}
                     end
-                    @test eltype(offdiags) <: Union{Tuple{typeof(addr),eltype(op)},
-                        Pair{typeof(addr),eltype(op)}
-                    }
+                    @test eltype(offdiags) <: Pair{typeof(addr),eltype(op)}
                 end
             end
             if test_random_offdiagonal
