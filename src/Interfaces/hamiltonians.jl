@@ -343,9 +343,8 @@ undo_transform(::AbstractHamiltonian, op::AbstractObservable) = op
 
 Return an iterator over nonzero off-diagonal matrix elements of `h` in the same column as
 `address`,  where `column = operator_column(h, address)`. Will iterate over pairs
-`(newaddress, matrixelement)` or `newaddress => matrixelement`.
-Calling [`num_offdiagonals(column)`](@ref) returns an upper bound on the number of
-off-diagonal elements in the column.
+`newaddress => matrixelement`. Calling [`num_offdiagonals(column)`](@ref) returns an upper
+bound on the number of off-diagonal elements in the column.
 
 # Example
 
@@ -367,7 +366,7 @@ Part of the [`AbstractHamiltonian`](@ref) interface. See also [`num_offdiagonals
 [`AbstractOffdiagonals`](@ref Main.Hamiltonians.AbstractOffdiagonals) and
 [`operator_column`](@ref).
 """
-num_offdiagonals
+offdiagonals
 
 function offdiagonals(m::AbstractMatrix, i)
     pairs = collect(zip(axes(m, 1), view(m, :, i)))
