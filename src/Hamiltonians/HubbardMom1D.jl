@@ -96,6 +96,7 @@ end
 dimension(::HubbardMom1D, address) = number_conserving_dimension(address)
 
 LOStructure(::Type{<:HubbardMom1D{<:Real}}) = IsHermitian()
+LOStructure(::Type{<:HubbardMom1D{<:Real,<:Any,<:FermiFS}}) = IsDiagonal()
 
 Base.getproperty(h::HubbardMom1D, s::Symbol) = getproperty(h, Val(s))
 Base.getproperty(h::HubbardMom1D, ::Val{:ks}) = getfield(h, :ks)
@@ -166,6 +167,21 @@ end
     return N1 * N2 * (M - 1)
 end
 
+function num_offdiagonals(ham::HubbardMom1D{<:Any,<:Any,<:SingleComponentFockAddress})
+    address = starting_address(ham)
+    max_singlies = min(num_modes(address), num_particles(address))
+    max_doublies = min(num_modes(address), num_particles(address) ÷ 2)
+    return num_offdiagonals(ham, address, max_singlies, max_doublies)
+    # upper bound, does not depend on address
+end
+function num_offdiagonals(ham::HubbardMom1D{<:Any,<:Any,<:FermiFS2C})
+    address = starting_address(ham)
+    return num_offdiagonals(ham, address)
+    # upper bound, does not depend on address
+end
+num_offdiagonals(ham::HubbardMom1D{<:Any,<:Any,<:FermiFS}) = 0
+
+
 """
     momentum_transfer_diagonal(H, map::ModeMap)
 
@@ -213,7 +229,7 @@ end
     ham::HubbardMom1D{TT,M,A}, address::A, chosen, map=occupied_mode_map(address)
 ) where {TT,M,A<:SingleComponentFockAddress}
     address, onproduct = momentum_transfer_excitation(real(TT), address, chosen, map)
-    return address, ham.u/(2*M)*onproduct
+    return Pair(address, ham.u/(2*M)*onproduct)
 end
 @inline function get_offdiagonal(
     ham::HubbardMom1D{TT,M,A}, address::A, chosen,
@@ -224,7 +240,7 @@ end
     new_add_a, new_add_b, onproduct = momentum_transfer_excitation(
         real(TT), add_a, add_b, chosen, map_a, map_b
     )
-    return CompositeFS(new_add_a, new_add_b), ham.u/M * onproduct
+    return Pair(CompositeFS(new_add_a, new_add_b), ham.u/M * onproduct)
 end
 
 ###
@@ -253,12 +269,11 @@ function offdiagonals(h::HubbardMom1D, a::SingleComponentFockAddress)
     return OffdiagonalsBoseMom1D(h, a, num, map)
 end
 
-function Base.getindex(s::OffdiagonalsBoseMom1D{A,T}, i)::Tuple{A,T} where {A,T}
+function Base.getindex(s::OffdiagonalsBoseMom1D{A,T}, i)::Pair{A,T} where {A,T}
     @boundscheck begin
         1 ≤ i ≤ s.length || throw(BoundsError(s, i))
     end
-    new_address, matrix_element = get_offdiagonal(s.hamiltonian, s.address, i, s.map)
-    return (new_address, matrix_element)
+    return get_offdiagonal(s.hamiltonian, s.address, i, s.map)
 end
 
 Base.size(s::OffdiagonalsBoseMom1D) = (s.length,)
@@ -283,14 +298,13 @@ end
 
 Base.size(s::OffdiagonalsFermiMom1D2C) = (s.length,)
 
-function Base.getindex(s::OffdiagonalsFermiMom1D2C{A,T}, i)::Tuple{A,T} where {A,T}
+function Base.getindex(s::OffdiagonalsFermiMom1D2C{A,T}, i)::Pair{A,T} where {A,T}
     @boundscheck begin
-        i ≤ i ≤ s.length || throw(BoundsError(s, i))
+        1 ≤ i ≤ s.length || throw(BoundsError(s, i))
     end
-    new_address, matrix_element = get_offdiagonal(
+    return get_offdiagonal(
         s.hamiltonian, s.address, i, s.map_a, s.map_b
     )
-    return (new_address, matrix_element)
 end
 
 ###
@@ -299,8 +313,7 @@ end
 struct MomentumMom1D{T,H<:AbstractHamiltonian} <: AbstractHamiltonian{T}
     ham::H
 end
-LOStructure(::Type{MomentumMom1D}) = IsDiagonal()
-num_offdiagonals(ham::MomentumMom1D, _) = 0
+LOStructure(::Type{<:MomentumMom1D}) = IsDiagonal()
 diagonal_element(mom::MomentumMom1D, address) = mod1(onr(address)⋅ks(mom.ham) + π, 2π) - π
 # fold into (-π, π]
 starting_address(mom::MomentumMom1D) = starting_address(mom.ham)

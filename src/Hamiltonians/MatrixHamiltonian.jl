@@ -43,7 +43,7 @@ num_offdiagonals(mh::MatrixHamiltonian, _) = dimension(mh) - 1
 
 function get_offdiagonal(mh::MatrixHamiltonian, add, chosen)
     newadd = ifelse(chosen < add, chosen, chosen+1)
-    return newadd, mh.m[newadd, add]
+    return Pair(newadd, mh.m[newadd, add])
 end
 diagonal_element(mh::MatrixHamiltonian, i) = mh.m[i,i]
 
@@ -74,7 +74,7 @@ struct SparseMatrixOffdiagonals{A,T,R,V} <: AbstractOffdiagonals{A,T}
 end
 function Base.getindex(smo::SparseMatrixOffdiagonals, chosen)
     ind = ifelse(chosen < smo.drow, chosen, chosen + !iszero(smo.drow))
-    return smo.rows[ind], smo.vals[ind]
+    return Pair(smo.rows[ind], smo.vals[ind])
 end
 Base.size(smo::SparseMatrixOffdiagonals) = (length(smo.rows) - !iszero(smo.drow),)
 

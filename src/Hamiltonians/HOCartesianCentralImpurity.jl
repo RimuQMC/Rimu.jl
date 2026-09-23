@@ -161,7 +161,6 @@ noninteracting_energy(H::HOCartesianCentralImpurity, addr) = noninteracting_ener
 end
 
 ### OFFDIAGONAL ELEMENTS ###
-get_offdiagonal(H::HOCartesianCentralImpurity, addr, i) = offdiagonals(H, addr)[i]
 num_offdiagonals(H::HOCartesianCentralImpurity, addr) = (num_modes(addr) - 1) * length(occupied_modes(addr))
 
 ###
@@ -205,7 +204,7 @@ function Base.getindex(offs::HOCartImpurityOffdiagonals, chosen)
 
     impurity = ho_delta_potential(S, index_i.mode, index_j.mode; vals)
 
-    return new_addr, val * impurity * u
+    return Pair(new_addr, val * impurity * u)
 end
 
 Base.size(s::HOCartImpurityOffdiagonals) = (s.length,)

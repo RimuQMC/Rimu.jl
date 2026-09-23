@@ -28,8 +28,8 @@ end
     matrix = [1 2 3; 4 5 6; 7 8 9]
     mh = MatrixHamiltonian(matrix)
     @test diagonal_element(mh, 3) == 9
-    @test offdiagonals(mh, 1) == [(2, 4), (3, 7)]
-    @test offdiagonals(mh, 2) == [(1, 2), (3, 8)]
+    @test offdiagonals(mh, 1) == [2 => 4, 3 => 7]
+    @test offdiagonals(mh, 2) == [1 => 2, 3 => 8]
 
     add, prob, val = random_offdiagonal(mh, 1)
     @test add in (2, 3)

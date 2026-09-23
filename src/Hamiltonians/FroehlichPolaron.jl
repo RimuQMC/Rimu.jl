@@ -229,8 +229,8 @@ end
 LOStructure(::Type{<:FroehlichPolaron}) = IsHermitian()
 
 starting_address(h::FroehlichPolaron) = h.address
-
-Interfaces.maximum_mode_occupation(h::FroehlichPolaron) = h.mode_cutoff
+maximum_mode_occupation(h::FroehlichPolaron) = h.mode_cutoff
+num_offdiagonals(h::FroehlichPolaron{<:Any,M}) where {M} = 2M
 
 function dimension(h::FroehlichPolaron, address)
     M = num_modes(address)
@@ -247,7 +247,8 @@ end
 function operator_column(h::FroehlichPolaron, address)
     M = num_modes(address)
     T = eltype(h)
-    return FroehlichPolaronColumn{typeof(address),T,typeof(h)}(h, address, 2M)
+    no = num_offdiagonals(h)
+    return FroehlichPolaronColumn{typeof(address),T,typeof(h)}(h, address, no)
 end
 
 function diagonal_element(col::FroehlichPolaronColumn)

@@ -169,8 +169,12 @@ function diagonal_element(h::FroehlichPolaron1D{<:Any,M}, addr::BoseFS{missing,M
     return h.omega * num_particles(addr) + (h.p - p_f)^2 / h.two_m
 end
 
-function num_offdiagonals(::FroehlichPolaron1D{<:Any,M}, ::BoseFS{missing,M}) where {M}
-    return 2M #num_occupied_modes
+function num_offdiagonals(::FroehlichPolaron1D{<:Any,M}) where {M}
+    return 2M
+end
+
+function num_offdiagonals(h::FroehlichPolaron1D{<:Any,M}, ::BoseFS{missing,M}) where {M}
+    return num_offdiagonals(h) # does not depend on address
 end
 
 function get_offdiagonal(h::FroehlichPolaron1D{<:Any,M,<:Any,Nothing}, addr::BoseFS{missing,M},chosen) where {M}

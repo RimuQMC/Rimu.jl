@@ -68,7 +68,7 @@ using LinearAlgebra: LinearAlgebra, I, diag, dot, ishermitian, issymmetric,
     mul!, norm
 using Parameters: Parameters, @unpack
 using Setfield: Setfield
-using SparseArrays: SparseArrays, rowvals, nzrange, nonzeros
+using SparseArrays: SparseArrays, rowvals, nzrange, nonzeros, nnz
 using SpecialFunctions: SpecialFunctions, gamma
 using StaticArrays: StaticArrays, SA, SMatrix, SVector, SArray, MVector, setindex
 using TupleTools: TupleTools
@@ -80,7 +80,8 @@ using ..Interfaces
 using ..Interfaces: sum_mutating!, num_modes_check_equal, num_modes
 import ..Interfaces: diagonal_element, num_offdiagonals, get_offdiagonal, starting_address,
     offdiagonals, random_offdiagonal, LOStructure, allows_address_type, operator_column,
-    undo_transform, has_random_offdiagonal, has_iterable_offdiagonals, parent_operator
+    undo_transform, has_random_offdiagonal, has_iterable_offdiagonals, parent_operator,
+    maximum_mode_occupation
 
 export dimension, rayleigh_quotient, momentum
 
