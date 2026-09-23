@@ -294,7 +294,7 @@ function get_offdiagonal(
         # account for swap of (i,j)
         val *= (1 + (i ≠ j)) * h.u
     end
-    return new_add, val
+    return Pair(new_add, val)
 end
 
 ###
@@ -320,12 +320,11 @@ function offdiagonals(h::HOCartesianEnergyConservedPerDim, addr::BoseFS)
     return HOCartSeparableOffdiagonals(h, addr, num, omm)
 end
 
-function Base.getindex(s::HOCartSeparableOffdiagonals{A,T}, i)::Tuple{A,T} where {A,T}
+function Base.getindex(s::HOCartSeparableOffdiagonals{A,T}, i)::Pair{A,T} where {A,T}
     @boundscheck begin
         1 ≤ i ≤ s.length || throw(BoundsError(s, i))
     end
-    new_address, matrix_element = get_offdiagonal(s.hamiltonian, s.address, i, s.map)
-    return (new_address, matrix_element)
+    return get_offdiagonal(s.hamiltonian, s.address, i, s.map)
 end
 
 Base.size(s::HOCartSeparableOffdiagonals) = (s.length,)

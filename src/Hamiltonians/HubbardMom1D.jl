@@ -229,7 +229,7 @@ end
     ham::HubbardMom1D{TT,M,A}, address::A, chosen, map=occupied_mode_map(address)
 ) where {TT,M,A<:SingleComponentFockAddress}
     address, onproduct = momentum_transfer_excitation(real(TT), address, chosen, map)
-    return address, ham.u/(2*M)*onproduct
+    return Pair(address, ham.u/(2*M)*onproduct)
 end
 @inline function get_offdiagonal(
     ham::HubbardMom1D{TT,M,A}, address::A, chosen,
@@ -240,7 +240,7 @@ end
     new_add_a, new_add_b, onproduct = momentum_transfer_excitation(
         real(TT), add_a, add_b, chosen, map_a, map_b
     )
-    return CompositeFS(new_add_a, new_add_b), ham.u/M * onproduct
+    return Pair(CompositeFS(new_add_a, new_add_b), ham.u/M * onproduct)
 end
 
 ###
@@ -269,12 +269,11 @@ function offdiagonals(h::HubbardMom1D, a::SingleComponentFockAddress)
     return OffdiagonalsBoseMom1D(h, a, num, map)
 end
 
-function Base.getindex(s::OffdiagonalsBoseMom1D{A,T}, i)::Tuple{A,T} where {A,T}
+function Base.getindex(s::OffdiagonalsBoseMom1D{A,T}, i)::Pair{A,T} where {A,T}
     @boundscheck begin
         1 ≤ i ≤ s.length || throw(BoundsError(s, i))
     end
-    new_address, matrix_element = get_offdiagonal(s.hamiltonian, s.address, i, s.map)
-    return (new_address, matrix_element)
+    return get_offdiagonal(s.hamiltonian, s.address, i, s.map)
 end
 
 Base.size(s::OffdiagonalsBoseMom1D) = (s.length,)
@@ -299,14 +298,13 @@ end
 
 Base.size(s::OffdiagonalsFermiMom1D2C) = (s.length,)
 
-function Base.getindex(s::OffdiagonalsFermiMom1D2C{A,T}, i)::Tuple{A,T} where {A,T}
+function Base.getindex(s::OffdiagonalsFermiMom1D2C{A,T}, i)::Pair{A,T} where {A,T}
     @boundscheck begin
-        i ≤ i ≤ s.length || throw(BoundsError(s, i))
+        1 ≤ i ≤ s.length || throw(BoundsError(s, i))
     end
-    new_address, matrix_element = get_offdiagonal(
+    return get_offdiagonal(
         s.hamiltonian, s.address, i, s.map_a, s.map_b
     )
-    return (new_address, matrix_element)
 end
 
 ###

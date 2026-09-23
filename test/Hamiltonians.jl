@@ -6,6 +6,7 @@ using Test
 using DataFrames
 using Suppressor
 using StaticArrays
+using SparseArrays
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals, ScaledOrShiftedHamiltonian
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
@@ -73,6 +74,7 @@ end
         GuidingVectorSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))), DVec(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0)) => 1.0)),
 
         MatrixHamiltonian(Float64[1 2; 2 0]),
+        MatrixHamiltonian(sparse([1.0 2.0 0.0; 2.0 2.0 3.0; 0.0 3.0 4.0])),
         GutzwillerSampling(MatrixHamiltonian([1.0 2.0; 2.0 0.0]); g=0.3),
         TransformUndoer(
             GutzwillerSampling(MatrixHamiltonian([1.0 2.0; 2.0 0.0]); g=0.3)
@@ -1917,14 +1919,14 @@ end
         @test num_offdiagonals(H, addr) == dimension(H) - 1
 
         h = offdiagonals(H, addr)
-        @test Base.eltype(h) == Tuple{typeof(addr),eltype(H)}
+        @test Base.eltype(h) == Pair{typeof(addr),eltype(H)}
         @test Base.IteratorSize(h) == Base.SizeUnknown()
         @test_throws ErrorException getindex(h,1)
         @test_throws ErrorException size(h)
         @test_throws ErrorException length(h)
 
         next_state = (1,1,3)
-        @test iterate(h) == ((addr,0.0), next_state)
+        @test iterate(h) == (Pair(addr,0.0), next_state)
         @test isnothing(iterate(h, next_state))
 
         # block_by_level = false

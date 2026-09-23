@@ -102,9 +102,6 @@ end
 
 dimension(::HubbardMom1DEP, address) = number_conserving_dimension(address)
 
-function get_offdiagonal(h::HubbardMom1DEP{<:Any,<:Any,F}, address::F, i) where {F}
-    return offdiagonals(h, address)[i]
-end
 function num_offdiagonals(h::HubbardMom1DEP{<:Any,<:Any,F}, address::F) where {F}
     return length(offdiagonals(h, address))
 end
@@ -183,7 +180,7 @@ function offdiagonals(h::HubbardMom1DEP, a::SingleComponentFockAddress)
     return OffdiagonalsBoseMom1DEP(h, a, num_mom, num_ep, map)
 end
 
-function Base.getindex(s::OffdiagonalsBoseMom1DEP{A,T}, i)::Tuple{A,T} where {A,T}
+function Base.getindex(s::OffdiagonalsBoseMom1DEP{A,T}, i)::Pair{A,T} where {A,T}
     @boundscheck begin
         1 ≤ i ≤ length(s) || throw(BoundsError(s, i))
     end
@@ -197,7 +194,7 @@ function Base.getindex(s::OffdiagonalsBoseMom1DEP{A,T}, i)::Tuple{A,T} where {A,
             s.hamiltonian.ep, s.address, i, s.map
         )
     end
-    return (new_address, matrix_element)
+    return Pair(new_address, matrix_element)
 end
 
 Base.size(s::OffdiagonalsBoseMom1DEP) = (s.num_mom + s.num_ep,)
@@ -230,7 +227,7 @@ end
 
 Base.size(s::OffdiagonalsFermiMom1D2CEP) = (s.num_mom + s.num_ep_a + s.num_ep_b,)
 
-function Base.getindex(s::OffdiagonalsFermiMom1D2CEP{A,T}, i)::Tuple{A,T} where {A,T}
+function Base.getindex(s::OffdiagonalsFermiMom1D2CEP{A,T}, i)::Pair{A,T} where {A,T}
     @boundscheck begin
         1 ≤ i ≤ length(s) || throw(BoundsError(s, i))
     end
@@ -253,5 +250,5 @@ function Base.getindex(s::OffdiagonalsFermiMom1D2CEP{A,T}, i)::Tuple{A,T} where 
         )
         new_address = CompositeFS(c1, new_c2)
     end
-    return (new_address, matrix_element)
+    return Pair(new_address, matrix_element)
 end
