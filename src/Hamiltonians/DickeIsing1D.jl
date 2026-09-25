@@ -1,12 +1,3 @@
-using Rimu
-using Random
-using DataFrames
-using Plots
-using KrylovKit
-
-import Rimu: dimension, diagonal_element, get_offdiagonal, num_offdiagonals, Base,
-    starting_address, LOStructure, AbstractHamiltonian, BoseFS, HardcoreBoseFS, CompositeFS, find_occupied_mode, find_mode, excitation
-##
 """
     DickeIsing1D(address::CompositeFS(BoseFS{missing,1}, HardcoreBoseFS{missing,N}); kwargs...) <: AbstractHamiltonian
 
