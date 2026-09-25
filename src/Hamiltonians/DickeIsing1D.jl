@@ -2,7 +2,7 @@
     DickeIsing1D(address::CompositeFS{BoseFS{missing,1}, HardcoreBoseFS{missing,N}}; kwargs...) <: AbstractHamiltonian
 
 
-The Dicke-Ising Hamiltonian where the cavity mode is represented as a bosonic mode. With the spins as a hardcore bosonic mode. The address is a CompositeFS with two compinents, a BoseFS and a HardcoreBoseFS, representing the occupation of the cavity and the two-level system.
+The Dicke-Ising Hamiltonian where the cavity mode is represented as a bosonic mode with the spins as a hardcore bosonic mode. The address is a [`CompositeFS`](@ref) with two components, a [`BoseFS`](@ref) and a [`HardcoreBoseFS`](@ref), representing the occupation of the cavity and the two-level system.
 representing the occupation of the cavity and the spin system.
 
 The Hamiltonian is given by
