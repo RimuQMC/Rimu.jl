@@ -8,7 +8,7 @@ representing the occupation of the cavity and the spin system.
 The Hamiltonian is given by
 
 ```math
-H = ωâ†â + (λ/√N)∑(â† + â)(σ+ + σ-) - h∑(σz) - J∑σyσy+1
+H = ωâ^†â + (λ/√N)∑(â^† + â)(σ^+ + σ^-) - h∑(σ_z) - J∑σ_y σ_y+1
 ```
 
 where ``ω0`` is the splitting frequency of the two-level system, ``ω`` is the frequency of the cavity mode, 
