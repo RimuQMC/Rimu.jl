@@ -5,12 +5,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-Add any unreleased changes here!
+*Add any unreleased changes here!*
+
+## Version [v0.18.2] - 2026-09-28
+
 ### Added
 * New optional method in the `AbstractHamiltonian` interface: `num_offdiagonals(op)` can be called on the operator for an upper bound on the number of offdiagonals in the columns. Defaults to `missing`. ([#415])
 
 ### Changed
 * `num_offdiagonals(op)` is implemented for `FroehlichPolaron`, `FroehlichPolaron1D`, `HubbardMom1D`, `HubbardReal1D`. ([#415])
+* `offdiagonals` iterates (strictly) over `Pair`s with `address => value`, `get_offdiagonal` returns a `Pair`.  ([#415])
 
 ## Version [v0.18.1] - 2026-09-19
 
@@ -80,6 +84,7 @@ Types of changes (based on [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 [v0.18.0]: https://github.com/RimuQMC/Rimu.jl/releases/tag/v0.18.0
 [v0.18.1]: https://github.com/RimuQMC/Rimu.jl/releases/tag/v0.18.1
+[v0.18.2]: https://github.com/RimuQMC/Rimu.jl/releases/tag/v0.18.2
 [#353]: https://github.com/RimuQMC/Rimu.jl/issues/353
 [#355]: https://github.com/RimuQMC/Rimu.jl/issues/355
 [#393]: https://github.com/RimuQMC/Rimu.jl/issues/393
