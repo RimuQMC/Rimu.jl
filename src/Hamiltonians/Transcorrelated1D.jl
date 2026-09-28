@@ -383,5 +383,5 @@ function Base.getindex(od::Transcorrelated1DOffdiagonals, i)
     else
         throw(BoundsError(od, i))
     end
-    return Pair(new_c, value)
+    return new_c => value
 end

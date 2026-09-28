@@ -229,7 +229,7 @@ end
     ham::HubbardMom1D{TT,M,A}, address::A, chosen, map=occupied_mode_map(address)
 ) where {TT,M,A<:SingleComponentFockAddress}
     address, onproduct = momentum_transfer_excitation(real(TT), address, chosen, map)
-    return Pair(address, ham.u/(2*M)*onproduct)
+    return address => ham.u/(2*M)*onproduct
 end
 @inline function get_offdiagonal(
     ham::HubbardMom1D{TT,M,A}, address::A, chosen,
@@ -240,7 +240,7 @@ end
     new_add_a, new_add_b, onproduct = momentum_transfer_excitation(
         real(TT), add_a, add_b, chosen, map_a, map_b
     )
-    return Pair(CompositeFS(new_add_a, new_add_b), ham.u/M * onproduct)
+    return CompositeFS(new_add_a, new_add_b) => ham.u/M * onproduct
 end
 
 ###

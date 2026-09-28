@@ -416,7 +416,7 @@ function Base.iterate(off::HOCartOffdiagonals{<:Any,<:Any,B}, iter_state = (1,1,
     new_iter_state = (pair_index, k, l + 2)  # if l + 2 is out of bounds then `loop_over_states` can handle it
     # check for swap and self moves but do not discard
     if (k,l) == (i,j) || (k,l) == (j,i)
-        return Pair(addr, 0.0), new_iter_state
+        return addr => 0.0, new_iter_state
     end
 
     p_k = find_mode(addr, k)
@@ -431,5 +431,5 @@ function Base.iterate(off::HOCartOffdiagonals{<:Any,<:Any,B}, iter_state = (1,1,
         val *= (1 + (i ≠ j)) * (1 + (k ≠ l)) * off.ham.u
     end
 
-    return Pair(new_add, val), new_iter_state
+    return new_add => val, new_iter_state
 end

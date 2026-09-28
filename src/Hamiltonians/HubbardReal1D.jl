@@ -81,8 +81,8 @@ end
 function _get_offdiagonal_hubbard_real_1D(h, add, chosen)
     naddress, onproduct = hopnextneighbour(add, chosen, h.boundary_condition)
     if h.t isa Complex && chosen % 2 != 0
-        return Pair(naddress, - conj(h.t) * onproduct)
+        return naddress => -conj(h.t) * onproduct
     else
-        return Pair(naddress, - h.t * onproduct)
+        return naddress => -h.t * onproduct
     end
 end

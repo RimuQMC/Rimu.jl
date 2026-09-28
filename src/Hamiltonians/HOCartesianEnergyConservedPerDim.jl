@@ -294,7 +294,7 @@ function get_offdiagonal(
         # account for swap of (i,j)
         val *= (1 + (i ≠ j)) * h.u
     end
-    return Pair(new_add, val)
+    return new_add => val
 end
 
 ###

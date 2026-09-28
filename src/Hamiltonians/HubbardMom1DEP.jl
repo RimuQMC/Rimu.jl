@@ -194,7 +194,7 @@ function Base.getindex(s::OffdiagonalsBoseMom1DEP{A,T}, i)::Pair{A,T} where {A,T
             s.hamiltonian.ep, s.address, i, s.map
         )
     end
-    return Pair(new_address, matrix_element)
+    return new_address => matrix_element
 end
 
 Base.size(s::OffdiagonalsBoseMom1DEP) = (s.num_mom + s.num_ep,)
@@ -250,5 +250,5 @@ function Base.getindex(s::OffdiagonalsFermiMom1D2CEP{A,T}, i)::Pair{A,T} where {
         )
         new_address = CompositeFS(c1, new_c2)
     end
-    return Pair(new_address, matrix_element)
+    return new_address => matrix_element
 end

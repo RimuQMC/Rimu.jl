@@ -204,7 +204,7 @@ function Base.getindex(offs::HOCartImpurityOffdiagonals, chosen)
 
     impurity = ho_delta_potential(S, index_i.mode, index_j.mode; vals)
 
-    return Pair(new_addr, val * impurity * u)
+    return new_addr => val * impurity * u
 end
 
 Base.size(s::HOCartImpurityOffdiagonals) = (s.length,)
