@@ -691,7 +691,7 @@ function offdiagonals(column::HubbardRealSpaceColumn{TT,<:Any,G,A,C}) where {TT,
         column.num_offdiagonals,
     )
 end
-num_offdiagonals(column) = column.num_offdiagonals
+num_offdiagonals(column::HubbardRealSpaceColumn) = column.num_offdiagonals
 
 @inline function Base.iterate(ods::HubbardRealSpaceColumnOffdiagonals, state=(1, 1, 1))
     component_index, particle_index, dimension_index = state

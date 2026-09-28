@@ -5,7 +5,7 @@ Return a tuple `(kes_mat, ks_mat)` with the kinetic energies and momentum vector
 allowed momenta `ks_vec_of_vecs`, lattice `geometry`, hopping strengths `t`, and a single-particle
 `dispersion` (default `hubbard_dispersion`).
 """
-function _mom_space_energies_and_ks(ks_vec_of_vecs::Vector, geometry::CubicGrid{D, S}, t::SMatrix, 
+function _mom_space_energies_and_ks(ks_vec_of_vecs::Vector, geometry::CubicGrid{D, S}, t::SMatrix,
         dispersion::Function) where {D, S}
     # Calculate the dispersion relation for a given set of k values and hopping strength t.
     C = size(t, 1)
@@ -48,10 +48,10 @@ end
     for x in occ
         onproduct += kes[I, x.mode] * x.occnum
     end
-    
+
     return onproduct + _mom_hopping_unrolled(kes, comps, Val(I - 1))
 end
-@inline function _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress) 
+@inline function _mom_hopping(kes::SMatrix{1}, address::SingleComponentFockAddress)
     occ = occupied_mode_map(address)
     onproduct = zero(eltype(kes))
     @inbounds for x in occ
@@ -64,17 +64,17 @@ end
     mom_transfer_offdiagonal(add, chosen, map, geometry; fold=true)
     mom_transfer_offdiagonal(add1, add2, chosen, map1, map2, geometry; fold=true)
 
-This function does the excitation operation on the given `add` or between `add1` and `add2` 
-in momentum space for the same or two different components of a multi-component Fock state 
-address, respectively, which contributes to the off-diagonal part of the Hamiltonian. 
-The excitation is carried out to get a response similar to the nearest neighbour 
-interaction and the on-site interaction operation in real space. The excitation is 
-determined by the integer `chosen`. `map`, `map1`, and `map2` are the occupied 
-mode maps for the relevant components of the multi-component Fock state.`geometry` is 
+This function does the excitation operation on the given `add` or between `add1` and `add2`
+in momentum space for the same or two different components of a multi-component Fock state
+address, respectively, which contributes to the off-diagonal part of the Hamiltonian.
+The excitation is carried out to get a response similar to the nearest neighbour
+interaction and the on-site interaction operation in real space. The excitation is
+determined by the integer `chosen`. `map`, `map1`, and `map2` are the occupied
+mode maps for the relevant components of the multi-component Fock state.`geometry` is
 the geometry of the lattice. If `fold` is true, momentum transfer that goes
 outside the first Brillouin zone is folded back into it.
 
-See also [`mom_transfer_diagonal`](@ref). 
+See also [`mom_transfer_diagonal`](@ref).
 """
 @inline function mom_transfer_offdiagonal(
     add::SingleComponentFockAddress{<:Any, M}, chosen::Int, map::ModeMap,
@@ -123,7 +123,7 @@ See also [`mom_transfer_diagonal`](@ref).
 end
 
 @inline function mom_transfer_offdiagonal(
-    add1::SingleComponentFockAddress{<:Any, M}, add2::SingleComponentFockAddress{<:Any, M}, 
+    add1::SingleComponentFockAddress{<:Any, M}, add2::SingleComponentFockAddress{<:Any, M},
     chosen::Int, map1::ModeMap, map2::ModeMap, geometry::CubicGrid{D,S}) where {M, D, S}
     # Get the momentum transfer for a given excitation.
     singlies = length(map2)
@@ -135,7 +135,7 @@ end
     Q = geometry[mom_change+1] - geometry[1]
     dst_loc = (src_loc[1]+Q, src_loc[2]-Q)
     dst_loc = (mod1.(dst_loc[1], S) , mod1.(dst_loc[2], S))
-    return excitation(add1, find_mode(add1, (geometry[dst_loc[1]],)), (src_indices[1],))..., 
+    return excitation(add1, find_mode(add1, (geometry[dst_loc[1]],)), (src_indices[1],))...,
         excitation(add2, find_mode(add2, (geometry[dst_loc[2]],)), (src_indices[2],))..., src_modes..., -Q
 end
 
@@ -143,15 +143,15 @@ end
     _mom_transfer_diagonal(map, geometry, u, w)
     _mom_transfer_diagonal(map1, map2, geometry, u, w)
 
-This function does the excitation operation on the given `map` or between `map1` and `map2` 
+This function does the excitation operation on the given `map` or between `map1` and `map2`
 which are the occupied mode maps for the relevant components  of the multi-component
-Fock state in momentum space. The operation is carried out for the same or two different 
-components of a multi-component Fock state address, respectively, which contributes to 
-the diagonal part of the Hamiltonian. The excitation is carried out to get the 
-response similar to the nearest neighbour interaction and on-site interaction 
-operation in real space. `geometry` is the geometry of the lattice. `u` and `w` are 
-the on-site and nearest neighbour interaction strengths, respectively. If 
-either `u` or `w` is `nothing`, the corresponding interaction term is ignored. 
+Fock state in momentum space. The operation is carried out for the same or two different
+components of a multi-component Fock state address, respectively, which contributes to
+the diagonal part of the Hamiltonian. The excitation is carried out to get the
+response similar to the nearest neighbour interaction and on-site interaction
+operation in real space. `geometry` is the geometry of the lattice. `u` and `w` are
+the on-site and nearest neighbour interaction strengths, respectively. If
+either `u` or `w` is `nothing`, the corresponding interaction term is ignored.
 
 """
 @inline function _mom_transfer_diagonal(
@@ -163,7 +163,7 @@ either `u` or `w` is `nothing`, the corresponding interaction term is ignored.
         occ_i = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0) * u_scaled
         g_i = geometry[map[i].mode]
-        
+
         for j in 1:i-1
             occ_j = Float64(map[j].occnum)
             q = g_i - geometry[map[j].mode]
@@ -181,7 +181,7 @@ end
         occ_i = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0) * D
         g_i = geometry[map[i].mode]
-        
+
         for j in 1:i-1
             occ_j = Float64(map[j].occnum)
             q = g_i - geometry[map[j].mode]
@@ -212,10 +212,10 @@ end
         mode_i = map[i].mode
         occ_i  = Float64(map[i].occnum)
         onproduct += occ_i * (occ_i - 1.0)
-        g_i = geometry[mode_i] 
+        g_i = geometry[mode_i]
         for j in 1:i-1
             occ_j = Float64(map[j].occnum)
-            q = g_i - geometry[map[j].mode] 
+            q = g_i - geometry[map[j].mode]
             onproduct += 2.0 * occ_i * occ_j * (D - _cosin_sum(q, S))
         end
     end
@@ -236,7 +236,7 @@ end
     return onproduct * _interaction_parameter_diag(u, w, D)
 end
 
-@inline function _mom_transfer_diagonal(map1::FermiOccupiedModeMap, map2::FermiOccupiedModeMap, 
+@inline function _mom_transfer_diagonal(map1::FermiOccupiedModeMap, map2::FermiOccupiedModeMap,
     ::CubicGrid{D}, u, w) where D
     return length(map1) * length(map2) * _interaction_parameter_diag(u, w, D)
 end
@@ -251,16 +251,16 @@ end
 
 """
     mom_transfer_diagonal(components, geometry)
-    
-This function returns a diagonal element of the Hamiltonian corresponding to the given address 
-stored in `components`. Here, `components` is a tuple of [`HubbardMomSpaceComponentData`](@ref) 
+
+This function returns a diagonal element of the Hamiltonian corresponding to the given address
+stored in `components`. Here, `components` is a tuple of [`HubbardMomSpaceComponentData`](@ref)
 for each pair combination of component of the multi-component Fock state address.
 
 '''math
     Ĥ_\\text{int} = ½\\sum_{p,q,σ,σ'} V_{σσ'} b̂^†_{pσ} b̂^†_{qσ'} b̂_{qσ'} b̂_{pσ}
 '''
 
-where `V_{σσ}' is the interaction coefficient that depends on interaction parameters that are 
+where `V_{σσ}' is the interaction coefficient that depends on interaction parameters that are
 stored in `components` and `geometry` is the geometry of the lattice.
 
 """
@@ -271,7 +271,7 @@ stored in `components` and `geometry` is the geometry of the lattice.
         current_product = 0.0
     else
         idx1, idx2 = component_index(data)
-        
+
         current_product = if idx1 == idx2
             _mom_transfer_diagonal(data.occmap1, geometry, data.u, data.w)
         else
@@ -288,11 +288,11 @@ end
 
 """
     HubbardMomSpace(
-        address; 
-        geometry=PeriodicBoundaries(M,), 
-        t=ones(C, D), 
-        u=ones(C, C), 
-        w=zeros(C, C), 
+        address;
+        geometry=PeriodicBoundaries(M,),
+        t=ones(C, D),
+        u=ones(C, C),
+        w=zeros(C, C),
         dispersion=hubbard_dispersion
     ) <: AbstractHamiltonian{Float64}
 
@@ -304,10 +304,10 @@ in `D` dimensions and with a total of `M` momentum modes.
   \\hat{H} = -\\sum_{k,σ} ϵ_{kσ} n_{kσ} +
   \\sum_{p,q,k,σ,σ'} V_{σσ'} a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}
 ```
-where ``ϵ_{kσ} = Σ_{d=1}^{D} ε(k_d)`` and ``ε(k)`` is a one-dimensional single particle `dispersion` 
+where ``ϵ_{kσ} = Σ_{d=1}^{D} ε(k_d)`` and ``ε(k)`` is a one-dimensional single particle `dispersion`
 (with default [`hubbard_dispersion`](@ref))  and
 ``V_{σσ'} = (u_{σσ'}(1- \\frac{δ_{σσ'}}{2}) + w_{σσ'} \\sum_{d=1}^{D} \\cos(q_d))/M``
-the coefficients of a two-body interaction with onsite (``u_{σσ'}``) and nearest-neighbour 
+the coefficients of a two-body interaction with onsite (``u_{σσ'}``) and nearest-neighbour
 (``w_{σσ'}``) interaction terms.
 
 ## Address types
@@ -336,15 +336,15 @@ number of sites `M` inferred from the number of modes in `address`.
   corresponds to the interaction of a component with itself.
 * `w`: the nearest neighbour interaction parameters. Must be a symmetric matrix of size `C × C`.
   `w[i, j]` corresponds to the interaction between the `i`-th and `j`-th component.
-  
-* `dispersion`: the function used to calculate the dispersion relation. Default is 
-    [`hubbard_dispersion`](@ref) which corresponds to the standard tight binding model.  
+
+* `dispersion`: the function used to calculate the dispersion relation. Default is
+    [`hubbard_dispersion`](@ref) which corresponds to the standard tight binding model.
 
 See also [`HubbardRealSpace`](@ref), [`HubbardMom1D`](@ref), [`ExtendedHubbardReal1D`](@ref).
 """
 struct HubbardMomSpace{
     TT,
-    C, # components    
+    C, # components
     D, # dimension
     A<:AbstractFockAddress,
     G<:CubicGrid,
@@ -442,7 +442,7 @@ function Base.show(
 end
 
 # Overload equality due to stored potential energy arrays.
-Base.:(==)(H::HubbardMomSpace, G::HubbardMomSpace) = 
+Base.:(==)(H::HubbardMomSpace, G::HubbardMomSpace) =
     all(map(p -> getproperty(H, p) == getproperty(G, p), propertynames(H)))
 
 starting_address(h::HubbardMomSpace) = h.address
@@ -455,16 +455,16 @@ dimension(::HubbardMomSpace, address) = number_conserving_dimension(address)
         geometry, parent::A, address1, address2, u, w
     ) <: AbstractVector{Pair{A,TT}}
 
-This holds the off-diagonals for a single- and multi-component two-body on-site and 
+This holds the off-diagonals for a single- and multi-component two-body on-site and
 nearest-neighbour interaction terms. It is structured where the index of this vector
-determines `p`, `q`, `σ`, `σ'` and `k` in the two particle operator given by 
-`` a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}``. The operator is operated on a 
-`parent` which is a single-component (where `address1`=`address2`=`parents`) or 
-multi-component Fock address where `address1` and `address2` are the single-component 
-Fock addresses representing  `σ` and `σ'` component respectively. The operation 
-creates a new address and the corresponding coefficient which is stored as a pair. 
-`u` and `w` represents the interaction coefficient corresponding to on-site and 
-nearest-neighbour interactions, respectively, and are used to calculate the 
+determines `p`, `q`, `σ`, `σ'` and `k` in the two particle operator given by
+`` a^†_{p+k,σ} a^†_{q-k,σ'} a_{q,σ'} a_{p,σ}``. The operator is operated on a
+`parent` which is a single-component (where `address1`=`address2`=`parents`) or
+multi-component Fock address where `address1` and `address2` are the single-component
+Fock addresses representing  `σ` and `σ'` component respectively. The operation
+creates a new address and the corresponding coefficient which is stored as a pair.
+`u` and `w` represents the interaction coefficient corresponding to on-site and
+nearest-neighbour interactions, respectively, and are used to calculate the
 coefficient of the respective new address.
 """
 struct HubbardMomSpaceComponentData{
@@ -538,7 +538,7 @@ function Base.getindex(data::HubbardMomSpaceComponentData{TT,C,I1,I2,D}, chosen:
     geometry = data.geometry
     S = size(geometry)
     M = prod(S)
-    new_add1, onproduct1,new_add2, onproduct2,_,_,q = 
+    new_add1, onproduct1,new_add2, onproduct2,_,_,q =
         mom_transfer_offdiagonal(data.address1,data.address2,chosen,data.occmap1,data.occmap2,data.geometry)
     new_parent = BitStringAddresses.update_component(
         data.parent_address, new_add1, Val(I1)
@@ -564,6 +564,7 @@ end
 
 parent_operator(column::HubbardMomSpaceColumn) = column.hamiltonian
 starting_address(column::HubbardMomSpaceColumn) = column.address
+num_offdiagonals(column::HubbardMomSpaceColumn) = column.num_offdiagonals
 
 function diagonal_element(col::HubbardMomSpaceColumn{TT}) where {TT}
     ke = _mom_hopping(col.hamiltonian.kes_mat, col.address)
@@ -579,7 +580,7 @@ function operator_column(h::HubbardMomSpace{TT,<:Any,<:Any,A,G}, address) where 
 end
 
 # Collect HubbardMomSpaceComponentData for each component of the address.
-@inline function _column_components(h::HubbardMomSpace{TT,1,D}, 
+@inline function _column_components(h::HubbardMomSpace{TT,1,D},
         address::SingleComponentFockAddress) where {TT,D}
     u = isnothing(h.u) ? nothing : h.u[1]
     w = isnothing(h.w) ? nothing : h.w[1]
@@ -603,7 +604,7 @@ end
     return _column_components(h, address, address.components, h.u, h.w, Val(1))
 end
 
-@inline function _column_components(::HubbardMomSpace{TT,<:Any,D}, _, ::Tuple{}, ::Union{SMatrix{0,0},Nothing}, 
+@inline function _column_components(::HubbardMomSpace{TT,<:Any,D}, _, ::Tuple{}, ::Union{SMatrix{0,0},Nothing},
     ::Union{SMatrix{0,0},Nothing}, ::Val) where {TT,D}
     return ()
 end
@@ -617,23 +618,23 @@ end
     # Type-stable way to subset SMatrix:
     m_rest = isnothing(m) ? nothing : SMatrix{N-1,N-1}(view(m, 2:N, 2:N))
     σ_rest = isnothing(σ) ? nothing : SMatrix{N-1,N-1}(view(σ, 2:N, 2:N))
-    
-    return (HubbardMomSpaceComponentData{TT,C,I1,I1,D}(h.geometry, address, a, a, u, w), 
+
+    return (HubbardMomSpaceComponentData{TT,C,I1,I1,D}(h.geometry, address, a, a, u, w),
         _mom_interactions_col(h,address,a,as,u_column,w_column,Val(I1),Val(I1+1))...,
         _column_components(h, address, as, m_rest, σ_rest, Val(I1+1) )...,)
 end
 
 @inline _mom_interactions_col(
-    ::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress,::Tuple{}, 
+    ::HubbardMomSpace, ::AbstractFockAddress, ::SingleComponentFockAddress,::Tuple{},
     ::Tuple{}, ::Tuple{}, ::Val, ::Val
 ) = ()
 
 @inline function _mom_interactions_col(
-    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress, 
+    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress,
     (b,as...)::NTuple{N}, (u, us...)::NTuple{N}, (w, ws...)::NTuple{N}, ::Val{I1}, ::Val{I2}
 ) where {TT,C,D,N,I1,I2}
 
-    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, u, w), 
+    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, u, w),
             _mom_interactions_col(h, address, a, as, us, ws, Val(I1), Val(I2+1))...)
 end
 
@@ -643,11 +644,11 @@ end
 ) = ()
 
 @inline function _mom_interactions_col(
-    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress, 
+    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress,
     (b,as...)::NTuple{N}, m::Tuple{Nothing}, σ::NTuple{N}, ::Val{I1}, ::Val{I2}
 ) where {TT,C,D,N,I1,I2}
 
-    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
+    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]),
             _mom_interactions_col(h, address, a, as, m, σ[2:N], Val(I1), Val(I2+1))...)
 end
 
@@ -657,11 +658,11 @@ end
 ) = ()
 
 @inline function _mom_interactions_col(
-    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress, 
+    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress,
     (b,as...)::NTuple{N}, m::Tuple{N}, σ::Tuple{Nothing}, ::Val{I1}, ::Val{I2}
 ) where {TT,C,D,N,I1,I2}
 
-    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
+    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]),
             _mom_interactions_col(h, address, a, as, m[2:N], σ, Val(I1), Val(I2+1))...)
 end
 
@@ -671,11 +672,11 @@ end
 ) = ()
 
 @inline function _mom_interactions_col(
-    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress, 
+    h::HubbardMomSpace{TT,C,D}, address::AbstractFockAddress, a::SingleComponentFockAddress,
     (b,as...)::NTuple{N}, m::Tuple{Nothing}, σ::Tuple{Nothing}, ::Val{I1}, ::Val{I2}
 ) where {TT,C,D,N,I1,I2}
 
-    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]), 
+    return (HubbardMomSpaceComponentData{TT,C,I1,I2,D}(h.geometry, address, a, b, m[1], σ[1]),
             _mom_interactions_col(h, address, a, as, m, σ, Val(I1), Val(I2+1))...)
 end
 
@@ -750,7 +751,7 @@ end
 momentum(ham::HubbardMomSpace{T,C,D}) where {T,C,D} = MomentumMomSpace{T,C,D,typeof(ham)}(ham)
 MomentumMomSpace(ham::HubbardMomSpace{T,C,D}) where {T,C,D} = MomentumMomSpace{T,C,D,typeof(ham)}(ham)
 
-LOStructure(::Type{MomentumMomSpace}) = IsDiagonal()
+LOStructure(::Type{<:MomentumMomSpace}) = IsDiagonal()
 dimension(mom::MomentumMomSpace, _) = 1
 starting_address(mom::MomentumMomSpace) = starting_address(mom.ham)
 function Base.show(
@@ -762,13 +763,14 @@ function Base.show(
     print(io, ")")
 end
 function allows_address_type(h::MomentumMomSpace{<:Any,1}, ::Type{A}) where {A}
-    return A <: AbstractFockAddress && 
-        num_modes(A) == num_modes(h.ham.address)
+    return A <: AbstractFockAddress && num_modes(A) == num_modes(h.ham.address)
 end
-num_offdiagonals(::MomentumMomSpace, _) = 0
 function diagonal_element(mom::MomentumMomSpace{T,1,D}, address::SingleComponentFockAddress) where {T,D}
     return SVector{D,T}(dot(mom.ham.ks_mat[i, :], occupied_mode_map(address)) for i in 1:D)
 end
 function diagonal_element(mom::MomentumMomSpace{T,C,D}, address::CompositeFS) where {T,C,D}
-    return SVector{D,T}(sum(dot(mom.ham.ks_mat[i, :], occupied_mode_map(c)) for c in address.components) for i in 1:D)
+    return SVector{D,T}(
+        sum(dot(mom.ham.ks_mat[i, :], occupied_mode_map(c)) for c in address.components)
+        for i in 1:D
+    )
 end

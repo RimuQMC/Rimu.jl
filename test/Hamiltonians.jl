@@ -6,6 +6,7 @@ using Test
 using DataFrames
 using Suppressor
 using StaticArrays
+using SparseArrays
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals, ScaledOrShiftedHamiltonian
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
@@ -73,6 +74,7 @@ end
         GuidingVectorSampling(Transcorrelated1D(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0))), DVec(FermiFS2C((0, 0, 1, 1), (0, 1, 1, 0)) => 1.0)),
 
         MatrixHamiltonian(Float64[1 2; 2 0]),
+        MatrixHamiltonian(sparse([1.0 2.0 0.0; 2.0 2.0 3.0; 0.0 3.0 4.0])),
         GutzwillerSampling(MatrixHamiltonian([1.0 2.0; 2.0 0.0]); g=0.3),
         TransformUndoer(
             GutzwillerSampling(MatrixHamiltonian([1.0 2.0; 2.0 0.0]); g=0.3)
@@ -308,6 +310,8 @@ end
     HM3Ct0 =HubbardMom1D(bs3; t=0, dispersion=continuum_dispersion)
     HM3Ht0 =HubbardMom1D(bs3; t=0, dispersion=hubbard_dispersion)
     @test offdiagonals(HM3Ht0,bs3) == offdiagonals(HM3Ht0,bs3)
+
+    @test num_offdiagonals(HM3Ht0 * bs3) ≤ num_offdiagonals(HM3Ht0)
 end
 
 @testset "1C model properties" begin
@@ -321,6 +325,7 @@ end
             @test LOStructure(H) == IsHermitian()
             @test starting_address(H) == addr
             @test eval(Meta.parse(repr(H))) == H
+            @test num_offdiagonals(H * addr) ≤ num_offdiagonals(H)
         end
     end
 end
@@ -850,6 +855,7 @@ end
         addr = FermiFS(0,1,1,1,0,0)
         H = HubbardMomSpace(addr)
         m = momentum(H)
+        @test LOStructure(m) isa IsDiagonal
         matrix = Matrix(BasisSetRepresentation(m, starting_address(m)))
         @test matrix[1] isa SVector
         @test round(matrix[1][1], digits=10) ≈ 0.0
@@ -1476,6 +1482,7 @@ end
         fermi = HubbardMom1D(CompositeFS(FermiFS((0,0,1,0,0)), FermiFS((0,0,1,0,0))))
 
         @test exact_energy(bose) ≈ exact_energy(fermi)
+        @test LOStructure(momentum(bose)) == LOStructure(momentum(fermi)) == IsDiagonal()
     end
     @testset "Comparison with HubbardRealSpace" begin
         c = CompositeFS(FermiFS((0,1,1,1,0)), FermiFS((0,0,1,0,0)))
@@ -1545,7 +1552,7 @@ end
     @test Vector(f3.ks) == ks3
 
     # test num_offdiagonals
-    @test num_offdiagonals(f2, addr1) == 2*3
+    @test num_offdiagonals(f2, addr1) ≤ num_offdiagonals(f2) == 2*3
 
     # test diagonal_element
     f2_diag = f2.omega*6 + (1/f2.two_m) * (f2.p - dot(f2.ks, onr(addr2)))^2
@@ -1643,7 +1650,7 @@ end
     ]
 
     # test num_offdiagonals
-    @test num_offdiagonals(operator_column(f2, addr1)) == 2*3
+    @test num_offdiagonals(operator_column(f2, addr1)) ≤ num_offdiagonals(f2) == 2*3
 
     # test diagonal_element
     f2_diag = f2.omega * 6 + norm(f2.p - sum(f2.ks .* onr(addr2)))^2 / f2.two_m
@@ -1912,14 +1919,14 @@ end
         @test num_offdiagonals(H, addr) == dimension(H) - 1
 
         h = offdiagonals(H, addr)
-        @test Base.eltype(h) == Tuple{typeof(addr),eltype(H)}
+        @test Base.eltype(h) == Pair{typeof(addr),eltype(H)}
         @test Base.IteratorSize(h) == Base.SizeUnknown()
         @test_throws ErrorException getindex(h,1)
         @test_throws ErrorException size(h)
         @test_throws ErrorException length(h)
 
         next_state = (1,1,3)
-        @test iterate(h) == ((addr,0.0), next_state)
+        @test iterate(h) == (Pair(addr,0.0), next_state)
         @test isnothing(iterate(h, next_state))
 
         # block_by_level = false

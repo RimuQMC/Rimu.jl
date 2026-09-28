@@ -11,16 +11,21 @@ See [`Offdiagonals`](@ref) for a default implementation.
 
 # Methods to define
 
-* [`offdiagonals(h, a)::AbstractOffdiagonals`](@ref offdiagonals): This function is used to construct the
-  correct type of offdiagonals for a given combination of Hamiltonian `h` and Fock address
-  `a`.
+* [`offdiagonals(h, a)::AbstractOffdiagonals`](@ref offdiagonals): This function is used to
+  construct the correct type of offdiagonals for a given combination of Hamiltonian `h` and
+  Fock address `a`.
 * `Base.getindex(::AbstractOffdiagonals, i)`: should be equivalent to
   `get_offdiagonal(h, a, i)`.
 * `Base.size(::AbstractOffdiagonals)`: should be equivalent to `num_offdiagonals(h, a)`.
 
+Note that `AbstractOffdiagonals` is an `AbstractVector` and therefore supports iteration,
+indexing, and other vector-like operations. This is only one specific implementation of the
+[`AbstractHamiltonian`](@ref) interface, suitable for use cases where the number of
+off-diagonal elements is known and indexing is possible and efficient.
+
 See also [`offdiagonals`](@ref), [`AbstractHamiltonian`](@ref), [`AbstractOperator`](@ref).
 """
-abstract type AbstractOffdiagonals{A,T} <: AbstractVector{Tuple{A,T}} end
+abstract type AbstractOffdiagonals{A,T} <: AbstractVector{Pair{A,T}} end
 
 Base.IndexStyle(::Type{<:AbstractOffdiagonals}) = IndexLinear()
 
@@ -35,7 +40,7 @@ non-zero off-diagonal matrix elements of the column of `h` indexed by `address`.
 construct this iterator use [`offdiagonals`](@ref).
 
 This is the default implementation of [`AbstractOffdiagonals`](@ref) defined in terms of
-[`num_offdiagonals`](@ref) and [`get_offdiagonal`](@ref).
+[`num_offdiagonals(h, address)`](@ref) and [`get_offdiagonal`](@ref).
 
 See also [`offdiagonals`](@ref), [`AbstractHamiltonian`](@ref), [`AbstractOperator`](@ref).
 """
@@ -50,10 +55,10 @@ function Offdiagonals(h, a)
     return Offdiagonals(h, a, num_offdiagonals(h, a))
 end
 
-function Base.getindex(s::Offdiagonals{A,T}, i)::Tuple{A,T} where {A,T}
+function Base.getindex(s::Offdiagonals{A,T}, i)::Pair{A,T} where {A,T}
     @boundscheck 1 ≤ i ≤ s.length || throw(BoundsError(s, i))
     new_address, matrix_element = get_offdiagonal(s.hamiltonian, s.address, i)
-    return (new_address, matrix_element)
+    return Pair(new_address, matrix_element)
 end
 
 Base.size(s::Offdiagonals) = (s.length,)
