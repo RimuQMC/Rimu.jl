@@ -14,9 +14,9 @@ H = ωâ^†â + (λ/√N)∑_{j=1}^M(â^† + â)(σ_j^+ + σ_j^-) - h∑_{j=
 
 where ``ω0`` is the splitting frequency of the two-level system, ``ω`` is the frequency of the cavity mode, 
 ``λ`` is the coupling strength between the cavity and the two-level system, ``â`` and ``â†`` are the 
-annihilation and creation operators for the cavity mode, and ``σ+`` and ``σ-`` are the raising and 
-lowering operators for the spins of the two-level systems. ``σz`` is the angular momentum operator along 
-the z-axis. ``σy`` is the angular momentum operator along the y-axis.
+annihilation and creation operators for the cavity mode, and ``σ_+`` and ``σ_-`` are the raising and 
+lowering operators for the spins of the two-level systems. ``σ_z`` is the angular momentum operator along 
+the z-axis. ``σ_y`` is the angular momentum operator along the y-axis.
 
 # Keyword Arguments
 

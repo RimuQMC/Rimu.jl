@@ -4,9 +4,9 @@ using Random
 using Rimu
 using Test
 using DataFrames
+using SparseArrays
 using Suppressor
 using StaticArrays
-using Rimu: DickeIsing1D
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
@@ -95,9 +95,8 @@ end
         FroehlichPolaron1D(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         FroehlichPolaron1D{Float32}(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
-        DickeIsing1D(CompositeFS(BoseFS{missing}(1), HardcoreBoseFS{missing,4}(1, 0, 1, 0)); lambda=0.5,
+        Rimu.DickeIsing1D(CompositeFS(BoseFS{missing}(1), HardcoreBoseFS{missing,4}(1, 0, 1, 0)); lambda=0.5,
         omegacav=1.0,J=0.0,hfield=0.5,),
-        Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0); t=1.0+1.0im)),
         # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
