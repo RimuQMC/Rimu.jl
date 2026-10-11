@@ -12,6 +12,8 @@ using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     AdjointUnknown
 
+include(joinpath(dirname(@__DIR__), "..", "DickeIsing1D.jl"))
+
 function exact_energy(ham)
     dv = DVec(starting_address(ham) => 1.0)
     all_results = eigsolve(ham, dv, 1, :SR; issymmetric = LOStructure(ham) == IsHermitian())
@@ -73,6 +75,8 @@ end
         FroehlichPolaron(BoseFS{missing}(1, 1, 1)),
         FroehlichPolaron(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
+        DickeIsing1D(CompositeFS(BoseFS{missing}(1), HardcoreBoseFS{missing,4}(1, 0, 1, 0)); lambda=0.5,
+        omegacav=1.0,J=0.0,hfield=0.5,),
         Rimu.FirstOrderTransitionOperator(HubbardRealSpace(BoseFS(1,1,1,1)), -5.0, 0.01),
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) + ExtendedHubbardReal1D(BoseFS(2,0,0)),
@@ -85,6 +89,19 @@ end
             @test eval(Meta.parse(repr(H))) == H
         end
     end
+end
+
+@testset "DickeIsing1D" begin
+    addr = CompositeFS(BoseFS{missing,1}(1), HardcoreBoseFS{missing,4}(1, 0, 1, 0))
+    h = DickeIsing1D(addr)
+
+    test_hamiltonian_interface(h)
+    @test starting_address(h) == addr
+    @test diagonal_element(h, addr) == 1.0
+    @test num_offdiagonals(h, addr) == 6 * num_modes(addr.components[2]) + 2 * num_occupied_modes(addr.components[2])
+    col = operator_column(h, addr)
+    @test diagonal_element(col) == diagonal_element(h, addr)
+    @test length(collect(offdiagonals(col))) == num_offdiagonals(col)
 end
 
 @testset "Operator interface test" begin

@@ -24,6 +24,7 @@ Other
 - [`MatrixHamiltonian`](@ref)
 - [`Transcorrelated1D`](@ref)
 - [`MolecularHamiltonian`](@ref)
+- [`DickeIsing1D`](@ref)
 
 ## [Wrappers](#Hamiltonian-wrappers)
 - [`GutzwillerSampling`](@ref)
@@ -88,6 +89,7 @@ export Stoquastic
 export Transcorrelated1D
 export hubbard_dispersion, continuum_dispersion
 export FroehlichPolaron
+export DickeIsing1D
 export ParticleNumberOperator
 
 export MolecularHamiltonian
@@ -131,6 +133,7 @@ include("HubbardRealSpace.jl")
 include("ExtendedHubbardReal1D.jl")
 
 include("FroehlichPolaron.jl")
+include("DickeIsing1D.jl")
 
 include("Transcorrelated1D.jl")
 

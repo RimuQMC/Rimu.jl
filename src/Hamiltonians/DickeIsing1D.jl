@@ -1,14 +1,15 @@
 """
-    DickeIsing1D(address::CompositeFS{BoseFS{missing,1}, HardcoreBoseFS{missing,N}}; kwargs...) <: AbstractHamiltonian
+    DickeIsing1D(address::CompositeFS(BoseFS{missing,1}, HardcoreBoseFS{missing,M}); kwargs...) <: AbstractHamiltonian
 
 
-The Dicke-Ising Hamiltonian where the cavity mode is represented as a bosonic mode with the spins as a hardcore bosonic mode. The address is a [`CompositeFS`](@ref) with two components, a [`BoseFS`](@ref) and a [`HardcoreBoseFS`](@ref), representing the occupation of the cavity and the two-level system.
-representing the occupation of the cavity and the spin system.
+The Dicke-Ising Hamiltonian with a single bosonic cavity mode and `M` spins represented as  
+hardcore boson modes. The address is a [`CompositeFS`](@ref) with two components, a 
+[`BoseFS`](@ref) and a [`HardcoreBoseFS`](@ref) with `M` modes.  
 
 The Hamiltonian is given by
 
 ```math
-H = ωâ^†â + (λ/√N)∑(â^† + â)(σ^+ + σ^-) - h∑(σ_z) - J∑σ_y σ_y+1
+H = ωâ^†â + (λ/√N)∑_{j=1}^M(â^† + â)(σ_j^+ + σ_j^-) - h σ_j^z - J σ_j^y σ_{j+1}^y  
 ```
 
 where ``ω0`` is the splitting frequency of the two-level system, ``ω`` is the frequency of the cavity mode, 
@@ -40,11 +41,11 @@ function DickeIsing1D(
     J=0.0,
 )
     if omegacav < 0
-        throw(ArgumentError("Cavity frequency must be positive"))
+        throw(ArgumentError("Cavity frequency must be non-negative"))
     end
 
     if hfield < 0
-        throw(ArgumentError("External field must be positive"))
+        throw(ArgumentError("External field must be non-negative"))
     end
 
     comp1, comp2 = addr.components
@@ -70,9 +71,58 @@ function starting_address(h::DickeIsing1D)
     return h.addr
 end
 
+struct DickeIsing1DColumn{T,H<:DickeIsing1D{T},A<:CompositeFS} <: AbstractOperatorColumn{A,T,H}
+    hamiltonian::H
+    address::A
+    num_offdiagonals::Int
+    diagonal::T
+end
+
+parent_operator(column::DickeIsing1DColumn) = column.hamiltonian
+starting_address(column::DickeIsing1DColumn) = column.address
+diagonal_element(column::DickeIsing1DColumn) = column.diagonal
+num_offdiagonals(column::DickeIsing1DColumn) = column.num_offdiagonals
+
+struct DickeIsing1DOffDiagonals{T,A<:CompositeFS,H<:DickeIsing1D{T}}
+    hamiltonian::H
+    address::A
+    num_offdiagonals::Int
+end
+
+Base.length(ods::DickeIsing1DOffDiagonals) = ods.num_offdiagonals
+Base.size(ods::DickeIsing1DOffDiagonals) = (ods.num_offdiagonals,)
+Base.eltype(::DickeIsing1DOffDiagonals{T,A,H}) where {T,A,H} = Pair{A,T}
+
+@inline function Base.iterate(ods::DickeIsing1DOffDiagonals, state=1)
+    if state > ods.num_offdiagonals
+        return nothing
+    end
+    new_address, value = get_offdiagonal(ods.hamiltonian, ods.address, state)
+    return new_address => value, state + 1
+end
+
+function Base.getindex(ods::DickeIsing1DOffDiagonals, index)
+    return get_offdiagonal(ods.hamiltonian, ods.address, index)
+end
+
+function operator_column(h::DickeIsing1D{T}, addr::CompositeFS) where {T}
+    offs = 6 * num_modes(addr.components[2]) + 2 * num_occupied_modes(addr.components[2])
+    return DickeIsing1DColumn{T,typeof(h),typeof(addr)}(h, addr, offs, convert(T, diagonal_element(h, addr)))
+end
+
+function offdiagonals(column::DickeIsing1DColumn)
+    return DickeIsing1DOffDiagonals(column.hamiltonian, column.address, column.num_offdiagonals)
+end
+
+function random_offdiagonal(column::DickeIsing1DColumn)
+    chosen = rand(1:column.num_offdiagonals)
+    new_address, value = get_offdiagonal(column.hamiltonian, column.address, chosen)
+    return new_address, 1.0 / column.num_offdiagonals, value
+end
+
 LOStructure(::Type{<:DickeIsing1D{<:Real}}) = IsHermitian()
 
-function dimension(h::DickeIsing1D, address)
+function dimension(h::DickeIsing1D)
     starting = h.addr
     d1 = maximum_mode_occupation(starting.components[1]) # number of photons in the cavity mode
     d2 = num_modes(starting.components[2]) # number of angular momentum states
@@ -84,76 +134,67 @@ end
     spins = onr(addr.components[2])
     n_up = sum(spins)
     nsites = length(spins)
-    return h.omegacav * n1 - 2*h.hfield * (n_up - nsites / 2) 
+    return h.omegacav * n1 - 2 * h.hfield * (n_up - nsites / 2)
 end
 
-function _get_offdiagonal_dickeising1D(h, addr::CompositeFS, chosen)
+@inline function _get_offdiagonal_dickeising1D(h, addr::CompositeFS, chosen)
     cavity = addr.components[1]
     spins = addr.components[2]
-    N=num_modes(spins)
+    M=num_modes(spins)
+    num_exchange_offdiagonals = 2 * num_occupied_modes(spins)
 
-    if chosen ≤ N  # a†σ+
+    if chosen ≤ M  # a†σ+
         naddress1, value1 = excitation(cavity, (1,), ())
         i = find_mode(spins, (chosen))
         naddress2, value2=excitation(spins, (i,), ())
         valueJ=0.0
 
-    elseif N < chosen ≤ 2*N  # a†σ-
+    elseif M < chosen ≤ 2*M  # a†σ-
         naddress1, value1 = excitation(cavity, (1,), ())
-        i = find_mode(spins, (chosen-N))
+        i = find_mode(spins, (chosen-M))
         naddress2, value2=excitation(spins, (), (i,))
         valueJ=0.0
 
-    elseif 2*N < chosen ≤ 3*N   # aσ+
+    elseif 2*M < chosen ≤ 3*M  # aσ+
         naddress1, value1 = excitation(cavity, (), (1,))
-        i = find_mode(spins, (chosen-2*N))
+        i = find_mode(spins, (chosen-2*M))
         naddress2, value2=excitation(spins, (i,), ())
         valueJ=0.0
 
-    elseif 3*N < chosen ≤ 4*N   # aσ-
+    elseif 3*M < chosen ≤ 4*M   # aσ-
         naddress1, value1 = excitation(cavity, (), (1,))
-        i = find_mode(spins, (chosen-3*N))
+        i = find_mode(spins, (chosen-3*M))
         naddress2, value2=excitation(spins, (), (i,))
         valueJ=0.0
-
-    elseif 4*N < chosen ≤ 5*N   # σ+iσ-i+1
-        naddress1, value1 = cavity, 1.0
-        bond = chosen - 4*N
-        next_bond = bond == N ? 1 : bond + 1
-        i,j = find_mode(spins, (bond,next_bond))
-        value2=0.0
-        naddress2, valueJ=excitation(spins, (i,), (j,))
-
-    elseif 5*N < chosen ≤ 6*N   # σ-iσ+i+1
-        naddress1, value1 = cavity, 1.0
-        bond = chosen - 5*N
-        next_bond = bond == N ? 1 : bond + 1
-        i,j = find_mode(spins, (bond,next_bond))
-        value2=0.0
-        naddress2, valueJ=excitation(spins, (j,), (i,))
     
-    elseif 6*N < chosen ≤ 7*N   # σ+iσ+i+1
+    #σ_j^y σ_{j+1}^y 
+    elseif 4*M < chosen ≤ 4*M + num_exchange_offdiagonals 
         naddress1, value1 = cavity, 1.0
-        bond = chosen - 6*N
-        next_bond = bond == N ? 1 : bond + 1
-        i,j = find_mode(spins, (bond,next_bond))
-        value2=0.0
-        naddress2, valueI=excitation(spins, (i,j,), (),)
-        valueJ=-valueI
+        value2 = 0.0
+        naddress2, valueJ = hopnextneighbour(spins, chosen - 4*M)
 
-    elseif 7*N < chosen ≤ 8*N   # σ-iσ-i+1
+    elseif 4*M + num_exchange_offdiagonals < chosen ≤ 5*M + num_exchange_offdiagonals
         naddress1, value1 = cavity, 1.0
-        bond = chosen - 7*N
-        next_bond = bond == N ? 1 : bond + 1
-        i,j = find_mode(spins, (bond,next_bond))
-        value2=0.0
-        naddress2, valueI=excitation(spins, (), (i,j,),)
-        valueJ=-valueI
+        bond = chosen - 4*M - num_exchange_offdiagonals
+        next_bond = bond == M ? 1 : bond + 1
+        value2 = 0.0
+        i, j = find_mode(spins, (bond, next_bond))
+        naddress2, valueI = excitation(spins, (i, j), ())
+        valueJ = -valueI
+
+    elseif 5*M + num_exchange_offdiagonals < chosen ≤ 6*M + num_exchange_offdiagonals
+        naddress1, value1 = cavity, 1.0
+        bond = chosen - 5*M - num_exchange_offdiagonals
+        next_bond = bond == M ? 1 : bond + 1
+        i, j = find_mode(spins, (bond, next_bond))
+        value2 = 0.0
+        naddress2, valueI = excitation(spins, (), (i, j))
+        valueJ = -valueI
     else
         throw(ArgumentError("Invalid chosen value"))
     end
     naddress = CompositeFS(naddress1, naddress2)
-    return naddress, value1*value2*h.lambda/sqrt(N) -h.J*valueJ
+    return naddress, value1 * value2 * h.lambda / sqrt(M) - h.J * valueJ
 end
 
 function get_offdiagonal(h::DickeIsing1D, addr::CompositeFS, chosen)
@@ -161,6 +202,6 @@ function get_offdiagonal(h::DickeIsing1D, addr::CompositeFS, chosen)
 end
 
 function num_offdiagonals(h::DickeIsing1D, addr::CompositeFS)
-    N = num_modes(addr.components[2])
-    return 8 * N
+    M = num_modes(h.addr.components[2])
+    return 6 * M + 2 * num_occupied_modes(addr.components[2])
 end
