@@ -6,13 +6,12 @@ using Test
 using DataFrames
 using Suppressor
 using StaticArrays
+using Rimu: DickeIsing1D
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
     AdjointUnknown
-
-include(joinpath(dirname(@__DIR__), "..", "DickeIsing1D.jl"))
 
 function exact_energy(ham)
     dv = DVec(starting_address(ham) => 1.0)
