@@ -101,4 +101,4 @@ end
     include("KrylovKit.jl")
 end
 
-# Note: Running Rimu with several MPI ranks is tested seperately on GitHub CI and not here.
+# Note: Running Rimu with several MPI ranks is tested separately on GitHub CI and not here.

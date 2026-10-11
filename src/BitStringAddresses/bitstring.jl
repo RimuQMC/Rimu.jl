@@ -579,18 +579,18 @@ end
 end
 
 function bose_excitation(
-    bs::BitString, creations::NTuple{N}, destructions::NTuple{N}
-) where N
+    ::Type{T}, bs::BitString, creations::NTuple{N}, destructions::NTuple{N}
+) where {T, N}
     # We start by computing the value. This is where the check if the move is even legal
     # is done.
     creations_rev = reverse(creations)
     value = bose_excitation_value(creations_rev, reverse(destructions))
     if iszero(value)
-        return bs, 0.0
+        return bs, zero(T)
     else
         # Now that we know the value and that the move is legal, we can apply the moves
         # without worrying about doing something weird.
-        return bose_move_particles(bs, creations_rev, destructions), √value
+        return bose_move_particles(bs, creations_rev, destructions), √T(value)
     end
 end
 
@@ -778,17 +778,17 @@ function fermi_excitation(
     for i in ND:-1:1
         d = destructions[i].mode
         bs, x, val = _flip_and_count(bs, UInt(d - 0x1))
-        val && return orig_bs, 0.0
+        val && return orig_bs, 0
         count += x
     end
     for i in NC:-1:1
         c = creations[i].mode
         bs, x, val = _flip_and_count(bs, UInt(c - 0x1))
-        !val && return orig_bs, 0.0
+        !val && return orig_bs, 0
         count += x
     end
 
-    return bs, ifelse(iseven(count), 1.0, -1.0)
+    return bs, ifelse(iseven(count), 1, -1)
 end
 
 function Base.iterate(o::FermiOccupiedModes{<:Any,<:BitString})

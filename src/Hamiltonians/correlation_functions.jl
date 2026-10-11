@@ -411,3 +411,56 @@ function _string_diagonal_real(d, addr)
 
     return result / M
 end
+
+"""
+    SignCorrelator{T=ComplexF64}() <: AbstractObservable{T}
+
+An observable that can be used to compute the sign correlation (normalised sign coherence)
+between two vectors when used in a three-way dot product. The result is normalised in
+a way that ensures the coherence is equal to 1 if all non-zero elements of the vectors agree
+in sign. The type parameter `T` controls the result type.
+
+Computing the dot product `dot(v, Ŝ, w)` of the sign correlation operator `Ŝ` with vectors
+`v` and `w` gives
+```math
+𝐯⋅Ŝ⋅𝐰  = \\frac{1}{L} ∑_i \\mathrm{sign}(v_i^* w_i) ,
+```
+where ``L`` is the number of non-zero elements in the sum. This works with complex-valued
+vectors. The sign correlation of a nonzero vector with itself is always
+`dot(v, Ŝ, v) == 1`. If either vector is zero, the sign correlation returns zero as well.
+
+## Example
+
+```jldoctest
+julia> a = PDVec(1 => 1.0, 2 => -3.0);
+
+julia> b = PDVec(1 => -5.0, 3 => 4.0);
+
+julia> dot(a, SignCorrelator(), b)
+-1.0 + 0.0im
+
+julia> c = PDVec(1 => 10.0, 4 => 0.5);
+
+julia> dot(a, SignCorrelator{Float64}(), c)
+1.0
+```
+
+`SignCorrelator` can be passed as an observable into [`AllOverlaps`](@ref) to measure
+the sign correlation between two replicas in a [`ProjectorMonteCarloProblem`](@ref)
+simulation. Use the `post_step_strategy` [`SignCoherence`](@ref) to compute the
+sign coherence of a single replica against a fixed reference vector instead.
+"""
+struct SignCorrelator{T<:Number} <: AbstractObservable{T} end
+
+SignCorrelator() = SignCorrelator{ComplexF64}()
+
+function Rimu.Interfaces.dot_from_right(
+    lhs::AbstractDVec, ::SignCorrelator{T}, rhs::AbstractDVec
+) where {T}
+    init = Rimu.MultiScalar(zero(T), 0)
+    accumulator, nonzeros = sum(pairs(rhs); init) do ((k, v_right))
+        product = T(sign(conj(lhs[k]) * v_right))
+        Rimu.MultiScalar(product, Int(!iszero(product)))
+    end
+    return iszero(nonzeros) ? zero(T) : accumulator / nonzeros
+end
