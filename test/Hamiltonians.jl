@@ -6,13 +6,8 @@ using Test
 using DataFrames
 using Suppressor
 using StaticArrays
-<<<<<<< HEAD
 using Rimu: DickeIsing1D
 using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
-=======
-using SparseArrays
-using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals, ScaledOrShiftedHamiltonian
->>>>>>> c53cb67994f872c2ce574595fd62136ff125cb4b
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
