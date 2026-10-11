@@ -9,7 +9,7 @@ hardcore boson modes. The address is a [`CompositeFS`](@ref) with two components
 The Hamiltonian is given by
 
 ```math
-H = ωâ^†â + (λ/√N)∑_{j=1}^M(â^† + â)(σ_j^+ + σ_j^-) - h σ_j^z - ∑_{j=1}^MJ σ_j^y σ_{j+1}^y  
+H = ωâ^†â + (λ/√N)∑_{j=1}^M[(â^† + â)(σ_j^+ + σ_j^-) - h σ_j^z - J σ_j^y σ_{j+1}^y]  
 ```
 
 where ``ω0`` is the splitting frequency of the two-level system, ``ω`` is the frequency of the cavity mode, 
