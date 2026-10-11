@@ -10,7 +10,9 @@ using BenchmarkTools
 Returning the vectors is tracked as an allocation. This wrapper takes care of that.
 """
 function apply_operator_wrap!(r::SingleState)
-    transition = Rimu.FirstOrderTransitionOperator(r.shift_parameters, r.hamiltonian)
+    time_step = r.shift_parameters.time_step
+    shift = r.shift_parameters.shift
+    transition = I + time_step * (shift * I - r.hamiltonian)
     apply_operator!(r.wm, r.pv, r.v, transition)
     return nothing
 end

@@ -150,17 +150,16 @@ function test_operator_interface(op, addr;
             end
             if test_iterable_offdiagonals
                 @testset "offdiagonals" begin
+                    @test ismissing(num_offdiagonals(op)) ||
+                        num_offdiagonals(op) ≥ num_offdiagonals(op*addr)
+
                     offdiags = offdiagonals(column)
                     @test num_offdiagonals(column) isa Union{Int,BigInt}
                     @test num_offdiagonals(column) >= length(collect(offdiags))
                     if num_offdiagonals(column) > 0
-                        @test iterate(offdiags)[1] isa Union{Tuple{typeof(addr),eltype(op)},
-                            Pair{typeof(addr),eltype(op)}
-                        }
+                        @test iterate(offdiags)[1] isa Pair{typeof(addr),eltype(op)}
                     end
-                    @test eltype(offdiags) <: Union{Tuple{typeof(addr),eltype(op)},
-                        Pair{typeof(addr),eltype(op)}
-                    }
+                    @test eltype(offdiags) <: Pair{typeof(addr),eltype(op)}
                 end
             end
             if test_random_offdiagonal
@@ -278,8 +277,8 @@ end
 """
     test_hamiltonian_structure(h::AbstractHamiltonian; sizelim=20)
 
-Test the `LOStructure` of a small Hamiltonian `h` by instantiating it as a sparse matrix and
-checking whether the structure of the matrix is consistent with the result of
+Test the structure of a small Hamiltonian `h` by instantiating it as a sparse matrix.
+Checks whether the structure of the matrix is consistent with the result of
 `LOStructure(h)` and the `eltype` is consistent with `eltype(h)`.
 
 This function is intended to be used in automated test for small Hamiltonians where

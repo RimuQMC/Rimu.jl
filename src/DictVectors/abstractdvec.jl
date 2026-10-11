@@ -219,7 +219,7 @@ end
 function VectorInterface.inner(v::AbstractDVec, w::AbstractDVec)
     # try to save time by looking for the smaller vec
     if isempty(v) || isempty(w)
-        return zero(promote_type(valtype(v), valtype(w)))
+        return zero(valtype(v)) * zero(valtype(w))
     elseif length(v) < length(w)
         return sum(pairs(v)) do (key, val)
             conj(val) * w[key]
