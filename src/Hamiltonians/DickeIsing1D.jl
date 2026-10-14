@@ -28,10 +28,13 @@ the y-axis.
 # Examples
 ```jldoctest
 julia> fs = CompositeFS(BoseFS{missing}(0), HardcoreBoseFS{missing}(1,0,0))
-CompositeFS(BoseFS{missing}(0), HardcoreBoseFS{missing}(1,0,0))
+CompositeFS(
+  BoseFS{missing}(0,),
+  HardcoreBoseFS{missing}(1, 0, 0),
+)
 
 julia> ham = DickeIsing1D(fs; lambda=1.0)
-DickeIsing1D(fs; lambda=1.0, omegacav=1.0, hfield=0.0, J=0.0)
+DickeIsing1D(fs"|0⟩{} ⊗ |●∘∘⟩{}"; lambda=1.0, omegacav=1.0, hfield=0.0, J=0.0)
 
 julia> dimension(ham)
 2048
