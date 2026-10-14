@@ -7,7 +7,7 @@ using DataFrames
 using SparseArrays
 using Suppressor
 using StaticArrays
-using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals
+using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals, TimeReversalSymmetry, ScaledOrShiftedHamiltonian
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
@@ -95,7 +95,7 @@ end
         FroehlichPolaron1D(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         FroehlichPolaron1D{Float32}(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
-        Rimu.DickeIsing1D(CompositeFS(BoseFS{missing}(1), HardcoreBoseFS{missing,4}(1, 0, 1, 0)); lambda=0.5,
+        DickeIsing1D(CompositeFS(BoseFS{missing}(1), HardcoreBoseFS{missing,4}(1, 0, 1, 0)); lambda=0.5,
         omegacav=1.0,J=0.0,hfield=0.5,),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0); t=1.0+1.0im)),
         # HamiltonianProduct
