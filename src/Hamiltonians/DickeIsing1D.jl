@@ -12,11 +12,11 @@ The Hamiltonian is given by
 H = ωâ^†â + (λ/√N)∑_{j=1}^M(â^† + â)(σ_j^+ + σ_j^-) - h∑_{j=1}^Mσ_j^z - J∑_{j=1}^Mσ_j^y σ_{j+1}^y  
 ```
 
-where ``ω0`` is the splitting frequency of the two-level system, ``ω`` is the frequency of the cavity mode, 
-``λ`` is the coupling strength between the cavity and the two-level system, ``â`` and ``â†`` are the 
-annihilation and creation operators for the cavity mode, and ``σ_+`` and ``σ_-`` are the raising and 
-lowering operators for the spins of the two-level systems. ``σ_z`` is the angular momentum operator along 
-the z-axis. ``σ_y`` is the angular momentum operator along the y-axis.
+where ``ω`` is the frequency of the cavity mode, ``λ`` is the coupling strength between the cavity 
+and the two-level system, ``â`` and ``â^†`` are the annihilation and creation operators for the cavity mode, 
+and ``σ_+`` and ``σ_-`` are the raising and lowering operators for the spins of the two-level systems. 
+``σ_z`` is the angular momentum operator along the z-axis. ``σ_y`` is the angular momentum operator along 
+the y-axis.
 
 # Keyword Arguments
 
@@ -24,7 +24,18 @@ the z-axis. ``σ_y`` is the angular momentum operator along the y-axis.
 * `omegacav=1.0`: the frequency of the cavity mode ``ω``.
 * `hfield=0.0`: the external magnetic field ``h``.
 * `J=0.0`: the Ising interaction strength ``J``.
-"""
+
+# Examples
+```jldoctest
+julia> fs = CompositeFS(BoseFS{missing}(0), HardcoreBoseFS{missing}(1,0,0))
+CompositeFS(BoseFS{missing}(0), HardcoreBoseFS{missing}(1,0,0))
+
+julia> ham = DickeIsing1D(fs; lambda=1.0)
+DickeIsing1D(fs; lambda=1.0, omegacav=1.0, hfield=0.0, J=0.0)
+
+julia> dimension(ham)
+2048
+```"""
 struct DickeIsing1D{T} <: AbstractHamiltonian{T}
     addr::CompositeFS
     lambda::T
