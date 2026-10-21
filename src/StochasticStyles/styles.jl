@@ -46,11 +46,11 @@ function step_stats(::IsStochastic2Pop{T}) where {T}
     z = zero(T)
     return (
         (:spawns, :deaths, :clones, :zombies),
-        MultiScalar(z, z, z, z)
+        MultiScalar(z, abs(z), abs(z), abs(z))
     )
 end
 function apply_column!(::IsStochastic2Pop, w, column, val, boost=1)
-    spawns = deaths = clones = zombies = 0 + 0im
+    spawns = 0 + 0im
     # off-diagonal real.
     s, a = spawn!(WithReplacement(), w, column, real(val), boost)
     spawns += s
@@ -66,14 +66,16 @@ end
 const FloatOrComplexFloat = Union{AbstractFloat, Complex{<:AbstractFloat}}
 
 """
-    IsDeterministic{T=Float64}(compression=NoCompression(); diagonal_stats=false) <: StochasticStyle{T}
+    IsDeterministic{T=Float64}(
+        compression=NoCompression(); diagonal_stats=false
+    ) <: StochasticStyle{T}
 
-Propagate with deterministic vector matrix multiplications. Stochastic compression of the
-resultant vector (after annihilations) can be triggered by setting the optional
+Propagate with deterministic vector matrix multiplications. Stochastic compression
+of theresultant vector (after annihilations) can be triggered by setting the optional
 `compression` argument to a relevant [`CompressionStrategy`](@ref).
 
-If `diagonal_stats=true`, the step statistics `spawn_attempts`, `spawns`, `deaths`, `clones` and `zombies`
-are reported instead of `exact_steps`.
+If `diagonal_stats=true`, the step statistics `spawn_attempts`, `spawns`, `deaths`, 
+`clones` and `zombies` are reported instead of `exact_steps`.
 
 See also [`StochasticStyle`](@ref).
 """
@@ -90,28 +92,23 @@ IsDeterministic(args...; kwargs...) = IsDeterministic{Float64}(args...;kwargs...
 CompressionStrategy(s::IsDeterministic) = s.compression
 
 function Base.show(io::IO, s::IsDeterministic{T,<:Any,D}) where {T,D}
-    if s.compression isa NoCompression && !D
-        print(io, "IsDeterministic{$T}()")
-    elseif s.compression isa NoCompression
-        print(io, "IsDeterministic{$T}(; diagonal_stats=true)")
-    elseif !D
-        print(io, "IsDeterministic{$T}($(s.compression))")
-    else
-        print(io, "IsDeterministic{$T}($(s.compression); diagonal_stats=true)")
-    end
+    print(io, "IsDeterministic{$T}(")
+    s.compression isa NoCompression || print(io, s.compression)
+    D && print(io, "; diagonal_stats=true")
+    print(io, ")")
 end
 
 function step_stats(::IsDeterministic{<:Any,<:Any,false})
     return (:exact_steps,), MultiScalar(0,)
 end
 function step_stats(::IsDeterministic{T,<:Any,true}) where {T}
-    z = zero(T)
+    z = real(zero(T))
     return (
         (:spawn_attempts, :spawns, :deaths, :clones, :zombies),
-        MultiScalar(0, real(z), z, z, z),
+        MultiScalar(0, z, z, z, z),
     )
 end
-function apply_column!(::IsDeterministic, w, column::OffdiagonalsOperatorColumn{<:Any,<:Any,<:AbstractMatrix}, val, boost=1)
+function apply_column!(::IsDeterministic{<:Any,<:Any,false}, w, column::OffdiagonalsOperatorColumn{<:Any,<:Any,<:AbstractMatrix}, val, boost=1)
     w .+= column.operator[:, starting_address(column)] .* val
     return (1,)
 end
@@ -246,13 +243,12 @@ function step_stats(::IsDynamicSemistochastic{T,<:Any,<:Any,false}) where {T}
 end
 function step_stats(::IsDynamicSemistochastic{T,<:Any,<:Any,true}) where {T}
     z = real(zero(T))
-    r = zero(T)
-    return (
+    return(
         (
             :exact_steps, :inexact_steps, :spawn_attempts, :spawns,
             :deaths, :clones, :zombies,
         ),
-        MultiScalar(0, 0, 0, z, r, r, r),
+        MultiScalar(0, 0, 0, z, z, z, z),
     )
 end
 function apply_column!(
