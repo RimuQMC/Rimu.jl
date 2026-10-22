@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *Add any unreleased changes here!*
 
+### Added
+* Keyword `diagonal_stats` (default `false`) for `IsDeterministic` and `IsDynamicSemistochastic`: when `true`, `step_stats` reports `deaths`, `clones` and `zombies` of the diagonal step (for `IsDeterministic` together with `spawn_attempts` and `spawns`, replacing `exact_steps`). ([#418])
+
+### Changed
+* `IsDeterministic` and `IsDynamicSemistochastic` have an extra type parameter `D` for `diagonal_stats`; `show` prints `diagonal_stats=true` when set. ([#418])
+* `diagonal_step!` returns `zombies` as a flag: `1` if the walker sign flips (phase rotation by more than π/2 for complex walkers), `0` otherwise. Previously a sign flip was booked as `deaths = abs(val)`, `zombies = abs(res)`. Affects all styles reporting these statistics, e.g. `IsStochasticInteger` and `IsStochastic2Pop`. ([#418])
+* `clones_deaths_zombies` is a single generic method for real and complex walkers. For complex walkers `deaths`, `clones` and `zombies` are real and non-negative (from modulus and phase) instead of complex with real and imaginary parts treated separately; the `step_stats` slots of `IsStochastic2Pop` are now real. ([#418])
+
+### Fixed
+* `clones_deaths_zombies` compared signed walker values (`res > val`) instead of magnitudes (`abs(res) > abs(val)`), so `clones` and `deaths` were swapped for negative walkers (e.g. `-1 → -1.5` was booked as deaths). ([#418])
+
+### Other changes
+* `diagonal_step!` docstring documents the returned `(clones, deaths, zombies)`. ([#418])
+* Tests for `diagonal_stats=true` (`repr`, `step_stats`, `apply_column!`) and updated `diagonal_step!` zombie tests. ([#418])
+
 ## Version [v0.18.2] - 2026-09-28
 
 ### Added
@@ -101,3 +116,4 @@ Types of changes (based on [Keep a Changelog](https://keepachangelog.com/en/1.1.
 [#409]: https://github.com/RimuQMC/Rimu.jl/issues/409
 [#414]: https://github.com/RimuQMC/Rimu.jl/issues/414
 [#415]: https://github.com/RimuQMC/Rimu.jl/issues/415
+[#418]: https://github.com/RimuQMC/Rimu.jl/issues/418
