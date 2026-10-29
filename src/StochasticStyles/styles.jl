@@ -21,6 +21,9 @@ FCIQMC algorithm with integer walkers as in
 each individual diagonal and spawning step is rounded stochastically to a nearby integer
 value.
 
+The report statistics `spawn_attempts`, `spawns`, `deaths`, `clones`, `zombies` and
+`annihilations` are available for this style.
+
 See also [`StochasticStyle`](@ref).
 """
 struct IsStochasticInteger{T<:Integer} <: StochasticStyle{T} end
@@ -93,7 +96,7 @@ of the resultant vector (after annihilations) can be triggered by setting the op
 `compression` argument to a relevant [`CompressionStrategy`](@ref).
 
 If `diagonal_stats=true`, the step statistics `spawn_attempts`, `spawns`, `deaths`,
-`clones` and `zombies` are reported instead of `exact_steps`.
+`clones`, `zombies` and `annihilations` are reported instead of `exact_steps`.
 
 See also [`StochasticStyle`](@ref).
 """
@@ -209,8 +212,8 @@ or [`IsStochasticWithThreshold`](@ref)) by setting `late_compression=false`, or 
   to compress the vector after a step. Overrides `threshold`.
 
 * `diagonal_stats = false`: If set to `true`, the step statistics `deaths`, `clones` and
-  `zombies` of the diagonal step are reported in addition to `exact_steps`,
-  `inexact_steps`, `spawn_attempts` and `spawns`.
+  `zombies` of the diagonal step as well as approximate `annihilations` are reported in
+  addition to `exact_steps`, `inexact_steps`, `spawn_attempts` and `spawns`.
 
 See also [`StochasticStyle`](@ref).
 """
