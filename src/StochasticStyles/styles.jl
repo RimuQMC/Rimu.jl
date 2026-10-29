@@ -1,4 +1,19 @@
 """
+    diagonal_step_stats_are_available(v::AbstractDVec)
+
+Check if the diagonal step statistics are available for the given vector `v`. This is true
+if the vector is of a stochastic style that supports diagonal step statistics, such as
+[`IsStochasticInteger`](@ref), [`IsDeterministic`](@ref) or
+[`IsDynamicSemistochastic`](@ref) constructed with `diagonal_stats=true`.
+
+See also [`report_annihilations!`](@ref) and [`step_stats`](@ref).
+"""
+function diagonal_step_stats_are_available(v::AbstractDVec)
+    return diagonal_step_stats_are_available(StochasticStyle(v))
+end
+diagonal_step_stats_are_available(::T) where {T <: StochasticStyle} = false # default
+
+"""
     IsStochasticInteger{T=Int}() <: StochasticStyle{T}
 
 FCIQMC algorithm with integer walkers as in
@@ -22,6 +37,9 @@ function apply_column!(::IsStochasticInteger, w, column, val::Real, boost=1)
     clones, deaths, zombies = diagonal_step!(w, column, val)
     attempts, spawns = spawn!(WithReplacement(), w, column, val, boost)
     return (attempts, spawns, deaths, clones, zombies)
+end
+function diagonal_step_stats_are_available(::IsStochasticInteger)
+    return true
 end
 
 """
@@ -74,7 +92,7 @@ Propagate with deterministic vector matrix multiplications. Stochastic compressi
 of theresultant vector (after annihilations) can be triggered by setting the optional
 `compression` argument to a relevant [`CompressionStrategy`](@ref).
 
-If `diagonal_stats=true`, the step statistics `spawn_attempts`, `spawns`, `deaths`, 
+If `diagonal_stats=true`, the step statistics `spawn_attempts`, `spawns`, `deaths`,
 `clones` and `zombies` are reported instead of `exact_steps`.
 
 See also [`StochasticStyle`](@ref).
@@ -122,6 +140,7 @@ function apply_column!(::IsDeterministic{<:Any,<:Any,true}, w, column, val, boos
     attempts, spawns = spawn!(Exact(), w, column, val)
     return (attempts, spawns, deaths, clones, zombies)
 end
+diagonal_step_stats_are_available(::IsDeterministic{<:Any,<:Any,D}) where {D} = D
 
 """
     IsStochasticWithThreshold{T=Float64}(threshold=1.0) <: StochasticStyle{T}
@@ -251,6 +270,8 @@ function step_stats(::IsDynamicSemistochastic{T,<:Any,<:Any,true}) where {T}
         MultiScalar(0, 0, 0, z, z, z, z),
     )
 end
+diagonal_step_stats_are_available(::IsDynamicSemistochastic{<:Any,<:Any,<:Any,D}) where {D} = D
+
 function apply_column!(
     s::IsDynamicSemistochastic{<:Any,<:Any,<:Any,false}, w, column, val, boost=1
 )

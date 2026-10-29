@@ -235,8 +235,7 @@ refine_reporting_strategy(reporting_strategy::ReportingStrategy) = reporting_str
      report!(::ReportingStrategy, step, report::Report, keys, values, id="")
      report!(::ReportingStrategy, step, report::Report, nt, id="")
 
-Report `keys` and `values` to `report`, which will be converted to a `DataFrame` before
-[`ProjectorMonteCarloProblem`](@ref) exits. Alternatively, a `nt::NamedTuple` can be passed
+Report `keys` and `values` to `report`. Alternatively, a `nt::NamedTuple` can be passed
 in place of `keys` and `values`. If `id` is specified, it is appended to all `keys`. This is
 used to differentiate between values reported by different replicas.
 
@@ -284,6 +283,41 @@ function print_stats(io::IO, step, state)
     norm = lpad(round(first(state).shift_parameters.pnorm, digits=4), 10)
     println(io, "shift: ", shift, " | norm: ", norm)
     flush(io)
+end
+
+"""
+    report_annihilations!(
+        reporting_strategy,
+        report,
+        v,
+        step_stat_names,
+        step_stat_values,
+        pnorm,
+        tnorm,
+        [id]
+)
+
+Report the number of annihilations if they are available. See also
+[`diagonal_step_stats_are_available`](@ref) for more information on when annihilations are
+available, and [`report!`](@ref).
+"""
+function report_annihilations!(
+    reporting_strategy::ReportingStrategy,
+    step,
+    report,
+    v,
+    step_stat_names,
+    step_stat_values,
+    pnorm,
+    tnorm,
+    postfix::SymbolOrString=""
+)
+    if diagonal_step_stats_are_available(v)
+        nt = (; zip(step_stat_names, step_stat_values)...)
+        annihilations = (pnorm + nt.spawns + nt.clones - nt.deaths) - tnorm
+        report!(reporting_strategy, step, report, :annihilations, annihilations, postfix)
+    end
+    return report
 end
 
 """
