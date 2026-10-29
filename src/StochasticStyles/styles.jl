@@ -89,7 +89,7 @@ const FloatOrComplexFloat = Union{AbstractFloat, Complex{<:AbstractFloat}}
     ) <: StochasticStyle{T}
 
 Propagate with deterministic vector matrix multiplications. Stochastic compression
-of theresultant vector (after annihilations) can be triggered by setting the optional
+of the resultant vector (after annihilations) can be triggered by setting the optional
 `compression` argument to a relevant [`CompressionStrategy`](@ref).
 
 If `diagonal_stats=true`, the step statistics `spawn_attempts`, `spawns`, `deaths`,
@@ -220,7 +220,6 @@ struct IsDynamicSemistochastic{
     proj_threshold::T
     compression::C
     spawning::S
-    diagonal_stats::Val{D}
 end
 function IsDynamicSemistochastic{T}(
     ;
@@ -234,8 +233,9 @@ function IsDynamicSemistochastic{T}(
         spawning, rel_spawning_threshold, abs_spawning_threshold
     )
     proj_threshold = T(spawning.threshold)
-    return IsDynamicSemistochastic(
-        proj_threshold, compression, ds_spawning, Val(diagonal_stats)
+    C, S = typeof(compression), typeof(ds_spawning)
+    return IsDynamicSemistochastic{T,C,S,diagonal_stats}(
+        proj_threshold, compression, ds_spawning
     )
 end
 IsDynamicSemistochastic(; kwargs...) = IsDynamicSemistochastic{Float64}(; kwargs...)
