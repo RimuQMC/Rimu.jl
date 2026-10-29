@@ -1,7 +1,7 @@
 # Module `StochasticStyles`
 
 ```@docs
-StochasticStyles
+Rimu.StochasticStyles
 ```
 
 ## Available `StochasticStyle`s
@@ -10,7 +10,7 @@ StochasticStyles
 StyleUnknown
 ```
 ```@autodocs
-Modules = [StochasticStyles]
+Modules = [Rimu.StochasticStyles]
 Pages = ["styles.jl"]
 ```
 
@@ -32,19 +32,18 @@ StochasticStyles.ThresholdCompression
 compress!
 ```
 
-## Spawning strategies and convenience functions
+## Internals: Spawning strategies and convenience functions
 
 The following functions and types are unexported and internal. Use at your own
 risk when defining new styles.
 
 ```@autodocs
-Modules = [StochasticStyles]
+Modules = [Rimu.StochasticStyles]
 Pages = ["spawning.jl"]
 Order = [:function,:method,:type]
 ```
 ```@docs
-diagonal_step_stats_are_available
-report_annihilations!
+Rimu.StochasticStyles.diagonal_step_stats_are_available
 ```
 
 ## Index

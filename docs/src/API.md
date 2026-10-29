@@ -3,6 +3,7 @@
 ## Rimu
 ```@autodocs
 Modules = [Rimu]
+Private = false
 ```
 # Reexported Submodules
 
@@ -33,6 +34,14 @@ See [Module `DictVectors`](@ref)
 ## StatsTools
 
 See [Module `StatsTools`](@ref)
+
+## Additional documentation of internals
+
+The following functions and types are unexported and internal. They may change without notice. Use at your own risk!
+```@autodocs
+Modules = [Rimu]
+Public = false
+```
 
 # Index
 

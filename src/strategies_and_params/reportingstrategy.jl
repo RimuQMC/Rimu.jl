@@ -298,8 +298,8 @@ end
 )
 
 Report the number of annihilations if they are available. See also
-[`diagonal_step_stats_are_available`](@ref) for more information on when annihilations are
-available, and [`report!`](@ref).
+[`diagonal_step_stats_are_available`](@ref Rimu.StochasticStyles.diagonal_step_stats_are_available) for
+more information on when annihilations are available, and [`report!`](@ref).
 """
 function report_annihilations!(
     reporting_strategy::ReportingStrategy,

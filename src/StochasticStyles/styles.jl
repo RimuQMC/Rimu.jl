@@ -6,7 +6,7 @@ if the vector is of a stochastic style that supports diagonal step statistics, s
 [`IsStochasticInteger`](@ref), [`IsDeterministic`](@ref) or
 [`IsDynamicSemistochastic`](@ref) constructed with `diagonal_stats=true`.
 
-See also [`report_annihilations!`](@ref) and [`step_stats`](@ref).
+See also [`report_annihilations!`](@ref Rimu.report_annihilations!) and [`step_stats`](@ref).
 """
 function diagonal_step_stats_are_available(v::AbstractDVec)
     return diagonal_step_stats_are_available(StochasticStyle(v))
