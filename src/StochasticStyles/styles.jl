@@ -1,10 +1,28 @@
 """
+    diagonal_step_stats_are_available(v::AbstractDVec)
+
+Check if the diagonal step statistics are available for the given vector `v`. This is true
+if the vector is of a stochastic style that supports diagonal step statistics, such as
+[`IsStochasticInteger`](@ref), [`IsDeterministic`](@ref) or
+[`IsDynamicSemistochastic`](@ref) constructed with `diagonal_stats=true`.
+
+See also [`report_annihilations!`](@ref Rimu.report_annihilations!) and [`step_stats`](@ref).
+"""
+function diagonal_step_stats_are_available(v::AbstractDVec)
+    return diagonal_step_stats_are_available(StochasticStyle(v))
+end
+diagonal_step_stats_are_available(::T) where {T <: StochasticStyle} = false # default
+
+"""
     IsStochasticInteger{T=Int}() <: StochasticStyle{T}
 
 FCIQMC algorithm with integer walkers as in
 [Booth *et al.* (2009)](https://doi.org/10.1063/1.3193710). During the vector matrix product
 each individual diagonal and spawning step is rounded stochastically to a nearby integer
 value.
+
+The report statistics `spawn_attempts`, `spawns`, `deaths`, `clones`, `zombies` and
+`annihilations` are available for this style.
 
 See also [`StochasticStyle`](@ref).
 """
@@ -22,6 +40,9 @@ function apply_column!(::IsStochasticInteger, w, column, val::Real, boost=1)
     clones, deaths, zombies = diagonal_step!(w, column, val)
     attempts, spawns = spawn!(WithReplacement(), w, column, val, boost)
     return (attempts, spawns, deaths, clones, zombies)
+end
+function diagonal_step_stats_are_available(::IsStochasticInteger)
+    return true
 end
 
 """
@@ -74,8 +95,8 @@ Propagate with deterministic vector matrix multiplications. Stochastic compressi
 of the resultant vector (after annihilations) can be triggered by setting the optional
 `compression` argument to a relevant [`CompressionStrategy`](@ref).
 
-If `diagonal_stats=true`, the step statistics `spawn_attempts`, `spawns`, `deaths`, 
-`clones` and `zombies` are reported instead of `exact_steps`.
+If `diagonal_stats=true`, the step statistics `spawn_attempts`, `spawns`, `deaths`,
+`clones`, `zombies` and `annihilations` are reported instead of `exact_steps`.
 
 See also [`StochasticStyle`](@ref).
 """
@@ -122,6 +143,7 @@ function apply_column!(::IsDeterministic{<:Any,<:Any,true}, w, column, val, boos
     attempts, spawns = spawn!(Exact(), w, column, val)
     return (attempts, spawns, deaths, clones, zombies)
 end
+diagonal_step_stats_are_available(::IsDeterministic{<:Any,<:Any,D}) where {D} = D
 
 """
     IsStochasticWithThreshold{T=Float64}(threshold=1.0) <: StochasticStyle{T}
@@ -190,8 +212,8 @@ or [`IsStochasticWithThreshold`](@ref)) by setting `late_compression=false`, or 
   to compress the vector after a step. Overrides `threshold`.
 
 * `diagonal_stats = false`: If set to `true`, the step statistics `deaths`, `clones` and
-  `zombies` of the diagonal step are reported in addition to `exact_steps`,
-  `inexact_steps`, `spawn_attempts` and `spawns`.
+  `zombies` of the diagonal step as well as approximate `annihilations` are reported in
+  addition to `exact_steps`, `inexact_steps`, `spawn_attempts` and `spawns`.
 
 See also [`StochasticStyle`](@ref).
 """
@@ -251,6 +273,8 @@ function step_stats(::IsDynamicSemistochastic{T,<:Any,<:Any,true}) where {T}
         MultiScalar(0, 0, 0, z, z, z, z),
     )
 end
+diagonal_step_stats_are_available(::IsDynamicSemistochastic{<:Any,<:Any,<:Any,D}) where {D} = D
+
 function apply_column!(
     s::IsDynamicSemistochastic{<:Any,<:Any,<:Any,false}, w, column, val, boost=1
 )

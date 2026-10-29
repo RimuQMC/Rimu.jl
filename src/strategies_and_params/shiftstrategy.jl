@@ -90,6 +90,7 @@ function Base.show(io::IO, s::DontUpdate)
 end
 
 function update_shift_parameters!(s::DontUpdate, sp, tnorm, _...)
+    sp.pnorm = tnorm
     return (; shift=sp.shift, norm=tnorm), tnorm < s.target_walkers
 end
 
