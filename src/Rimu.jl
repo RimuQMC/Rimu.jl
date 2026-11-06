@@ -50,6 +50,7 @@ include("BitStringAddresses/BitStringAddresses.jl")
 include("Hamiltonians/Hamiltonians.jl")
 @reexport using .Hamiltonians
 include("StochasticStyles/StochasticStyles.jl")
+using .StochasticStyles: diagonal_step_stats_are_available
 @reexport using .StochasticStyles
 include("DictVectors/DictVectors.jl")
 @reexport using .DictVectors

@@ -115,6 +115,17 @@ function advance!(algorithm::FCIQMC, report, state::ReplicaState, s_state::Singl
         report!(reporting_strategy, step, report, shift_stats, id) # shift, norm, shift_mode
 
         report!(reporting_strategy, step, report, step_stat_names, step_stat_values, id)
+        report_annihilations!(
+            reporting_strategy,
+            step,
+            report,
+            v,
+            step_stat_names,
+            step_stat_values,
+            pnorm,
+            tnorm,
+            id
+        )
         report!(reporting_strategy, step, report, post_step_stats, id)
     end
 
