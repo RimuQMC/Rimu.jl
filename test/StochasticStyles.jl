@@ -2,7 +2,8 @@ using Rimu
 using Test
 using Rimu.StochasticStyles
 
-using Rimu.StochasticStyles: projected_deposit!, diagonal_step!, spawn!
+using Rimu.StochasticStyles:
+    projected_deposit!, diagonal_step!, spawn!, diagonal_step_stats_are_available
 using Rimu.StochasticStyles:
     Exact, SingleSpawn, WithReplacement, WithoutReplacement, Bernoulli,
     DynamicSemistochastic
@@ -28,6 +29,8 @@ end
     dv = DVec(address => 1 + im)
     @test StochasticStyle(dv) isa StyleUnknown
     @test_throws ArgumentError step_stats(dv)
+    @test !diagonal_step_stats_are_available(dv)
+    @test !diagonal_step_stats_are_available(StochasticStyle(dv))
     h = HubbardReal1D(address)
     @test_throws ArgumentError apply_column!(dv, operator_column(h, address), 1)
 end
@@ -70,6 +73,11 @@ end
     @test apply_column!(IsDeterministic(; diagonal_stats=true), w, col, 2) == (2, 18, 0, 16, 0)
     @test apply_column!(IsDynamicSemistochastic(; diagonal_stats=true), w, col, 2) ==
         (1, 0, 2, 18, 0, 16, 0)
+    @test diagonal_step_stats_are_available(IsDeterministic(; diagonal_stats=true))
+    @test !diagonal_step_stats_are_available(IsDeterministic())
+    @test diagonal_step_stats_are_available(IsDynamicSemistochastic(; diagonal_stats=true))
+    @test !diagonal_step_stats_are_available(IsDynamicSemistochastic())
+    @test diagonal_step_stats_are_available(IsStochasticInteger())
 end
 
 @testset "projected_deposit!" begin

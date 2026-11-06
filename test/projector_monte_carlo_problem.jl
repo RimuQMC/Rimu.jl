@@ -345,6 +345,8 @@ end
     @test sim.success == true
     @test sim.modified == true
     @test size(sim.df, 1) == 100
+    @test :annihilations in propertynames(sim.df)
+    @test all(sim.df.annihilations .>= 0)
 
     # Populations in replicas are dead.
     p = ProjectorMonteCarloProblem(
@@ -357,6 +359,7 @@ end
     @test sim.modified == true
     @test startswith(sim.message, "Aborted in step")
     @test size(sim.df, 1) < 100
+    @test :annihilations_r1s1 in propertynames(sim.df)
 end
 
 @testset "max_length" begin
@@ -412,6 +415,7 @@ using Rimu: DoubleLogProjected, DoubleLogSumUpdate
     df = DataFrame(solve(p))
     @test size(df, 1) == 200
     @test 95 < df.norm[end] < 105
+    @test :annihilations ∉ propertynames(df)
 
     # DontUpdate
     shift_strategy = DontUpdate(target_walkers=100)
@@ -421,14 +425,16 @@ using Rimu: DoubleLogProjected, DoubleLogSumUpdate
     )
     @test p.algorithm.shift_strategy isa DontUpdate
     @test p.algorithm.shift_strategy.target_walkers == 100
-    df = DataFrame(solve(p))
+    sim = solve(p)
+    df = DataFrame(sim)
     @test size(df, 1) < 50
     @test 90 < df.norm[end] < 110
+    @test only(sim.state).shift_parameters.pnorm == df.norm[end]
 
     # LogUpdate
     shift_strategy = LogUpdate(0.1)
     @test eval(Meta.parse(repr(shift_strategy))) == shift_strategy
-    dv = DVec(BoseFS(1, 3) => 100; style=IsDynamicSemistochastic())
+    dv = DVec(BoseFS(1, 3) => 100; style=IsDynamicSemistochastic(; diagonal_stats=true))
     p = ProjectorMonteCarloProblem(h;
         start_at=dv,
         shift_strategy, last_step=200, random_seed=7
@@ -439,6 +445,7 @@ using Rimu: DoubleLogProjected, DoubleLogSumUpdate
     df = DataFrame(sim)
     @test size(df, 1) == 200
     @test 200 < df.norm[end]
+    @test :annihilations in propertynames(df)
 
     # LogUpdateAfterTargetWalkers
     shift_strategy = LogUpdateAfterTargetWalkers(; target_walkers=100)
