@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 *Add any unreleased changes here!*
 
+### Added
+* Keyword `diagonal_stats` (default `false`) for `IsDeterministic` and `IsDynamicSemistochastic`. ([#418])
+
+### Changed
+* `zombies` no longer record a magnitude but instead record the frequency of sign-flip events during a `diagonal_step!`. Affects all `StochasticStyles` reporting diagonal statistics. This changes the statistics reported from `IsStochasticInteger` and `IsStochastic2Pop`. ([#418])
+* `deaths`, `clones` and `zombies` are reported as real and non-negative even for complex numbers. This changes the behaviour for `IsStochastic2Pop` where previously per-population data was reported as a complex number. ([#418])
+
+### Fixed
+* A bug in `clones_deaths_zombies` reported deaths and clones incorrectly for negative coefficients. This is now fixed. ([#418])
+
 ## Version [v0.18.2] - 2026-09-28
 
 ### Added
@@ -101,3 +111,4 @@ Types of changes (based on [Keep a Changelog](https://keepachangelog.com/en/1.1.
 [#409]: https://github.com/RimuQMC/Rimu.jl/issues/409
 [#414]: https://github.com/RimuQMC/Rimu.jl/issues/414
 [#415]: https://github.com/RimuQMC/Rimu.jl/issues/415
+[#418]: https://github.com/RimuQMC/Rimu.jl/issues/418

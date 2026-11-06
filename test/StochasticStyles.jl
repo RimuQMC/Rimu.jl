@@ -15,6 +15,13 @@ using Rimu.StochasticStyles:
     @test default_style_of_typeof(1im) isa StyleUnknown
     @test default_style_of_typeof(1.0 + 1im) == IsDeterministic{ComplexF64}()
     @test default_style_of_typeof([1.0f0 + 1im, 1.0f0 + 1im]) isa StyleUnknown
+    tc = StochasticStyles.ThresholdCompression()
+    @test repr(IsDeterministic(tc)) == "IsDeterministic{Float64}($tc)"
+    @test repr(IsDeterministic(; diagonal_stats=true)) ==
+        "IsDeterministic{Float64}(; diagonal_stats=true)"
+    @test repr(IsDeterministic(tc;diagonal_stats=true)) ==
+        "IsDeterministic{Float64}($tc; diagonal_stats=true)"
+    @test endswith(repr(IsDynamicSemistochastic(; diagonal_stats=true)), "(; diagonal_stats=true)")
 end
 @testset "StochasticStyles interface defaults" begin
     address = BoseFS(1,2,3)
@@ -54,6 +61,15 @@ end
     @test w[1] == 1.0 + 2 * matrix[1, 1]
     @test w[2] == 2.0 + 2 * matrix[2, 1]
     @test w[3] == 3.0 + 2 * matrix[3, 1]
+
+    @test step_stats(IsDeterministic(; diagonal_stats=true))[1] ==
+        (:spawn_attempts, :spawns, :deaths, :clones, :zombies)
+    @test step_stats(IsDynamicSemistochastic(; diagonal_stats=true))[1][5:7] ==
+        (:deaths, :clones, :zombies)
+    col = operator_column(mh, 3)
+    @test apply_column!(IsDeterministic(; diagonal_stats=true), w, col, 2) == (2, 18, 0, 16, 0)
+    @test apply_column!(IsDynamicSemistochastic(; diagonal_stats=true), w, col, 2) ==
+        (1, 0, 2, 18, 0, 16, 0)
 end
 
 @testset "projected_deposit!" begin
@@ -130,9 +146,10 @@ transition_op(H, shift, time_step) = I + time_step * (shift*I - H)
             dv = DVec(BoseFS((2,0,1)) => 0)
             T = transition_op(H, -10, 0.5)
             st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1, 0)
-            @test st[2] == 1
-            @test st[3] == 4 || st[3] == 5
-            @test dv[BoseFS((2,0,1))] == 1 - st[2] - st[3] # original value - death - zombie
+            @test st[1] == 3 || st[1] == 4
+            @test st[2] == 0
+            @test st[3] == 1
+            @test dv[BoseFS((2,0,1))] == -(1 + st[1])
         end
     end
     @testset "Exact" begin
@@ -147,6 +164,8 @@ transition_op(H, shift, time_step) = I + time_step * (shift*I - H)
         st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 2.5, 0)
         @test st[1] == 22.5
         @test dv[BoseFS((2,0,1))] == 25.0
+        dv = DVec(add => 0.0)
+        @test diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), -2.5, 0) == st
         # deaths
         dv = DVec(add => 0.0)
         T = transition_op(H, -0.5, 0.5)
@@ -157,8 +176,7 @@ transition_op(H, shift, time_step) = I + time_step * (shift*I - H)
         dv = DVec(add => 0.0)
         T = transition_op(H, -10, 0.5)
         st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1.0, 0)
-        @test st[2] == 1
-        @test st[3] == 4.5
+        @test st == (3.5, 0, 1)
         @test dv[BoseFS((2,0,1))] == -4.5
     end
     @testset "Projected" begin
@@ -188,8 +206,7 @@ transition_op(H, shift, time_step) = I + time_step * (shift*I - H)
         dv = DVec(add => 0.0)
         T = transition_op(H, -10, 0.5)
         st = diagonal_step!(dv, operator_column(T, BoseFS((2,0,1))), 1, 1)
-        @test st[2] == 1
-        @test st[3] == 4.5
+        @test st == (3.5, 0, 1)
         @test dv[BoseFS((2,0,1))] == -4.5
     end
 end
