@@ -14,8 +14,8 @@ H = ωâ^†â + (λ/√N)∑_{j=1}^M(â^† + â)(σ_j^+ + σ_j^-) - h∑_{j=
 
 where ``ω`` is the frequency of the cavity mode, ``λ`` is the coupling strength between the cavity 
 and the two-level system, ``â`` and ``â^†`` are the annihilation and creation operators for the cavity mode, 
-and ``σ_+`` and ``σ_-`` are the raising and lowering operators for the spins of the two-level systems. 
-``σ_z`` is the angular momentum operator along the z-axis. ``σ_y`` is the angular momentum operator along 
+and ``σ_j^+`` and ``σ_j^-`` are the raising and lowering operators for the spins of the two-level system `j`. 
+``σ_j^z`` is the angular momentum operator along the z-axis. ``σ_j^y`` is the angular momentum operator along 
 the y-axis.
 
 # Keyword Arguments
@@ -151,7 +151,7 @@ end
     return h.omegacav * n1 - 2 * h.hfield * (n_up - nsites / 2)
 end
 
-@inline function _get_offdiagonal_dickeising1D(h, addr::CompositeFS, chosen)
+@inline function get_offdiagonal(h::DickeIsing1D, addr::CompositeFS, chosen)
     cavity = addr.components[1]
     spins = addr.components[2]
     M=num_modes(spins)
@@ -211,9 +211,6 @@ end
     return naddress, value1 * value2 * h.lambda / sqrt(M) - h.J * valueJ
 end
 
-function get_offdiagonal(h::DickeIsing1D, addr::CompositeFS, chosen)
-    return _get_offdiagonal_dickeising1D(h, addr, chosen)
-end
 
 function num_offdiagonals(h::DickeIsing1D, addr::CompositeFS)
     M = num_modes(h.addr.components[2])
