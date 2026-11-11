@@ -50,7 +50,8 @@ end
 
 makedocs(;
     modules=[
-        Rimu, Rimu.RimuIO, Rimu.InterfaceTests, Rimu.BitStringAddresses, Rimu.Interfaces
+        Rimu, Rimu.RimuIO, Rimu.InterfaceTests, Rimu.BitStringAddresses, Rimu.Interfaces,
+        Rimu.StochasticStyles,
     ],
     format=Documenter.HTML(
         prettyurls = false,

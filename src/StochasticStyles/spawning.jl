@@ -70,7 +70,9 @@ end
 
 Perform diagonal step on `column` with value `val`. Optional argument
 `threshold` sets the projection threshold. If `eltype(w)` is an `Integer`, the `val` is
-rounded to the nearest integer stochastically.
+rounded to the nearest integer stochastically. Returns the increase (`clones`) or 
+decrease (`deaths`) of the walker magnituded and `zombies = 1` if the walker sign flipped
+(phase rotated by more than π/2), `0` otherwise.
 """
 @inline function diagonal_step!(w, column, val, threshold=0)
     new_val = diagonal_element(column) * val
@@ -78,31 +80,15 @@ rounded to the nearest integer stochastically.
     return clones_deaths_zombies(res, typeof(res)(val))
 end
 
-@inline function clones_deaths_zombies(res::T, val::T) where {T<:Real}
-    clones = deaths = zombies = zero(T)
-    if res > val
-        # walker number increased
-        clones = abs(res - val)
-    elseif sign(res) ≠ sign(val)
-        # walker number decreased so much that sign changed
-        deaths = abs(val)
-        zombies = abs(res)
+@inline function clones_deaths_zombies(res, val)
+    T = typeof(abs(res))
+    clones = deaths = zero(T)
+    if abs(res) > abs(val)
+        clones = abs(res) - abs(val)
     else
-        # walker number decreased, but not too much
-        deaths = abs(res - val)
+        deaths = abs(val) - abs(res)
     end
-    return (clones, deaths, zombies)
-end
-@inline function clones_deaths_zombies(res::Complex, val::Complex)
-    res_re, res_im = reim(res)
-    val_re, val_im = reim(val)
-
-    clones_re, deaths_re, zombies_re = clones_deaths_zombies(res_re, val_re)
-    clones_im, deaths_im, zombies_im = clones_deaths_zombies(res_im, val_im)
-    clones = clones_re + im * clones_im
-    deaths = deaths_re + im * deaths_im
-    zombies = zombies_re + im * zombies_im
-
+    zombies = T(real(res * conj(val)) < 0)
     return (clones, deaths, zombies)
 end
 

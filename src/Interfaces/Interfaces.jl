@@ -14,7 +14,7 @@ Follow the links for the definitions of the interfaces!
     `DictVectors`](@ref Main.DictVectors)
 * [`StochasticStyle`](@ref) for controlling the stochastic algorithms used by
     [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem) as implemented in
-    [`StochasticStyles`](@ref Main.StochasticStyles)
+    [`StochasticStyles`](@ref Rimu.StochasticStyles)
 * [`AbstractFockAddress`](@ref) for defining Fock states, see also
     [`BitStringAddresses`](@ref Rimu.BitStringAddresses).
 
