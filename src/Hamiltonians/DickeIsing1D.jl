@@ -9,7 +9,7 @@ hardcore boson modes. The address is a [`CompositeFS`](@ref) with two components
 The Hamiltonian is given by
 
 ```math
-H = ωâ^†â + (λ/√N)∑_{j=1}^M(â^† + â)(σ_j^+ + σ_j^-) - h∑_{j=1}^Mσ_j^z - J∑_{j=1}^Mσ_j^y σ_{j+1}^y  
+H = ωâ^†â + (λ/√M)∑_{j=1}^M(â^† + â)(σ_j^+ + σ_j^-) - h∑_{j=1}^Mσ_j^z - J∑_{j=1}^Mσ_j^y σ_{j+1}^y  
 ```
 
 where ``ω`` is the frequency of the cavity mode, ``λ`` is the coupling strength between the cavity 
@@ -38,7 +38,13 @@ DickeIsing1D(fs"|0⟩{} ⊗ |●∘∘⟩{}"; lambda=1.0, omegacav=1.0, hfield=0
 
 julia> dimension(ham)
 2048
-```"""
+```
+Notably the spin-(1/2) operators `σ_j^+` and `σ_j^-` are represented as hardcore boson creation and annihilation operators, 
+respectively via the Mastubara-Matsuda transformation [1].
+
+#References
+* [Matsubara, T., & Matsuda, H. (1956). A lattice model of liquid helium, I. Progress of Theoretical Physics, 16(6), 569-582.](https://doi.org/10.1143/PTP.16.569)
+"""
 struct DickeIsing1D{T} <: AbstractHamiltonian{T}
     addr::CompositeFS
     lambda::T
