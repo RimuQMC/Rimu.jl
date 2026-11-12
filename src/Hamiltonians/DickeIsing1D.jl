@@ -39,7 +39,7 @@ DickeIsing1D(fs"|0⟩{} ⊗ |●∘∘⟩{}"; lambda=1.0, omegacav=1.0, hfield=0
 julia> dimension(ham)
 2048
 ```
-Notably the spin-(1/2) operators `σ_j^+` and `σ_j^-` are represented as hardcore boson creation and annihilation operators, 
+Notably the spin-(1/2) operators ``σ_j^+`` and ``σ_j^-`` are represented as hardcore boson creation and annihilation operators, 
 respectively via the Mastubara-Matsuda transformation [1].
 
 #References
