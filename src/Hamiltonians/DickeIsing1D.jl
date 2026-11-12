@@ -42,7 +42,7 @@ julia> dimension(ham)
 Notably the spin-(1/2) operators ``σ_j^+`` and ``σ_j^-`` are represented as hardcore boson creation and annihilation operators, 
 respectively via the Mastubara-Matsuda transformation [1].
 
-#References
+# References
 * [Matsubara, T., & Matsuda, H. (1956). A lattice model of liquid helium, I. Progress of Theoretical Physics, 16(6), 569-582.](https://doi.org/10.1143/PTP.16.569)
 """
 struct DickeIsing1D{T} <: AbstractHamiltonian{T}
