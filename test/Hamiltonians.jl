@@ -4,10 +4,10 @@ using Random
 using Rimu
 using Test
 using DataFrames
+using SparseArrays
 using Suppressor
 using StaticArrays
-using SparseArrays
-using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals, ScaledOrShiftedHamiltonian
+using Rimu.Hamiltonians: TransformUndoer, AbstractOffdiagonals, TimeReversalSymmetry, ScaledOrShiftedHamiltonian
 using Rimu.InterfaceTests: test_observable_interface, test_operator_interface,
     test_hamiltonian_interface, test_hamiltonian_structure
 using Rimu.Interfaces: LOStructure, IsHermitian, IsDiagonal, AdjointKnown,
@@ -95,6 +95,8 @@ end
         FroehlichPolaron1D(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         FroehlichPolaron1D{Float32}(BoseFS{missing}(1, 1, 1); momentum_cutoff=10.0),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0))),
+        DickeIsing1D(CompositeFS(BoseFS{missing}(1), HardcoreBoseFS{missing,4}(1, 0, 1, 0)); lambda=0.5,
+        omegacav=1.0,J=0.0,hfield=0.5,),
         momentum(HubbardMom1D(BoseFS(0, 1, 5, 1, 0); t=1.0+1.0im)),
         # HamiltonianProduct
         HubbardReal1D(BoseFS(2,0,0); u=1.0im) * ExtendedHubbardReal1D(BoseFS(2,0,0)),
@@ -119,6 +121,19 @@ end
             @test eval(Meta.parse(repr(H))) == H
         end
     end
+end
+
+@testset "DickeIsing1D" begin
+    addr = CompositeFS(BoseFS{missing,1}(1), HardcoreBoseFS{missing,4}(1, 0, 1, 0))
+    h = DickeIsing1D(addr)
+
+    test_hamiltonian_interface(h)
+    @test starting_address(h) == addr
+    @test diagonal_element(h, addr) == 1.0
+    @test num_offdiagonals(h, addr) == 6 * num_modes(addr.components[2]) + 2 * num_occupied_modes(addr.components[2])
+    col = operator_column(h, addr)
+    @test diagonal_element(col) == diagonal_element(h, addr)
+    @test length(collect(offdiagonals(col))) == num_offdiagonals(col)
 end
 
 using Rimu.Hamiltonians: MomentumMomSpace

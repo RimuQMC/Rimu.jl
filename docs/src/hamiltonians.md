@@ -43,6 +43,7 @@ MatrixHamiltonian
 Transcorrelated1D
 FroehlichPolaron1D
 FroehlichPolaron
+DickeIsing1D
 MolecularHamiltonian
 ```
 
