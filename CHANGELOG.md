@@ -4,9 +4,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-* Added the `DickeIsing1D`([#417]) Hamiltonian for coupled cavity and hardcore-boson lattice models.
+
+## Version [v0.18.3] - 2026-11-13
 
 ### Added
+* Added the `DickeIsing1D`([#417]) Hamiltonian for coupled cavity and hardcore-boson lattice models.
 * Keyword `diagonal_stats` (default `false`) for `IsDeterministic` and `IsDynamicSemistochastic`. ([#418])
 * `annihilations` are reported alongside diagonal statistics where available. ([#418])
 
@@ -95,6 +97,7 @@ Types of changes (based on [Keep a Changelog](https://keepachangelog.com/en/1.1.
 [v0.18.0]: https://github.com/RimuQMC/Rimu.jl/releases/tag/v0.18.0
 [v0.18.1]: https://github.com/RimuQMC/Rimu.jl/releases/tag/v0.18.1
 [v0.18.2]: https://github.com/RimuQMC/Rimu.jl/releases/tag/v0.18.2
+[v0.18.3]: https://github.com/RimuQMC/Rimu.jl/releases/tag/v0.18.3
 [#353]: https://github.com/RimuQMC/Rimu.jl/issues/353
 [#355]: https://github.com/RimuQMC/Rimu.jl/issues/355
 [#393]: https://github.com/RimuQMC/Rimu.jl/issues/393
