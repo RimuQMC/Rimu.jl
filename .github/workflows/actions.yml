@@ -10,9 +10,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        julia-version: ['1', 'pre', 'min']
-        os: [ubuntu-latest]
         include:
+          - julia-version: '1'
+            os: ubuntu-latest
+          - julia-version: 'pre'
+            os: ubuntu-latest
+          # Julia 1.9's bundled libopenlibm is incompatible with glibc 2.41+.
+          - julia-version: 'min'
+            os: ubuntu-22.04
           - julia-version: '1'
             os: macos-latest
       fail-fast: false
