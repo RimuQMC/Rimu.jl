@@ -54,9 +54,20 @@ function _first_vertex(index::I, ::Val{2}, ::I=I(0), ::I=I(0)) where {I}
 end
 
 """
-    vertices(index::I, ::Val{N})::NTuple{N,I}
+    Hamiltonians.vertices(ind::I, ::Val{N})::NTuple{N,I}
 
-Get the vertices of simplex represented by index.
+Get the vertices of simplex represented by the index `ind`. The vertices are returned as a
+tuple of integers, where the `k`-th vertex is the index of the `k`-th vertex in the simplex.
+The vertices are ordered such that the first vertex is the largest index and the last
+vertex is the smallest index. The `Val{N}` argument specifies the dimension of the simplex,
+i.e. the number of vertices.
+
+`vertices` provides a mapping of integers to ordered tuples of integers.
+`vertices` is the inverse of [`index`](@ref), i.e. `vertices(index(vertices)) == vertices`.
+
+The function is used to covert between the scalar index representation of a multi-fermion
+state (or reduced density matrix element) and the tuple of single-particle mode indices that
+it represents.
 """
 @inline function vertices(index::I, ::Val{K}) where {I,K}
     index -= one(I)
@@ -73,15 +84,20 @@ end
 @inline vertices(index, ::Val{1}) = (index,)
 
 """
-    index(vertices)
+    Hamiltonians.index(vertices)
 
 Calculate the index from tuple or static vector of vertices. The index is equal to
-
 ```math
 (i_d, i_{d-1}, ..., i_1) \\mapsto \\sum_{k=1}^{d+1} \\binom{i_k - 1}{k},
 ```
-
 where ``i_k`` are the simplex vertex indices.
+
+`index` provides a mapping of ordered tuples of integers to integers.
+`index` is the inverse of [`vertices`](@ref), i.e. `index(vertices(index)) == index`.
+
+The function is used to covert between the tuple of single-particle mode indices that a
+multi-fermion state (or reduced density matrix element) represents and the scalar index
+representation of that state.
 """
 index(vertices::NTuple) = _index(vertices, one(eltype(vertices)))
 

@@ -3,6 +3,7 @@ using LinearAlgebra
 using Random
 using Rimu
 using Test
+using SafeTestsets
 using DataFrames
 using SparseArrays
 using Suppressor
@@ -2523,4 +2524,8 @@ end
     @test length(collect(offdiagonals(col))) == 4
     dv = DVec(addr => 1.0)
     @test dv ⋅ col == (col ⋅ dv)' == col[addr]
+end
+
+@safetestset "Density Matrices" begin
+    include("reduced_dm_test.jl")
 end

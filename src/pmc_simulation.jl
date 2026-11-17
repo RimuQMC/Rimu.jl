@@ -90,7 +90,8 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
     @unpack algorithm, hamiltonian, start_at, style, threading, simulation_plan,
         replica_strategy, initial_shift_parameters,
         reporting_strategy, post_step_strategy,
-        max_length, metadata, initiator, random_seed, spectral_strategy, minimum_size = problem
+        max_length, metadata, initiator, random_seed, spectral_strategy,
+        minimum_size, step_actions = problem
 
     reporting_strategy = refine_reporting_strategy(reporting_strategy)
 
@@ -156,7 +157,8 @@ function PMCSimulation(problem::ProjectorMonteCarloProblem; copy_vectors=true)
         simulation_plan,
         reporting_strategy,
         post_step_strategy,
-        replica_strategy
+        replica_strategy,
+        step_actions
     )
     report = Report()
     report_default_metadata!(report, state)
@@ -304,6 +306,15 @@ function CommonSolve.step!(sm::PMCSimulation)
     if step[] % reporting_interval(reporting_strategy) == 0
         replica_names, replica_values = replica_stats(replica_strategy, spectral_states)
         report!(reporting_strategy, step[], report, replica_names, replica_values)
+        for action! in state.step_actions
+            action_results, optimized = action!(state)
+            report!(reporting_strategy, step[], report, action_results)
+            if optimized
+                sm.aborted = true
+                sm.message = "Optimized in step $(step[])."
+                return sm
+            end
+        end
         report_after_step!(reporting_strategy, step[], report, state)
         ensure_correct_lengths(report)
     end

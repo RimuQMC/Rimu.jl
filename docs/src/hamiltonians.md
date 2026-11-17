@@ -103,6 +103,10 @@ DensityMatrixDiagonal
 SingleParticleExcitation
 TwoParticleExcitation
 ReducedDensityMatrix
+TestOneParticleDensity
+TestOneParticleDensityGradient
+TestTwoParticleDensity
+TestTwoParticleDensityGradient
 Momentum
 AxialAngularMomentumHO
 SignCorrelator
@@ -121,6 +125,12 @@ Hamiltonians.neighbor_site
 PeriodicBoundaries
 HardwallBoundaries
 LadderBoundaries
+```
+
+## Helper functions
+```@docs
+Hamiltonians.index
+Hamiltonians.vertices
 ```
 
 ## Additional documentation of internal functions
