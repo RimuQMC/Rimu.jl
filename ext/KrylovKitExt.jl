@@ -7,9 +7,11 @@ using NamedTupleTools: delete
 using LinearMaps: LinearMap
 
 using Rimu: Rimu, AbstractDVec, AbstractOperator, IsDeterministic,
-    starting_address, PDVec, DVec, PDWorkingMemory,
+    starting_address, PDVec, DVec,
     scale!!, zerovector, replace_keys, split_keys,
     clean_and_warn_if_others_present
+
+using Rimu.DictVectors: PDWorkingMemory
 
 using Rimu.ExactDiagonalization: IterativeEDSolver, KrylovKitSolver,
     LazyDVecs, EDResult, LazyCoefficientVectorsDVecs

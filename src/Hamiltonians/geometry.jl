@@ -40,7 +40,7 @@ julia> geo[(3,4)] # returns 0 if out of bounds
 
 See also [`PeriodicBoundaries`](@ref), [`HardwallBoundaries`](@ref) and
 [`LadderBoundaries`](@ref) for special-case constructors. See also
-[`HubbardRealSpace`](@ref) and [`G2RealSpace`](@ref).
+[`HubbardRealSpace`](@ref) and [`G2RealSpace`](@ref), [`dimension`](@ref).
 """
 struct CubicGrid{D,Dims,Fold}
     function CubicGrid(
@@ -53,6 +53,15 @@ struct CubicGrid{D,Dims,Fold}
     end
 end
 CubicGrid(args::Vararg{Int}) = CubicGrid(args)
+
+"""
+    dimension(::CubicGrid{D}) where {D}
+
+Return the number of dimensions of the lattice in this geometry.
+
+See also [`CubicGrid`](@ref).
+"""
+dimension(::CubicGrid{D}) where {D} = D
 
 """
     PeriodicBoundaries(dims...) -> CubicGrid
@@ -190,13 +199,13 @@ displacement is placed at the centre of the array.
 julia> geometry = CubicGrid((3,4));
 
 julia> reshape(Displacements(geometry), (3,4))
-3×4 reshape(::Displacements{2, CubicGrid{2, (3, 4), (true, true)}}, 3, 4) with eltype StaticArraysCore.SVector{2, Int64}:
+3×4 reshape(::Displacements{2, CubicGrid{2, (3, 4), (true, true)}}, 3, 4) with eltype SVector{2, Int64}:
  [0, 0]  [0, 1]  [0, 2]  [0, 3]
  [1, 0]  [1, 1]  [1, 2]  [1, 3]
  [2, 0]  [2, 1]  [2, 2]  [2, 3]
 
 julia> reshape(Displacements(geometry; center=true), (3,4))
-3×4 reshape(::Displacements{2, CubicGrid{2, (3, 4), (true, true)}}, 3, 4) with eltype StaticArraysCore.SVector{2, Int64}:
+3×4 reshape(::Displacements{2, CubicGrid{2, (3, 4), (true, true)}}, 3, 4) with eltype SVector{2, Int64}:
  [-1, -1]  [-1, 0]  [-1, 1]  [-1, 2]
  [0, -1]   [0, 0]   [0, 1]   [0, 2]
  [1, -1]   [1, 0]   [1, 1]   [1, 2]

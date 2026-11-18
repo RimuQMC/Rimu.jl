@@ -11,11 +11,11 @@ Concrete `StochasticStyle`s can be used for the `style` keyword argument of
 [`DVec`](@ref Main.DictVectors.DVec) and
 [`PDVec`](@ref Main.DictVectors.PDVec). The following styles are available:
 
-* [`IsStochasticInteger`](@ref Main.StochasticStyles.IsStochasticInteger)
-* [`IsDeterministic`](@ref Main.StochasticStyles.IsDeterministic)
-* [`IsStochasticWithThreshold`](@ref Main.StochasticStyles.IsStochasticWithThreshold)
-* [`IsDynamicSemistochastic`](@ref Main.StochasticStyles.IsDynamicSemistochastic)
-* [`StyleUnknown`](@ref Main.StochasticStyles.StyleUnknown)
+* [`IsStochasticInteger`](@ref Rimu.StochasticStyles.IsStochasticInteger)
+* [`IsDeterministic`](@ref Rimu.StochasticStyles.IsDeterministic)
+* [`IsStochasticWithThreshold`](@ref Rimu.StochasticStyles.IsStochasticWithThreshold)
+* [`IsDynamicSemistochastic`](@ref Rimu.StochasticStyles.IsDynamicSemistochastic)
+* [`StyleUnknown`](@ref Rimu.Interfaces.StyleUnknown)
 
 # Extended Help
 ## Interface
@@ -23,8 +23,8 @@ Concrete `StochasticStyle`s can be used for the `style` keyword argument of
 When defining a new `StochasticStyle`, subtype it as `MyStyle<:StochasticStyle{T}` where `T`
 is the concrete value type the style is designed to work with.
 
-For it to work with [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem), a `StochasticStyle` must define the
-following:
+For it to work with [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem), a
+`StochasticStyle` must define the following:
 
 * [`apply_column!(::StochasticStyle, w, column, value)`](@ref)
 * [`step_stats(::StochasticStyle)`](@ref)
@@ -34,7 +34,7 @@ and optionally
 * [`CompressionStrategy(::StochasticStyle)`](@ref) for vector compression after
   annihilations,
 
-See also [`StochasticStyles`](@ref Main.StochasticStyles), [`Interfaces`](@ref).
+See also [`StochasticStyles`](@ref Rimu.StochasticStyles), [`Interfaces`](@ref).
 """
 abstract type StochasticStyle{T} end
 
@@ -129,6 +129,9 @@ length. These will be reported as columns in the `DataFrame` returned by
 [`ProjectorMonteCarloProblem`](@ref Main.ProjectorMonteCarloProblem).
 """
 step_stats(v) = step_stats(StochasticStyle(v))
+function step_stats(::StyleUnknown)
+    throw(ArgumentError("StyleUnknown does not support step_stats"))
+end
 
 """
     apply_column!(v, column, num, boost=1) -> stats::Tuple
@@ -148,4 +151,7 @@ affecting the expectation value of the procedure.
 """
 function apply_column!(v, column, val, boost=1)
     return apply_column!(StochasticStyle(v), v, column, val, boost)
+end
+function apply_column!(::StyleUnknown, args...)
+    throw(ArgumentError("StyleUnknown does not support apply_column!"))
 end

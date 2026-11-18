@@ -33,8 +33,3 @@ sparse
 LinearMap
 Rimu.ExactDiagonalization.OperatorAsMap
 ```
-
-## Deprecated
-```@docs
-BasisSetRep
-```

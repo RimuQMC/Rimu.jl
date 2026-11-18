@@ -50,6 +50,7 @@ has_adjoint
 has_iterable_offdiagonals
 has_random_offdiagonal
 allows_address_type
+maximum_mode_occupation
 Base.eltype
 VectorInterface.scalartype
 mul!

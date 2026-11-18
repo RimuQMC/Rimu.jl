@@ -27,12 +27,12 @@ HubbardMom1D(fs"|1 1 1⟩"; u=6.0, t=1.0)
 julia> G = GutzwillerSampling(H, g=0.3)
 GutzwillerSampling(HubbardMom1D(fs"|1 1 1⟩"; u=6.0, t=1.0); g=0.3)
 
-julia> Matrix(H; sort=true)
+julia> Matrix(H; sort=true) .|> (x -> round(x;digits=4))
 4×4 Matrix{Float64}:
- 9.0      0.0       4.89898  0.0
- 0.0      0.0       4.89898  0.0
- 4.89898  4.89898  12.0      4.89898
- 0.0      0.0       4.89898  9.0
+ 9.0    0.0     4.899  0.0
+ 0.0    0.0     4.899  0.0
+ 4.899  4.899  12.0    4.899
+ 0.0    0.0     4.899  9.0
 
 julia> Matrix(G; sort=true)
 4×4 Matrix{Float64}:
@@ -41,19 +41,19 @@ julia> Matrix(G; sort=true)
  1.99178  0.133858   12.0     1.99178
  0.0      0.0        12.0495  9.0
 
-julia> eigen(Matrix(H)).values
+julia> eigen(Matrix(H)).values .|> (x -> round(x;digits=4))
 4-element Vector{Float64}:
- -2.3661456273236645
-  4.9594958589580465
-  8.999999999999996
- 18.406649768365643
+ -2.3661
+  4.9595
+  9.0
+ 18.4066
 
-julia> eigen(Matrix(G)).values
+julia> eigen(Matrix(G)).values .|> (x -> round(x;digits=4))
 4-element Vector{Float64}:
- -2.366145627323686
-  4.959495858958046
-  8.999999999999998
- 18.40664976836564
+ -2.3661
+  4.9595
+  9.0
+ 18.4066
 ```
 
 # Observables

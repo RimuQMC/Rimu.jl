@@ -10,10 +10,10 @@ using Rimu: replace_keys, delete_and_warn_if_present, clean_and_warn_if_others_p
         v = [1, 2, 3]
         @test walkernumber(v) == norm(v, 1)
         dvc = DVec(:a => 2 - 5im)
-        @test StochasticStyle(dvc) isa StochasticStyles.IsStochastic2Pop
+        @test StochasticStyle(dvc) isa StyleUnknown
         @test walkernumber(dvc) == 2.0 + 5.0im
         dvi = DVec(:a => Complex{Int32}(2 - 5im))
-        @test StochasticStyle(dvi) isa StochasticStyles.IsStochastic2Pop
+        @test StochasticStyle(dvi) isa StyleUnknown
         dvr = DVec(i => randn() for i in 1:100; capacity=100)
         @test walkernumber(dvr) ≈ norm(dvr, 1)
     end

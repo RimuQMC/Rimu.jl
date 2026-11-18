@@ -176,13 +176,13 @@ end
 @delegate_return_parent InitiatorDVec.storage [delete!, empty!, sizehint!]
 
 """
-    deposit!(w::InitiatorDVec, add, val, p_add=>p_val)
+    deposit!(w::InitiatorDVec, add, val, parent)
 Add `val` into `w` at address `add` as an [`AbstractInitiatorValue`](@ref).
 """
-function deposit!(w::InitiatorDVec{<:Any,V,W}, add, val, (p_add, p_val)) where {V,W}
+function deposit!(w::InitiatorDVec{<:Any,V,W}, add::K, val, parent::Pair{K}) where {V,W,K}
     i = w.initiator
     old_val = get(w.storage, add, zero(W))
-    new_val = to_initiator_value(w.initiator, add, V(val), (p_add, p_val)) + old_val
+    new_val = to_initiator_value(w.initiator, add, V(val), parent) + old_val
     if iszero(new_val)
         delete!(w.storage, add)
     else

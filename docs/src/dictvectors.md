@@ -78,6 +78,8 @@ Rimu.DictVectors.NonInitiatorValue
 
 ## `PDVec` internals
 
+Note that the following functions and types are not part of the public API and may change at any time.
+
 ### Working memory
 
 ```@autodocs
