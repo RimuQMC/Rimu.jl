@@ -25,7 +25,7 @@ module StatsTools
 using DataFrames: DataFrames, DataFrame, metadata
 using Distributions: Distributions, Chisq, Distribution, MvNormal, Normal,
     cquantile, var
-using LinearAlgebra: LinearAlgebra, diag, norm
+using LinearAlgebra: LinearAlgebra, diag, norm, isposdef, eigen, Diagonal, Hermitian
 using MonteCarloMeasurements: MonteCarloMeasurements, AbstractParticles, pcov,
     pextrema, piterate, pmaximum, pmean, pmedian,
     pmiddle, pminimum, pquantile

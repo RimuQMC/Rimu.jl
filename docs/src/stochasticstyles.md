@@ -11,7 +11,7 @@ StyleUnknown
 ```
 ```@autodocs
 Modules = [Rimu.StochasticStyles]
-Pages = ["styles.jl"]
+Pages = ["styles.jl","walker_diffusion.jl"]
 ```
 
 ## The `StochasticStyle` interface

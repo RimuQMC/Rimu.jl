@@ -1,5 +1,7 @@
 using Rimu
 using Test
+using SafeTestsets
+
 using Rimu.StochasticStyles
 
 using Rimu.StochasticStyles:
@@ -7,6 +9,10 @@ using Rimu.StochasticStyles:
 using Rimu.StochasticStyles:
     Exact, SingleSpawn, WithReplacement, WithoutReplacement, Bernoulli,
     DynamicSemistochastic
+
+@safetestset "Walker diffusion stochastic style tests" begin
+    include("walker_diffusion.jl")
+end
 
 @testset "default_style" begin
     default_style_of_typeof(x) = default_style(typeof(x))
